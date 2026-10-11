@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "explain-change/config.schema.json",
+  "title": ".explain-change.toml (v1)",
+  "description": "Shape of the TOML config, for editors and docs. `explain-change check` validates cross-references.",
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "direction": {
+          "type": "string",
+          "description": "The architecture PRs should follow, in one or two sentences."
+        },
+        "lang": {
+          "enum": [
+            "en",
+            "es"
+          ],
+          "default": "en"
+        },
+        "base": {
+          "type": "string",
+          "description": "Default base ref (else origin/HEAD, main, master or develop, remote first)."
+        }
+      }
+    },
+    "layers": {
+      "type": "array",
+      "description": "Diagram lanes, drawn top to bottom in this order (entry points first, core last). Order does not define allowed dependencies: rules do.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "properties": {
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\s*[\\w.-]+\\s*->\\s*[\\w.-]+\\s*$"
+          },
+          "description": "If present, any other cross-layer edge is a violation. Layer or component ids."
+        },
+        "forbid": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "same_layer": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "description": "A file belongs to the component whose matching path is most specific (longest literal prefix); ties go to config order.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "layer",
+          "paths"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[\\w.-]+$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "layer": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Globs with ** support; a plain dir matches everything below it."
+          },
+          "imports": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "TS/Python/require specifiers owned by this component (fnmatch)."
+          },
+          "namespaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "C# namespaces (fnmatch)."
+          },
+          "constants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ruby constants (fnmatch)."
+          }
+        }
+      }
+    },
+    "flows": {
+      "type": "array",
+      "description": "Reference flows; insight flows with the same id are compared against them.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "steps"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\s*[\\w.-]+\\s*->\\s*[\\w.-]+\\s*(:.*)?$"
+            }
+          }
+        }
+      }
+    },
+    "ignore": {
+      "type": "object",
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Generated/vendored files: listed apart, never analyzed."
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
