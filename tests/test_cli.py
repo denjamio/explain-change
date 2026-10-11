@@ -299,6 +299,16 @@ class CheckTests(unittest.TestCase):
         self.assertNotIn("components,", res.stdout)
 
 
+class KeyTests(unittest.TestCase):
+    def test_analysis_version_is_part_of_the_key(self):
+        repo = Repo()
+        self.addCleanup(repo.close)
+        key = repo.collect()["key"]
+        with mock.patch.object(collector, "ANALYSIS_VERSION", collector.ANALYSIS_VERSION + 1):
+            self.assertNotEqual(repo.collect()["key"], key)
+        self.assertEqual(repo.collect()["key"], key)
+
+
 class InitTests(unittest.TestCase):
     def test_draft_config_loads_without_errors(self):
         rails = ["config/application.rb", "Gemfile", "config/routes.rb", "app/controllers/orders_controller.rb",

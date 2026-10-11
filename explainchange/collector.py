@@ -9,8 +9,8 @@ import subprocess
 from pathlib import Path
 
 from .constants import (
-    CONFIG_NAME, DIFF_FLAGS, GENERATED_HEAD, GENERATED_RE, MAX_DIFF_LINES, MAX_FILE_BYTES, MAX_SCAN_FILES,
-    SCHEMA_VERSION, WORK_DIR,
+    ANALYSIS_VERSION, CONFIG_NAME, DIFF_FLAGS, GENERATED_HEAD, GENERATED_RE, MAX_DIFF_LINES, MAX_FILE_BYTES,
+    MAX_SCAN_FILES, SCHEMA_VERSION, WORK_DIR,
 )
 from .util import BlobReader, Fail, git, git_paths, lang_of
 from .config import Mapper
@@ -291,11 +291,12 @@ def change_stats(files: list[dict], edges: list[dict], unresolved: int) -> dict:
 
 
 def insight_key(root: Path, raw_diff: str, specs: list[str] | None) -> str:
-    """Identifies the change an insight was written for: the diff, the config and the contract.
+    """Identifies the change an insight was written for: the diff, the config, the contract and the analysis.
     CRLF from a Windows checkout must not change the key."""
     cfg_path = root / CONFIG_NAME
     cfg_bytes = cfg_path.read_bytes().replace(b"\r\n", b"\n") if cfg_path.exists() else b""
-    parts = [raw_diff.encode(), cfg_bytes, str(SCHEMA_VERSION).encode(), ",".join(sorted(specs or [])).encode()]
+    parts = [raw_diff.encode(), cfg_bytes, str(SCHEMA_VERSION).encode(), ",".join(sorted(specs or [])).encode(),
+             str(ANALYSIS_VERSION).encode()]
     return hashlib.sha256(b"\0".join(parts)).hexdigest()[:16]
 
 

@@ -5,14 +5,17 @@ import re
 from pathlib import Path
 
 __all__ = [
-    "SCHEMA_VERSION", "TOOL_DIR", "CONFIG_NAME", "WORK_DIR", "MAX_SCAN_FILES", "MAX_FILE_BYTES", "MAX_DIFF_LINES",
-    "DEFAULT_BUDGET", "DIFF_FLAGS", "GENERATED_RE", "GENERATED_HEAD", "DEFAULT_TESTS", "DEFAULT_IGNORE",
-    "FRAMEWORK_CONFIG", "MIGRATION_PATTERNS", "CONFIG_EXT", "CONFIG_NAMES", "DOC_EXT", "LANG_BY_EXT", "LAYER_HINTS",
-    "CONTAINER_DIRS",
+    "SCHEMA_VERSION", "ANALYSIS_VERSION", "TOOL_DIR", "CONFIG_NAME", "WORK_DIR", "MAX_SCAN_FILES", "MAX_FILE_BYTES",
+    "MAX_DIFF_LINES", "DEFAULT_BUDGET", "DIFF_FLAGS", "GENERATED_RE", "GENERATED_HEAD", "DEFAULT_TESTS",
+    "DEFAULT_IGNORE", "FRAMEWORK_CONFIG", "MIGRATION_PATTERNS", "CONFIG_EXT", "CONFIG_NAMES", "DOC_EXT", "LANG_BY_EXT",
+    "LAYER_HINTS", "CONTAINER_DIRS",
 ]
 
 
 SCHEMA_VERSION = 1
+# Part of the insight key. Bump it when a change to the analysis (parsers, mapping, edges, symbols) can change
+# context.json for the same diff, so insights written against the old analysis are reported stale, not valid.
+ANALYSIS_VERSION = 2
 TOOL_DIR = Path(__file__).resolve().parent.parent  # the skill folder
 CONFIG_NAME = ".explain-change.toml"
 WORK_DIR = ".explain-change"
