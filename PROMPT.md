@@ -4,7 +4,7 @@ Reference this file from `AGENTS.md` (or paste it into your agent):
 "To explain a change visually, follow ~/.agents/skills/explain-change/PROMPT.md".
 
 `<skill dir>` below is the folder that holds this file: `~/.agents/skills/explain-change` after
-`explain_change.py install`, or wherever you cloned it.
+the installer, or wherever you cloned it.
 
 ---
 

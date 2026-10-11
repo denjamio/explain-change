@@ -36,35 +36,48 @@ git diff / Azure DevOps PR + .explain-change.toml
 ## Quick start
 
 ```bash
-git clone <this repo> ~/src/explain-change        # any folder; install links to it
-python3 ~/src/explain-change/explain_change.py install
-cd <your repo> && git checkout <a feature branch>
+# macOS, Linux, WSL
+curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/install.py | python3 -
 ```
 
-Then ask your agent to "explain this change". The first time, also ask it to "configure explain-change for this
-repo" (see [Config](#config)).
+```powershell
+# Windows PowerShell
+irm https://raw.githubusercontent.com/denjamio/explain-change/main/install.py | py -3 -
+```
+
+Then, in any repository, ask your agent to "explain this change" or "explain PR 1234".
+
+The first time in a repository, also ask it to "configure explain-change for this repo" (see [Config](#config)).
+Update later with `explain-change update`.
 
 ## Requirements
 
 - Python 3.11+ and git, already installed. The script uses only the standard library and stops with a clear message
   on an older Python.
-- For Azure DevOps PRs: git 2.31+ and the `az` CLI with the `azure-devops` extension, logged in with `az login`
-  (see [Azure DevOps](#azure-devops)).
+- For Azure DevOps PRs: git 2.31+ and the `az` CLI with the `azure-devops` extension (see
+  [Azure DevOps](#azure-devops)).
 
 ## Install
 
-Clone this repository to any folder and run `install` from it. It sets up the skill for your agents and the
-`explain-change` command, and installs nothing else.
+The installer (`install.py`, the one-liner above) needs no git clone. It downloads the latest release
+(`EXPLAIN_CHANGE_VERSION=v0.1.0` picks one), keeps it in `~/.local/share/explain-change`
+(`%LOCALAPPDATA%\explain-change` on Windows) and runs `explain_change.py install` from there, which sets up the
+skill for your agents and the `explain-change` command, and installs nothing else.
 
 ```bash
-python3 explain_change.py install   # py -3 explain_change.py install on Windows
+explain-change update                  # the latest release, same installer
+explain-change update --version v0.1.0 # a given one
 ```
 
+To work on explain-change itself, clone this repository and run `python3 explain_change.py install` from the clone
+instead (`git pull` updates it; `update` refuses to replace a clone).
+
 - Creates `~/.agents/skills/explain-change` and `~/.claude/skills/explain-change` with links to the files the skill
-  runs on (`SKILL.md`, `CONFIGURE.md`, `PROMPT.md`, `explain_change.py`, `explainchange/`, `schemas/`, `template/`),
-  and puts `explain-change` in `~/.local/bin`. Tests and examples stay here, out of the agent's way.
+  runs on (`SKILL.md`, `CONFIGURE.md`, `PROMPT.md`, `explain_change.py`, `install.py`, `explainchange/`, `schemas/`,
+  `template/`), and puts `explain-change` in `~/.local/bin`; if that folder is not on your PATH, it prints the line
+  to add. Tests and examples stay out of the agent's way.
 - On Windows, symlinks need Developer Mode, so the skill is copied and `explain-change.cmd` calls the Python that ran
-  the install. Run `install` again after you update this folder.
+  the install. `explain-change update` refreshes the copy.
 - Running it again is safe: it replaces its own earlier installs. It leaves any other folder in place unless you add
   `--force`.
 
@@ -101,12 +114,8 @@ Without an agent, `pr` still renders the map with an automatic story built from 
 `explain-change pr --ado <id|!id|url>` explains a PR without checking it out. A URL pasted from the browser works,
 query and all.
 
-One-time setup on each machine:
-
-```bash
-az extension add --name azure-devops
-az login
-```
+It needs the `az` CLI with the `azure-devops` extension (`az extension add --name azure-devops`). When `az` has no
+session or it expired, explain-change runs `az login` itself, once, in the browser, and goes on.
 
 - **Metadata** (title, description, branches, links to each file in the PR) comes from `az repos pr show`. The
   organization and project are detected from the git remote. If they are not, run
@@ -117,12 +126,12 @@ az login
   merge base with its target, and says so in a note. This fallback needs the branch names, so it needs `az`.
 - **Authentication**: git first uses your own credentials (SSH key or credential manager), without prompting.
   On an HTTPS Azure DevOps remote that fails, it retries once with the `az login` token
-  (`az account get-access-token`), passed through the environment, never on the command line or stored. So
-  `az login` is enough, and nothing prompts or hangs when an agent runs the command.
+  (`az account get-access-token`), passed through the environment, never on the command line or stored. So `az`
+  is enough. git never prompts; the only interactive step is `az login`, when the session is missing or expired.
 - **Remote**: the one whose URL matches the PR's repository, else `origin`, else the only remote.
 - Fetched refs live under `refs/explain-change/pr-<id>/`, never touching your branches. Remove them with
   `git for-each-ref --format='%(refname)' refs/explain-change | xargs -n1 git update-ref -d`.
-- Timeouts: 60 s per `az` call, 10 min per fetch.
+- Timeouts: 60 s per `az` call, 5 min for `az login`, 10 min per fetch.
 
 ## Config
 

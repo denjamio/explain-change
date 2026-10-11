@@ -1,9 +1,13 @@
 """Commands and their edges: base resolution, uncommitted changes, Azure DevOps, install, generated files and
 determinism against the user's git config. Every repo is a throwaway one with an isolated git config."""
+import functools
+import importlib.util
+import io
 import json
 import os
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -199,6 +203,38 @@ class AdoTests(unittest.TestCase):
         self.assertIn("az devops configure", ec.az_hint("ERROR: --organization must be specified."))
 
 
+class AzLoginTests(unittest.TestCase):
+    """An expired or missing az session runs `az login` once and retries; other errors never do."""
+
+    def run_az(self, errors, login_ok=True):
+        results = [subprocess.CompletedProcess([], 1, "", e) if e else subprocess.CompletedProcess([], 0, "{}", "")
+                   for e in errors]
+        with mock.patch.object(ado, "_az", side_effect=results) as az, \
+             mock.patch.object(ado, "az_login", return_value=login_ok) as login:
+            p = ado._az_logged_in(["repos"], Path("."))
+        return p.returncode, az.call_count, login.call_count
+
+    def test_login_then_retry(self):
+        self.assertEqual(self.run_az(["ERROR: Please run 'az login' to setup account.", None]), (0, 2, 1))
+
+    def test_failed_login_does_not_retry(self):
+        self.assertEqual(self.run_az(["AADSTS700082: The refresh token has expired"], login_ok=False), (1, 1, 1))
+
+    def test_other_errors_do_not_login(self):
+        self.assertEqual(self.run_az(["ERROR: TF401180: The requested pull request was not found."]), (1, 1, 0))
+
+    def test_login_runs_once_per_command(self):
+        done = subprocess.CompletedProcess([], 0)
+        with mock.patch.dict(ado._login, {"tried": False}), \
+             mock.patch.object(ado.shutil, "which", return_value="/usr/bin/az"), \
+             mock.patch.object(ado.subprocess, "run", return_value=done) as run, \
+             mock.patch.object(ado.sys, "stderr"):
+            self.assertTrue(ado.az_login(Path(".")))
+            self.assertFalse(ado.az_login(Path(".")))
+        self.assertEqual(run.call_count, 1)
+        self.assertIn("--allow-no-subscriptions", run.call_args.args[0])
+
+
 class AdoFetchTests(unittest.TestCase):
     """git authenticates first with the user's credentials; an HTTPS Azure DevOps remote retries with az's token."""
 
@@ -279,6 +315,60 @@ class InsightCacheTests(unittest.TestCase):
         (self.work / "insight.json").write_text("{ half written", encoding="utf-8")
         self.assertEqual(self.status("a"), "invalid")
         self.assertEqual((self.work / "insight.json").read_text(), "{ half written")
+
+
+class InstallerTests(unittest.TestCase):
+    """install.py end to end, with the download served from this folder: install, then update in place."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.home = Path(tmp.name)
+        spec = importlib.util.spec_from_file_location("installer", ROOT / "install.py")
+        self.installer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.installer)
+
+    def tarball(self, version: str) -> bytes:
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+            for name in cli.SKILL_FILES:
+                tar.add(ROOT / name, f"explain-change-{version}/{name}",
+                        filter=lambda t: None if "__pycache__" in t.name else t)
+        return buf.getvalue()
+
+    def install(self, version: str) -> int:
+        env = {"HOME": str(self.home), "USERPROFILE": str(self.home), "LOCALAPPDATA": str(self.home / "local"),
+               "XDG_DATA_HOME": str(self.home / "share"), "EXPLAIN_CHANGE_VERSION": f"v{version}"}
+        quiet = functools.partial(subprocess.call, stdout=subprocess.DEVNULL)
+        with mock.patch.dict(os.environ, env), mock.patch("sys.stdout", io.StringIO()), \
+             mock.patch.object(self.installer.subprocess, "call", side_effect=quiet), \
+             mock.patch.object(self.installer, "get", return_value=self.tarball(version)):
+            return self.installer.main()
+
+    def test_install_then_update(self):
+        self.assertEqual(self.install("0.1.0"), 0)
+        target = self.home / "share" / "explain-change"
+        self.assertEqual((target / ".release").read_text().strip(), "v0.1.0")
+        skill = self.home / ".claude" / "skills" / "explain-change"
+        self.assertTrue((skill / "SKILL.md").exists())
+        self.assertEqual(self.install("0.1.1"), 0)  # update: same folder, links still valid
+        self.assertEqual((target / ".release").read_text().strip(), "v0.1.1")
+        self.assertTrue((skill / "SKILL.md").exists())
+        self.assertEqual([p.name for p in target.parent.iterdir()], [target.name])  # nothing left behind
+
+    def test_update_refuses_a_git_clone(self):
+        with self.assertRaises(ec.Fail) as e:
+            cli.cmd_update(mock.Mock(version=None))  # this folder is a clone
+        self.assertIn("git pull", str(e.exception))
+
+    def test_rejects_paths_out_of_the_folder(self):
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+            info = tarfile.TarInfo("../evil")
+            tar.addfile(info, io.BytesIO(b""))
+        with mock.patch.object(self.installer, "get", return_value=buf.getvalue()), self.assertRaises(SystemExit):
+            self.installer.download("v0", self.home)
+        self.assertFalse((self.home.parent / "evil").exists())
 
 
 class InstallTests(unittest.TestCase):
