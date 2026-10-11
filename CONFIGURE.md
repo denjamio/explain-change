@@ -64,7 +64,7 @@ A component is a part with one responsibility that a reviewer would name in a se
 
 ```bash
 explain-change check
-explain-change pr --base <merge-base of a recent merged PR>   # or check out a recent PR branch
+explain-change local --base <merge-base of a recent merged PR>   # or explain-change pr <id> of a recent PR
 ```
 
 Open the HTML. A good config shows a typical PR as 3–8 boxes with names the author would use. If a change spreads

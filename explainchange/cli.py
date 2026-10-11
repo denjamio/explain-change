@@ -1,6 +1,7 @@
 """explain-change: architecture-first visual explanation of a code change.
 
-    explain-change pr [--base REF] [--include-uncommitted] [--ado ID|URL] [--spec CHANGE_ID]
+    explain-change local [--base REF] [--include-uncommitted] [--spec CHANGE_ID]
+    explain-change pr ID|URL [--spec CHANGE_ID]
     explain-change render | validate | init | check | update | install
 """
 from __future__ import annotations
@@ -20,12 +21,13 @@ from .constants import (
 )
 from .util import Fail, git_paths, lang_of
 from .config import Mapper, STRUCTURE_RULES, detect_structure, load_config, structure_layers
+from .ado import require_ado
 from .collector import collect, ensure_workdir, repo_root
 from .digest import build_digest
 from .render import load_insight, write_render
 
 __all__ = [
-    "load_context", "print_insight_status", "cmd_pr", "cmd_render", "cmd_validate", "toml_str", "cmd_init",
+    "load_context", "print_insight_status", "cmd_explain", "cmd_render", "cmd_validate", "toml_str", "cmd_init",
     "OWNERSHIP_HINTS", "draft_config", "cmd_check", "INSTALL_MARKER", "SKILL_FILES", "install_skill", "install_cli",
     "cmd_install", "cmd_update", "main", "run",
 ]
@@ -34,10 +36,10 @@ __all__ = [
 def load_context(root: Path) -> dict:
     path = root / WORK_DIR / "context.json"
     if not path.exists():
-        raise Fail("No context yet. Run `explain-change pr` first.")
+        raise Fail("No context yet. Run `explain-change local` or `explain-change pr <id>` first.")
     ctx = json.loads(path.read_text(encoding="utf-8"))
     if ctx.get("version") != SCHEMA_VERSION:
-        raise Fail("The collected context comes from another version. Run `explain-change pr` again.")
+        raise Fail("The collected context comes from another version. Run `explain-change local` or `pr` again.")
     return ctx
 
 
@@ -53,7 +55,8 @@ def print_insight_status(status: str, errs: list[str]):
             print(f"    - {e}")
 
 
-def cmd_pr(args) -> int:
+def cmd_explain(args) -> int:
+    """`local` (args.pr is None) or `pr`: collect the change, write context and digest, render."""
     root = repo_root()
     cfg, cfg_errs = load_config(root)
     if cfg_errs:
@@ -64,7 +67,9 @@ def cmd_pr(args) -> int:
               "Ask your agent to configure explain-change (CONFIGURE.md), or run `explain-change init`.",
               file=sys.stderr)
     work = ensure_workdir(root)
-    ctx = collect(root, cfg, args.base, args.include_uncommitted, args.ado, args.spec)
+    if args.pr:
+        require_ado(root, args.pr)
+    ctx = collect(root, cfg, args.base, args.include_uncommitted, args.pr, args.spec)
     (work / "context.json").write_text(json.dumps(ctx, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
     digest = build_digest(ctx, args.budget or cfg["budget"])
     (work / "digest.md").write_text(digest, encoding="utf-8", newline="\n")
@@ -292,15 +297,19 @@ def main(argv=None) -> int:
     ap.add_argument("--version", action="version", version=f"explain-change {VERSION} "
                     f"(analysis {ANALYSIS_VERSION}, schema {SCHEMA_VERSION}) · {TOOL_DIR}")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("pr", help="collect a change (local branch or Azure DevOps PR), write digest, render")
+    change = argparse.ArgumentParser(add_help=False)  # options shared by `local` and `pr`
+    change.add_argument("--spec", action="append", metavar="CHANGE_ID",
+                        help="also explain this OpenSpec change when the diff does not touch it (repeatable)")
+    change.add_argument("--budget", type=int,
+                        help=f"digest size in chars (default: project.budget, else {DEFAULT_BUDGET})")
+    change.add_argument("--out", help="output HTML path")
+    p = sub.add_parser("local", parents=[change], help="explain the current branch: write the digest, render")
     p.add_argument("--base", help="base ref (default: project.base, else origin/HEAD, main, master or develop)")
     p.add_argument("--include-uncommitted", action="store_true", help="diff the working tree, incl. untracked files")
-    p.add_argument("--ado", metavar="ID|URL", help="Azure DevOps PR id or URL (fetches refs/pull/<id>/merge)")
-    p.add_argument("--spec", action="append", metavar="CHANGE_ID",
-                   help="also explain this OpenSpec change when the diff does not touch it (repeatable)")
-    p.add_argument("--budget", type=int, help=f"digest size in chars (default: project.budget, else {DEFAULT_BUDGET})")
-    p.add_argument("--out", help="output HTML path")
-    p.set_defaults(fn=cmd_pr)
+    p.set_defaults(fn=cmd_explain, pr=None)
+    p = sub.add_parser("pr", parents=[change], help="explain an Azure DevOps PR: write the digest, render")
+    p.add_argument("pr", metavar="ID|URL", help="the PR id, !id or URL (Azure DevOps, detected from it or the remote)")
+    p.set_defaults(fn=cmd_explain, base=None, include_uncommitted=False)
     p = sub.add_parser("render", help="validate insight.json and render the HTML")
     p.add_argument("--out", help="output HTML path")
     p.add_argument("--force", action="store_true", help="exit 0 even if the insight is invalid (renders data-only)")

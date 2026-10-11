@@ -16,15 +16,15 @@ The page has three parts:
 3. **Design decisions**: what was chosen, why, and the main alternative.
 
 Color encodes the delta (green new, blue changed, gray removed). A dependency that breaks a `[rules]` entry is a red
-arrow. The page carries only the code excerpts it shows. With `--ado`, each file reference also links to the file in
-the Azure DevOps PR.
+arrow. The page carries only the code excerpts it shows. For an Azure DevOps PR, each file reference also links to the
+file in the PR.
 
 The script does the deterministic work and works without an agent. With an agent, the agent only writes a small,
 validated `insight.json` (~1–2k tokens).
 
 ```
 git diff / Azure DevOps PR + .explain-change.toml
-        │  explain-change pr
+        │  explain-change local | pr <id>
         ▼
 .explain-change/context.json   full data (no LLM)
 .explain-change/digest.md      ≈3k-token summary for the agent
@@ -86,33 +86,34 @@ instead (`git pull` updates it; `update` refuses to replace a clone).
 ```bash
 explain-change init                    # once per repo: draft .explain-change.toml, then edit it
 explain-change check                   # validate config, list unmapped files
-explain-change pr                      # branch vs the base (--base <ref> to override)
-explain-change pr --include-uncommitted
-explain-change pr --ado 1234           # Azure DevOps PR: id, !id or the PR URL
-explain-change pr --spec add-2fa       # also an OpenSpec change the branch implements without touching it
+explain-change local                   # current branch vs the base (--base <ref> to override)
+explain-change local --include-uncommitted
+explain-change pr 1234                 # Azure DevOps PR: id, !id or the PR URL
+explain-change local --spec add-2fa    # also an OpenSpec change the branch implements without touching it
 explain-change render                  # after writing or fixing insight.json
 explain-change validate                # check insight.json without rendering
 explain-change --version               # version, analysis version and where it runs from
 ```
 
-- Sources: a local branch (any git host) or an Azure DevOps PR. GitHub and GitLab PRs work through their local
-  branch (`gh pr checkout 123 && explain-change pr`); there is no `--github` mode yet.
+- Sources: `local` is the current branch (any git host); `pr <id|url>` is an Azure DevOps PR, detected from the
+  URL or the repository's remotes. GitHub and GitLab PRs work through their local branch
+  (`gh pr checkout 123 && explain-change local`).
 - The base is `--base`, else `project.base`, else the first that exists of `origin/HEAD`, `origin/main`,
   `origin/master`, `main`, `master`, `origin/develop` and `develop`.
-- `pr` and `render` write to `.explain-change/out/<branch>.html`; `--out <path>` writes elsewhere. The first `pr`
-  adds `/.explain-change/` to `.git/info/exclude`, so the work folder never shows in `git status`.
-- `pr` and `check` exit with 2 when `.explain-change.toml` has errors, and list them.
+- `local`, `pr` and `render` write to `.explain-change/out/<branch>.html`; `--out <path>` writes elsewhere. The
+  first run adds `/.explain-change/` to `.git/info/exclude`, so the work folder never shows in `git status`.
+- `local`, `pr` and `check` exit with 2 when `.explain-change.toml` has errors, and list them.
 - `render` exits with 1 when the insight is invalid. `render --force` exits with 0 and renders the data-only page.
 
 With an agent, ask it to "explain this change". Agents with skill support follow `SKILL.md`; any other agent
 follows `PROMPT.md` (reference it from `AGENTS.md`).
 
-Without an agent, `pr` still renders the map with an automatic story built from the dependency changes.
+Without an agent, `local` and `pr` still render the map with an automatic story built from the dependency changes.
 
 ## Azure DevOps
 
-`explain-change pr --ado <id|!id|url>` explains a PR without checking it out. A URL pasted from the browser works,
-query and all.
+`explain-change pr <id|!id|url>` explains a PR without checking it out. A URL pasted from the browser works, query
+and all. Azure DevOps is detected from the URL or, for an id, from the repository's remotes; there is no flag.
 
 It needs the `az` CLI with the `azure-devops` extension (`az extension add --name azure-devops`). When `az` has no
 session or it expired, explain-change runs `az login` itself, once, in the browser, and goes on.
@@ -142,7 +143,7 @@ session or it expired, explain-change runs `az login` itself, once, in the brows
 | `project.name` | Shown in the report. Default: the repository folder name. |
 | `project.direction` | One or two sentences on the intended architecture. The agent reads it as context for the story and the decisions. |
 | `project.lang` | Report language: `en` (default) or `es`. |
-| `project.base` | Default base ref for `pr`. |
+| `project.base` | Default base ref for `local`. |
 | `project.budget` | Digest size in characters (2000–100000, default 12000 ≈ 3k tokens). `--budget` overrides it. |
 | `[[layers]]` | Diagram lanes, drawn in the listed order from top to bottom (for example web first, core last). Name and split them the way your team talks about the app. The order does not define allowed dependencies: `[rules]` does. |
 | `[rules] allow` | Allowed dependency directions (`"a -> b"`, layer or component ids). When present, any other edge between layers is a violation. |
@@ -215,7 +216,7 @@ Unverified steps are drawn dashed with a `?`.
   pinned (prefixes, algorithm, rename detection), so a user's git config cannot change the result, and line endings
   in the config do not change the key.
 - The insight is keyed by `sha256(diff + config + schema version + --spec ids + analysis version)`. If nothing
-  changed, `pr` reports `insight: valid ✓` and the agent stops (0 tokens). `ANALYSIS_VERSION` in
+  changed, `local` or `pr` reports `insight: valid ✓` and the agent stops (0 tokens). `ANALYSIS_VERSION` in
   `explainchange/constants.py` goes up whenever the analysis can draw a different map for the same diff, so an
   insight written against the old map is reported stale.
 - Every accepted insight is also kept as `.explain-change/insights/<key>.json`. Going back to a PR or branch that

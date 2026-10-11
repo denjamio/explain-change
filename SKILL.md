@@ -13,10 +13,10 @@ it is built this way. **Never read the full diff**: the digest already selects w
 
 1. From the repository root, collect the change the user asked for:
    ```bash
-   explain-change pr                      # current branch vs the base (--base <ref> to override)
-   explain-change pr --include-uncommitted
-   explain-change pr --ado <id|url>       # Azure DevOps PR
-   explain-change pr --spec <change-id>   # add an OpenSpec change that the diff implements but does not touch
+   explain-change local                   # current branch vs the base (--base <ref> to override)
+   explain-change local --include-uncommitted
+   explain-change pr <id|url>             # an Azure DevOps PR, by id or URL
+   explain-change local --spec <change-id>  # add an OpenSpec change the diff implements but does not touch
    ```
    OpenSpec changes inside the diff are detected automatically. If `explain-change` is not on PATH, run
    `python3 <this skill dir>/explain_change.py …` (`py -3` on Windows).

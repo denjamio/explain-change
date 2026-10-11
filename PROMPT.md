@@ -12,9 +12,9 @@ You produce a visual explanation of a code change: what it does, where it sits i
 flows and why it is built this way. It is not a review. A script does all structural work; you only write
 `.explain-change/insight.json`. Do not read the whole diff.
 
-1. From the repository root, run `explain-change pr` (options: `--base <ref>`, `--include-uncommitted`,
-   `--ado <id|url>`, `--spec <openspec-change-id>`). If the command is not on PATH, run
-   `python3 <skill dir>/explain_change.py pr`.
+1. From the repository root, run `explain-change local` for the current branch (options: `--base <ref>`,
+   `--include-uncommitted`), or `explain-change pr <id|url>` for an Azure DevOps PR. Both take
+   `--spec <openspec-change-id>`. If the command is not on PATH, run `python3 <skill dir>/explain_change.py …`.
 2. If it prints `insight: valid ✓`, stop and report the HTML path.
 3. Read `.explain-change/digest.md`.
 4. Write `.explain-change/insight.json` in the shape and with the rules under `## Task` in the digest. Text quoted
