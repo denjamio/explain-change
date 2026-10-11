@@ -232,9 +232,10 @@ Unverified steps are drawn dashed with a `?`.
 
 ## Code layout
 
-`explain_change.py` is the command. The code is the `explainchange/` package, one module per pipeline stage:
-`config` (read or infer `.explain-change.toml`, map paths to components) → `diff` → `deps` (references and the
-dependency graph) → `openspec` → `ado` (Azure DevOps PRs through git and `az`) → `collector` (context.json) → `insight` (validation and limits) → `digest`
+`explain_change.py` is the command and `install.py` the standalone installer. The code is the `explainchange/`
+package, one module per pipeline stage: `config` (read or infer `.explain-change.toml`, map paths to components) →
+`diff` → `deps` (references and the dependency graph) → `openspec` → `ado` (Azure DevOps PRs through git and `az`)
+→ `collector` (context.json) → `insight` (validation and limits) → `digest`
 (digest.md and the agent's rules, built from those limits) → `render` (HTML from `template/`), wired into commands
 by `cli`. No module imports a later one, and each module lists its public names in `__all__`, which the package
 re-exports; `tests/test_package.py` checks both.

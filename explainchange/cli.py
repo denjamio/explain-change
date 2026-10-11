@@ -1,7 +1,7 @@
 """explain-change: architecture-first visual explanation of a code change.
 
     explain-change pr [--base REF] [--include-uncommitted] [--ado ID|URL] [--spec CHANGE_ID]
-    explain-change render | validate | init | check | install
+    explain-change render | validate | init | check | update | install
 """
 from __future__ import annotations
 
