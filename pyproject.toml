@@ -1,0 +1,9 @@
+# Lint settings only: explain-change has no dependencies and is not packaged.
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+# Long lines are mostly data (regexes, fixture strings, the digest's prompt text).
+ignore = ["E501"]
