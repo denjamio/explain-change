@@ -12,6 +12,12 @@ from .constants import (
 )
 from .util import Fail, camelize, git, glob_re, lang_of, matches_any, slugify
 
+__all__ = [
+    "parse_flow_step", "load_config", "normalize_config", "RAILS_KINDS", "RAILS_UI", "STRUCTURE_LAYERS",
+    "STRUCTURE_RULES", "DJANGO_SHARED", "DJANGO_WEB", "detect_structure", "rails_components", "django_components",
+    "is_shared_package", "infer_components", "structure_layers", "infer_config", "Mapper",
+]
+
 
 def parse_flow_step(step: str) -> dict | None:
     m = re.match(r"^\s*([\w.-]+)\s*->\s*([\w.-]+)\s*(?::\s*(.*))?$", step)
@@ -140,94 +146,121 @@ DJANGO_WEB = {"api", "apis", "web", "frontend", "gateway", "graphql"}
 
 
 def detect_structure(files: list[str]) -> dict:
-    """Framework-aware component guess, the draft for `init`. Rails: one component per app/<kind>, big kinds split by
-    namespace, presentation merged into "ui"; Django: one component per app."""
+    """Framework-aware component guess, the draft for `init`: {"kind": rails | django | generic, "components"}."""
     src = [f for f in files if not matches_any(f, DEFAULT_IGNORE) and not matches_any(f, DEFAULT_TESTS)]
-    is_rails = "config/application.rb" in files or any(f.startswith("app/models/") for f in src) and "Gemfile" in files
-    comps: list[dict] = []
+    has_models = any(f.startswith("app/models/") for f in src)
+    is_rails = "config/application.rb" in files or (has_models and "Gemfile" in files)
     if is_rails:
-        by_kind: dict[str, list[str]] = {}
-        for f in src:
+        return {"kind": "rails", "components": rails_components(src)}
+    django = django_components(files, src)
+    if django is not None:
+        return {"kind": "django", "components": django}
+    return {"kind": "generic", "components": infer_components(files)}
+
+
+def rails_components(src: list[str]) -> list[dict]:
+    """One component per app/<kind>, big kinds split by namespace, presentation merged into "ui", plus lib, packs
+    and engines."""
+    comps: list[dict] = []
+    by_kind: dict[str, list[str]] = {}
+    for f in src:
+        parts = f.split("/")
+        if len(parts) >= 3 and parts[0] == "app" and (lang_of(f) or parts[1] == "views"):
+            by_kind.setdefault(parts[1], []).append(f)
+    ui = [k for k in RAILS_UI if k in by_kind]
+    if ui:
+        comps.append({"id": "ui", "layer": "web", "paths": [f"app/{k}/**" for k in ui],
+                      "desc": "Views, components, helpers and JS"})
+    for kind in sorted(by_kind, key=lambda k: (list(RAILS_KINDS).index(k) if k in RAILS_KINDS else 99, k)):
+        layer = RAILS_KINDS.get(kind, "other")
+        if layer is None or kind in RAILS_UI:
+            continue
+        subs: dict[str, int] = {}
+        for f in by_kind[kind]:
             parts = f.split("/")
-            if len(parts) >= 3 and parts[0] == "app" and (lang_of(f) or parts[1] == "views"):
-                by_kind.setdefault(parts[1], []).append(f)
-        ui = [k for k in RAILS_UI if k in by_kind]
-        if ui:
-            comps.append({"id": "ui", "layer": "web", "paths": [f"app/{k}/**" for k in ui], "desc": "Views, components, helpers and JS"})
-        for kind in sorted(by_kind, key=lambda k: (list(RAILS_KINDS).index(k) if k in RAILS_KINDS else 99, k)):
-            layer = RAILS_KINDS.get(kind, "other")
-            if layer is None or kind in RAILS_UI:
-                continue
-            subs: dict[str, int] = {}
-            for f in by_kind[kind]:
-                parts = f.split("/")
-                if len(parts) > 3 and parts[2] != "concerns":
-                    subs[parts[2]] = subs.get(parts[2], 0) + 1
-            # Split a kind by namespace only when it is big and the namespace carries real weight (max 6 per kind).
-            big = sorted(sorted((sub for sub, n in subs.items() if n >= 8), key=lambda x: (-subs[x], x))[:6]) \
-                if len(by_kind[kind]) >= 30 else []
-            for sub in big:  # a namespace with its own weight becomes its own component
-                # Named after the concept, not the Ruby syntax: Family = app/models/family.rb + app/models/family/**.
-                const, label = camelize(sub), sub.replace("_", " ").capitalize()
-                root = f"app/{kind}/{sub}.rb"
-                comps.append({"id": slugify(f"{kind}-{sub}").lower().replace("_", "-"), "layer": layer,
-                              "name": label if kind == "models" else f"{label} {kind}",
-                              "paths": ([root] if root in by_kind[kind] else []) + [f"app/{kind}/{sub}/**"],
-                              "desc": f"{const} and the {const}:: namespace" if kind == "models" else f"{const}:: {kind}"})
-            paths = [f"app/{kind}/**"] + (["config/routes.rb"] if kind == "controllers" and "config/routes.rb" in src else [])
-            comps.append({"id": kind.replace("_", "-"), "layer": layer, "paths": paths, "desc": ""})
-        if any(f.startswith("lib/") and f.endswith(".rb") for f in src):
-            comps.append({"id": "lib", "layer": "infrastructure", "paths": ["lib/**"], "desc": ""})
-        for container in ("packs", "engines", "components"):
-            packs = sorted({f.split("/")[1] for f in src if f.startswith(container + "/") and f.count("/") >= 2})
-            for pack in packs:
-                comps.append({"id": slugify(pack).lower().replace("_", "-"), "layer": "other",
-                              "paths": [f"{container}/{pack}/**"], "desc": f"{container[:-1]} {pack}"})
-        return {"kind": "rails", "components": comps}
+            if len(parts) > 3 and parts[2] != "concerns":
+                subs[parts[2]] = subs.get(parts[2], 0) + 1
+        # Split a kind by namespace only when it is big and the namespace carries real weight (max 6 per kind).
+        big = sorted(sorted((sub for sub, n in subs.items() if n >= 8), key=lambda x: (-subs[x], x))[:6]) \
+            if len(by_kind[kind]) >= 30 else []
+        for sub in big:  # a namespace with its own weight becomes its own component
+            # Named after the concept, not the Ruby syntax: Family = app/models/family.rb + app/models/family/**.
+            const, label = camelize(sub), sub.replace("_", " ").capitalize()
+            root = f"app/{kind}/{sub}.rb"
+            comps.append({"id": slugify(f"{kind}-{sub}").lower().replace("_", "-"), "layer": layer,
+                          "name": label if kind == "models" else f"{label} {kind}",
+                          "paths": ([root] if root in by_kind[kind] else []) + [f"app/{kind}/{sub}/**"],
+                          "desc": f"{const} and the {const}:: namespace" if kind == "models" else f"{const}:: {kind}"})
+        with_routes = kind == "controllers" and "config/routes.rb" in src
+        paths = [f"app/{kind}/**"] + (["config/routes.rb"] if with_routes else [])
+        comps.append({"id": kind.replace("_", "-"), "layer": layer, "paths": paths, "desc": ""})
+    if any(f.startswith("lib/") and f.endswith(".rb") for f in src):
+        comps.append({"id": "lib", "layer": "infrastructure", "paths": ["lib/**"], "desc": ""})
+    for container in ("packs", "engines", "components"):
+        packs = sorted({f.split("/")[1] for f in src if f.startswith(container + "/") and f.count("/") >= 2})
+        for pack in packs:
+            comps.append({"id": slugify(pack).lower().replace("_", "-"), "layer": "other",
+                          "paths": [f"{container}/{pack}/**"], "desc": f"{container[:-1]} {pack}"})
+    return comps
+
+
+def django_components(files: list[str], src: list[str]) -> list[dict] | None:
+    """One component per Django app, plus the project package and shared packages; None when this is not Django."""
     py_dirs = {posixpath.dirname(f) for f in src if f.endswith(".py")}
     # A Django app is a package with apps.py, models or migrations (INSTALLED_APPS entries without apps.py included).
     app_markers = ("apps.py", "models.py", "views.py", "admin.py")
     app_dirs = sorted({posixpath.dirname(f) for f in files if posixpath.basename(f) in app_markers}
                       | {posixpath.dirname(posixpath.dirname(f)) for f in files
                          if f.endswith("/models/__init__.py") or f.endswith("/migrations/__init__.py")})
-    settings_dirs = sorted({posixpath.dirname(f) for f in src if posixpath.basename(f) in ("settings.py", "wsgi.py", "asgi.py")}
+    project_files = ("settings.py", "wsgi.py", "asgi.py")
+    settings_dirs = sorted({posixpath.dirname(f) for f in src if posixpath.basename(f) in project_files}
                            | {posixpath.dirname(posixpath.dirname(f)) for f in src if "/settings/" in f})
     app_dirs = [d for d in app_dirs if d and d not in settings_dirs]
-    if app_dirs and any(posixpath.basename(f) == "manage.py" or "/settings" in f for f in files):
-        project = next((d for d in settings_dirs if d), None)
-        # Sibling packages of the apps that are not apps themselves (lib/, utils/, integrations/) are components too.
-        # Nested apps: a package grouping many small apps (integrations/<x>) is one component; a few keep their own.
-        nested = {}
-        for d in app_dirs:
-            parent = next((o for o in app_dirs if d.startswith(o + "/")), None) or posixpath.dirname(d)
-            nested.setdefault(parent, []).append(d)
-        collapsed = {parent for parent, kids in nested.items() if len(kids) >= 6 and parent not in ("", project)}
-        app_dirs = [d for d in app_dirs if not any(d.startswith(c + "/") for c in collapsed)]
-        top_apps = [d for d in app_dirs if not any(d.startswith(o + "/") for o in app_dirs)]
-        parents = {posixpath.dirname(d) for d in top_apps}
-        packages = sorted(set(d for d in py_dirs if d and posixpath.dirname(d) in parents and d not in app_dirs and d != project
-                              and not any(d.startswith(a + "/") for a in app_dirs)
-                              and posixpath.basename(d) not in ("tests", "migrations", "templatetags", "management"))
-                          | collapsed)
-        used: set[str] = set()
-        for d in sorted(app_dirs + packages, key=lambda d: (d.count("/"), d)):
-            label = posixpath.basename(d) or "app"
-            cid = slugify(label).lower().replace("_", "-")
-            while cid in used:
-                cid += "-x"
-            used.add(cid)
-            is_app = d in app_dirs
-            layer = "web" if label in DJANGO_WEB else "shared" if label in DJANGO_SHARED or not is_app else "apps"
-            desc = f"Django app {label}" if is_app else f"{len(nested.get(d, []))} apps under {label}/" if d in collapsed else f"package {label}"
-            comps.append({"id": cid, "layer": layer, "paths": [f"{d}/**"], "desc": desc})
-        if any(f.startswith("templates/") for f in files):
-            comps.append({"id": "templates", "layer": "web", "paths": ["templates/**"], "desc": "Project-level templates"})
-        if project:
-            # Only the project's own modules: apps nested inside the project package keep their own component.
-            comps.insert(0, {"id": "project", "layer": "web", "paths": [f"{project}/*.py", f"{project}/settings/**"],
-                             "desc": "Settings, root URLs, WSGI/ASGI"})
-        return {"kind": "django", "components": comps}
-    return {"kind": "generic", "components": infer_components(files)}
+    if not app_dirs or not any(posixpath.basename(f) == "manage.py" or "/settings" in f for f in files):
+        return None
+    comps: list[dict] = []
+    project = next((d for d in settings_dirs if d), None)
+    # Sibling packages of the apps that are not apps themselves (lib/, utils/, integrations/) are components too.
+    # Nested apps: a package grouping many small apps (integrations/<x>) is one component; a few keep their own.
+    nested = {}
+    for d in app_dirs:
+        parent = next((o for o in app_dirs if d.startswith(o + "/")), None) or posixpath.dirname(d)
+        nested.setdefault(parent, []).append(d)
+    collapsed = {parent for parent, kids in nested.items() if len(kids) >= 6 and parent not in ("", project)}
+    app_dirs = [d for d in app_dirs if not any(d.startswith(c + "/") for c in collapsed)]
+    top_apps = [d for d in app_dirs if not any(d.startswith(o + "/") for o in app_dirs)]
+    parents = {posixpath.dirname(d) for d in top_apps}
+    packages = sorted({d for d in py_dirs if is_shared_package(d, parents, app_dirs, project)} | collapsed)
+    used: set[str] = set()
+    for d in sorted(app_dirs + packages, key=lambda d: (d.count("/"), d)):
+        label = posixpath.basename(d) or "app"
+        cid = slugify(label).lower().replace("_", "-")
+        while cid in used:
+            cid += "-x"
+        used.add(cid)
+        is_app = d in app_dirs
+        layer = "web" if label in DJANGO_WEB else "shared" if label in DJANGO_SHARED or not is_app else "apps"
+        if is_app:
+            desc = f"Django app {label}"
+        elif d in collapsed:
+            desc = f"{len(nested.get(d, []))} apps under {label}/"
+        else:
+            desc = f"package {label}"
+        comps.append({"id": cid, "layer": layer, "paths": [f"{d}/**"], "desc": desc})
+    if any(f.startswith("templates/") for f in files):
+        comps.append({"id": "templates", "layer": "web", "paths": ["templates/**"], "desc": "Project-level templates"})
+    if project:
+        # Only the project's own modules: apps nested inside the project package keep their own component.
+        comps.insert(0, {"id": "project", "layer": "web", "paths": [f"{project}/*.py", f"{project}/settings/**"],
+                         "desc": "Settings, root URLs, WSGI/ASGI"})
+    return comps
+
+
+def is_shared_package(d: str, app_parents: set[str], app_dirs: list[str], project: str | None) -> bool:
+    """A Python package next to the apps that is not an app, nor inside one, nor the project package."""
+    return (bool(d) and posixpath.dirname(d) in app_parents and d not in app_dirs and d != project
+            and not any(d.startswith(a + "/") for a in app_dirs)
+            and posixpath.basename(d) not in ("tests", "migrations", "templatetags", "management"))
 
 
 def infer_components(files: list[str]) -> list[dict]:
@@ -258,7 +291,8 @@ def infer_components(files: list[str]) -> list[dict]:
 
 def structure_layers(structure: dict) -> list[tuple[str, str]]:
     used = {c["layer"] for c in structure["components"]}
-    catalog = STRUCTURE_LAYERS.get(structure["kind"]) or [(lid, name) for lid, name, _ in LAYER_HINTS] + [("other", "Other")]
+    generic = [(lid, name) for lid, name, _ in LAYER_HINTS] + [("other", "Other")]
+    catalog = STRUCTURE_LAYERS.get(structure["kind"]) or generic
     return [(lid, name) for lid, name in catalog if lid in used]
 
 

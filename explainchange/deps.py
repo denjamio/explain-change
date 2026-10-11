@@ -5,13 +5,21 @@ import fnmatch
 import json
 import posixpath
 import re
+from typing import Any, NamedTuple
 
 from .util import camelize, lang_of, line_index, singularize, strip_jsonc
 from .config import Mapper
 
+__all__ = [
+    "TS_RE", "PY_IMPORT", "PY_FROM", "RB_REQ", "RB_DECL", "RB_ASSOC", "RB_CLASS_NAME", "RB_ACRONYM", "RB_INFLECT",
+    "PY_DJ_MODEL", "PY_GET_MODEL", "PY_DOTTED_CALL", "PY_APP_LABEL", "RB_CONST", "RB_STR", "CS_USING", "CS_NS",
+    "CSPROJ_REF", "Ref", "extract", "SideIndex", "load_tsconfigs", "build_edges", "rule_violation", "SYMBOL_RES",
+    "ENDPOINT_RES", "extract_symbols",
+]
 
-TS_RE = re.compile(r"""(?:\bimport\s+(?:type\s+)?(?:[\w*{}\s,$]+?\s+from\s+)?|\bexport\s+(?:type\s+)?[\w*{}\s,$]*?\s*from\s+|\brequire\s*\(\s*|\bimport\s*\(\s*)['"]([^'"\n]+)['"]""")
-PY_IMPORT = re.compile(r"^[ \t]*import[ \t]+([\w.]+(?:[ \t]+as[ \t]+\w+)?(?:[ \t]*,[ \t]*[\w.]+(?:[ \t]+as[ \t]+\w+)?)*)", re.M)
+
+TS_RE = re.compile(r"""(?:\bimport\s+(?:type\s+)?(?:[\w*{}\s,$]+?\s+from\s+)?|\bexport\s+(?:type\s+)?[\w*{}\s,$]*?\s*from\s+|\brequire\s*\(\s*|\bimport\s*\(\s*)['"]([^'"\n]+)['"]""")  # noqa: E501
+PY_IMPORT = re.compile(r"^[ \t]*import[ \t]+([\w.]+(?:[ \t]+as[ \t]+\w+)?(?:[ \t]*,[ \t]*[\w.]+(?:[ \t]+as[ \t]+\w+)?)*)", re.M)  # noqa: E501
 PY_FROM = re.compile(r"^[ \t]*from[ \t]+(\.*[\w.]*)[ \t]+import[ \t]+(\([^)]*\)|[^\n#;]+)", re.M)
 RB_REQ = re.compile(r"""^[ \t]*require(_relative)?[ \t(]+['"]([^'"]+)['"]""", re.M)
 RB_DECL = re.compile(r"^(\s*)(?:module|class)\s+((?:::)?[A-Z]\w*(?:::[A-Z]\w*)*)(.*)$")
@@ -19,21 +27,29 @@ RB_ASSOC = re.compile(r"^\s*(has_many|has_one|belongs_to|has_and_belongs_to_many
 RB_CLASS_NAME = re.compile(r"""class_name:?\s*(?:=>\s*)?['"]((?:::)?[A-Z][\w:]*)['"]""")
 RB_ACRONYM = re.compile(r"""\.acronym\s*\(?\s*['"]([A-Za-z0-9]+)['"]""")
 RB_INFLECT = re.compile(r"""['"]([a-z0-9_]+)['"]\s*=>\s*['"]([A-Z][A-Za-z0-9]*)['"]""")
-PY_DJ_MODEL = re.compile(r"""\b(?:ForeignKey|OneToOneField|ManyToManyField|ForeignObject)\(\s*(?:to\s*=\s*)?['"]([\w.]+)['"]""")
+PY_DJ_MODEL = re.compile(r"""\b(?:ForeignKey|OneToOneField|ManyToManyField|ForeignObject)\(\s*(?:to\s*=\s*)?['"]([\w.]+)['"]""")  # noqa: E501
 PY_GET_MODEL = re.compile(r"""\bget_model\(\s*['"](\w+)(?:\.(\w+)['"]|['"]\s*,\s*['"](\w+)['"])""")
-PY_DOTTED_CALL = re.compile(r"""\b(?:include|import_string|import_module|send_task|autodiscover_tasks)\(\s*\[?\s*['"]([A-Za-z_][\w.]*)['"]""")
+PY_DOTTED_CALL = re.compile(r"""\b(?:include|import_string|import_module|send_task|autodiscover_tasks)\(\s*\[?\s*['"]([A-Za-z_][\w.]*)['"]""")  # noqa: E501
 PY_APP_LABEL = re.compile(r"""^\s*label\s*=\s*['"](\w+)['"]""", re.M)
 RB_CONST = re.compile(r"(?<![\w:@$])(?:::)?([A-Z][A-Za-z0-9_]*(?:::[A-Z][A-Za-z0-9_]*)*)")
 RB_STR = re.compile(r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'')
-CS_USING = re.compile(r"^[ \t]*(?:global[ \t]+)?using[ \t]+(?:static[ \t]+)?(?:\w+[ \t]*=[ \t]*)?([A-Za-z_][\w.]*)[ \t]*;", re.M)
+CS_USING = re.compile(r"^[ \t]*(?:global[ \t]+)?using[ \t]+(?:static[ \t]+)?(?:\w+[ \t]*=[ \t]*)?([A-Za-z_][\w.]*)[ \t]*;", re.M)  # noqa: E501
 CS_NS = re.compile(r"^[ \t]*namespace[ \t]+([A-Za-z_][\w.]*)", re.M)
 CSPROJ_REF = re.compile(r"""<ProjectReference\s+Include\s*=\s*["']([^"']+)["']""", re.I)
 
 
+class Ref(NamedTuple):
+    """A raw reference found in a source file, before it is resolved to a file and a component."""
+    kind: str  # ts | py | dj_model | rb_req | rb_rel | rb_const | cs_using | csproj
+    raw: str  # the specifier as written: module, path, constant or namespace
+    line: int
+    extra: Any = None  # py: imported names; rb_const: the lexical nesting
+
+
 def extract(path: str, text: str) -> dict:
-    """Raw references of one file: {"refs": [(kind, raw, line, extra)], "ns": [namespaces]}."""
+    """Raw references of one file: {"refs": [Ref], "ns": [namespaces]}, plus inflections and Django app labels."""
     lang = lang_of(path)
-    refs: list[tuple] = []
+    refs: list[Ref] = []
     ns: list[str] = []
     extra: dict = {}
     if not lang or text is None:
@@ -41,24 +57,24 @@ def extract(path: str, text: str) -> dict:
     lineno = line_index(text)
     if lang == "ts":
         for m in TS_RE.finditer(text):
-            refs.append(("ts", m.group(1), lineno(m.start(1)), None))
+            refs.append(Ref("ts", m.group(1), lineno(m.start(1))))
     elif lang == "py":
         for m in PY_IMPORT.finditer(text):
             for part in m.group(1).split(","):
                 mod = part.strip().split()[0] if part.strip() else ""
                 if mod:
-                    refs.append(("py", mod, lineno(m.start()), ()))
+                    refs.append(Ref("py", mod, lineno(m.start()), ()))
         for m in PY_FROM.finditer(text):
             names = tuple(n.strip().split()[0] for n in m.group(2).strip("() \t\n").split(",")
                           if n.strip() and n.strip() != "*")
-            refs.append(("py", m.group(1), lineno(m.start()), names))
+            refs.append(Ref("py", m.group(1), lineno(m.start()), names))
         # Django references by string: lazy model relations, get_model(), include("app.urls"), celery tasks
         for m in PY_DJ_MODEL.finditer(text):
-            refs.append(("dj_model", m.group(1), lineno(m.start()), None))
+            refs.append(Ref("dj_model", m.group(1), lineno(m.start())))
         for m in PY_GET_MODEL.finditer(text):
-            refs.append(("dj_model", f"{m.group(1)}.{m.group(2) or m.group(3)}", lineno(m.start()), None))
+            refs.append(Ref("dj_model", f"{m.group(1)}.{m.group(2) or m.group(3)}", lineno(m.start())))
         for m in PY_DOTTED_CALL.finditer(text):
-            refs.append(("py", m.group(1), lineno(m.start()), ()))
+            refs.append(Ref("py", m.group(1), lineno(m.start()), ()))
         if path.endswith("apps.py"):
             label = PY_APP_LABEL.search(text)
             if label:
@@ -70,10 +86,10 @@ def extract(path: str, text: str) -> dict:
             for m in RB_CONST.finditer(code):
                 if m.group(1) not in seen_erb:
                     seen_erb.add(m.group(1))
-                    refs.append(("rb_const", m.group(1), lineno(block.start()), ()))
+                    refs.append(Ref("rb_const", m.group(1), lineno(block.start()), ()))
     elif lang == "rb":
         for m in RB_REQ.finditer(text):
-            refs.append(("rb_rel" if m.group(1) else "rb_req", m.group(2), lineno(m.start()), None))
+            refs.append(Ref("rb_rel" if m.group(1) else "rb_req", m.group(2), lineno(m.start())))
         if "inflect" in text:  # Zeitwerk / ActiveSupport inflection config
             extra["rb_acronyms"] = RB_ACRONYM.findall(text)
             extra["rb_inflections"] = RB_INFLECT.findall(text)
@@ -85,7 +101,7 @@ def extract(path: str, text: str) -> dict:
             key = (c, tuple(n for _, n in stack))
             if key not in seen:
                 seen.add(key)
-                refs.append(("rb_const", c, i, key[1]))
+                refs.append(Ref("rb_const", c, i, key[1]))
 
         for i, line in enumerate(text.split("\n"), 1):
             stripped = line.strip()
@@ -100,23 +116,27 @@ def extract(path: str, text: str) -> dict:
                 for m in RB_CONST.finditer(RB_STR.sub("", superclass).split(" #")[0]):
                     add_const(m.group(1), i)
                 name = decl.group(2).lstrip(":")
-                stack.append((indent, f"{stack[-1][1]}::{name}" if stack and not decl.group(2).startswith("::") else name))
+                nested = bool(stack) and not decl.group(2).startswith("::")  # `class ::A` is top level
+                stack.append((indent, f"{stack[-1][1]}::{name}" if nested else name))
                 continue
             assoc = RB_ASSOC.match(line)
             if assoc and "polymorphic" not in assoc.group(3) and "through:" not in assoc.group(3):
                 named = RB_CLASS_NAME.search(assoc.group(3))
                 plural = assoc.group(1) in ("has_many", "has_and_belongs_to_many")
-                target = named.group(1).lstrip(":") if named else camelize(singularize(assoc.group(2)) if plural else assoc.group(2))
+                if named:
+                    target = named.group(1).lstrip(":")
+                else:
+                    target = camelize(singularize(assoc.group(2)) if plural else assoc.group(2))
                 add_const(target, i)
             for m in RB_CONST.finditer(RB_STR.sub("", line).split(" #")[0]):
                 add_const(m.group(1), i)
     elif lang == "cs":
         for m in CS_USING.finditer(text):
-            refs.append(("cs_using", m.group(1), lineno(m.start()), None))
+            refs.append(Ref("cs_using", m.group(1), lineno(m.start())))
         ns = [m.group(1) for m in CS_NS.finditer(text)]
     elif lang == "csproj":
         for m in CSPROJ_REF.finditer(text):
-            refs.append(("csproj", m.group(1), lineno(m.start()), None))
+            refs.append(Ref("csproj", m.group(1), lineno(m.start())))
     return {"refs": refs, "ns": ns, **extra}
 
 
@@ -193,9 +213,9 @@ class SideIndex:
         path = posixpath.normpath(path)
         return path if path in self.files else None
 
-    def resolve(self, src: str, ref: tuple) -> tuple[str, str | None]:
+    def resolve(self, src: str, ref: Ref) -> tuple[str, str | None]:
         """Returns (component id | EXTERNAL | UNRESOLVED, target file or None)."""
-        kind, raw, _, extra = ref
+        kind, raw, extra = ref.kind, ref.raw, ref.extra
         override_kind = {"cs_using": "namespaces", "rb_const": "constants", "dj_model": "imports"}.get(kind, "imports")
         comp = self._override(override_kind, raw)
         if comp:
@@ -356,13 +376,13 @@ def build_edges(extracted: dict[str, dict], index: SideIndex, mapper: Mapper) ->
             for dcomp in target.split(","):
                 if dcomp == scomp:
                     continue
-                key = f"{dcomp}|{tfile or ref[1]}"
+                key = f"{dcomp}|{tfile or ref.raw}"
                 if key in seen:
                     continue
                 seen.add(key)
                 e = edges.setdefault((scomp, dcomp), {"count": 0, "lines": {}, "targets": set()})
                 e["count"] += 1
-                e["lines"].setdefault(src, ref[2])
+                e["lines"].setdefault(src, ref.line)
                 if tfile:
                     e["targets"].add(tfile)
     return edges, unresolved
@@ -386,24 +406,25 @@ def rule_violation(src: str, dst: str, cfg: dict, layer_of: dict) -> str | None:
 # ───────────────────────────── symbols ─────────────────────────────
 
 SYMBOL_RES = {  # each regex exposes (?P<k>kind) or a fixed kind, and (?P<n>name)
-    "ts": [(None, re.compile(r"^\s*export\s+(?:default\s+)?(?:abstract\s+|declare\s+)?(?P<k>class|interface|function|const|type|enum)\s+(?P<n>[A-Za-z_$][\w$]*)"))],
+    "ts": [(None, re.compile(r"^\s*export\s+(?:default\s+)?(?:abstract\s+|declare\s+)?(?P<k>class|interface|function|const|type|enum)\s+(?P<n>[A-Za-z_$][\w$]*)"))],  # noqa: E501
     "py": [(None, re.compile(r"^(?:async\s+)?(?P<k>class|def)\s+(?P<n>[A-Za-z]\w*)")),
            ("method", re.compile(r"^\s{4}(?:async\s+)?def\s+(?P<n>[a-zA-Z]\w*)"))],
     "rb": [(None, re.compile(r"^\s*(?P<k>class|module)\s+(?P<n>[A-Z][\w:]*)")),
            ("def", re.compile(r"^\s*def\s+(?P<n>(?:self\.)?[a-z_]\w*[?!=]?)"))],
-    "cs": [(None, re.compile(r"^\s*public\s+(?:(?:static|sealed|abstract|partial|readonly|ref)\s+)*(?P<k>class|interface|record|struct|enum)\s+(?P<n>\w+)")),
-           ("method", re.compile(r"^\s*public\s+(?:(?:static|async|override|virtual|abstract|sealed|new|extern)\s+)*(?!class\b|interface\b|record\b|struct\b|enum\b)[\w.?\[\],]+(?:<[^>]*>)?\??\s+(?P<n>\w+)\s*[(<]"))],
+    "cs": [(None, re.compile(r"^\s*public\s+(?:(?:static|sealed|abstract|partial|readonly|ref)\s+)*(?P<k>class|interface|record|struct|enum)\s+(?P<n>\w+)")),  # noqa: E501
+           ("method", re.compile(r"^\s*public\s+(?:(?:static|async|override|virtual|abstract|sealed|new|extern)\s+)*(?!class\b|interface\b|record\b|struct\b|enum\b)[\w.?\[\],]+(?:<[^>]*>)?\??\s+(?P<n>\w+)\s*[(<]"))],  # noqa: E501
 }
 ENDPOINT_RES = [  # Rails routes, Django urls, ASP.NET attributes, Angular routes
     re.compile(r"^\s*(?P<k>get|post|put|patch|delete|resources|resource)\s+['\":]?(?P<n>[\w/:{}.-]+)"),
     re.compile(r"\b(?P<k>re_path|path)\(\s*r?['\"](?P<n>[^'\"]*)['\"]"),
     re.compile(r"\[(?P<k>Http(?:Get|Post|Put|Patch|Delete)|Route)(?:\(\s*\"(?P<n>[^\"]*)\"[^)]*\))?\]"),
-    re.compile(r"\b(?P<k>path)\s*:\s*['\"](?P<n>[^'\"]*)['\"]\s*,\s*(?:component|loadComponent|loadChildren|children|redirectTo)"),
+    re.compile(r"\b(?P<k>path)\s*:\s*['\"](?P<n>[^'\"]*)['\"]\s*,\s*(?:component|loadComponent|loadChildren|children|redirectTo)"),  # noqa: E501
     re.compile(r"\b(?P<k>register)\(\s*r?['\"](?P<n>[^'\"]+)['\"]\s*,"),
 ]
 
 
 def extract_symbols(f: dict) -> list[dict]:
+    """Public symbols and endpoints added, removed or modified on the changed lines of one file."""
     lang = lang_of(f["path"])
     found: dict[tuple, dict] = {}
     for h in f["hunks"]:

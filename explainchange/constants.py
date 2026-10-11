@@ -4,6 +4,13 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+__all__ = [
+    "SCHEMA_VERSION", "TOOL_DIR", "CONFIG_NAME", "WORK_DIR", "MAX_SCAN_FILES", "MAX_FILE_BYTES", "MAX_DIFF_LINES",
+    "DEFAULT_BUDGET", "DIFF_FLAGS", "GENERATED_RE", "GENERATED_HEAD", "DEFAULT_TESTS", "DEFAULT_IGNORE",
+    "FRAMEWORK_CONFIG", "MIGRATION_PATTERNS", "CONFIG_EXT", "CONFIG_NAMES", "DOC_EXT", "LANG_BY_EXT", "LAYER_HINTS",
+    "CONTAINER_DIRS",
+]
+
 
 SCHEMA_VERSION = 1
 TOOL_DIR = Path(__file__).resolve().parent.parent  # the skill folder

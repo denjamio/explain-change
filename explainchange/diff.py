@@ -7,11 +7,16 @@ from pathlib import Path
 from .constants import MAX_FILE_BYTES
 from .util import Fail, git
 
+__all__ = [
+    "HUNK_RE", "parse_diff", "untracked_as_diff", "resolve_base",
+]
+
 
 HUNK_RE = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@ ?(.*)$")
 
 
 def parse_diff(text: str) -> list[dict]:
+    """Files of a `git diff` with DIFF_FLAGS: path, old_path (renames), status A|M|D|R, binary, +/- counts, hunks."""
     files: list[dict] = []
     cur = hunk = None
     old_rem = new_rem = 0

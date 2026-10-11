@@ -18,6 +18,11 @@ from .diff import parse_diff, resolve_base, untracked_as_diff
 from .deps import SideIndex, build_edges, extract, extract_symbols, load_tsconfigs, rule_violation
 from .openspec import collect_openspec
 
+__all__ = [
+    "repo_root", "ensure_workdir", "ado_source", "looks_generated", "generated_paths", "collect", "change_source",
+    "changed_files", "scan_sides", "relevant_edges", "component_rows", "change_stats", "insight_key", "public_config",
+]
+
 
 def repo_root() -> Path:
     out = git(["rev-parse", "--show-toplevel"], Path.cwd(), check=False).strip()
@@ -95,8 +100,32 @@ def generated_paths(root: Path, paths: list[str]) -> set[str]:
 
 def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado: str | None,
             specs: list[str] | None = None) -> dict:
+    """The whole change as context.json: source, files, components, dependency delta, symbols, stats, OpenSpec."""
     mapper = Mapper(cfg)
     notes: list[str] = []
+    src, mb, head_rev = change_source(root, cfg, base_arg, uncommitted, ado)
+    files, raw_diff, total_lines = changed_files(root, mapper, mb, head_rev, uncommitted and not ado)
+    if total_lines >= MAX_DIFF_LINES:
+        notes.append(f"Diff larger than {MAX_DIFF_LINES} lines: some files are listed without hunks.")
+
+    base_files = set(git(["ls-tree", "-r", "--name-only", mb], root).splitlines())
+    head_files = (base_files - {f["old_path"] or f["path"] for f in files if f["status"] in "DR"}) | {
+        f["path"] for f in files if f["status"] != "D"}
+    touched = {f["component"] for f in files if f["component"] and f["category"] not in ("test", "ignored")}
+    scan = scan_sides(root, mapper, files, base_files, head_files, touched, mb, head_rev, specs or [], notes)
+
+    symbols = [s for f in files if f["category"] in ("code", "config") and f["hunks"] for s in extract_symbols(f)]
+    edges = relevant_edges(cfg, files, symbols, scan["base_edges"], scan["head_edges"], touched)
+    return {"version": SCHEMA_VERSION, "key": insight_key(root, raw_diff, specs), "source": src,
+            "config": public_config(cfg, root), "files": files,
+            "components": component_rows(cfg, mapper, files, edges, touched, base_files, head_files),
+            "edges": edges, "symbols": symbols, "stats": change_stats(files, edges, scan["head_unresolved"]),
+            "notes": notes, "openspec": scan["openspec"], "deps": sorted([a, b] for a, b in scan["head_edges"])}
+
+
+def change_source(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool,
+                  ado: str | None) -> tuple[dict, str, str | None]:
+    """(source metadata, merge base, head revision). The head revision is None for the working tree."""
     if ado:
         src = ado_source(root, ado)
         mb, head_rev = src["merge_base"], src["head_sha"]
@@ -114,19 +143,21 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
         head_rev = None if uncommitted else head_sha
     src["head_date"] = git(["log", "-1", "--format=%cI", src["head_sha"]], root).strip()
     src["commits"] = int(git(["rev-list", "--count", f"{mb}..{src['head_sha']}"], root).strip() or 0)
+    return src, mb, head_rev
 
-    diff_args = ["diff", *DIFF_FLAGS, mb]
-    if head_rev:
-        diff_args.append(head_rev)
+
+def changed_files(root: Path, mapper: Mapper, mb: str, head_rev: str | None,
+                  untracked: bool) -> tuple[list[dict], str, int]:
+    """(files with component and category, raw diff text for the key, diff lines kept)."""
+    diff_args = ["diff", *DIFF_FLAGS, mb] + ([head_rev] if head_rev else [])
     raw_diff = git(diff_args, root)
     files = parse_diff(raw_diff)
-    if uncommitted and not ado:
+    if untracked:
         extra = untracked_as_diff(root)
         files += extra
-        raw_diff += "".join(f"\nuntracked {f['path']}\n" + "\n".join(ln[1] for ln in (f["hunks"][0]["lines"] if f["hunks"] else []))
+        raw_diff += "".join(f"\nuntracked {f['path']}\n" + "\n".join(ln[1] for h in f["hunks"] for ln in h["lines"])
                             for f in extra)
     files.sort(key=lambda f: f["path"])
-
     total_lines = 0
     generated = generated_paths(root, [f["path"] for f in files if f["status"] != "D"])
     for f in files:
@@ -139,14 +170,18 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
             f["hunks"] = []
         else:
             total_lines += n
+    return files, raw_diff, total_lines
 
-    # dependency graph on both sides
-    base_files = set(git(["ls-tree", "-r", "--name-only", mb], root).splitlines())
+
+def scan_sides(root: Path, mapper: Mapper, files: list[dict], base_files: set[str], head_files: set[str],
+               touched: set[str], mb: str, head_rev: str | None, specs: list[str], notes: list[str]) -> dict:
+    """Reads the source files on both sides of the change: dependency edges at base and head, and OpenSpec."""
     changed_new = {f["path"] for f in files if f["status"] != "D"}
     changed_old = {f["old_path"] or f["path"] for f in files if f["status"] != "A"}
-    head_files = (base_files - {f["old_path"] or f["path"] for f in files if f["status"] in "DR"}) | changed_new
-    scannable = lambda p: lang_of(p) and mapper.category(p) in ("code", "config")  # noqa: E731
-    touched = {f["component"] for f in files if f["component"] and f["category"] not in ("test", "ignored")}
+
+    def scannable(p: str) -> bool:
+        return bool(lang_of(p)) and mapper.category(p) in ("code", "config")
+
     base_scan = sorted(p for p in base_files if scannable(p))
     partial = len(base_scan) > MAX_SCAN_FILES
     if partial:
@@ -154,8 +189,8 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
         notes.append(f"Large repository: dependency scan limited to touched components ({len(base_scan)} files).")
     reader = BlobReader(root)
     try:
-        base_ex = {p: extract(p, reader.read(mb, p)) for p in base_scan}
-        head_ex = {p: ex for p, ex in base_ex.items() if p not in changed_old}
+        def read_base(p: str) -> str | None:
+            return reader.read(mb, p)
 
         def read_head(p: str) -> str | None:
             if head_rev:
@@ -164,30 +199,37 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
                 data = (root / p).read_bytes()
             except OSError:
                 return None
-            return None if b"\0" in data[:8000] or len(data) > MAX_FILE_BYTES else data.decode("utf-8", errors="replace")
+            if b"\0" in data[:8000] or len(data) > MAX_FILE_BYTES:
+                return None
+            return data.decode("utf-8", errors="replace")
 
+        base_ex = {p: extract(p, read_base(p)) for p in base_scan}
+        head_ex = {p: ex for p, ex in base_ex.items() if p not in changed_old}
         for p in sorted(changed_new):
             if scannable(p) and (not partial or mapper.component(p) in touched):
                 head_ex[p] = extract(p, read_head(p))
-        base_ts = load_tsconfigs(sorted(base_files), lambda p: reader.read(mb, p))
-        head_ts = load_tsconfigs(sorted(head_files), read_head) if any(
-            "tsconfig" in p for p in changed_new) else base_ts
-        openspec = collect_openspec(files, head_files, base_files, read_head, lambda p: reader.read(mb, p), specs or [])
+        base_ts = load_tsconfigs(sorted(base_files), read_base)
+        tsconfig_changed = any("tsconfig" in p for p in changed_new)
+        head_ts = load_tsconfigs(sorted(head_files), read_head) if tsconfig_changed else base_ts
+        openspec = collect_openspec(files, head_files, base_files, read_head, read_base, specs)
     finally:
         reader.close()
     base_edges, _ = build_edges(base_ex, SideIndex(base_files, mapper, base_ts, base_ex), mapper)
-    head_edges, head_unres = build_edges(head_ex, SideIndex(head_files, mapper, head_ts, head_ex), mapper)
+    head_edges, head_unresolved = build_edges(head_ex, SideIndex(head_files, mapper, head_ts, head_ex), mapper)
+    return {"base_edges": base_edges, "head_edges": head_edges, "head_unresolved": head_unresolved,
+            "openspec": openspec}
 
-    symbols = []
-    for f in files:
-        if f["category"] in ("code", "config") and f["hunks"]:
-            symbols.extend(extract_symbols(f))
+
+def relevant_edges(cfg: dict, files: list[dict], symbols: list[dict], base_edges: dict, head_edges: dict,
+                   touched: set[str]) -> list[dict]:
+    """Edges of touched components that the change creates, removes or makes relevant, with rule violations.
+    An unchanged edge is relevant only if a changed file creates it, or it points at a file whose public surface
+    changed (callers may break). Everything else is background and would only add noise."""
     layer_of = {c["id"]: c["layer"] for c in cfg["components"]}
-    # An unchanged edge is relevant only if a changed file creates it, or it points at a file whose public
-    # surface changed (callers may break). Everything else is background and would only add noise.
-    changed_paths = changed_new | changed_old
-    surface_changed = {f["path"] for f in files if f["status"] in "DR"} | {f["old_path"] for f in files if f["status"] == "R"} | {
-        s["file"] for s in symbols if s["change"] in ("removed", "modified")}
+    changed_paths = {f["path"] for f in files} | {f["old_path"] for f in files if f["old_path"]}
+    surface_changed = ({f["path"] for f in files if f["status"] in "DR"}
+                       | {f["old_path"] for f in files if f["status"] == "R"}
+                       | {s["file"] for s in symbols if s["change"] in ("removed", "modified")})
     edges = []
     for key in sorted(set(base_edges) | set(head_edges)):
         if key[0] not in touched and key[1] not in touched:
@@ -208,11 +250,16 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
             if rule:
                 e["violation"] = {"rule": rule, "existing": bool(b)}
         edges.append(e)
+    return edges
 
+
+def component_rows(cfg: dict, mapper: Mapper, files: list[dict], edges: list[dict], touched: set[str],
+                   base_files: set[str], head_files: set[str]) -> list[dict]:
+    """Touched components (new, changed or removed) and their neighbours on drawn edges (context), in config order."""
     base_has = {mapper.component(p) for p in base_files}
     head_has = {mapper.component(p) for p in head_files}
     context_ids = {x for e in edges for x in (e["from"], e["to"])} - touched
-    components = []
+    rows = []
     for c in cfg["components"]:
         cid = c["id"]
         if cid in touched:
@@ -222,33 +269,41 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
         else:
             continue
         cf = [f for f in files if f["component"] == cid and f["category"] not in ("test", "ignored")]
-        components.append({"id": cid, "status": status, "files": len(cf),
-                           "add": sum(f["add"] for f in cf), "del": sum(f["del"] for f in cf)})
+        rows.append({"id": cid, "status": status, "files": len(cf),
+                     "add": sum(f["add"] for f in cf), "del": sum(f["del"] for f in cf)})
+    return rows
 
 
+def change_stats(files: list[dict], edges: list[dict], unresolved: int) -> dict:
     code = [f for f in files if f["category"] != "ignored"]
-    stats = {
+    # How much of the code change the map can show: lines in code/config/migration files that belong to a component.
+    mappable = [f for f in files if f["category"] in ("code", "config", "migration")]
+    return {
         "files": len(files), "add": sum(f["add"] for f in code), "del": sum(f["del"] for f in code),
         "test_add": sum(f["add"] for f in files if f["category"] == "test"),
         "test_del": sum(f["del"] for f in files if f["category"] == "test"),
         "unmapped": sorted(f["path"] for f in files if not f["component"] and f["category"] == "code"),
-        "unresolved": head_unres,
+        "unresolved": unresolved,
         "violations_new": sum(1 for e in edges if e["violation"] and not e["violation"]["existing"]),
-        # How much of the code change the map can show: lines in code/config/migration files that belong to a component.
-        "code_lines": sum(f["add"] + f["del"] for f in files if f["category"] in ("code", "config", "migration")),
-        "mapped_lines": sum(f["add"] + f["del"] for f in files if f["category"] in ("code", "config", "migration") and f["component"]),
+        "code_lines": sum(f["add"] + f["del"] for f in mappable),
+        "mapped_lines": sum(f["add"] + f["del"] for f in mappable if f["component"]),
     }
-    if total_lines >= MAX_DIFF_LINES:
-        notes.append(f"Diff larger than {MAX_DIFF_LINES} lines: some files are listed without hunks.")
-    # CRLF from a Windows checkout must not change the key.
-    cfg_bytes = (root / CONFIG_NAME).read_bytes().replace(b"\r\n", b"\n") if (root / CONFIG_NAME).exists() else b""
-    key = hashlib.sha256(raw_diff.encode() + b"\0" + cfg_bytes + b"\0" + str(SCHEMA_VERSION).encode()
-                         + b"\0" + ",".join(sorted(specs or [])).encode()).hexdigest()[:16]
-    public_cfg = {k: cfg[k] for k in ("inferred", "name", "direction", "lang", "layers", "flows")}
-    public_cfg["name"] = public_cfg["name"] or root.name
-    public_cfg["components"] = [{k: c[k] for k in ("id", "name", "layer", "desc")} for c in cfg["components"]]
-    public_cfg["rules"] = {"allow": [f"{a} -> {b}" for a, b in cfg["rules"]["allow"]],
-                           "forbid": [f"{a} -> {b}" for a, b in cfg["rules"]["forbid"]]}
-    return {"version": SCHEMA_VERSION, "key": key, "source": src, "config": public_cfg, "files": files,
-            "components": components, "edges": edges, "symbols": symbols, "stats": stats, "notes": notes,
-            "openspec": openspec, "deps": sorted([a, b] for a, b in head_edges)}
+
+
+def insight_key(root: Path, raw_diff: str, specs: list[str] | None) -> str:
+    """Identifies the change an insight was written for: the diff, the config and the contract.
+    CRLF from a Windows checkout must not change the key."""
+    cfg_path = root / CONFIG_NAME
+    cfg_bytes = cfg_path.read_bytes().replace(b"\r\n", b"\n") if cfg_path.exists() else b""
+    parts = [raw_diff.encode(), cfg_bytes, str(SCHEMA_VERSION).encode(), ",".join(sorted(specs or [])).encode()]
+    return hashlib.sha256(b"\0".join(parts)).hexdigest()[:16]
+
+
+def public_config(cfg: dict, root: Path) -> dict:
+    """The part of the config the digest and the report show."""
+    out = {k: cfg[k] for k in ("inferred", "name", "direction", "lang", "layers", "flows")}
+    out["name"] = out["name"] or root.name
+    out["components"] = [{k: c[k] for k in ("id", "name", "layer", "desc")} for c in cfg["components"]]
+    out["rules"] = {"allow": [f"{a} -> {b}" for a, b in cfg["rules"]["allow"]],
+                    "forbid": [f"{a} -> {b}" for a, b in cfg["rules"]["forbid"]]}
+    return out

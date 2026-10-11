@@ -9,6 +9,11 @@ from pathlib import Path
 
 from .constants import LANG_BY_EXT, MAX_FILE_BYTES
 
+__all__ = [
+    "Fail", "git", "BlobReader", "glob_re", "matches_any", "strip_jsonc", "camelize", "IRREGULAR_PLURALS",
+    "singularize", "slugify", "lang_of", "line_index",
+]
+
 
 class Fail(Exception):
     """User-facing error: printed without traceback."""
