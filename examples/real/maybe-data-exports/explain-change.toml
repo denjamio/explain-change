@@ -1,0 +1,173 @@
+# explain-change config — the source of truth for components, layers and direction.
+# Drafted by `explain-change init` from a rails layout. Review every section, then run `explain-change check`.
+# Layers are drawn top to bottom in this order (web first, core last); [rules] decides what may depend on what.
+# Layers, components and rules are yours: rename, merge or split them so the map reads like this app.
+# A file belongs to the component with the most specific matching path.
+
+[project]
+name = "maybe"
+direction = "Rails conventions: thin controllers, domain logic in models and model namespaces (Family::, Account::), slow work in background jobs."
+lang = "en"     # en | es
+
+[[layers]]
+id = "web"
+name = "Web"
+
+[[layers]]
+id = "application"
+name = "Application"
+
+[[layers]]
+id = "domain"
+name = "Domain"
+
+[[layers]]
+id = "infrastructure"
+name = "Infrastructure"
+
+[[layers]]
+id = "other"
+name = "Other"
+
+[rules]
+# Allow-list of dependency directions (layer or component ids). Anything else is a violation.
+# Suggested for this layout; uncomment once the components below are right.
+allow = ["web -> application", "web -> domain", "application -> domain", "application -> infrastructure", "infrastructure -> domain"]
+same_layer = true
+
+[[components]]
+id = "ui"
+name = "UI"
+layer = "web"
+paths = ["app/views/**", "app/components/**", "app/helpers/**", "app/javascript/**"]
+desc = "Views, components, helpers and JS"
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "controllers-api"
+name = "API controllers"
+layer = "web"
+paths = ["app/controllers/api/**"]
+desc = "Api:: controllers"
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "controllers"
+name = "Controllers"
+layer = "web"
+paths = ["app/controllers/**", "config/routes.rb"]
+desc = ""
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "channels"
+name = "Channels"
+layer = "web"
+paths = ["app/channels/**"]
+desc = ""
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "services"
+name = "Services"
+layer = "application"
+paths = ["app/services/**"]
+desc = ""
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "jobs"
+name = "Jobs"
+layer = "application"
+paths = ["app/jobs/**"]
+desc = ""
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "models-account"
+name = "Account"
+layer = "domain"
+paths = ["app/models/account.rb", "app/models/account/**"]
+desc = "Account and the Account:: namespace"
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "models-assistant"
+name = "Assistant"
+layer = "domain"
+paths = ["app/models/assistant.rb", "app/models/assistant/**"]
+desc = "Assistant and the Assistant:: namespace"
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "models-family"
+name = "Family"
+layer = "domain"
+paths = ["app/models/family.rb", "app/models/family/**"]
+desc = "Family and the Family:: namespace"
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "models-plaid-account"
+name = "Plaid account"
+layer = "domain"
+paths = ["app/models/plaid_account.rb", "app/models/plaid_account/**"]
+desc = "PlaidAccount and the PlaidAccount:: namespace"
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "models-provider"
+name = "Provider"
+layer = "domain"
+paths = ["app/models/provider.rb", "app/models/provider/**"]
+desc = "Provider and the Provider:: namespace"
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "models-rule"
+name = "Rule"
+layer = "domain"
+paths = ["app/models/rule.rb", "app/models/rule/**"]
+desc = "Rule and the Rule:: namespace"
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "models"
+name = "Other models"
+layer = "domain"
+paths = ["app/models/**"]
+desc = ""
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "mailers"
+name = "Mailers"
+layer = "infrastructure"
+paths = ["app/mailers/**"]
+desc = ""
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "data-migrations"
+name = "Data migrations"
+layer = "other"
+paths = ["app/data_migrations/**"]
+desc = ""
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+[[components]]
+id = "lib"
+name = "lib"
+layer = "infrastructure"
+paths = ["lib/**"]
+desc = ""
+# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)
+
+# [[flows]]  # reference runtime flows; the agent compares changed flows against them
+# id = "checkout"
+# title = "Checkout"
+# steps = ["controllers -> services : PlaceOrder", "services -> models : Order.create!"]
+
+[ignore]
+paths = ["**/*.lock", "**/package-lock.json", "**/pnpm-lock.yaml", "**/yarn.lock", "**/Gemfile.lock", "**/poetry.lock", "**/*.min.js", "**/*.map", "**/*.generated.*", "**/*.g.cs", "**/*.Designer.cs", "**/dist/**", "**/build/**", "**/bin/**", "**/obj/**", "**/node_modules/**", "**/vendor/**", "db/schema.rb", "**/__snapshots__/**", "**/*.snap"]
+tests = ["**/test/**", "**/tests/**", "**/spec/**", "**/__tests__/**", "**/e2e/**", "**/*.test.*", "**/*.spec.*", "**/*_test.*", "**/*_spec.rb", "**/test_*.py", "**/*Tests/**", "**/*.Tests/**", "**/*Tests.cs", "**/*Test.cs"]

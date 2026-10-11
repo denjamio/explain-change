@@ -1,0 +1,1882 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="generator" content="explain-change">
+<title>orders · feature/add-order-confirmation</title>
+<style>/* explain-change — design tokens. One semantic palette for badges, diagrams and diffs. */
+:root {
+  color-scheme: light;
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --surface-2: #f1f1ed;
+  --border: #e3e3dd;
+  --border-strong: #cfcfc7;
+  --text: #1c1c1f;
+  --muted: #6a6a70;
+  --faint: #9a9aa0;
+  --accent: #6d3fd1;
+  --accent-bg: #efe9fb;
+  --canvas: #fbfbf9; --grid: rgba(20, 20, 30, .07);
+
+  --new: #17803d;      --new-bg: #e6f4ea;
+  --changed: #1f63c6;  --changed-bg: #e8f0fb;
+  --warn: #b35a00;     --warn-bg: #fcf0de;
+  --removed: #7a7a82;  --removed-bg: #efeff0;
+  --violation: #d12a2a; --violation-bg: #fcebeb;
+  --context: #a4a4ac;  --context-bg: #f4f4f2;
+
+  --diff-add: #e9f6ec;  --diff-add-strong: #c8ebd1;
+  --diff-del: #fbeceb;  --diff-del-strong: #f4cfcc;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(20, 20, 30, .05), 0 2px 8px rgba(20, 20, 30, .04);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111113; --surface: #19191c; --surface-2: #212125; --border: #2b2b30; --border-strong: #3a3a41;
+    --text: #ececef; --muted: #a0a0a8; --faint: #6f6f78; --accent: #a98bf5; --accent-bg: #2a2342; --canvas: #141416; --grid: rgba(255, 255, 255, .06);
+    --new: #4cc97a; --new-bg: rgba(76, 201, 122, .13);
+    --changed: #6ea8ff; --changed-bg: rgba(110, 168, 255, .13);
+    --warn: #f0a73a; --warn-bg: rgba(240, 167, 58, .13);
+    --removed: #8d8d96; --removed-bg: rgba(141, 141, 150, .14);
+    --violation: #f26b6b; --violation-bg: rgba(242, 107, 107, .14);
+    --context: #686871; --context-bg: rgba(255, 255, 255, .03);
+    --diff-add: rgba(76, 201, 122, .10); --diff-add-strong: rgba(76, 201, 122, .25);
+    --diff-del: rgba(242, 107, 107, .10); --diff-del-strong: rgba(242, 107, 107, .25);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111113; --surface: #19191c; --surface-2: #212125; --border: #2b2b30; --border-strong: #3a3a41;
+  --text: #ececef; --muted: #a0a0a8; --faint: #6f6f78; --accent: #a98bf5; --accent-bg: #2a2342; --canvas: #141416; --grid: rgba(255, 255, 255, .06);
+  --new: #4cc97a; --new-bg: rgba(76, 201, 122, .13);
+  --changed: #6ea8ff; --changed-bg: rgba(110, 168, 255, .13);
+    --warn: #f0a73a; --warn-bg: rgba(240, 167, 58, .13);
+  --removed: #8d8d96; --removed-bg: rgba(141, 141, 150, .14);
+  --violation: #f26b6b; --violation-bg: rgba(242, 107, 107, .14);
+  --context: #686871; --context-bg: rgba(255, 255, 255, .03);
+  --diff-add: rgba(76, 201, 122, .10); --diff-add-strong: rgba(76, 201, 122, .25);
+  --diff-del: rgba(242, 107, 107, .10); --diff-del-strong: rgba(242, 107, 107, .25);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: var(--mono); font-size: .86em; }
+button { font: inherit; color: inherit; }
+h1, h2, h3, h4 { line-height: 1.25; margin: 0; letter-spacing: -.01em; }
+[hidden] { display: none !important; }
+
+/* ── shell ── */
+.topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: var(--s4); padding: 10px var(--s5); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.brand { font-weight: 650; font-size: 14px; display: flex; align-items: center; gap: var(--s2); color: var(--text); flex: none; }
+.brand:hover { text-decoration: none; }
+.brand-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 12px; }
+.topnav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
+.topnav a { white-space: nowrap; padding: 5px 10px; border-radius: 999px; color: var(--muted); font-size: 13.5px; display: inline-flex; gap: 6px; align-items: baseline; }
+.topnav a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.topnav a.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+.theme-btn { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 13px; color: var(--muted); flex: none; }
+main { padding: var(--s5) var(--s5) 80px; max-width: 1400px; margin: 0 auto; }
+.foot { text-align: center; font-size: 12px; padding: 0 0 var(--s5); }
+.section { margin-top: var(--s7); }
+.section-head { display: flex; align-items: baseline; gap: var(--s3); margin-bottom: var(--s4); flex-wrap: wrap; }
+.section-head h2 { font-size: 20px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--s5); }
+.card + .card { margin-top: var(--s4); }
+.card h3 { font-size: 15px; margin-bottom: var(--s3); }
+.card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: var(--s3) 0 var(--s2); }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+
+/* ── badges & chips ── */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; background: var(--surface-2); color: var(--muted); }
+.badge.new, .badge.op-ADDED { background: var(--new-bg); color: var(--new); }
+.badge.changed, .badge.op-MODIFIED { background: var(--changed-bg); color: var(--changed); }
+.badge.removed, .badge.op-REMOVED { background: var(--removed-bg); color: var(--removed); }
+.badge.op-RENAMED, .badge.op-SPEC { background: var(--accent-bg); color: var(--accent); }
+.badge.violation { background: var(--violation-bg); color: var(--violation); }
+.badge.context { background: var(--context-bg); color: var(--muted); }
+.badge.layer { background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 500; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 3px 11px; border-radius: 999px; cursor: pointer; font-size: 12.5px; color: var(--muted); }
+.seg button.on { background: var(--text); color: var(--bg); }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 3px 11px; font-size: 12.5px; cursor: pointer; color: var(--muted); }
+.chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.chip:hover { text-decoration: none; border-color: var(--accent); }
+.icon-btn { min-width: 30px; height: 30px; border: 1px solid var(--border); background: var(--surface); border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; padding: 0 8px; }
+.icon-btn:hover { color: var(--text); border-color: var(--border-strong); }
+.icon-btn.wide { font-size: 12.5px; }
+.add { color: var(--new); }
+.del { color: var(--violation); }
+.warn-text { color: var(--warn); }
+.swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+
+/* ── header ── */
+.hero { padding: var(--s3) 0 var(--s5); }
+.config-warn { display: flex; gap: var(--s2); align-items: flex-start; margin-bottom: var(--s3); padding: var(--s2) var(--s3); background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: var(--radius-sm); font-size: 13.5px; }
+.config-warn b { color: var(--warn); }
+.config-warn-icon { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--warn); color: #fff; font-weight: 700; font-size: 12px; display: grid; place-items: center; margin-top: 1px; }
+.eyebrow { color: var(--muted); font-size: 13px; display: flex; gap: 6px var(--s2); flex-wrap: wrap; align-items: center; }
+.title { font-size: 30px; margin: var(--s2) 0 0; word-break: break-word; text-wrap: balance; }
+.intent { margin: var(--s2) 0 0; color: var(--muted); max-width: 80ch; }
+.intent b { color: var(--text); margin-right: 6px; }
+.note { margin: var(--s2) 0 0; font-size: 13px; }
+.linked { cursor: pointer; }
+.tldr { font-size: 18px; line-height: 1.5; margin: var(--s3) 0 0; max-width: 80ch; text-wrap: pretty; }
+.notice { display: flex; gap: var(--s3); align-items: flex-start; margin-top: var(--s4); padding: 10px var(--s4); border-radius: var(--radius); max-width: 100ch; font-size: 14.5px; background: var(--surface-2); border: 1px solid var(--border); }
+.notice-icon { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; flex: none; color: #fff; font-size: 13px; margin-top: 1px; background: var(--faint); }
+.notice ul { margin: var(--s2) 0 0; padding-left: 18px; font-size: 12.5px; font-family: var(--mono); }
+.chips { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s4); }
+.stat-chip { display: inline-flex; gap: 6px; align-items: baseline; padding: 4px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+.stat-chip b { color: var(--text); font-variant-numeric: tabular-nums; }
+.stat-chip.new b { color: var(--new); } .stat-chip.changed b { color: var(--changed); } .stat-chip.removed b { color: var(--removed); }
+.stat-chip.violation { border-color: color-mix(in srgb, var(--violation) 40%, transparent); background: var(--violation-bg); } .stat-chip.violation b { color: var(--violation); }
+.stat-chip.ok b { color: var(--new); } .stat-chip.accent b { color: var(--accent); } .stat-chip.warn b { color: var(--warn); }
+a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
+
+/* ── map: canvas + story ── */
+.map { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; scroll-margin-top: 60px; }
+.map-bar { display: flex; gap: var(--s3); align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.stage-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
+.stage-tab { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+.stage-tab:hover { background: var(--surface-2); color: var(--text); }
+.stage-tab.on { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+.canvas-tools { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+.map-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+.map-canvas { min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+.viewport { position: relative; height: min(68vh, 620px); min-height: 380px; background-color: var(--canvas);
+  background-image: radial-gradient(var(--grid) 1px, transparent 1.2px); background-size: 18px 18px; cursor: grab; touch-action: none; outline: none; overflow: hidden; }
+.viewport.grabbing { cursor: grabbing; }
+.viewport svg { display: block; width: 100%; height: 100%; user-select: none; }
+.canvas-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
+.map-foot { display: flex; gap: var(--s2) var(--s4); flex-wrap: wrap; align-items: center; padding: 8px 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.map-foot .hint { margin-left: auto; }
+.stage-caption { display: flex; flex-direction: column; gap: 4px; flex-basis: 100%; }
+.stage-caption:empty { display: none; }
+.diagram-legend { display: flex; gap: var(--s3); flex-wrap: wrap; }
+.diagram-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend-line { width: 20px; height: 0; border-top: 2px solid; display: inline-block; }
+.legend-line.anim { border-top-style: dashed; }
+.scenario-note { font-size: 13px; color: var(--text); }
+
+/* story pane */
+.map-side { display: flex; flex-direction: column; min-height: 0; max-height: calc(min(68vh, 620px) + 44px); background: var(--surface); }
+.story-pane { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.story-head { display: flex; align-items: center; gap: var(--s2); padding: 12px 14px 8px; }
+.story-count { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.story-nav { margin-left: auto; display: flex; gap: 6px; }
+.story-auto { font-size: 12.5px; margin: 0; padding: 0 14px 6px; }
+.story-steps { list-style: none; margin: 0; padding: 4px 8px 12px; overflow-y: auto; flex: 1; position: relative; }
+.story-step { border-radius: 10px; margin-bottom: 2px; }
+.step-head { display: flex; gap: 10px; align-items: flex-start; width: 100%; border: 0; background: transparent; text-align: left; padding: 8px 8px; cursor: pointer; border-radius: 10px; }
+.step-head:hover { background: var(--surface-2); }
+.step-n { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11.5px; font-weight: 700; background: var(--surface-2); color: var(--muted); margin-top: 1px; }
+.step-h { font-weight: 600; font-size: 14px; line-height: 1.35; color: var(--muted); }
+.story-step.seen .step-n { background: var(--new-bg); color: var(--new); }
+.story-step.active { background: var(--accent-bg); }
+.story-step.active .step-head:hover { background: transparent; }
+.story-step.active .step-n { background: var(--accent); color: #fff; }
+.story-step.active .step-h { color: var(--text); }
+.step-body { display: none; padding: 0 10px 10px 40px; font-size: 14px; }
+.step-body p { margin: 0; }
+.story-step.active .step-body { display: block; }
+.step-code { margin-top: var(--s2); }
+.step-code-head { font-size: 12px; font-family: var(--mono); margin-bottom: 4px; }
+.step-code .excerpt { max-height: 220px; overflow: auto; background: var(--surface); }
+.step-code .diff { font-size: 11.5px; }
+
+/* inspector */
+.inspector { padding: 12px 16px 16px; overflow-y: auto; flex: 1; font-size: 14px; }
+.inspector .back { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 13px; margin-bottom: var(--s3); }
+.insp-title { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
+.insp-title h3 { font-size: 17px; }
+.insp-summary { margin: var(--s2) 0 0; }
+.insp-status { margin-top: var(--s3); padding: 6px 10px; border-radius: 8px; font-size: 13.5px; background: var(--surface-2); }
+.insp-status.rs-implemented { background: var(--new-bg); } .insp-status.rs-implemented b { color: var(--new); }
+.insp-status.rs-partial { background: var(--warn-bg); } .insp-status.rs-partial b { color: var(--warn); }
+.insp-status.rs-missing { background: var(--violation-bg); } .insp-status.rs-missing b { color: var(--violation); }
+.insp-list h4 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin: var(--s4) 0 6px; }
+.insp-row { display: flex; gap: var(--s2); align-items: baseline; padding: 3px 0; font-size: 13px; min-width: 0; }
+.insp-row > a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.insp-row .nums { margin-left: auto; }
+.insp-row .badge { padding: 0 7px; font-size: 11.5px; }
+.rs-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--faint); flex: none; align-self: center; }
+.rs-dot.rs-implemented { background: var(--new); } .rs-dot.rs-partial { background: var(--warn); } .rs-dot.rs-missing { background: var(--violation); }
+
+/* ── SVG: shared ── */
+.stage-svg text { font-family: var(--font); fill: var(--text); }
+.arrow-same { fill: var(--context); } .arrow-new { fill: var(--new); } .arrow-removed { fill: var(--removed); }
+.arrow-violation { fill: var(--violation); } .arrow-hero { fill: var(--accent); } .arrow-changed { fill: var(--changed); } .arrow-pipe { fill: var(--border-strong); }
+.stage-svg [data-k], .stage-svg [data-a], .stage-svg .edge-g { transition: opacity .25s; }
+.stage-svg.dim [data-k]:not(.on), .stage-svg.dim .edge-g:not(.on), .stage-svg.dim .edge-label:not(.on),
+.stage-svg.dim .link:not(.on), .stage-svg.dim .lifeline:not(.on) { opacity: .14; }
+.pulse { fill: var(--new); }
+.pulse.hero { fill: var(--accent); }
+.still .pulse { display: none; }
+
+/* architecture */
+.band { fill: var(--surface); stroke: var(--border); }
+.band-label { font-size: 12px; font-weight: 650; fill: var(--muted) !important; letter-spacing: .05em; text-transform: uppercase; }
+.band-sub { font-size: 11px; fill: var(--faint) !important; }
+.node { cursor: pointer; outline: none; }
+.node rect.box { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.4; transition: stroke-width .15s; }
+.node:hover rect.box, .node:focus-visible rect.box, .node.on rect.box { stroke-width: 2.4; }
+.node .tag { font-size: 10px; font-weight: 700; letter-spacing: .07em; }
+.node .delta { font-size: 11px; font-variant-numeric: tabular-nums; }
+.node .delta .add { fill: var(--new); } .node .delta .del { fill: var(--violation); }
+.node .name { font-size: 14px; font-weight: 650; }
+.node .info { font-size: 11.5px; fill: var(--muted) !important; }
+.node.st-new rect.box { fill: color-mix(in srgb, var(--new-bg) 100%, var(--surface)); stroke: var(--new); }
+.node.st-new .tag { fill: var(--new); }
+.node.st-changed rect.box { fill: var(--changed-bg); stroke: var(--changed); }
+.node.st-changed .tag { fill: var(--changed); }
+.node.st-removed rect.box { fill: var(--removed-bg); stroke: var(--removed); stroke-dasharray: 5 4; }
+.node.st-removed .tag { fill: var(--removed); }
+.node.st-removed .name { text-decoration: line-through; fill: var(--muted); }
+.node.st-context rect.box { fill: var(--canvas); stroke-dasharray: 3 3; }
+.node.st-context .name { fill: var(--muted); font-weight: 500; }
+.edge { fill: none; stroke-width: 1.6; }
+.edge.e-same { stroke: var(--context); }
+.edge.e-new { stroke: var(--new); stroke-width: 2.2; stroke-dasharray: 7 5; animation: ec-flow 1.1s linear infinite; }
+.edge.e-removed { stroke: var(--removed); stroke-dasharray: 5 5; opacity: .8; }
+.edge.e-violation { stroke: var(--violation); stroke-width: 2.6; }
+.edge.e-violation.existing { stroke-dasharray: 2 4; stroke-width: 2; }
+.hero .edge:not(.e-violation) { stroke: var(--accent); stroke-width: 3; }
+.edge-glow { fill: none; stroke: var(--accent); stroke-width: 10; opacity: .14; stroke-linecap: round; }
+.edge-hit { fill: none; stroke: transparent; stroke-width: 12; }
+.edge-label rect { fill: var(--accent); }
+.edge-label text { fill: #fff !important; font-size: 11.5px; font-weight: 600; }
+.mode-delta .edge.e-same { opacity: .4; }
+.still .edge.e-new { animation: none; }
+@keyframes ec-flow { to { stroke-dashoffset: -24; } }
+
+/* flow */
+.stage-flow .lifeline { stroke: var(--border-strong); stroke-dasharray: 4 5; }
+.stage-flow .head rect { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.4; }
+.stage-flow .head.st-new rect { fill: var(--new-bg); stroke: var(--new); }
+.stage-flow .head.st-changed rect { fill: var(--changed-bg); stroke: var(--changed); }
+.stage-flow .head.st-removed rect { fill: var(--removed-bg); stroke: var(--removed); stroke-dasharray: 5 4; }
+.stage-flow .head .name { font-size: 13px; font-weight: 650; }
+.stage-flow .head .layer { font-size: 10px; fill: var(--muted) !important; text-transform: uppercase; letter-spacing: .06em; }
+.msg-bg { fill: transparent; }
+.msg.on .msg-bg { fill: var(--accent-bg); opacity: .6; }
+.msg-line { stroke-width: 2; fill: none; }
+.msg-label { font-size: 12.5px; }
+.msg .pulse { fill: var(--accent); }
+.step-badge circle { fill: var(--surface-2); stroke: var(--border-strong); }
+.step-badge text { font-size: 10.5px; font-weight: 700; fill: var(--muted) !important; }
+.msg.st-same .msg-line { stroke: var(--muted); } .msg.st-same .msg-label { fill: var(--muted) !important; }
+.msg.st-new .msg-line { stroke: var(--new); } .msg.st-new .msg-label { fill: var(--new) !important; font-weight: 650; }
+.msg.st-changed .msg-line { stroke: var(--changed); } .msg.st-changed .msg-label { fill: var(--changed) !important; font-weight: 650; }
+.msg.st-removed .msg-line { stroke: var(--removed); stroke-dasharray: 5 4; } .msg.st-removed .msg-label { fill: var(--removed) !important; text-decoration: line-through; }
+.msg.unverified .msg-line { stroke-dasharray: 2 4; } .msg.unverified .msg-label { font-style: italic; }
+
+/* spec */
+.pipe-title { font-size: 12px; font-weight: 650; fill: var(--muted) !important; letter-spacing: .02em; }
+.pipe .box { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.3; }
+.pipe .name { font-size: 13px; font-weight: 650; }
+.pipe .info { font-size: 11.5px; fill: var(--muted) !important; }
+.pipe.ps-changed .box { fill: var(--accent-bg); stroke: var(--accent); }
+.pipe.ps-absent .box { fill: transparent; stroke-dasharray: 4 4; } .pipe.ps-absent .name { fill: var(--faint) !important; }
+.pipe.ps-removed .box { fill: var(--removed-bg); stroke: var(--removed); }
+.pipe-arrow { stroke: var(--border-strong); stroke-width: 1.6; fill: none; }
+.prog-bg { fill: var(--surface-2); } .prog { fill: var(--warn); } .prog.full { fill: var(--new); }
+.cap-label { font-size: 11.5px; font-weight: 700; fill: var(--muted) !important; text-transform: uppercase; letter-spacing: .06em; }
+.req { cursor: pointer; outline: none; }
+.req .box { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.3; }
+.req:hover .box, .req.on .box, .req:focus-visible .box { stroke-width: 2.2; }
+.req .op-bar { fill: var(--accent); }
+.req.op-ADDED .op-bar { fill: var(--new); } .req.op-MODIFIED .op-bar { fill: var(--changed); } .req.op-REMOVED .op-bar { fill: var(--removed); }
+.req.op-REMOVED .name { text-decoration: line-through; fill: var(--muted) !important; }
+.req .tag { font-size: 10px; font-weight: 700; letter-spacing: .07em; fill: var(--muted) !important; }
+.req .name { font-size: 13.5px; font-weight: 650; }
+.req .info { font-size: 11.5px; fill: var(--muted) !important; }
+.req-status circle { fill: var(--surface-2); }
+.req-status text { font-size: 13px; font-weight: 800; }
+.rs-implemented .req-status circle { fill: var(--new-bg); } .rs-implemented .req-status text { fill: var(--new) !important; }
+.rs-partial .req-status circle { fill: var(--warn-bg); } .rs-partial .req-status text { fill: var(--warn) !important; }
+.rs-missing .box { stroke: var(--violation); } .rs-missing .req-status circle { fill: var(--violation-bg); } .rs-missing .req-status text { fill: var(--violation) !important; }
+.rs-pending .req-status text { fill: var(--faint) !important; }
+.link { fill: none; stroke: var(--border-strong); stroke-width: 1.8; }
+.link.ls-implemented { stroke: var(--new); } .link.ls-partial { stroke: var(--warn); } .link.ls-missing { stroke: var(--violation); stroke-dasharray: 5 4; }
+.link.test-link { stroke: var(--accent); stroke-dasharray: 3 4; }
+.node.mini .name { font-size: 13px; }
+.test-node { cursor: pointer; }
+.test-node .box { fill: var(--surface); stroke: var(--accent); stroke-dasharray: 3 3; }
+.test-node .name { font-size: 12px; font-family: var(--mono); fill: var(--accent) !important; }
+.pending-note { font-size: 12.5px; fill: var(--faint) !important; font-style: italic; }
+
+/* ── lists ── */
+.ref { font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
+.decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s4); }
+.decisions .card + .card { margin-top: 0; }
+.decision h3 { margin-bottom: var(--s2); }
+.decision p { margin: 0 0 var(--s2); }
+.decision .alt { color: var(--muted); font-size: 14px; }
+
+/* ── files & diff ── */
+.st { font-family: var(--mono); font-weight: 700; font-size: 12px; text-align: center; border-radius: 4px; }
+.st-A { color: var(--new); } .st-M { color: var(--changed); } .st-D { color: var(--violation); } .st-R { color: var(--accent); }
+.nums { font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.diff { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
+.diff-wrap { overflow-x: auto; }
+.diff td { padding: 0 var(--s2); white-space: pre; vertical-align: top; }
+.diff td.ln { width: 1%; min-width: 36px; text-align: right; color: var(--faint); user-select: none; border-right: 1px solid var(--border); }
+.diff td.sg { width: 1%; color: var(--faint); user-select: none; padding-right: 0; }
+.diff tr.a { background: var(--diff-add); } .diff tr.a td.sg { color: var(--new); }
+.diff tr.d { background: var(--diff-del); } .diff tr.d td.sg { color: var(--violation); }
+.diff tr.hl td.code { box-shadow: inset 3px 0 0 var(--accent); }
+.diff tr.hh td { background: var(--accent-bg); color: var(--muted); padding: 4px var(--s2); }
+.excerpt { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.empty { color: var(--muted); font-size: 14px; }
+
+/* ── responsive ── */
+@media (max-width: 1100px) { .step { grid-template-columns: minmax(0, 1fr); } .map-body { grid-template-columns: minmax(0, 1fr) 300px; } }
+@media (max-width: 900px) {
+  .map-body { grid-template-columns: minmax(0, 1fr); }
+  .map-canvas { border-right: 0; border-bottom: 1px solid var(--border); }
+  .map-side { max-height: none; }
+  .story-steps { max-height: 340px; }
+}
+@media (max-width: 720px) {
+  .topbar { padding: 8px var(--s4); gap: var(--s2); }
+  .brand-name { display: none; }
+  main { padding: var(--s4) var(--s4) 64px; }
+  .card { padding: var(--s4); }
+  .step { padding: var(--s4); gap: var(--s3); }
+  .title { font-size: 24px; }
+  .tldr { font-size: 16px; }
+  .viewport { height: 62vh; min-height: 340px; }
+  .stage-tabs { flex-basis: 100%; }
+  .canvas-tools { margin-left: 0; }
+  .map-foot .hint { display: none; }
+  .canvas-tools .seg button { padding: 3px 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .edge.e-new { animation: none; } html { scroll-behavior: auto; } }
+@media print {
+  .topbar, .theme-btn, .canvas-tools, .story-nav, .map-foot .hint { display: none !important; }
+  main { max-width: none; padding: 0; }
+  .card, .map { box-shadow: none; break-inside: avoid; }
+  .step-body { display: block; }
+}
+
+/* ── header context ── */
+
+
+/* ── design ── */
+
+/* ── spec stage ── */
+.col-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; fill: var(--faint) !important; }
+.pipe { cursor: pointer; outline: none; }
+.pipe .state { font-size: 11px; fill: var(--muted) !important; }
+.pipe .big { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pipe:hover .box, .pipe.on .box, .pipe:focus-visible .box { stroke-width: 2.2; }
+.pipe-id { font-family: var(--mono); fill: var(--text) !important; }
+.scn { cursor: pointer; }
+.scn rect { fill: var(--surface-2); stroke: var(--border-strong); }
+.scn text { font-size: 11.5px; fill: var(--muted) !important; }
+.scn.has-flow rect { fill: var(--accent-bg); stroke: var(--accent); } .scn.has-flow text { fill: var(--accent) !important; font-weight: 600; }
+.scn:hover rect { stroke-width: 2; }
+.task { align-items: flex-start; }
+.task-box { flex: none; width: 15px; height: 15px; border: 1.5px solid var(--border-strong); border-radius: 4px; font-size: 10px; display: grid; place-items: center; margin-top: 2px; }
+.task.done .task-box { background: var(--new); border-color: var(--new); color: #fff; }
+.task.done span:last-child { color: var(--muted); }
+
+/* ── data stage & flow data ── */
+.data-chip rect { fill: var(--surface); stroke: var(--border-strong); }
+.data-chip text { font-family: var(--mono); font-size: 11px; }
+.dk-type { font-weight: 700; fill: var(--text); } .dk-p, .dk-same { fill: var(--muted); }
+.dk-add { fill: var(--new); } .dk-del { fill: var(--violation); } .dk-mod { fill: var(--changed); }
+.entity { cursor: pointer; outline: none; }
+.entity .box { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.4; }
+.entity .head { fill: var(--surface-2); }
+.entity.st-new .box { stroke: var(--new); } .entity.st-new .head { fill: var(--new-bg); } .entity.st-new .tag { fill: var(--new); }
+.entity.st-changed .box { stroke: var(--changed); } .entity.st-changed .head { fill: var(--changed-bg); } .entity.st-changed .tag { fill: var(--changed); }
+.entity.st-removed .box { stroke: var(--removed); stroke-dasharray: 5 4; } .entity.st-removed .name { text-decoration: line-through; }
+.entity.st-context .box { stroke-dasharray: 3 3; } .entity.st-context .name { fill: var(--muted); }
+.entity:hover .box, .entity.on .box, .entity:focus-visible .box { stroke-width: 2.4; }
+.entity .name { font-size: 14px; font-weight: 700; }
+.entity .tag { font-size: 10px; font-weight: 700; letter-spacing: .07em; }
+.entity .field { font-family: var(--mono); font-size: 12px; }
+.field.f-add { fill: var(--new); } .field.f-del { fill: var(--violation); text-decoration: line-through; } .field.f-mod { fill: var(--changed); } .field.f-same { fill: var(--muted); }
+.fmark { font-weight: 700; }
+.rel { fill: none; stroke: var(--border-strong); stroke-width: 1.8; }
+.rel.rc-added { stroke: var(--new); stroke-dasharray: 7 5; animation: ec-flow 1.1s linear infinite; } .rel.rc-removed { stroke: var(--removed); stroke-dasharray: 5 5; } .rel.rc-changed { stroke: var(--changed); }
+.still .rel.rc-added { animation: none; }
+.rel-label rect { fill: var(--surface); stroke: var(--border-strong); }
+.rel-label.rc-added rect { stroke: var(--new); }
+.rel-label text { font-size: 11px; font-family: var(--mono); fill: var(--muted); }
+.mig { font-family: var(--mono); font-size: 12px; cursor: pointer; fill: var(--accent) !important; }
+.mig .st-A { fill: var(--new); } .mig .st-M { fill: var(--changed); } .mig .st-D { fill: var(--violation); }
+.field-row.f-add code { color: var(--new); } .field-row.f-del code { color: var(--violation); text-decoration: line-through; } .field-row.f-mod code { color: var(--changed); }
+.field-row .fmark { width: 12px; text-align: center; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="app" class="app"></div>
+<noscript><p style="padding:24px">This report uses JavaScript to draw its diagrams. Open it in a browser with scripts enabled.</p></noscript>
+<script type="application/json" id="ec-data">{"context":{"version":1,"key":"6f7a807b852645aa","source":{"mode":"local","base_ref":"main","branch":"feature/add-order-confirmation","head_ref":"HEAD","head_sha":"4adf935ac0afc18b482cb48e8d070fe5b340ab66","merge_base":"cdc35b659b1043468efd81b81c7bd6256deea28c","title":"feature/add-order-confirmation","description":"","pr_id":"","url":"","include_uncommitted":false,"head_date":"2026-10-01T10:00:00+00:00","commits":1},"config":{"inferred":false,"name":"orders","direction":"Vistas finas; la lógica vive en servicios y modelos; las integraciones externas viven en su propia app.","lang":"es","layers":[{"id":"web","name":"Web"},{"id":"application","name":"Aplicación"},{"id":"domain","name":"Dominio"},{"id":"infra","name":"Infraestructura"}],"flows":[{"id":"create-order","title":"Crear pedido","steps":[{"from":"orders-api","to":"orders-svc","msg":"create_order"},{"from":"orders-svc","to":"orders-model","msg":"Order.place"}]}],"components":[{"id":"orders-api","name":"API de pedidos","layer":"web","desc":""},{"id":"orders-svc","name":"Servicios de pedidos","layer":"application","desc":""},{"id":"orders-model","name":"Modelo Order","layer":"domain","desc":""},{"id":"notifications","name":"Notificaciones","layer":"infra","desc":""}],"rules":{"allow":["web -> application","application -> domain","application -> infra","infra -> domain"],"forbid":[]}},"files":[{"path":"notifications/__init__.py","old_path":null,"status":"A","binary":false,"add":0,"del":0,"hunks":[],"component":"notifications","category":"code","truncated":false},{"path":"notifications/email.py","old_path":null,"status":"A","binary":false,"add":7,"del":0,"hunks":[{"old_start":0,"old_len":0,"new_start":1,"new_len":7,"header":"","lines":[["+","from django.core.mail import send_mail"],["+",""],["+","from orders.models import Order"],["+",""],["+",""],["+","def send_order_confirmation(order: Order):"],["+","    send_mail(\"Pedido confirmado\", f\"Pedido {order.id} registrado.\", None, [order.email])"]]}],"component":"notifications","category":"code","truncated":false},{"path":"openspec/changes/add-order-confirmation/design.md","old_path":null,"status":"A","binary":false,"add":12,"del":0,"hunks":[],"component":null,"category":"docs","truncated":false},{"path":"openspec/changes/add-order-confirmation/proposal.md","old_path":null,"status":"A","binary":false,"add":13,"del":0,"hunks":[],"component":null,"category":"docs","truncated":false},{"path":"openspec/changes/add-order-confirmation/specs/orders/spec.md","old_path":null,"status":"A","binary":false,"add":21,"del":0,"hunks":[{"old_start":0,"old_len":0,"new_start":1,"new_len":5,"header":"","lines":[["+","## ADDED Requirements"],["+","### Requirement: Email de confirmación"],["+","El sistema SHALL enviar un email de confirmación al cliente cuando se crea un pedido."],["+",""],["+","#### Scenario: Pedido creado"]]},{"old_start":0,"old_len":0,"new_start":13,"new_len":7,"header":"","lines":[["+","- **AND** la confirmación se reintenta más tarde"],["+",""],["+","## MODIFIED Requirements"],["+","### Requirement: Crear pedido"],["+","El sistema SHALL crear un pedido con total positivo y un email válido del cliente."],["+",""],["+","#### Scenario: Email inválido"]]}],"component":null,"category":"docs","truncated":false},{"path":"openspec/changes/add-order-confirmation/tasks.md","old_path":null,"status":"A","binary":false,"add":11,"del":0,"hunks":[],"component":null,"category":"docs","truncated":false},{"path":"orders/migrations/0002_order_email.py","old_path":null,"status":"A","binary":false,"add":6,"del":0,"hunks":[],"component":"orders-model","category":"migration","truncated":false},{"path":"orders/models.py","old_path":null,"status":"M","binary":false,"add":5,"del":2,"hunks":[{"old_start":4,"old_len":9,"new_start":4,"new_len":12,"header":"from django.db import models","lines":[[" ",""],[" ","class Order(models.Model):"],[" ","    total = models.DecimalField(max_digits=10, decimal_places=2)"],["+","    email = models.EmailField()"],[" ",""],[" ","    @classmethod"],["-","    def place(cls, total):"],["+","    def place(cls, total, email):"],[" ","        if total <= 0:"],[" ","            raise ValidationError(\"invalid total\")"],["-","        return cls.objects.create(total=total)"],["+","        if \"@\" not in email:"],["+","            raise ValidationError(\"invalid email\")"],["+","        return cls.objects.create(total=total, email=email)"]]}],"component":"orders-model","category":"code","truncated":false},{"path":"orders/services.py","old_path":null,"status":"M","binary":false,"add":8,"del":2,"hunks":[{"old_start":1,"old_len":5,"new_start":4,"new_len":8,"header":"","lines":[[" ","from orders.models import Order"],[" ",""],[" ",""],["-","def create_order(total):"],["-","    return Order.place(total)"],["+","def create_order(total, email):"],["+","    with transaction.atomic():"],["+","        order = Order.place(total, email)"],["+","        send_order_confirmation(order)"],["+","    return order"]]}],"component":"orders-svc","category":"code","truncated":false},{"path":"orders/tests/test_services.py","old_path":null,"status":"M","binary":false,"add":8,"del":0,"hunks":[],"component":null,"category":"test","truncated":false},{"path":"orders/views.py","old_path":null,"status":"M","binary":false,"add":1,"del":1,"hunks":[],"component":"orders-api","category":"code","truncated":false}],"components":[{"id":"orders-api","status":"changed","files":1,"add":1,"del":1},{"id":"orders-svc","status":"changed","files":1,"add":8,"del":2},{"id":"orders-model","status":"changed","files":2,"add":11,"del":2},{"id":"notifications","status":"new","files":2,"add":7,"del":0}],"edges":[{"from":"notifications","to":"orders-model","status":"new","base_count":0,"head_count":1,"refs":["notifications/email.py:3"],"violation":null},{"from":"orders-api","to":"orders-svc","status":"same","base_count":1,"head_count":1,"refs":["orders/views.py:5"],"violation":null},{"from":"orders-svc","to":"notifications","status":"new","base_count":0,"head_count":1,"refs":["orders/services.py:3"],"violation":null},{"from":"orders-svc","to":"orders-model","status":"same","base_count":1,"head_count":1,"refs":["orders/services.py:4"],"violation":null}],"symbols":[{"file":"notifications/email.py","line":6,"kind":"def","name":"send_order_confirmation","change":"added"},{"file":"orders/models.py","line":10,"kind":"method","name":"place","change":"modified"},{"file":"orders/services.py","line":7,"kind":"def","name":"create_order","change":"modified"}],"stats":{"files":11,"add":92,"del":5,"test_add":8,"test_del":0,"unmapped":[],"unresolved":0,"violations_new":0,"code_lines":32,"mapped_lines":32},"notes":[],"openspec":{"changes":[{"id":"add-order-confirmation","dir":"openspec/changes/add-order-confirmation","archived":false,"deleted":false,"moved_to_archive":false,"artifacts":[{"kind":"design","path":"openspec/changes/add-order-confirmation/design.md","status":"A"},{"kind":"proposal","path":"openspec/changes/add-order-confirmation/proposal.md","status":"A"},{"kind":"spec","path":"openspec/changes/add-order-confirmation/specs/orders/spec.md","status":"A","cap":"orders"},{"kind":"tasks","path":"openspec/changes/add-order-confirmation/tasks.md","status":"A"}],"why":"Los clientes no saben si su pedido se registró y abren tickets de soporte para confirmarlo.","what":["Enviar un email de confirmación al crear un pedido.","El pedido guarda el email del cliente y lo valida.","BREAKING: POST /orders/ exige email."],"impact":["Specs: orders","Código: modelo Order, servicio create_order, nueva app notifications."],"decisions":["App notifications para el email","Notificar al crear el pedido"],"tasks":{"done":5,"total":6,"groups":[{"title":"1. Modelo","done":2,"total":2},{"title":"2. Servicio y notificaciones","done":2,"total":3},{"title":"3. API","done":1,"total":1}],"items":[{"t":"1.1 Añadir email a Order y validarlo","done":true,"line":2,"group":0},{"t":"1.2 Migración del campo email","done":true,"line":3,"group":0},{"t":"2.1 create_order envía la confirmación","done":true,"line":6,"group":1},{"t":"2.2 App notifications con send_order_confirmation","done":true,"line":7,"group":1},{"t":"2.3 Reintentos si el SMTP falla","done":false,"line":8,"group":1},{"t":"3.1 POST /orders/ acepta email","done":true,"line":11,"group":2}]},"requirements":[{"id":"orders/email-de-confirmacion","cap":"orders","name":"Email de confirmación","op":"ADDED","text":"El sistema SHALL enviar un email de confirmación al cliente cuando se crea un pedido.","scenarios":[{"id":"pedido-creado","name":"Pedido creado","steps":[{"k":"WHEN","t":"se crea un pedido válido"},{"k":"THEN","t":"el pedido se guarda"},{"k":"AND","t":"el cliente recibe un email de confirmación"}],"line":5},{"id":"smtp-caido","name":"SMTP caído","steps":[{"k":"WHEN","t":"el servidor SMTP no responde"},{"k":"THEN","t":"el pedido se crea igualmente"},{"k":"AND","t":"la confirmación se reintenta más tarde"}],"line":10}],"file":"openspec/changes/add-order-confirmation/specs/orders/spec.md","line":2,"change":"add-order-confirmation"},{"id":"orders/crear-pedido","cap":"orders","name":"Crear pedido","op":"MODIFIED","text":"El sistema SHALL crear un pedido con total positivo y un email válido del cliente.","scenarios":[{"id":"email-invalido","name":"Email inválido","steps":[{"k":"WHEN","t":"se crea un pedido con un email sin @"},{"k":"THEN","t":"la creación falla"}],"line":19}],"file":"openspec/changes/add-order-confirmation/specs/orders/spec.md","line":16,"change":"add-order-confirmation"}]}],"specs":[]},"deps":[["notifications","orders-model"],["orders-api","orders-svc"],["orders-svc","notifications"],["orders-svc","orders-model"]]},"insight":{"version":1,"key":"6f7a807b852645aa","lang":"es","tldr":"Al crear un pedido, create_order envía un email de confirmación con la nueva app notifications. Implementa el change OpenSpec add-order-confirmation salvo los reintentos.","intent":"Que el cliente sepa que su pedido se registró, sin meter el envío de email en la app orders.","story":[{"heading":"create_order ahora envía la confirmación","body":"Después de Order.place llama a send_order_confirmation, en la misma transacción.","stage":"architecture","focus":["orders-svc","notifications"],"code":"orders/services.py:7-11"},{"heading":"App notifications añadida","body":"Envía el email con send_mail. Depende de Order, en la dirección permitida.","stage":"architecture","focus":["notifications"],"code":"notifications/email.py:1-7"},{"heading":"El email sale antes del commit","body":"send_order_confirmation corre dentro de transaction.atomic. Si el SMTP falla, la transacción se revierte.","stage":"flow:create-order","focus":["#3"],"code":"orders/services.py:8-10"},{"heading":"Order ahora exige un email válido","body":"Nuevo campo email con migración. Order.place rechaza emails sin @.","stage":"data","focus":["order"],"code":"orders/models.py:7-15"},{"heading":"2 de 3 escenarios cumplidos","body":"Falta el escenario 'SMTP caído': no hay reintento y el pedido no se crea. La tarea 2.3 sigue abierta.","stage":"spec","focus":["orders/email-de-confirmacion"]}],"hero":[{"from":"orders-svc","to":"notifications","label":"envía la confirmación"}],"changes":[{"id":"orders-api","summary":"POST /orders/ pasa el email del cliente a create_order."},{"id":"orders-svc","summary":"create_order recibe el email y envía la confirmación."},{"id":"orders-model","summary":"Order guarda y valida el email; nueva migración."},{"id":"notifications","summary":"Nueva app con send_order_confirmation sobre send_mail."}],"decisions":[{"title":"Enviar el email dentro de la transacción","why":"Es lo más simple: no queda un pedido guardado sin aviso.","alternative":"transaction.on_commit con una tarea en cola y reintentos.","evidence":"orders/services.py:10"},{"title":"send_mail directo, sin interfaz propia","why":"Django ya abstrae el backend de email.","alternative":"Una interfaz Notifier en orders que notifications implementa.","evidence":"notifications/email.py:7"}],"flows":[{"id":"create-order","title":"Crear pedido","scenario":"orders/email-de-confirmacion#pedido-creado","steps":[{"from":"orders-api","to":"orders-svc","msg":"create_order(total, email)","status":"changed","data":{"type":"POST /orders/","fields":["total: Decimal","+email: string"]},"verified":true},{"from":"orders-svc","to":"orders-model","msg":"Order.place (valida email)","status":"changed","verified":true},{"from":"orders-svc","to":"notifications","msg":"send_order_confirmation","status":"new","data":{"type":"Order","fields":["id","+email"]},"verified":true}]}],"data_model":{"entities":[{"id":"order","name":"Order","change":"changed","component":"orders-model","evidence":"orders/models.py:5-15","fields":["total: Decimal","+email: EmailField"]}],"relations":[]},"spec":[{"req":"orders/email-de-confirmacion","status":"partial","components":["orders-svc","notifications"],"tests":["orders/tests/test_services.py:9"],"note":"Escenario 'SMTP caído' sin implementar: no hay reintento y el pedido no se crea."},{"req":"orders/crear-pedido","status":"implemented","components":["orders-model","orders-api"],"tests":["orders/tests/test_services.py:5"]}]},"insightStatus":"fresh","insightErrors":[]}</script>
+<script>/* explain-change renderer. Pure, deterministic: same data → same DOM/SVG. No dependencies.
+   Layout: a canvas (architecture lanes · data flows · OpenSpec traceability) driven by a story whose steps
+   move the camera and light what changed; the design decisions below it. */
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("ec-data").textContent);
+  var ctx = DATA.context, ins = DATA.insight, cfg = ctx.config, src = ctx.source, st = ctx.stats, OS = ctx.openspec;
+  var REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  var I18N = {
+    en: {
+      story: "Story", canvas: "Map", architecture: "Architecture", spec: "Spec",
+      design: "Design",
+      openspec: "OpenSpec",
+      local: "Local branch", ado: "Azure DevOps PR", commit: "commit", commits: "commits",
+      noInsight: "No story yet", noInsightText: "Ask your agent to run explain-change to write it.",
+      staleInsight: "Story out of date", staleText: "The code changed after the story was written. Ask your agent to run explain-change again.",
+      invalidInsight: "Story rejected", invalidText: "insight.json has errors:",
+      intent: "Goal",
+      file: "file", kFiles: "files", kLines: "lines", kComponents: "components", component: "component", kTasks: "tasks", kReqs: "requirements",
+      delta: "Changes", after: "After", before: "Before",
+      decisions: "Design decisions", brokenRule: "broken rule", brokenRules: "broken rules", lNew: "new", nNew: "new", nChanged: "changed", nRemoved: "removed", lChanged: "changed", lRemoved: "removed", lContext: "untouched", lViolation: "breaks a rule", lSame: "unchanged", lHero: "key dependency",
+      refs: "refs", unresolved: "references not resolved", unmapped: "changed files outside the map",
+      archEmpty: "No configured component is touched by this change.",
+
+      vsReference: "Compared with the reference flow", extraSteps: "new steps", missingSteps: "steps missing", matchesReference: "matches the reference flow",
+
+      tests: "Tests",
+      theme: "Theme", themeAuto: "auto", themeLight: "light", themeDark: "dark",
+      alternative: "Alternative", unverified: "The code has no dependency between these components", viaPort: "Linked through {x}: both depend on it",
+      unverifiedNote: "No dependency in the code:",
+      prev: "Previous", next: "Next", fit: "Fit", zoomIn: "Zoom in", zoomOut: "Zoom out", motion: "Animation",
+      canvasHint: "Drag to pan · Ctrl/⌘ + wheel to zoom · click a component for details · ← → to step",
+      back: "Story", files: "Files", dependsOn: "Depends on", usedBy: "Used by", reqs: "Requirements", symbols: "Public API",
+      storyAuto: "Automatic summary.",
+      autoOverviewH: "{n} components touched in {m} layers", autoOverviewB: "{f} files, +{a} −{d} lines.",
+      autoNewH: "{x} added", autoRemovedH: "{x} removed", autoViolH: "{a} now depends on {b}", autoChangedH: "{x} changed",
+      autoChangedB: "{n} file(s), +{a} −{d}.", autoNewB: "New component in {l}.", autoRemovedB: "All its files were deleted.",
+      autoSpecH: "{n} requirements in {id}", autoSpecB: "Spec changes included.",
+      phaseActive: "active", phaseArchived: "archived", phaseArchiving: "archived by this change",
+      proposal: "Proposal", specs: "Specs", designDoc: "Design", tasks: "Tasks", code: "Code", archive: "Archive",
+      sAdded: "added", sModified: "edited", sUnchanged: "unchanged", sAbsent: "none", sDeleted: "deleted", pending: "pending",
+      implemented: "implemented", partial: "partial", missing: "missing", "n/a": "n/a", notMapped: "not mapped",
+      opADDED: "added", opMODIFIED: "modified", opREMOVED: "removed", opRENAMED: "renamed", opSPEC: "spec",
+      scenarios: "Scenarios", why: "Why", whatChanges: "What changes", impact: "Impact",
+      scenario: "Scenario", showFlow: "Show flow",
+      pendingMap: "Requirements not linked to code yet.", mainSpec: "main spec", merged: "merged",
+      reqsComponents: "Implemented in", reqsTests: "Tested by",
+      dataStage: "Data", migrations: "Migrations", fields: "Fields", relations: "Relations", evidence: "Evidence",
+
+
+
+
+
+      coverageHint: "Share of the changed code that sits in a component on the map.",
+      onMap: "on the map", context: "Context",
+      noConfig: "No architecture configured", noConfigText: "Layers and components are guessed from folder names. Run explain-change init to define them.",
+      decisionsDoc: "Decisions", openTasksN: "{n} open"
+    },
+    es: {
+      story: "Historia", canvas: "Mapa", architecture: "Arquitectura", spec: "Spec",
+      design: "Diseño",
+      openspec: "OpenSpec",
+      local: "Rama local", ado: "PR de Azure DevOps", commit: "commit", commits: "commits",
+      noInsight: "Sin historia todavía", noInsightText: "Pide a tu agente que ejecute explain-change para escribirla.",
+      staleInsight: "Historia desactualizada", staleText: "El código cambió después de escribir la historia. Pide a tu agente que vuelva a ejecutar explain-change.",
+      invalidInsight: "Historia rechazada", invalidText: "insight.json tiene errores:",
+      intent: "Objetivo",
+      file: "archivo", kFiles: "archivos", kLines: "líneas", kComponents: "componentes", component: "componente", kTasks: "tareas", kReqs: "requisitos",
+      delta: "Cambios", after: "Después", before: "Antes",
+      decisions: "Decisiones de diseño", brokenRule: "regla rota", brokenRules: "reglas rotas", lNew: "nuevo", nNew: "nuevos", nChanged: "cambiados", nRemoved: "eliminados", lChanged: "cambiado", lRemoved: "eliminado", lContext: "sin tocar", lViolation: "rompe una regla", lSame: "sin cambios", lHero: "dependencia clave",
+      refs: "refs", unresolved: "referencias sin resolver", unmapped: "archivos cambiados fuera del mapa",
+      archEmpty: "Este cambio no toca ningún componente configurado.",
+
+      vsReference: "Frente al flujo de referencia", extraSteps: "pasos nuevos", missingSteps: "pasos que faltan", matchesReference: "coincide con el flujo de referencia",
+
+      tests: "Tests",
+      theme: "Tema", themeAuto: "auto", themeLight: "claro", themeDark: "oscuro",
+      alternative: "Alternativa", unverified: "El código no tiene dependencia entre estos componentes", viaPort: "Conectados a través de {x}: ambos dependen de él",
+      unverifiedNote: "Sin dependencia en el código:",
+      prev: "Anterior", next: "Siguiente", fit: "Ajustar", zoomIn: "Acercar", zoomOut: "Alejar", motion: "Animación",
+      canvasHint: "Arrastra para mover · Ctrl/⌘ + rueda para zoom · clic en un componente para ver detalle · ← → para avanzar",
+      back: "Historia", files: "Archivos", dependsOn: "Depende de", usedBy: "Usado por", reqs: "Requisitos", symbols: "API pública",
+      storyAuto: "Resumen automático.",
+      autoOverviewH: "{n} componentes tocados en {m} capas", autoOverviewB: "{f} archivos, +{a} −{d} líneas.",
+      autoNewH: "{x} añadido", autoRemovedH: "{x} eliminado", autoViolH: "{a} ahora depende de {b}", autoChangedH: "{x} cambia",
+      autoChangedB: "{n} archivo(s), +{a} −{d}.", autoNewB: "Componente nuevo en {l}.", autoRemovedB: "Se borraron todos sus archivos.",
+      autoSpecH: "{n} requisitos en {id}", autoSpecB: "Cambios de spec incluidos.",
+      phaseActive: "activo", phaseArchived: "archivado", phaseArchiving: "archivado en este cambio",
+      proposal: "Propuesta", specs: "Specs", designDoc: "Diseño", tasks: "Tareas", code: "Código", archive: "Archivo",
+      sAdded: "añadido", sModified: "editado", sUnchanged: "sin cambios", sAbsent: "no hay", sDeleted: "eliminado", pending: "pendiente",
+      implemented: "implementado", partial: "parcial", missing: "falta", "n/a": "n/a", notMapped: "sin mapear",
+      opADDED: "añadido", opMODIFIED: "modificado", opREMOVED: "eliminado", opRENAMED: "renombrado", opSPEC: "spec",
+      scenarios: "Escenarios", why: "Por qué", whatChanges: "Qué cambia", impact: "Impacto",
+      scenario: "Escenario", showFlow: "Ver flujo",
+      pendingMap: "Requisitos aún sin enlazar al código.", mainSpec: "spec principal", merged: "fusionado",
+      reqsComponents: "Implementado en", reqsTests: "Probado por",
+      dataStage: "Datos", migrations: "Migraciones", fields: "Campos", relations: "Relaciones", evidence: "Evidencia",
+
+
+
+
+
+      coverageHint: "Parte del código cambiado que está en un componente del mapa.",
+      onMap: "en el mapa", context: "Contexto",
+      noConfig: "Sin arquitectura configurada", noConfigText: "Capas y componentes deducidos de los nombres de carpetas. Ejecuta explain-change init para definirlos.",
+      decisionsDoc: "Decisiones", openTasksN: "{n} abiertas"
+    }
+  };
+  var T = I18N[cfg.lang] || I18N.en;
+  function tf(key, o) { return T[key].replace(/\{(\w+)\}/g, function (_, k) { return o[k] !== undefined ? o[k] : ""; }); }
+
+  // ── helpers ──
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    setAttrs(el, attrs);
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function s(tag, attrs) {
+    var el = document.createElementNS(SVGNS, tag);
+    setAttrs(el, attrs);
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function setAttrs(el, attrs) {
+    if (!attrs) return;
+    Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v === null || v === undefined || v === false) return;
+      if (k === "class") el.setAttribute("class", v);
+      else if (k === "text") el.textContent = v;
+      else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? "" : v);
+    });
+  }
+  function append(el, child) {
+    if (child === null || child === undefined || child === false) return;
+    if (Array.isArray(child)) return child.forEach(function (c) { append(el, c); });
+    el.appendChild(typeof child === "string" || typeof child === "number" ? document.createTextNode(String(child)) : child);
+  }
+  function store(key, value) {
+    try {
+      if (value === undefined) return JSON.parse(localStorage.getItem(key) || "null");
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) { return null; }
+  }
+  function fmt(n) { return Number(n).toLocaleString(cfg.lang === "es" ? "es-ES" : "en-US"); }
+  function trunc(t, n) { t = String(t || ""); return t.length > n ? t.slice(0, n - 1) + "…" : t; }
+  // Shortens a label to the pixels it has (character counts misjudge wide letters and bold faces).
+  var measure = document.createElement("canvas").getContext("2d");
+  function fit(t, font, maxW) {
+    t = String(t || "");
+    if (!measure) return t;
+    measure.font = font + " " + getComputedStyle(document.body).fontFamily;
+    if (measure.measureText(t).width <= maxW) return t;
+    while (t.length > 1 && measure.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+    return t.trimEnd() + "…";
+  }
+  function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  function r1(n) { return Math.round(n * 10) / 10; }
+
+  var compById = {}, layerRank = {}, compRank = {};
+  cfg.layers.forEach(function (l, i) { layerRank[l.id] = i; });
+  cfg.components.forEach(function (c, i) { compById[c.id] = c; compRank[c.id] = [layerRank[c.layer], i]; });
+  function byCompRank(a, b) {
+    var ra = compRank[a] || [99, 999], rb = compRank[b] || [99, 999];
+    return ra[0] - rb[0] || ra[1] - rb[1] || (a < b ? -1 : a > b ? 1 : 0);
+  }
+  var changeComp = {};
+  ctx.components.forEach(function (c) { changeComp[c.id] = c; });
+  var fileIndex = {};
+  ctx.files.forEach(function (f, i) { fileIndex[f.path] = i; });
+  var summaryOf = {};
+  if (ins) ins.changes.forEach(function (c) { summaryOf[c.id] = c.summary; });
+  function compName(id) { return (compById[id] && compById[id].name) || id; }
+  function layerName(id) { var c = compById[id]; return c ? (cfg.layers[layerRank[c.layer]] || {}).name || c.layer : ""; }
+  function statusLabel(stt) { return T["l" + cap(stt)] || stt; }
+
+  // OpenSpec: requirement list (deltas of the change, then main-spec edits not covered by a delta), and the agent's map.
+  var REQS = [], reqById = {};
+  if (OS) {
+    OS.changes.forEach(function (c) { c.requirements.forEach(function (r) { REQS.push(r); }); });
+    var seenReq = {};
+    REQS.forEach(function (r) { seenReq[r.id] = true; });
+    OS.specs.forEach(function (sp) { sp.requirements.forEach(function (r) { if (!seenReq[r.id]) REQS.push(r); }); });
+    REQS.forEach(function (r) { reqById[r.id] = r; });
+  }
+  var specMap = {};
+  if (ins && ins.spec) ins.spec.forEach(function (m) { specMap[m.req] = m; });
+  function reqsOfComp(id) { return REQS.filter(function (r) { var m = specMap[r.id]; return m && m.components.indexOf(id) > -1; }); }
+
+  // A file reference links to that file in the PR when the source has one; otherwise it is plain text.
+  function prFileUrl(path) {
+    return src.mode === "ado" && src.url ? src.url + "?_a=files&path=" + encodeURIComponent("/" + path) : null;
+  }
+  function onOpen(el, path) {
+    var url = prFileUrl(path);
+    if (url) { el.classList.add("linked"); el.addEventListener("click", function () { window.open(url, "_blank", "noopener"); }); }
+    return el;
+  }
+  function fileLink(ref, label) {
+    var path = (/^(.+?):\d+/.exec(ref || "") || [null, ref])[1], url = prFileUrl(path);
+    return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref })
+      : h("code", { class: "ref", text: label || ref });
+  }
+  function sectionShell(id, title, body) {
+    return h("section", { class: "section", id: id }, h("div", { class: "section-head" }, h("h2", { text: title })), body);
+  }
+  function legendItem(kind, color, label) {
+    if (kind === "swatch") return h("span", null, h("i", { class: "swatch", style: "background:" + color }), label);
+    return h("span", null, h("i", { class: "legend-line" + (kind.indexOf("anim") > -1 ? " anim" : ""), style: "border-top-color:" + color + (kind.indexOf("dashed") > -1 ? ";border-top-style:dashed" : "") }), label);
+  }
+
+  // ═════════════════════════════ header ═════════════════════════════
+  function renderHeader() {
+    var notice = ins ? null : h("div", { class: "notice" },
+      h("span", { class: "notice-icon", text: "i" }),
+      h("div", null,
+        h("b", { text: { stale: T.staleInsight, invalid: T.invalidInsight }[DATA.insightStatus] || T.noInsight }), " ",
+        { stale: T.staleText, invalid: T.invalidText }[DATA.insightStatus] || T.noInsightText,
+        DATA.insightStatus === "invalid" ? h("ul", null, DATA.insightErrors.map(function (e) { return h("li", { text: e }); })) : null));
+    var counts = { new: 0, changed: 0, removed: 0 };
+    ctx.components.forEach(function (c) { if (counts[c.status] !== undefined) counts[c.status]++; });
+    var srcLabel = src.mode === "ado" ? T.ado + " #" + src.pr_id : T.local;
+    var coverage = st.code_lines ? Math.round(100 * (st.mapped_lines || 0) / st.code_lines) : 100;
+    var chips = [
+      chip(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
+      h("span", { class: "stat-chip" }, h("b", null, h("span", { class: "add", text: "+" + fmt(st.add) }), " ", h("span", { class: "del", text: "−" + fmt(st.del) })), h("span", { text: T.kLines })),
+      counts.new ? chip(counts.new, counts.new === 1 ? T.lNew : T.nNew, "new") : null,
+      counts.changed ? chip(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
+      counts.removed ? chip(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null,
+      coverage < 100 ? h("span", { class: "stat-chip", title: T.coverageHint }, h("b", { text: coverage + "%" }), h("span", { text: T.onMap })) : null,
+      st.violations_new ? chip(st.violations_new, st.violations_new === 1 ? T.brokenRule : T.brokenRules, "violation") : null];
+    if (OS) {
+      var tdone = 0, ttotal = 0;
+      OS.changes.forEach(function (c) { if (c.tasks) { tdone += c.tasks.done; ttotal += c.tasks.total; } });
+      if (REQS.length) chips.push(chip(REQS.length, T.kReqs, "accent"));
+      if (ttotal) chips.push(chip(tdone + "/" + ttotal, T.kTasks, tdone === ttotal ? "ok" : "warn"));
+    }
+    return h("header", { class: "hero", id: "summary" },
+      cfg.inferred ? h("div", { class: "config-warn", role: "note" },
+        h("span", { class: "config-warn-icon", text: "!" }),
+        h("div", null, h("b", { text: T.noConfig }), " ", h("span", { text: T.noConfigText }))) : null,
+      h("div", { class: "eyebrow" },
+        h("span", { text: cfg.name }), h("span", { class: "faint", text: "·" }),
+        src.url ? h("a", { href: src.url, text: srcLabel }) : h("span", { text: srcLabel }),
+        h("span", { class: "faint", text: "·" }),
+        h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.base_ref })),
+        h("span", { class: "faint", text: src.commits + " " + (src.commits === 1 ? T.commit : T.commits) + (src.head_date ? " · " + src.head_date.slice(0, 10) : "") })),
+      h("h1", { class: "title", text: src.title }),
+      ins ? h("p", { class: "tldr", text: ins.tldr }) : null,
+      ins ? h("p", { class: "intent" }, h("b", { text: T.intent }), ins.intent) : null,
+      notice,
+      h("div", { class: "chips" }, chips),
+      ctx.notes.map(function (n) { return h("p", { class: "note faint", text: n }); }));
+  }
+  function chip(v, label, cls) {
+    return h("span", { class: "stat-chip " + (cls || "") }, h("b", { text: String(v) }), h("span", { text: label }));
+  }
+
+  // ═════════════════════════════ stages ═════════════════════════════
+  // Every stage draws into one SVG and registers its focusable elements: geo[key] (box), data-k on the element,
+  // and edges carrying data-a / data-b. `expand(set)` says what else lights up with a focus set.
+
+  function newStage(id, W, H) {
+    var svg = s("svg", { class: "stage-svg stage-" + id.split(":")[0], role: "img", preserveAspectRatio: "xMidYMid meet" });
+    return { id: id, svg: svg, W: W, H: H, geo: {}, keyOf: function (x) { return x; }, expand: function (set) { return set; } };
+  }
+  function markers(svg, prefix, kinds) {
+    var defs = s("defs");
+    kinds.forEach(function (k) {
+      defs.appendChild(s("marker", { id: prefix + k, viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "10", markerHeight: "10", markerUnits: "userSpaceOnUse", orient: "auto-start-reverse" },
+        s("path", { d: "M0,0 L10,5 L0,10 z", class: "arrow arrow-" + k })));
+    });
+    svg.appendChild(defs);
+  }
+
+  // ── Architecture: lanes (layers, top = entry), components ordered to cut crossings ──
+  var heroPairs = {};
+  if (ins) ins.hero.forEach(function (x) { heroPairs[x.from + ">" + x.to] = x.label || ""; });
+
+  function layoutArch(nodes, edges, compact) {
+    var W = compact ? 380 : 1160;
+    var LABEL = compact ? 0 : 156, NW = compact ? 168 : 200, NH = 66, GX = compact ? 12 : 34, GY = 22, PADY = 24, TOPL = compact ? 30 : 0;
+    var perRow = Math.max(1, Math.floor((W - LABEL - 24 + GX) / (NW + GX)));
+    var layers = cfg.layers.filter(function (l) { return nodes.some(function (n) { return compById[n.id].layer === l.id; }); });
+    var byLayer = {}, idx = {}, adj = {};
+    layers.forEach(function (l) {
+      byLayer[l.id] = nodes.filter(function (n) { return compById[n.id].layer === l.id; }).sort(function (a, b) {
+        return ((a.status === "context") - (b.status === "context")) || byCompRank(a.id, b.id);
+      });
+    });
+    edges.forEach(function (e) { (adj[e.from] = adj[e.from] || []).push(e.to); (adj[e.to] = adj[e.to] || []).push(e.from); });
+    function reindex(l) { var arr = byLayer[l.id]; arr.forEach(function (n, i) { idx[n.id] = (i + 0.5) / arr.length; }); }
+    layers.forEach(reindex);
+    // Barycenter sweeps (down, up, down, up): each lane is reordered by the mean position of its neighbours in other lanes.
+    for (var it = 0; it < 4; it++) {
+      (it % 2 ? layers.slice().reverse() : layers).forEach(function (l) {
+        var bc = {};
+        byLayer[l.id].forEach(function (n) {
+          var nb = (adj[n.id] || []).filter(function (x) { return idx[x] !== undefined && compById[x].layer !== l.id; });
+          bc[n.id] = nb.length ? nb.reduce(function (a, x) { return a + idx[x]; }, 0) / nb.length : idx[n.id];
+        });
+        byLayer[l.id].sort(function (a, b) { return (bc[a.id] - bc[b.id]) || byCompRank(a.id, b.id); });
+        reindex(l);
+      });
+    }
+    var bands = [], pos = {}, y = 0;
+    layers.forEach(function (layer) {
+      var inLayer = byLayer[layer.id];
+      var rows = Math.ceil(inLayer.length / perRow);
+      var ids = inLayer.map(function (n) { return n.id; });
+      var ARC = edges.some(function (e) { return ids.indexOf(e.from) > -1 && ids.indexOf(e.to) > -1; }) ? 40 : 0;
+      var top = TOPL + ARC;
+      var bh = rows * NH + (rows - 1) * GY + PADY * 2 + top;
+      bands.push({ layer: layer, y: y, h: bh, n: inLayer.length });
+      inLayer.forEach(function (n, i) {
+        var row = Math.floor(i / perRow), col = i % perRow;
+        var inRow = Math.min(perRow, inLayer.length - row * perRow);
+        var rowW = inRow * NW + (inRow - 1) * GX;
+        var x0 = LABEL + (W - LABEL - rowW) / 2;
+        pos[n.id] = { x: x0 + col * (NW + GX), y: y + top + PADY + row * (NH + GY), w: NW, h: NH };
+      });
+      y += bh + 12;
+    });
+    return { W: W, H: Math.max(y - 12, 60), bands: bands, pos: pos, compact: compact, GX: GX };
+  }
+
+  function edgePaths(edges, pos, L) {
+    // Port allocation: spread attachment points along each node side, ordered by the other end's x.
+    var ports = {};
+    function addPort(node, side, edgeKey, otherX) {
+      var k = node + "|" + side;
+      (ports[k] = ports[k] || []).push({ key: edgeKey, x: otherX });
+    }
+    var geo = edges.map(function (e) {
+      var a = pos[e.from], b = pos[e.to];
+      var down = b.y > a.y + 1, up = b.y + 1 < a.y;
+      var g = { e: e, key: e.from + ">" + e.to, a: a, b: b };
+      if (down) { g.sa = "bottom"; g.sb = "top"; }
+      else if (up) { g.sa = "top"; g.sb = "bottom"; }
+      else { g.sa = "top"; g.sb = "top"; }
+      addPort(e.from, g.sa, g.key, b.x);
+      addPort(e.to, g.sb, g.key, a.x);
+      return g;
+    });
+    function portX(node, side, key) {
+      var list = ports[node + "|" + side].slice().sort(function (p, q) { return p.x - q.x || (p.key < q.key ? -1 : 1); });
+      var i = list.findIndex(function (p) { return p.key === key; });
+      var r = pos[node];
+      return r.x + r.w * (i + 1) / (list.length + 1);
+    }
+    // Nodes lying between both ends block a direct curve; such edges detour through the gap beside them.
+    function obstacles(g, x1, x2, yTop, yBot) {
+      var lo = Math.min(x1, x2) - 8, hi = Math.max(x1, x2) + 8;
+      return Object.keys(pos).filter(function (id) {
+        if (id === g.e.from || id === g.e.to) return false;
+        var r = pos[id];
+        return r.y < yBot && r.y + r.h > yTop && r.x < hi && r.x + r.w > lo;
+      }).map(function (id) { return pos[id]; });
+    }
+    var laneUse = {};
+    return geo.map(function (g) {
+      var x1 = portX(g.e.from, g.sa, g.key), x2 = portX(g.e.to, g.sb, g.key);
+      var y1 = g.sa === "bottom" ? g.a.y + g.a.h : g.a.y, y2 = g.sb === "top" ? g.b.y - 4 : g.b.y + g.b.h + 4;
+      var d;
+      if (g.sa === "top" && g.sb === "top") {
+        var lift = Math.min(34, 22 + Math.abs(x2 - x1) / 10);
+        d = "M" + r1(x1) + "," + y1 + " C" + r1(x1) + "," + r1(y1 - lift) + " " + r1(x2) + "," + r1(y2 - lift) + " " + r1(x2) + "," + y2;
+        return { e: g.e, d: d, mx: (x1 + x2) / 2, my: Math.min(y1, y2) - lift * 0.75 };
+      }
+      var dir = y2 > y1 ? 1 : -1;
+      var blockers = obstacles(g, x1, x2, Math.min(y1, y2), Math.max(y1, y2));
+      if (!blockers.length) {
+        var my = (y1 + y2) / 2;
+        d = "M" + r1(x1) + "," + y1 + " C" + r1(x1) + "," + r1(my) + " " + r1(x2) + "," + r1(my) + " " + r1(x2) + "," + y2;
+        return { e: g.e, d: d, mx: (x1 + x2) / 2, my: my };
+      }
+      var gap = (L.GX || 20) / 2, mid = (x1 + x2) / 2, yTop = Math.min(y1, y2), yBot = Math.max(y1, y2);
+      var lane, right, left;
+      // Grow the blocker set until the chosen lane is clear of every node between both ends.
+      for (var guard = 0; guard < 12; guard++) {
+        right = Math.max.apply(null, blockers.map(function (r) { return r.x + r.w; })) + gap;
+        left = Math.min.apply(null, blockers.map(function (r) { return r.x; })) - gap;
+        lane = (Math.abs(right - mid) <= Math.abs(left - mid) && right < L.W - 4) || left < 4 ? right : left;
+        var hit = obstacles(g, lane, lane, yTop, yBot).filter(function (r) { return blockers.indexOf(r) < 0; });
+        if (!hit.length) break;
+        blockers = blockers.concat(hit);
+      }
+      var used = laneUse[Math.round(lane)] = (laneUse[Math.round(lane)] || 0) + 1;
+      lane += (lane === right ? 1 : -1) * (used - 1) * 4;
+      var ra = y1 + dir * 26, rb = y2 - dir * 26;
+      d = "M" + r1(x1) + "," + y1 + " C" + r1(x1) + "," + (y1 + dir * 18) + " " + r1(lane) + "," + (y1 + dir * 8) + " " + r1(lane) + "," + ra +
+        " L" + r1(lane) + "," + rb + " C" + r1(lane) + "," + (y2 - dir * 8) + " " + r1(x2) + "," + (y2 - dir * 18) + " " + r1(x2) + "," + y2;
+      return { e: g.e, d: d, mx: lane, my: (y1 + y2) / 2 };
+    });
+  }
+
+  function buildArchitecture(mode, compact, onNode) {
+    var nodes = ctx.components.filter(function (n) {
+      return !(mode === "before" && n.status === "new") && !(mode === "after" && n.status === "removed");
+    });
+    var vis = {};
+    nodes.forEach(function (n) { vis[n.id] = true; });
+    var edges = ctx.edges.filter(function (e) {
+      if (!vis[e.from] || !vis[e.to]) return false;
+      if (mode === "before") return e.status !== "new";
+      if (mode === "after") return e.status !== "removed";
+      return true;
+    });
+    var L = layoutArch(nodes, edges, compact);
+    var S = newStage("architecture", L.W, L.H);
+    var svg = S.svg;
+    svg.classList.add("mode-" + mode);
+    if (!nodes.length) { S.empty = T.archEmpty; return S; }
+    markers(svg, "ar-", ["same", "new", "removed", "violation", "hero"]);
+    L.bands.forEach(function (b) {
+      svg.appendChild(s("rect", { x: 0, y: b.y, width: L.W, height: b.h, rx: 14, class: "band" }));
+      if (L.compact) svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: trunc(b.layer.name, 40) }));
+      else {
+        svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 - 2, class: "band-label", text: trunc(b.layer.name, 18) }));
+        svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 + 14, class: "band-sub", text: b.n + " " + (b.n === 1 ? T.component : T.kComponents) }));
+      }
+    });
+    var edgeLayer = s("g", { class: "edges" }), labelLayer = s("g", { class: "edge-labels" });
+    edgePaths(edges, L.pos, L).forEach(function (p, i) {
+      var e = p.e, k = e.violation ? "violation" : e.status;
+      var hero = heroPairs[e.from + ">" + e.to] !== undefined;
+      var tip = compName(e.from) + " → " + compName(e.to) + " · " + (e.head_count || e.base_count) + " " + T.refs +
+        (e.refs[0] ? " · " + e.refs[0] : "") + (e.violation ? " · ⚠ " + e.violation.rule : "");
+      var pid = "ep-" + i;
+      var g = s("g", { class: "edge-g" + (hero ? " hero" : ""), "data-k": "e:" + e.from + ">" + e.to, "data-a": e.from, "data-b": e.to },
+        s("title", { text: tip }),
+        s("path", { d: p.d, class: "edge-hit" }),
+        hero ? s("path", { d: p.d, class: "edge-glow" }) : null,
+        s("path", { id: pid, d: p.d, class: "edge e-" + k + (e.violation && e.violation.existing ? " existing" : ""), "marker-end": "url(#ar-" + (hero && !e.violation ? "hero" : k) + ")" }));
+      if ((hero || e.status === "new") && e.status !== "removed") {
+        // A dot travels the dependency: the change's new paths and its key one read as live.
+        g.appendChild(s("circle", { r: hero ? 4.5 : 3, class: "pulse" + (hero ? " hero" : "") },
+          s("animateMotion", { dur: hero ? "2.2s" : "3s", repeatCount: "indefinite", begin: "-" + r1((i % 5) * 0.4) + "s" }, s("mpath", { href: "#" + pid }))));
+      }
+      edgeLayer.appendChild(g);
+      if (hero && heroPairs[e.from + ">" + e.to]) {
+        var label = trunc(heroPairs[e.from + ">" + e.to], 40), lw = label.length * 6.4 + 16;
+        labelLayer.appendChild(s("g", { class: "edge-label", "data-a": e.from, "data-b": e.to },
+          s("rect", { x: r1(p.mx - lw / 2), y: r1(p.my - 11), width: r1(lw), height: 22, rx: 11 }),
+          s("text", { x: r1(p.mx), y: r1(p.my + 4), "text-anchor": "middle", text: label })));
+      }
+    });
+    svg.appendChild(edgeLayer);
+    nodes.forEach(function (n) {
+      var r = L.pos[n.id], c = compById[n.id];
+      S.geo[n.id] = r;
+      var nreq = reqsOfComp(n.id).length;
+      var info = n.status === "context" ? T.lContext : n.files + " " + (n.files === 1 ? T.file : T.kFiles) + (nreq ? " · ◆ " + nreq : "");
+      var g = s("g", { class: "node st-" + n.status, "data-k": n.id, tabindex: "0", role: "button",
+        "aria-label": c.name + ", " + statusLabel(n.status) },
+        s("title", { text: c.name + (summaryOf[n.id] ? "\n" + summaryOf[n.id] : c.desc ? "\n" + c.desc : "") }),
+        s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12, class: "box" }),
+        s("text", { x: r.x + 14, y: r.y + 19, class: "tag", text: n.status === "context" ? "" : statusLabel(n.status).toUpperCase() }),
+        n.status !== "context" ? s("text", { x: r.x + r.w - 12, y: r.y + 19, "text-anchor": "end", class: "delta" },
+          s("tspan", { class: "add", text: "+" + n.add }), s("tspan", { class: "del", text: " −" + n.del })) : null,
+        s("text", { x: r.x + 14, y: r.y + 39, class: "name", text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28) }),
+        s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }));
+      if (onNode) onNode(g, n.id);
+      svg.appendChild(g);
+    });
+    svg.appendChild(labelLayer);
+    S.expand = function (set) {
+      var keys = Object.keys(set);
+      if (keys.length === 1 && vis[keys[0]]) {
+        edges.forEach(function (e) { if (e.from === keys[0]) set[e.to] = true; if (e.to === keys[0]) set[e.from] = true; });
+      }
+      return set;
+    };
+    S.focusBoxKeys = function (ids) { return ids.filter(function (x) { return vis[x]; }); };
+    return S;
+  }
+
+  // ── Data flow: sequence over real components, steps travel in order ──
+  function buildFlow(fl) {
+    var parts = [];
+    fl.steps.forEach(function (x) { [x.from, x.to].forEach(function (p) { if (parts.indexOf(p) < 0) parts.push(p); }); });
+    parts.sort(byCompRank);
+    var hasData = fl.steps.some(function (x) { return x.data; });
+    var COL = 220, HEAD = 58, ROW = hasData ? 66 : 50, TOP = 20;
+    var W = Math.max(720, parts.length * COL + 40), H = TOP + HEAD + 26 + fl.steps.length * ROW + 16;
+    var S = newStage("flow:" + fl.id, W, H);
+    var svg = S.svg, x = {};
+    var offset = (W - parts.length * COL) / 2;
+    parts.forEach(function (p, i) { x[p] = offset + i * COL + COL / 2; });
+    markers(svg, "sq-" + fl.id + "-", ["same", "new", "changed", "removed"]);
+    parts.forEach(function (p) {
+      var c = compById[p], cc = changeComp[p];
+      var stt = cc ? cc.status : "context";
+      var box = { x: x[p] - COL / 2 + 12, y: TOP, w: COL - 24, h: HEAD - 8 };
+      S.geo["p:" + p] = box;
+      svg.appendChild(s("line", { x1: x[p], y1: TOP + HEAD - 8, x2: x[p], y2: H - 8, class: "lifeline", "data-a": "p:" + p, "data-b": "p:" + p }));
+      svg.appendChild(s("g", { class: "head st-" + stt, "data-k": "p:" + p },
+        s("rect", { x: box.x, y: box.y, width: box.w, height: box.h, rx: 11 }),
+        s("text", { x: x[p], y: TOP + 21, "text-anchor": "middle", class: "name", text: trunc(c ? c.name : p, 21) }),
+        s("text", { x: x[p], y: TOP + 37, "text-anchor": "middle", class: "layer", text: trunc(layerName(p), 24) })));
+    });
+    var n = fl.steps.length, per = 0.9, total = n * per + 1.2;
+    fl.steps.forEach(function (stp, i) {
+      var y = TOP + HEAD + 30 + i * ROW, x1 = x[stp.from], x2 = x[stp.to];
+      var key = "#" + (i + 1);
+      var g = s("g", { class: "msg st-" + stp.status + (stp.verified === false ? " unverified" : ""), "data-k": key, "data-from": "p:" + stp.from, "data-to": "p:" + stp.to });
+      if (stp.verified === false) g.appendChild(s("title", { text: T.unverified }));
+      else if (stp.via) g.appendChild(s("title", { text: tf("viaPort", { x: compName(stp.via) }) }));
+      var marker = "url(#sq-" + fl.id + "-" + stp.status + ")", pid = "fm-" + fl.id + "-" + i, d;
+      g.appendChild(s("rect", { x: Math.min(x1, x2) - 14, y: y - 24, width: Math.max(Math.abs(x2 - x1), 60) + 28, height: 36, rx: 8, class: "msg-bg" }));
+      if (stp.from === stp.to) {
+        d = "M" + x1 + "," + (y - 6) + " h38 v16 h-34";
+        g.appendChild(s("path", { id: pid, d: d, class: "msg-line", "marker-end": marker }));
+        g.appendChild(s("text", { x: x1 + 46, y: y + 4, class: "msg-label", text: trunc(stp.msg, 40) }));
+        S.geo[key] = { x: x1 - 10, y: y - 24, w: 220, h: 36 };
+      } else {
+        var dir = x2 > x1 ? 1 : -1;
+        d = "M" + (x1 + dir * 4) + "," + y + " L" + (x2 - dir * 6) + "," + y;
+        g.appendChild(s("path", { id: pid, d: d, class: "msg-line", "marker-end": marker }));
+        g.appendChild(s("text", { x: (x1 + x2) / 2, y: y - 8, "text-anchor": "middle", class: "msg-label", text: stp.msg + (stp.verified === false ? "  ?" : "") }));
+        if (stp.data) g.appendChild(dataChip(stp.data, (x1 + x2) / 2, y + 17));
+        S.geo[key] = { x: Math.min(x1, x2), y: y - 24, w: Math.abs(x2 - x1), h: 36 };
+      }
+      g.appendChild(s("g", { class: "step-badge" }, s("circle", { cx: x1 - dir1(x1, x2) * 16, cy: y, r: 9 }),
+        s("text", { x: x1 - dir1(x1, x2) * 16, y: y + 3.5, "text-anchor": "middle", text: String(i + 1) })));
+      if (stp.status !== "removed") {
+        // One dot per step, each starting when the previous one lands: the sequence plays in call order, then loops.
+        var a = r1(i * per / total), b = r1((i * per + per * 0.8) / total);
+        g.appendChild(s("circle", { r: 4, class: "pulse", opacity: "0" },
+          s("animateMotion", { dur: r1(total) + "s", repeatCount: "indefinite", calcMode: "linear", keyPoints: "0;0;1;1", keyTimes: "0;" + a + ";" + b + ";1" }, s("mpath", { href: "#" + pid })),
+          s("animate", { attributeName: "opacity", dur: r1(total) + "s", repeatCount: "indefinite", calcMode: "discrete", values: "0;1;0", keyTimes: "0;" + a + ";" + b })));
+      }
+      svg.appendChild(g);
+    });
+    S.keyOf = function (id) { return /^#\d+$/.test(id) ? id : "p:" + id; };
+    S.expand = function (set) {
+      var msgs = Object.keys(set).filter(function (k) { return k.charAt(0) === "#"; });
+      var heads = Object.keys(set).filter(function (k) { return k.slice(0, 2) === "p:"; });
+      fl.steps.forEach(function (stp, i) {
+        var k = "#" + (i + 1);
+        if (!msgs.length && (set["p:" + stp.from] || set["p:" + stp.to]) && heads.length) set[k] = true;
+      });
+      fl.steps.forEach(function (stp, i) { if (set["#" + (i + 1)]) { set["p:" + stp.from] = true; set["p:" + stp.to] = true; } });
+      return set;
+    };
+    return S;
+  }
+  // What travels on a step: "Order { +email ~total −fax }", coloured per field change.
+  function dataChip(data, cx, y) {
+    var shown = (data.fields || []).filter(function (f) { return fieldKind(f) !== "same"; });
+    if (!shown.length) shown = (data.fields || []).slice(0, 3);
+    var parts = [{ t: data.type, k: "type" }].concat(shown.length ? [{ t: " {", k: "p" }] : [])
+      .concat(shown.slice(0, 4).map(function (f, i) { var k = fieldKind(f); return { t: (i ? "  " : " ") + { add: "+", del: "−", mod: "~", same: "" }[k] + fieldText(f).split(":")[0].trim(), k: k }; }))
+      .concat(shown.length > 4 ? [{ t: " …", k: "p" }] : []).concat(shown.length ? [{ t: " }", k: "p" }] : []);
+    var len = parts.reduce(function (a, p) { return a + p.t.length; }, 0), w = len * 6.6 + 20;
+    var g = s("g", { class: "data-chip" }, s("title", { text: data.type + "\n" + (data.fields || []).join("\n") }),
+      s("rect", { x: r1(cx - w / 2), y: y - 13, width: r1(w), height: 20, rx: 6 }));
+    var t = s("text", { x: r1(cx), y: y + 1, "text-anchor": "middle" });
+    parts.forEach(function (p) { t.appendChild(s("tspan", { class: "dk-" + p.k, text: p.t })); });
+    g.appendChild(t);
+    return g;
+  }
+  function dir1(x1, x2) { return x2 >= x1 ? 1 : -1; }
+
+  // ── Data: the entities the change touches (agent, with evidence) and the migrations in the diff (computed) ──
+  var DM = ins && ins.data_model && ins.data_model.entities.length ? ins.data_model : null;
+  var entById = {};
+  if (DM) DM.entities.forEach(function (e) { entById[e.id] = e; });
+  function fieldKind(f) { var c = f.trim().charAt(0); return c === "+" ? "add" : c === "-" || c === "−" ? "del" : c === "~" ? "mod" : "same"; }
+  function fieldText(f) { return /^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim(); }
+
+  function buildData(onNode) {
+    var EW = 250, GX = 90, GY = 70, PER = 3;
+    var order = { added: 0, changed: 1, removed: 2, same: 3 };
+    var ents = DM.entities.slice().sort(function (a, b) {
+      return order[a.change] - order[b.change] || byCompRank(a.component || "", b.component || "") || (a.name < b.name ? -1 : 1);
+    });
+    var migrations = ctx.files.filter(function (f) { return f.category === "migration"; });
+    var top = migrations.length ? 34 + Math.min(migrations.length, 4) * 20 + 30 : 10;
+    var heights = ents.map(function (e) { return 52 + Math.max(1, e.fields.length) * 19 + 10; });
+    var rows = Math.ceil(ents.length / PER), rowH = [];
+    for (var r = 0; r < rows; r++) rowH.push(Math.max.apply(null, heights.slice(r * PER, r * PER + PER)));
+    var cols = Math.min(PER, ents.length), W = Math.max(cols * EW + (cols - 1) * GX, 600);
+    var pos = {}, y = top;
+    ents.forEach(function (e, i) {
+      var r = Math.floor(i / PER), c = i % PER, inRow = Math.min(PER, ents.length - r * PER);
+      var x0 = (W - (inRow * EW + (inRow - 1) * GX)) / 2;
+      var ry = top + rowH.slice(0, r).reduce(function (a, v) { return a + v + GY; }, 0);
+      pos[e.id] = { x: x0 + c * (EW + GX), y: ry, w: EW, h: heights[i] };
+      y = Math.max(y, ry + heights[i]);
+    });
+    var S = newStage("data", W, y + 10);
+    var svg = S.svg;
+    if (migrations.length) {
+      var mg = s("g", { class: "migrations" }, s("text", { x: 0, y: 14, class: "col-label", text: T.migrations.toUpperCase() }));
+      migrations.slice(0, 4).forEach(function (f, i) {
+        var t = s("text", { x: 0, y: 38 + i * 20, class: "mig" }, s("tspan", { class: "st-" + f.status, text: f.status + "  " }), s("tspan", { text: trunc(f.path, 90) }));
+        mg.appendChild(onOpen(t, f.path));
+      });
+      if (migrations.length > 4) mg.appendChild(s("text", { x: 0, y: 38 + 4 * 20, class: "info", text: "+" + (migrations.length - 4) }));
+      svg.appendChild(mg);
+    }
+    var links = s("g", { class: "links" });
+    svg.appendChild(links);
+    S.links = [];
+    DM.relations.forEach(function (rl) {
+      var a = pos[rl.from], b = pos[rl.to];
+      if (!a || !b) return;
+      var ax = a.x + a.w / 2, ay = a.y + a.h / 2, bx = b.x + b.w / 2, by = b.y + b.h / 2, d;
+      var x1, y1, x2, y2;
+      if (Math.abs(ay - by) < 10 || Math.abs(bx - ax) > Math.abs(by - ay)) {
+        x1 = bx > ax ? a.x + a.w : a.x; x2 = bx > ax ? b.x : b.x + b.w; y1 = a.y + 26; y2 = b.y + 26;
+        var mx = (x1 + x2) / 2; d = "M" + x1 + "," + y1 + " C" + mx + "," + y1 + " " + mx + "," + y2 + " " + x2 + "," + y2;
+      } else {
+        x1 = ax; x2 = bx; y1 = by > ay ? a.y + a.h : a.y; y2 = by > ay ? b.y : b.y + b.h;
+        var my = (y1 + y2) / 2; d = "M" + x1 + "," + y1 + " C" + x1 + "," + my + " " + x2 + "," + my + " " + x2 + "," + y2;
+      }
+      links.appendChild(s("path", { d: d, class: "rel rc-" + rl.change, "data-a": "ent:" + rl.from, "data-b": "ent:" + rl.to }));
+      if (rl.label) {
+        var lx = (x1 + x2) / 2, ly = (y1 + y2) / 2, lw = rl.label.length * 6.4 + 14;
+        links.appendChild(s("g", { class: "rel-label rc-" + rl.change, "data-a": "ent:" + rl.from, "data-b": "ent:" + rl.to },
+          s("rect", { x: r1(lx - lw / 2), y: r1(ly - 10), width: r1(lw), height: 20, rx: 10 }),
+          s("text", { x: r1(lx), y: r1(ly + 4), "text-anchor": "middle", text: rl.label })));
+      }
+      S.links.push(["ent:" + rl.from, "ent:" + rl.to]);
+    });
+    ents.forEach(function (e) {
+      var b = pos[e.id], key = "ent:" + e.id;
+      S.geo[key] = b;
+      var stt = { added: "new", changed: "changed", removed: "removed", same: "context" }[e.change];
+      var g = s("g", { class: "entity st-" + stt, "data-k": key, tabindex: "0", role: "button" },
+        s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 12, class: "box" }),
+        s("rect", { x: b.x, y: b.y, width: b.w, height: 40, rx: 12, class: "head" }),
+        s("rect", { x: b.x, y: b.y + 28, width: b.w, height: 12, class: "head" }),
+        s("text", { x: b.x + 14, y: b.y + 25, class: "name", text: trunc(e.name, 24) }),
+        s("text", { x: b.x + b.w - 12, y: b.y + 25, "text-anchor": "end", class: "tag", text: stt === "context" ? "" : statusLabel(stt).toUpperCase() }));
+      (e.fields.length ? e.fields : [""]).forEach(function (f, i) {
+        if (!f) return g.appendChild(s("text", { x: b.x + 14, y: b.y + 62, class: "info", text: e.component ? compName(e.component) : "" }));
+        var k = fieldKind(f);
+        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62 + i * 19, class: "field f-" + k },
+          s("tspan", { class: "fmark", text: { add: "+ ", del: "− ", mod: "~ ", same: "  " }[k] }), s("tspan", { text: trunc(fieldText(f), 28) })));
+      });
+      if (onNode) onNode(g, key);
+      svg.appendChild(g);
+    });
+    S.keyOf = function (id) { return id.slice(0, 4) === "ent:" ? id : "ent:" + id; };
+    S.expand = function (set) {
+      var add = {};
+      if (Object.keys(set).length === 1) S.links.forEach(function (l) { if (set[l[0]]) add[l[1]] = true; if (set[l[1]]) add[l[0]] = true; });
+      Object.keys(add).forEach(function (k) { set[k] = true; });
+      return set;
+    };
+    return S;
+  }
+
+  // ── Spec: the SDD pipeline of each OpenSpec change, then tests ← requirements → components ──
+  function wrapText(text, chars, lines) {
+    var out = [], cur = "";
+    String(text || "").split(/\s+/).forEach(function (w) {
+      if (!w) return;
+      if (cur && (cur + " " + w).length > chars) { out.push(cur); cur = w; } else cur = cur ? cur + " " + w : w;
+    });
+    if (cur) out.push(cur);
+    if (out.length > lines) { out = out.slice(0, lines); out[lines - 1] = trunc(out[lines - 1] + " …", chars); }
+    return out.map(function (l) { return trunc(l, chars); });
+  }
+  function textLines(g, x, y, lines, step, cls) {
+    lines.forEach(function (l, i) { g.appendChild(s("text", { x: x, y: y + i * step, class: cls || "info", text: l })); });
+  }
+  // Spread boxes along y near their wanted centre, in order, without overlap.
+  function placeColumn(items, top, gap) {
+    items.sort(function (a, b) { return a.want - b.want || (a.key < b.key ? -1 : 1); });
+    var y = top;
+    items.forEach(function (it) { it.y = Math.max(y, it.want - it.h / 2); y = it.y + it.h + gap; });
+    return items;
+  }
+
+  function buildSpec(onNode) {
+    var mapped = !!(ins && ins.spec && ins.spec.length);
+    var W = 1120, PH = 196;
+    var TW = 210, RW = 440, CW = 230, GAPX = 70;
+    var cols = TW + GAPX + RW + GAPX + CW, ox = (W - cols) / 2;
+    var TX = ox, RX = ox + TW + GAPX, CX = RX + RW + GAPX;
+    var y0 = OS.changes.length * PH + 40;
+    // requirement cards (height depends on text and scenario chips)
+    var cards = [], y = y0, lastCap = null, capHeads = [];
+    REQS.forEach(function (r) {
+      var capKey = r.cap + (r.change ? "" : " · " + T.mainSpec);
+      if (capKey !== lastCap) { capHeads.push({ y: y, text: capKey }); y += 28; lastCap = capKey; }
+      var lines = wrapText(r.text, 66, 2);
+      var chips = [], cx = 0, row = 0;
+      r.scenarios.forEach(function (sc) {
+        var flow = ins ? ins.flows.filter(function (f) { return f.scenario === r.id + "#" + sc.id; })[0] : null;
+        var label = (flow ? "▶ " : "◇ ") + trunc(sc.name, 38), w = label.length * 6.3 + 22;
+        if (cx && cx + w > RW - 32) { row++; cx = 0; }
+        chips.push({ sc: sc, flow: flow, label: label, x: cx, row: row, w: w });
+        cx += w + 6;
+      });
+      var hgt = 50 + lines.length * 15 + (chips.length ? (row + 1) * 26 + 6 : 0) + 8;
+      cards.push({ r: r, y: y, h: hgt, lines: lines, chips: chips });
+      y += hgt + 12;
+    });
+    var reqBottom = y;
+    // components and tests sit next to the requirements that use them
+    var compWant = {}, testWant = {};
+    cards.forEach(function (c) {
+      var m = specMap[c.r.id];
+      if (!m) return;
+      var mid = c.y + c.h / 2;
+      m.components.forEach(function (id) { (compWant[id] = compWant[id] || []).push(mid); });
+      m.tests.forEach(function (t) { var p = t.replace(/:\d+(-\d+)?$/, ""); (testWant[p] = testWant[p] || []).push(mid); });
+    });
+    function avg(a) { return a.reduce(function (x, v) { return x + v; }, 0) / a.length; }
+    var comps = placeColumn(Object.keys(compWant).map(function (k) { return { key: k, want: avg(compWant[k]), h: 52 }; }), y0, 12);
+    var tests = placeColumn(Object.keys(testWant).map(function (k) { return { key: k, want: avg(testWant[k]), h: 38 }; }), y0, 10);
+    var H = Math.max(reqBottom, comps.length ? comps[comps.length - 1].y + 64 : 0, tests.length ? tests[tests.length - 1].y + 50 : 0) + 8;
+    var S = newStage("spec", W, H);
+    var svg = S.svg;
+    OS.changes.forEach(function (c, ci) { drawPipeline(svg, S, c, 0, ci * PH, W, PH - 24, onNode); });
+    // column titles
+    [[TX, T.tests], [RX, T.reqs], [CX, T.reqsComponents]].forEach(function (x) {
+      if (x[0] === TX && !tests.length) return;
+      svg.appendChild(s("text", { x: x[0], y: y0 - 16, class: "col-label", text: x[1].toUpperCase() }));
+    });
+    capHeads.forEach(function (ch) { svg.appendChild(s("text", { x: RX, y: ch.y + 18, class: "cap-label", text: trunc(ch.text, 60) })); });
+    var linkLayer = s("g", { class: "links" });
+    svg.appendChild(linkLayer);
+    var cPos = {}, tPos = {};
+    comps.forEach(function (c) { cPos[c.key] = { x: CX, y: c.y, w: CW, h: c.h }; });
+    tests.forEach(function (t) { tPos[t.key] = { x: TX, y: t.y, w: TW, h: t.h }; });
+    S.links = [];
+    function curve(x1, y1, x2, y2) { var mx = (x1 + x2) / 2; return "M" + r1(x1) + "," + r1(y1) + " C" + r1(mx) + "," + r1(y1) + " " + r1(mx) + "," + r1(y2) + " " + r1(x2) + "," + r1(y2); }
+    cards.forEach(function (card) {
+      var r = card.r, m = specMap[r.id];
+      var box = { x: RX, y: card.y, w: RW, h: card.h };
+      S.geo["req:" + r.id] = box;
+      var stt = m ? m.status : (mapped || r.op === "REMOVED" || r.op === "RENAMED" ? "none" : "pending");
+      var icon = { implemented: "✓", partial: "◐", missing: "✕", "n/a": "–", none: "", pending: "?" }[stt];
+      var g = s("g", { class: "req op-" + r.op + " rs-" + stt.replace("/", ""), "data-k": "req:" + r.id, tabindex: "0", role: "button" },
+        s("title", { text: r.name + (m && m.note ? "\n— " + m.note : "") }),
+        s("rect", { x: box.x, y: box.y, width: box.w, height: box.h, rx: 12, class: "box" }),
+        s("rect", { x: box.x, y: box.y + 10, width: 4, height: box.h - 20, rx: 2, class: "op-bar" }),
+        s("text", { x: box.x + 16, y: box.y + 20, class: "tag", text: (T["op" + r.op] || r.op).toUpperCase() + (r.merged ? " · " + T.merged : "") + (m ? "  ·  " + (T[m.status] || "").toUpperCase() : "") }),
+        s("text", { x: box.x + 16, y: box.y + 40, class: "name", text: trunc(r.name, 52) }));
+      textLines(g, box.x + 16, box.y + 58, card.lines, 15, "info");
+      var chipTop = box.y + 50 + card.lines.length * 15 + 4;
+      card.chips.forEach(function (ch) {
+        var cg = s("g", { class: "scn" + (ch.flow ? " has-flow" : ""), "data-k": "scn:" + r.id + "#" + ch.sc.id },
+          s("title", { text: ch.sc.name + "\n" + ch.sc.steps.map(function (x) { return x.k + " " + x.t; }).join("\n") }),
+          s("rect", { x: box.x + 16 + ch.x, y: chipTop + ch.row * 26, width: r1(ch.w), height: 21, rx: 10.5 }),
+          s("text", { x: box.x + 27 + ch.x, y: chipTop + ch.row * 26 + 14.5, text: ch.label }));
+        cg.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          if (ch.flow) mapApi.showFlow(ch.flow.id); else mapApi.inspect("req:" + r.id);
+        });
+        g.appendChild(cg);
+      });
+      if (icon) g.appendChild(s("g", { class: "req-status" }, s("circle", { cx: box.x + box.w - 22, cy: box.y + 22, r: 12 }),
+        s("text", { x: box.x + box.w - 22, y: box.y + 26.5, "text-anchor": "middle", text: icon })));
+      if (onNode) onNode(g, "req:" + r.id);
+      svg.appendChild(g);
+      if (!m) return;
+      m.components.forEach(function (c) {
+        var b = cPos[c];
+        linkLayer.appendChild(s("path", { d: curve(box.x + box.w, box.y + 24, b.x, b.y + b.h / 2), class: "link ls-" + m.status.replace("/", ""), "data-a": "req:" + r.id, "data-b": "comp:" + c }));
+        S.links.push(["req:" + r.id, "comp:" + c]);
+      });
+      m.tests.forEach(function (t) {
+        var p = t.replace(/:\d+(-\d+)?$/, ""), b = tPos[p];
+        linkLayer.appendChild(s("path", { d: curve(box.x, box.y + 24, b.x + b.w, b.y + b.h / 2), class: "link test-link", "data-a": "req:" + r.id, "data-b": "test:" + p }));
+        S.links.push(["req:" + r.id, "test:" + p]);
+      });
+    });
+    comps.forEach(function (it) {
+      var c = it.key, b = cPos[c], cc = changeComp[c], stt = cc ? cc.status : "context";
+      S.geo["comp:" + c] = b;
+      var g = s("g", { class: "node mini st-" + stt, "data-k": "comp:" + c, tabindex: "0", role: "button" },
+        s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 11, class: "box" }),
+        s("text", { x: b.x + 12, y: b.y + 21, class: "name", text: trunc(compName(c), 25) }),
+        s("text", { x: b.x + 12, y: b.y + 38, class: "info", text: trunc(layerName(c), 20) + (stt !== "context" ? " · " + statusLabel(stt) : "") }));
+      if (onNode) onNode(g, c);
+      svg.appendChild(g);
+    });
+    tests.forEach(function (it) {
+      var t = it.key, b = tPos[t];
+      S.geo["test:" + t] = b;
+      var g = s("g", { class: "test-node", "data-k": "test:" + t },
+        s("title", { text: t }),
+        s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 9, class: "box" }),
+        s("text", { x: b.x + 12, y: b.y + 23.5, class: "name", text: trunc(t.split("/").pop(), 28) }));
+      svg.appendChild(onOpen(g, t));
+    });
+    if (!mapped && REQS.length) svg.appendChild(s("text", { x: CX, y: y0 + 18, class: "pending-note", text: trunc(T.pendingMap, 44) }));
+    S.keyOf = function (id) { return /^(pipe|scn|req|comp|test):/.test(id) ? id : reqById[id] ? "req:" + id : "comp:" + id; };
+    S.expand = function (set) {
+      var add = {};
+      S.links.forEach(function (l) { if (set[l[0]]) add[l[1]] = true; if (set[l[1]]) add[l[0]] = true; });
+      Object.keys(set).forEach(function (k) { if (k.slice(0, 4) === "scn:") add["req:" + k.slice(4).split("#")[0]] = true; });
+      Object.keys(add).forEach(function (k) { set[k] = true; });
+      return set;
+    };
+    return S;
+  }
+
+  function artifactState(c, kind) {
+    var list = c.artifacts.filter(function (a) { return a.kind === kind; });
+    if (!list.length) return { cls: "absent", text: T.sAbsent };
+    var changed = list.filter(function (a) { return a.status !== "="; });
+    if (!changed.length) return { cls: "present", text: T.sUnchanged };
+    if (c.deleted) return { cls: "removed", text: T.sDeleted };
+    return { cls: "changed", text: changed.some(function (a) { return a.status === "A" || a.status === "R"; }) ? T.sAdded : T.sModified };
+  }
+  function pipelineSteps(c) {
+    var touched = ctx.components.filter(function (x) { return x.status !== "context"; });
+    var ops = {};
+    c.requirements.forEach(function (r) { ops[r.op] = (ops[r.op] || 0) + 1; });
+    var caps = {};
+    c.requirements.forEach(function (r) { caps[r.cap] = (caps[r.cap] || 0) + 1; });
+    var nScn = c.requirements.reduce(function (a, r) { return a + r.scenarios.length; }, 0);
+    var tk = c.tasks;
+    var add = 0, del = 0;
+    touched.forEach(function (x) { add += x.add; del += x.del; });
+    return [
+      { id: "proposal", title: T.proposal, state: artifactState(c, "proposal"), lines: wrapText(c.why || (c.what[0] || ""), 25, 5) },
+      { id: "spec", title: T.specs, state: artifactState(c, "spec"),
+        lines: Object.keys(caps).map(function (k) { return "▸ " + trunc(k, 14) + " · " + caps[k] + " req"; }).slice(0, 2)
+          .concat([["ADDED", "+"], ["MODIFIED", "~"], ["REMOVED", "−"], ["RENAMED", "→"]].filter(function (o) { return ops[o[0]]; })
+            .map(function (o) { return o[1] + ops[o[0]]; }).join("  "))
+          .concat(nScn ? [nScn + " " + T.scenarios.toLowerCase()] : []) },
+      { id: "design", title: T.designDoc, state: artifactState(c, "design"), lines: c.decisions.slice(0, 4).map(function (d) { return "• " + trunc(d, 23); }) },
+      { id: "tasks", title: T.tasks, state: artifactState(c, "tasks"), progress: tk ? [tk.done, tk.total] : null,
+        lines: tk ? tk.groups.slice(0, 3).map(function (g) { return (g.done === g.total ? "✓ " : "◐ ") + trunc(g.title, 17) + " " + g.done + "/" + g.total; }) : [] },
+      { id: "code", title: T.code, state: touched.length ? { cls: "changed", text: "+" + add + " −" + del } : { cls: "absent", text: "—" },
+        lines: touched.slice(0, 4).map(function (x) { return "▸ " + trunc(compName(x.id), 22); }).concat(touched.length > 4 ? ["+" + (touched.length - 4) + " …"] : []) },
+      { id: "archive", title: T.archive, state: c.archived ? { cls: c.moved_to_archive ? "changed" : "present", text: c.moved_to_archive ? T.phaseArchiving : T.phaseArchived } : { cls: "absent", text: T.pending },
+        lines: c.archived ? [] : wrapText(tk && tk.done < tk.total ? tf("openTasksN", { n: tk.total - tk.done }) : "", 25, 2) }
+    ];
+  }
+  function drawPipeline(svg, S, c, x0, y0, W, H, onNode) {
+    var steps = pipelineSteps(c), n = steps.length, GAP = 22, BW = (W - GAP * (n - 1)) / n;
+    var phase = c.moved_to_archive ? T.phaseArchiving : c.archived ? T.phaseArchived : T.phaseActive;
+    svg.appendChild(s("text", { x: x0, y: y0 + 13, class: "pipe-title" }, s("tspan", { class: "pipe-id", text: "openspec/" + c.id }), s("tspan", { text: "  ·  " + phase })));
+    if (!svg.querySelector("#pipe-arrow")) {
+      svg.insertBefore(s("defs", null, s("marker", { id: "pipe-arrow", viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "9", markerHeight: "9", markerUnits: "userSpaceOnUse", orient: "auto" },
+        s("path", { d: "M0,0 L10,5 L0,10 z", class: "arrow arrow-pipe" }))), svg.firstChild);
+    }
+    var top = y0 + 26;
+    steps.forEach(function (stp, i) {
+      var x = x0 + i * (BW + GAP), key = "pipe:" + stp.id + ":" + c.id;
+      S.geo[key] = { x: x, y: top, w: BW, h: H };
+      var g = s("g", { class: "pipe ps-" + stp.state.cls, "data-k": key, tabindex: "0", role: "button" });
+      g.appendChild(s("rect", { x: x, y: top, width: BW, height: H, rx: 12, class: "box" }));
+      g.appendChild(s("text", { x: x + 14, y: top + 23, class: "name", text: stp.title }));
+      g.appendChild(s("text", { x: x + BW - 12, y: top + 23, "text-anchor": "end", class: "state", text: trunc(stp.state.text, 16) }));
+      var ly = top + 46;
+      if (stp.progress) {
+        var p = stp.progress, pw = BW - 28;
+        g.appendChild(s("text", { x: x + 14, y: ly + 4, class: "big", text: p[0] + "/" + p[1] }));
+        g.appendChild(s("rect", { x: x + 14, y: ly + 14, width: pw, height: 6, rx: 3, class: "prog-bg" }));
+        g.appendChild(s("rect", { x: x + 14, y: ly + 14, width: r1(p[1] ? pw * p[0] / p[1] : 0), height: 6, rx: 3, class: "prog" + (p[0] === p[1] ? " full" : "") }));
+        ly += 42;
+      }
+      textLines(g, x + 14, ly, stp.lines.slice(0, stp.progress ? 3 : 6), 17, "info");
+      if (i < n - 1) svg.appendChild(s("path", { d: "M" + r1(x + BW + 3) + "," + r1(top + H / 2) + " l" + (GAP - 8) + ",0", class: "pipe-arrow", "marker-end": "url(#pipe-arrow)" }));
+      if (onNode) onNode(g, key);
+      svg.appendChild(g);
+    });
+  }
+
+  // ═════════════════════════════ canvas + story ═════════════════════════════
+  var STAGES = [{ id: "architecture", title: T.architecture }];
+  if (ins) ins.flows.forEach(function (fl) { STAGES.push({ id: "flow:" + fl.id, title: fl.title, flow: fl }); });
+  if (ins && ins.data_model && ins.data_model.entities.length) STAGES.push({ id: "data", title: T.dataStage });
+  if (OS && REQS.length) STAGES.push({ id: "spec", title: T.spec + " · " + T.openspec });
+  var flowById = {};
+  if (ins) ins.flows.forEach(function (fl) { flowById[fl.id] = fl; });
+
+  function autoStory() {
+    var steps = [];
+    var touched = ctx.components.filter(function (c) { return c.status !== "context"; });
+    var layers = {};
+    touched.forEach(function (c) { layers[compById[c.id].layer] = true; });
+    steps.push({ heading: tf("autoOverviewH", { n: touched.length, m: Object.keys(layers).length }),
+      body: tf("autoOverviewB", { f: st.files, a: fmt(st.add), d: fmt(st.del) }), stage: "architecture", focus: [] });
+    ctx.edges.filter(function (e) { return e.violation && !e.violation.existing; }).slice(0, 2).forEach(function (e) {
+      steps.push({ heading: tf("autoViolH", { a: compName(e.from), b: compName(e.to) }), body: e.violation.rule, stage: "architecture", focus: [e.from, e.to], code: e.refs[0] });
+    });
+    touched.filter(function (c) { return c.status === "new"; }).slice(0, 2).forEach(function (c) {
+      steps.push({ heading: tf("autoNewH", { x: compName(c.id) }), body: tf("autoNewB", { l: layerName(c.id) }), stage: "architecture", focus: [c.id] });
+    });
+    touched.filter(function (c) { return c.status === "removed"; }).slice(0, 1).forEach(function (c) {
+      steps.push({ heading: tf("autoRemovedH", { x: compName(c.id) }), body: T.autoRemovedB, stage: "architecture", focus: [c.id] });
+    });
+    touched.filter(function (c) { return c.status === "changed"; }).sort(function (a, b) { return (b.add + b.del) - (a.add + a.del) || byCompRank(a.id, b.id); })
+      .slice(0, Math.max(0, 5 - steps.length)).forEach(function (c) {
+        steps.push({ heading: tf("autoChangedH", { x: compName(c.id) }), body: tf("autoChangedB", { n: c.files, a: c.add, d: c.del }), stage: "architecture", focus: [c.id] });
+      });
+    if (OS && REQS.length) OS.changes.forEach(function (c) {
+      if (c.requirements.length) steps.push({ heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }), body: c.why || T.autoSpecB, stage: "spec", focus: [] });
+    });
+    return steps;
+  }
+  var STORY = ins && ins.story.length ? ins.story : autoStory();
+  var storyIsAuto = !(ins && ins.story.length);
+
+  function renderMap() {
+    var compactQ = window.matchMedia ? window.matchMedia("(max-width: 720px)") : { matches: false };
+    var archMode = store("ec:arch-mode") || "delta";
+    var motion = store("ec:motion");
+    if (motion === null) motion = !REDUCED;
+    var current = null, stepIdx = 0, inspecting = null;
+    var cache = {};
+
+    var viewport = h("div", { class: "viewport", tabindex: "0", "aria-label": T.canvas });
+    var tabs = h("div", { class: "stage-tabs", role: "tablist" });
+    var seg = h("div", { class: "seg arch-only" });
+    ["delta", "after", "before"].forEach(function (m) {
+      seg.appendChild(h("button", { class: m === archMode ? "on" : "", "data-m": m, text: T[m], onclick: function () {
+        archMode = m; store("ec:arch-mode", m);
+        Array.prototype.forEach.call(seg.children, function (b) { b.classList.toggle("on", b.getAttribute("data-m") === m); });
+        if (current && current.id === "architecture") show("architecture", lastFocus, false);
+      } }));
+    });
+    var motionBtn = h("button", { class: "icon-btn", title: T.motion, "aria-pressed": String(motion), onclick: function () { setMotion(!motion); } });
+    var tools = h("div", { class: "canvas-tools" }, seg,
+      h("button", { class: "icon-btn", title: T.zoomOut, text: "−", onclick: function () { zoom(1.25); } }),
+      h("button", { class: "icon-btn wide", title: T.fit, text: T.fit, onclick: function () { fly(fullBox(), true); } }),
+      h("button", { class: "icon-btn", title: T.zoomIn, text: "+", onclick: function () { zoom(0.8); } }),
+      motionBtn);
+    STAGES.forEach(function (stg) {
+      tabs.appendChild(h("button", { role: "tab", class: "stage-tab", "data-stage": stg.id, text: trunc(stg.title, 34), onclick: function () {
+        closeInspector();
+        show(stg.id, [], true);
+      } }));
+    });
+    var caption = h("div", { class: "stage-caption" });
+    var legend = h("div", { class: "diagram-legend" });
+
+    // ── camera ──
+    var vb = null, anim = 0;
+    function ratio() { var w = viewport.clientWidth || 1000, hh = viewport.clientHeight || 560; return w / hh; }
+    function apply(v) { vb = v; if (current) current.svg.setAttribute("viewBox", [v.x, v.y, v.w, v.h].map(r1).join(" ")); }
+    function frame(box, pad, minW) {
+      pad = pad === undefined ? 28 : pad;
+      var x = box.x - pad, y = box.y - pad, w = box.w + 2 * pad, hh = box.h + 2 * pad;
+      if (minW && w < minW) { x -= (minW - w) / 2; w = minW; }
+      var r = ratio();
+      if (w / hh > r) { var nh = w / r; y -= (nh - hh) / 2; hh = nh; } else { var nw = hh * r; x -= (nw - w) / 2; w = nw; }
+      return { x: x, y: y, w: w, h: hh };
+    }
+    function fullBox() { return frame({ x: 0, y: 0, w: current.W, h: current.H }, 16); }
+    function fly(target, animate) {
+      cancelAnimationFrame(anim);
+      if (!animate || !vb || REDUCED) return apply(target);
+      var from = vb, t0 = 0, D = 560;
+      function tick(now) {
+        if (!t0) t0 = now;
+        var t = Math.min(1, (now - t0) / D), e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        apply({ x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, w: from.w + (target.w - from.w) * e, h: from.h + (target.h - from.h) * e });
+        if (t < 1) anim = requestAnimationFrame(tick);
+      }
+      anim = requestAnimationFrame(tick);
+    }
+    function zoom(f, cx, cy) {
+      if (!vb) return;
+      var w = Math.max(160, Math.min(vb.w * f, Math.max(current.W, current.H) * 3)), k = w / vb.w;
+      cx = cx === undefined ? vb.x + vb.w / 2 : cx; cy = cy === undefined ? vb.y + vb.h / 2 : cy;
+      fly({ x: cx - (cx - vb.x) * k, y: cy - (cy - vb.y) * k, w: w, h: vb.h * k }, false);
+    }
+    var drag = null, dragged = false;
+    viewport.addEventListener("pointerdown", function (ev) {
+      if (ev.button !== 0) return;
+      drag = { x: ev.clientX, y: ev.clientY, vb: vb }; dragged = false;
+    });
+    viewport.addEventListener("pointermove", function (ev) {
+      if (!drag || !vb) return;
+      var dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+      if (!dragged && Math.abs(dx) + Math.abs(dy) < 5) return;
+      if (!dragged) { dragged = true; try { viewport.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ } viewport.classList.add("grabbing"); }
+      var k = drag.vb.w / (viewport.clientWidth || 1);
+      apply({ x: drag.vb.x - dx * k, y: drag.vb.y - dy * k, w: drag.vb.w, h: drag.vb.h });
+    });
+    function endDrag() { drag = null; viewport.classList.remove("grabbing"); }
+    viewport.addEventListener("pointerup", endDrag);
+    viewport.addEventListener("pointercancel", endDrag);
+    viewport.addEventListener("click", function (ev) { if (dragged) { ev.stopPropagation(); ev.preventDefault(); dragged = false; } }, true);
+    viewport.addEventListener("wheel", function (ev) {
+      if (!(ev.ctrlKey || ev.metaKey) || !vb) return;
+      ev.preventDefault();
+      var rect = viewport.getBoundingClientRect();
+      var cx = vb.x + (ev.clientX - rect.left) / rect.width * vb.w, cy = vb.y + (ev.clientY - rect.top) / rect.height * vb.h;
+      zoom(ev.deltaY > 0 ? 1.12 : 0.89, cx, cy);
+    }, { passive: false });
+
+    // ── lighting ──
+    var lastFocus = [];
+    function light(ids) {
+      var svg = current.svg, set = {};
+      ids.forEach(function (id) { var k = current.keyOf(id); if (k) set[k] = true; });
+      var focused = Object.keys(set).length > 0;
+      if (focused) set = current.expand(set);
+      svg.classList.toggle("dim", focused);
+      svg.querySelectorAll("[data-k]").forEach(function (el) {
+        var k = el.getAttribute("data-k");
+        if (k.slice(0, 2) === "e:") return;
+        el.classList.toggle("on", !!set[k]);
+      });
+      svg.querySelectorAll("[data-a]").forEach(function (el) {
+        var a = el.getAttribute("data-a"), b = el.getAttribute("data-b");
+        if (el.classList.contains("lifeline")) return el.classList.toggle("on", !!set[a]);
+        var ka = current.keyOf(a) || a, kb = current.keyOf(b) || b;
+        el.classList.toggle("on", !!((set[a] || set[ka]) && (set[b] || set[kb])));
+      });
+      return Object.keys(set);
+    }
+    function boxOf(keys) {
+      var bs = keys.map(function (k) { return current.geo[k]; }).filter(Boolean);
+      if (!bs.length) return null;
+      var x1 = Math.min.apply(null, bs.map(function (b) { return b.x; })), y1 = Math.min.apply(null, bs.map(function (b) { return b.y; }));
+      var x2 = Math.max.apply(null, bs.map(function (b) { return b.x + b.w; })), y2 = Math.max.apply(null, bs.map(function (b) { return b.y + b.h; }));
+      return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+    }
+
+    // ── stages ──
+    function stageFor(id) {
+      var compact = compactQ.matches;
+      var key = id + "|" + compact + "|" + (id === "architecture" ? archMode : "");
+      if (cache[key]) return cache[key];
+      var S;
+      if (id === "architecture") S = buildArchitecture(archMode, compact, wireNode);
+      else if (id === "spec") S = buildSpec(wireNode);
+      else if (id === "data") S = buildData(wireNode);
+      else S = buildFlow(flowById[id.slice(5)]);
+      return (cache[key] = S);
+    }
+    function wireNode(g, id) {
+      g.addEventListener("mouseenter", function () { if (!inspecting) light([id]); });
+      g.addEventListener("mouseleave", function () { if (!inspecting) light(lastFocus); });
+      g.addEventListener("click", function () { inspect(id); });
+      g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); inspect(id); } });
+    }
+    function show(id, focus, animate) {
+      var prev = current;
+      current = stageFor(id);
+      if (prev !== current) {
+        viewport.textContent = "";
+        if (current.empty) viewport.appendChild(h("p", { class: "empty canvas-empty", text: current.empty }));
+        viewport.appendChild(current.svg);
+        if (!motion) try { current.svg.pauseAnimations(); } catch (e) { /* ignore */ }
+        apply(prev && prev.id === current.id && vb ? vb : fullBox());
+      }
+      tabs.querySelectorAll(".stage-tab").forEach(function (b) {
+        var on = b.getAttribute("data-stage") === id;
+        b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on));
+      });
+      seg.style.display = id === "architecture" ? "" : "none";
+      lastFocus = focus || [];
+      var keys = light(lastFocus);
+      // Narrow screens frame only what the step names; wide ones also keep what lights up with it in view.
+      var primary = lastFocus.map(function (x) { return current.keyOf(x); });
+      var box = keys.length ? (compactQ.matches && boxOf(primary)) || boxOf(keys) : null;
+      // Never zoom past ~1.4× of the fitted view: the reader keeps the lanes around the focus in sight.
+      fly(box ? frame(box, 64, Math.min(current.W, compactQ.matches ? 340 : Math.max(760, current.W * 0.62))) : fullBox(), animate);
+      renderCaption(id);
+    }
+    function renderCaption(id) {
+      caption.textContent = "";
+      legend.textContent = "";
+      if (id === "architecture") {
+        append(legend, [legendItem("swatch", "var(--new)", T.lNew), legendItem("swatch", "var(--changed)", T.lChanged),
+          legendItem("swatch", "var(--removed)", T.lRemoved), legendItem("swatch", "var(--context)", T.lContext),
+          legendItem("line anim", "var(--new)", T.lNew), legendItem("line", "var(--context)", T.lSame),
+          legendItem("line dashed", "var(--removed)", T.lRemoved), legendItem("line", "var(--violation)", T.lViolation),
+          ins && ins.hero.length ? legendItem("line", "var(--accent)", T.lHero) : null]);
+        var foot = [];
+        if (st.unresolved) foot.push(st.unresolved + " " + T.unresolved);
+        if (st.unmapped.length) foot.push(st.unmapped.length + " " + T.unmapped);
+        if (foot.length) caption.appendChild(h("span", { class: "faint", text: foot.join(" · ") }));
+      } else if (id.slice(0, 5) === "flow:") {
+        var fl = flowById[id.slice(5)];
+        append(legend, [legendItem("line", "var(--new)", T.lNew), legendItem("line", "var(--changed)", T.lChanged),
+          legendItem("line", "var(--muted)", T.lSame), legendItem("line dashed", "var(--removed)", T.lRemoved)]);
+        flowNotes(fl).forEach(function (n) { caption.appendChild(n); });
+      } else if (id === "data") {
+        append(legend, [legendItem("swatch", "var(--new)", T.lNew), legendItem("swatch", "var(--changed)", T.lChanged),
+          legendItem("swatch", "var(--removed)", T.lRemoved), legendItem("swatch", "var(--context)", T.lContext)]);
+      } else if (id === "spec") {
+        append(legend, [legendItem("swatch", "var(--new)", T.opADDED), legendItem("swatch", "var(--changed)", T.opMODIFIED),
+          legendItem("swatch", "var(--removed)", T.opREMOVED), legendItem("line", "var(--new)", T.implemented),
+          legendItem("line", "var(--warn)", T.partial), legendItem("line dashed", "var(--violation)", T.missing)]);
+      }
+    }
+
+    // ── story panel ──
+    var storyList = h("ol", { class: "story-steps" });
+    var counter = h("span", { class: "story-count" });
+    var storyPane = h("div", { class: "story-pane" },
+      h("div", { class: "story-head" },
+        h("b", { text: T.story }), counter,
+        h("div", { class: "story-nav" },
+          h("button", { class: "icon-btn", title: T.prev, text: "←", onclick: function () { go(stepIdx - 1); } }),
+          h("button", { class: "icon-btn", title: T.next, text: "→", onclick: function () { go(stepIdx + 1); } }))),
+      storyIsAuto ? h("p", { class: "story-auto faint", text: T.storyAuto }) : null,
+      storyList);
+    var inspector = h("div", { class: "inspector", hidden: true });
+    var side = h("aside", { class: "map-side" }, storyPane, inspector);
+    var items = STORY.map(function (stp, i) {
+      var li = h("li", { class: "story-step", tabindex: "0" },
+        h("button", { class: "step-head", onclick: function () { go(i); } },
+          h("span", { class: "step-n", text: String(i + 1) }),
+          h("span", { class: "step-h", text: stp.heading })),
+        h("div", { class: "step-body" },
+          h("p", { text: stp.body }),
+          stp.code ? codeExcerpt(stp.code) : null));
+      storyList.appendChild(li);
+      return li;
+    });
+    function go(i) {
+      if (!STORY.length) return show("architecture", [], false);
+      stepIdx = Math.max(0, Math.min(STORY.length - 1, i));
+      closeInspector();
+      var stp = STORY[stepIdx];
+      items.forEach(function (li, j) { li.classList.toggle("active", j === stepIdx); li.classList.toggle("seen", j < stepIdx); });
+      counter.textContent = (stepIdx + 1) + " / " + STORY.length;
+      show(stp.stage || "architecture", stp.focus || [], true);
+      var li = items[stepIdx];
+      if (li && storyList.scrollHeight > storyList.clientHeight) {
+        storyList.scrollTo({ top: li.offsetTop - storyList.offsetTop - 8, behavior: REDUCED ? "auto" : "smooth" });
+      }
+    }
+
+    // ── inspector ──
+    function inspect(key) {
+      if (key.slice(0, 4) === "req:") return inspectReq(key.slice(4));
+      if (key.slice(0, 5) === "pipe:") return inspectArtifact(key);
+      if (key.slice(0, 4) === "ent:") return inspectEntity(key.slice(4));
+      var id = key.replace(/^comp:/, "");
+      inspecting = id;
+      var c = compById[id], n = changeComp[id] || { status: "context", files: 0, add: 0, del: 0 };
+      var files = ctx.files.filter(function (f) { return f.component === id; });
+      var syms = ctx.symbols.filter(function (sy) { return files.some(function (f) { return f.path === sy.file; }); });
+      var outE = ctx.edges.filter(function (e) { return e.from === id; }), inE = ctx.edges.filter(function (e) { return e.to === id; });
+      var reqs = reqsOfComp(id);
+      inspector.textContent = "";
+      append(inspector, [
+        h("button", { class: "back", text: "← " + T.back, onclick: function () { go(stepIdx); } }),
+        h("div", { class: "insp-title" }, h("span", { class: "badge " + n.status, text: statusLabel(n.status) }), h("h3", { text: c ? c.name : id })),
+        h("div", { class: "faint", text: layerName(id) + (n.status !== "context" ? " · " + n.files + " " + (n.files === 1 ? T.file : T.kFiles) + " · +" + n.add + " −" + n.del : "") }),
+        summaryOf[id] ? h("p", { class: "insp-summary", text: summaryOf[id] }) : c && c.desc ? h("p", { class: "insp-summary muted", text: c.desc }) : null,
+        files.length ? inspList(T.files, files.map(function (f) {
+          return h("div", { class: "insp-row" }, h("span", { class: "st st-" + f.status, text: f.status }), fileLink(f.path, f.path.split("/").pop()),
+            h("span", { class: "nums" }, h("span", { class: "add", text: "+" + f.add }), " ", h("span", { class: "del", text: "−" + f.del })));
+        })) : null,
+        syms.length ? inspList(T.symbols, syms.slice(0, 12).map(function (sy) {
+          return h("div", { class: "insp-row" }, h("span", { class: "badge " + { added: "new", removed: "removed", modified: "changed" }[sy.change], text: sy.change === "added" ? "+" : sy.change === "removed" ? "−" : "~" }),
+            fileLink(sy.file, sy.name));
+        })) : null,
+        outE.length ? inspList(T.dependsOn, outE.map(edgeRow(function (e) { return e.to; }))) : null,
+        inE.length ? inspList(T.usedBy, inE.map(edgeRow(function (e) { return e.from; }))) : null,
+        reqs.length ? inspList(T.reqs, reqs.map(function (r) { return reqRow(r); })) : null]);
+      storyPane.hidden = true;
+      inspector.hidden = false;
+      var stageId = current.id === "spec" ? "spec" : current.id;
+      var focusId = current.id === "spec" ? id : id;
+      if (current.id.slice(0, 5) === "flow:" && !current.geo["p:" + id]) stageId = "architecture";
+      show(stageId, [focusId], true);
+      inspecting = id;
+    }
+    function inspectReq(rid) {
+      var r = reqById[rid], m = specMap[rid];
+      inspecting = rid;
+      inspector.textContent = "";
+      append(inspector, [
+        h("button", { class: "back", text: "← " + T.back, onclick: function () { go(stepIdx); } }),
+        h("div", { class: "insp-title" }, h("span", { class: "badge op-" + r.op, text: T["op" + r.op] || r.op }), h("h3", { text: r.name })),
+        h("div", { class: "faint", text: r.cap + (r.change ? " · " + r.change : " · " + T.mainSpec) }),
+        r.text ? h("p", { class: "insp-summary", text: r.text }) : null,
+        m ? h("div", { class: "insp-status rs-" + m.status.replace("/", "") }, h("b", { text: T[m.status] }), m.note ? " — " + m.note : "") :
+          h("div", { class: "insp-status rs-pending" }, h("b", { text: T.notMapped })),
+        r.scenarios.length ? inspList(T.scenarios, r.scenarios.map(scenarioBlock)) : null,
+        m && m.tests.length ? inspList(T.reqsTests, m.tests.map(function (t) { return h("div", { class: "insp-row" }, fileLink(t)); })) : null,
+        h("div", { class: "insp-row" }, fileLink(r.file + ":" + r.line, r.file.split("/").slice(-3).join("/")))]);
+      storyPane.hidden = true;
+      inspector.hidden = false;
+      show("spec", [rid], true);
+      inspecting = rid;
+    }
+    function inspectEntity(eid) {
+      var e = entById[eid], stt = { added: "new", changed: "changed", removed: "removed", same: "context" }[e.change];
+      var rels = DM.relations.filter(function (r) { return r.from === eid || r.to === eid; });
+      inspector.textContent = "";
+      append(inspector, [
+        h("button", { class: "back", text: "← " + T.back, onclick: function () { go(stepIdx); } }),
+        h("div", { class: "insp-title" }, h("span", { class: "badge " + stt, text: statusLabel(stt) }), h("h3", { text: e.name })),
+        e.component ? h("div", null, h("a", { href: "#", class: "faint", text: compName(e.component), onclick: function (ev) { ev.preventDefault(); inspect(e.component); } })) : null,
+        e.fields.length ? inspList(T.fields, e.fields.map(function (f) {
+          var k = fieldKind(f);
+          return h("div", { class: "insp-row field-row f-" + k }, h("span", { class: "fmark", text: { add: "+", del: "−", mod: "~", same: "·" }[k] }), h("code", { text: fieldText(f) }));
+        })) : null,
+        rels.length ? inspList(T.relations, rels.map(function (r) {
+          var other = r.from === eid ? r.to : r.from;
+          return h("div", { class: "insp-row" }, h("span", { class: "badge " + { added: "new", changed: "changed", removed: "removed", same: "context" }[r.change], text: r.label || "—" }),
+            h("a", { href: "#", text: (entById[other] || {}).name || other, onclick: function (ev) { ev.preventDefault(); inspectEntity(other); } }));
+        })) : null,
+        e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null]);
+      storyPane.hidden = true;
+      inspector.hidden = false;
+      show("data", [eid], true);
+      inspecting = eid;
+    }
+    // A step of the SDD pipeline: what the OpenSpec document says, in full, with a link to it.
+    function inspectArtifact(key) {
+      var parts = key.split(":"), kind = parts[1], cid = parts.slice(2).join(":");
+      var c = OS.changes.filter(function (x) { return x.id === cid; })[0];
+      var stp = pipelineSteps(c).filter(function (x) { return x.id === kind; })[0];
+      var art = c.artifacts.filter(function (a) { return a.kind === (kind === "spec" ? "spec" : kind); });
+      var body = [];
+      if (kind === "proposal") {
+        if (c.why) body.push(inspList(T.why, [h("p", { class: "insp-summary", text: c.why })]));
+        if (c.what.length) body.push(inspList(T.whatChanges, [h("ul", { class: "tight" }, c.what.map(function (x) { return h("li", { text: x }); }))]));
+        if (c.impact.length) body.push(inspList(T.impact, [h("ul", { class: "tight" }, c.impact.map(function (x) { return h("li", { text: x }); }))]));
+      } else if (kind === "design") {
+        if (c.decisions.length) body.push(inspList(T.decisionsDoc, [h("ul", { class: "tight" }, c.decisions.map(function (x) { return h("li", { text: x }); }))]));
+      } else if (kind === "tasks" && c.tasks) {
+        c.tasks.groups.forEach(function (g, gi) {
+          body.push(inspList(g.title + " · " + g.done + "/" + g.total, c.tasks.items.filter(function (x) { return x.group === gi; }).map(function (x) {
+            return h("div", { class: "insp-row task" + (x.done ? " done" : "") }, h("span", { class: "task-box", text: x.done ? "✓" : "" }), h("span", { text: x.t }));
+          })));
+        });
+      } else if (kind === "spec") {
+        body.push(inspList(T.reqs, c.requirements.map(reqRow)));
+      } else if (kind === "code") {
+        body.push(inspList(T.kComponents, ctx.components.filter(function (x) { return x.status !== "context"; }).map(function (x) {
+          return h("div", { class: "insp-row" }, h("span", { class: "badge " + x.status, text: statusLabel(x.status) }),
+            h("a", { href: "#", text: compName(x.id), onclick: function (ev) { ev.preventDefault(); inspect(x.id); } }));
+        })));
+      }
+      inspector.textContent = "";
+      append(inspector, [
+        h("button", { class: "back", text: "← " + T.back, onclick: function () { go(stepIdx); } }),
+        h("div", { class: "insp-title" }, h("span", { class: "badge " + (stp.state.cls === "changed" ? "new" : "context"), text: stp.state.text }), h("h3", { text: stp.title })),
+        h("div", { class: "faint" }, "openspec/" + c.id),
+        body,
+        art.length ? h("div", { class: "insp-list" }, art.map(function (a) { return h("div", { class: "insp-row" }, fileLink(a.path, a.path.split("/").slice(-3).join("/"))); })) : null]);
+      storyPane.hidden = true;
+      inspector.hidden = false;
+      show("spec", [key], true);
+      inspecting = key;
+    }
+    function closeInspector() { inspecting = null; inspector.hidden = true; storyPane.hidden = false; }
+    function inspList(title, rows) { return h("div", { class: "insp-list" }, h("h4", { text: title }), rows); }
+    function edgeRow(other) {
+      return function (e) {
+        var k = e.violation ? "violation" : e.status;
+        return h("div", { class: "insp-row" },
+          h("span", { class: "badge " + (k === "same" ? "context" : k), text: { new: "+", removed: "−", same: "=", violation: "!" }[k] }),
+          h("a", { href: "#", text: compName(other(e)), onclick: function (ev) { ev.preventDefault(); inspect(other(e)); } }),
+          e.refs[0] ? fileLink(e.refs[0], e.refs[0].split("/").pop()) : null);
+      };
+    }
+
+    function setMotion(on) {
+      motion = on; store("ec:motion", on);
+      root.classList.toggle("still", !on);
+      motionBtn.textContent = on ? "❚❚" : "▶";
+      motionBtn.setAttribute("aria-pressed", String(on));
+      Object.keys(cache).forEach(function (k) { try { cache[k].svg[on ? "unpauseAnimations" : "pauseAnimations"](); } catch (e) { /* ignore */ } });
+    }
+
+    var root = h("section", { class: "map", id: "map" },
+      h("div", { class: "map-bar" }, tabs, tools),
+      h("div", { class: "map-body" },
+        h("div", { class: "map-canvas" }, viewport, h("div", { class: "map-foot" }, legend, caption, h("span", { class: "hint faint", text: T.canvasHint }))),
+        side));
+    setMotion(motion);
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.target && /input|textarea|select/i.test(ev.target.tagName)) return;
+      if (ev.key === "ArrowRight" || ev.key === "ArrowLeft") {
+        var r = root.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) return;
+        ev.preventDefault();
+        go(stepIdx + (ev.key === "ArrowRight" ? 1 : -1));
+      } else if (ev.key === "Escape" && inspecting) go(stepIdx);
+    });
+    function relayout() {
+      if (!current) return;
+      var want = stageFor(current.id);
+      if (want !== current) { current = null; return go(stepIdx); }
+      apply(vb ? frame({ x: vb.x, y: vb.y, w: vb.w, h: vb.h }, 0) : fullBox());
+    }
+    window.addEventListener("resize", function () { clearTimeout(relayout.t); relayout.t = setTimeout(relayout, 120); });
+    document.addEventListener("ec:mounted", function () { current = null; go(0); });
+    mapApi.inspect = function (id) { root.scrollIntoView({ block: "start" }); inspect(id); };
+    mapApi.focus = function (stage, ids) { root.scrollIntoView({ block: "start" }); closeInspector(); show(stage, ids, true); };
+    mapApi.showFlow = function (fid) { root.scrollIntoView({ block: "start" }); closeInspector(); show("flow:" + fid, [], true); };
+    return root;
+  }
+  var mapApi = {};
+
+  function codeExcerpt(ref) {
+    var m = /^(.+?):(\d+)(?:-(\d+))?$/.exec(ref || "");
+    if (!m || fileIndex[m[1]] === undefined) return null;
+    var f = ctx.files[fileIndex[m[1]]];
+    return h("div", { class: "step-code" },
+      h("div", { class: "step-code-head" }, fileLink(ref, m[1].split("/").slice(-2).join("/") + ":" + (m[3] ? m[2] + "-" + m[3] : m[2]))),
+      h("div", { class: "excerpt diff-wrap" }, excerpt(f, m[3] ? m[2] + "-" + m[3] : m[2], 1)));
+  }
+
+  function flowNotes(fl) {
+    var out = [];
+    var ref = cfg.flows.filter(function (f) { return f.id === fl.id; })[0];
+    if (fl.scenario) {
+      var parts = fl.scenario.split("#"), r = reqById[parts[0]];
+      var sc = r ? r.scenarios.filter(function (x) { return x.id === parts[1]; })[0] : null;
+      if (sc) out.push(h("div", { class: "scenario-note" }, h("b", { text: T.scenario + ": " + sc.name }),
+        h("span", { class: "faint", text: " · " + r.name }), scenarioSteps(sc)));
+    }
+    if (ref) {
+      var diff = function (a, b) {
+        var pool = b.map(function (x) { return x.from + ">" + x.to; });
+        return a.filter(function (x) { var i = pool.indexOf(x.from + ">" + x.to); if (i < 0) return true; pool.splice(i, 1); return false; });
+      };
+      var extra = diff(fl.steps, ref.steps), missing = diff(ref.steps, fl.steps);
+      out.push(h("span", { class: "muted" }, h("b", { text: T.vsReference + " “" + (ref.title || ref.id) + "”: " }),
+        !extra.length && !missing.length ? T.matchesReference :
+          [extra.length ? extra.length + " " + T.extraSteps : "", extra.length && missing.length ? " · " : "",
+            missing.length ? missing.length + " " + T.missingSteps + " (" + missing.map(function (x) { return compName(x.from) + "→" + compName(x.to) + (x.msg ? ": " + x.msg : ""); }).join("; ") + ")" : ""]));
+    }
+    var unverified = fl.steps.filter(function (x) { return x.verified === false; });
+    if (unverified.length) out.push(h("span", { class: "warn-text" }, "? " + T.unverifiedNote + " " +
+      unverified.map(function (x) { return compName(x.from) + " → " + compName(x.to); }).join(", ")));
+    return out;
+  }
+  function scenarioSteps(sc) {
+    return h("ul", { class: "gwt" }, sc.steps.map(function (x) { return h("li", null, h("b", { text: x.k }), " " + x.t); }));
+  }
+  function scenarioBlock(sc) {
+    var flows = ins ? ins.flows.filter(function (f) { return f.scenario && f.scenario.split("#")[1] === sc.id; }) : [];
+    return h("div", { class: "scenario" }, h("div", { class: "scenario-name", text: sc.name }), scenarioSteps(sc),
+      flows.map(function (f) { return h("button", { class: "chip", text: "▶ " + T.showFlow + ": " + f.title, onclick: function () { mapApi.showFlow(f.id); } }); }));
+  }
+  function reqRow(r) {
+    var m = specMap[r.id];
+    return h("div", { class: "insp-row" }, h("span", { class: "rs-dot rs-" + (m ? m.status.replace("/", "") : "pending") }),
+      h("a", { href: "#", text: trunc(r.name, 48), onclick: function (ev) { ev.preventDefault(); mapApi.inspect("req:" + r.id); } }));
+  }
+
+  // ═════════════════════════════ sections below the map ═════════════════════════════
+  // Order of reading: what to check (findings) → why it is built this way (design) → the code (changes).
+
+  // Why the change is built this way: the agent's design decisions, each with its main alternative.
+  function renderDecisions() {
+    if (!ins || !ins.decisions.length) return null;
+    return sectionShell("decisions", T.decisions, [
+      h("div", { class: "decisions" }, ins.decisions.map(function (d) {
+        return h("div", { class: "card decision" },
+          h("h3", { text: d.title }),
+          h("p", { text: d.why }),
+          d.alternative ? h("p", { class: "alt" }, h("b", { text: T.alternative + ": " }), d.alternative) : null,
+          d.evidence ? fileLink(d.evidence) : null);
+      }))]);
+  }
+
+  function excerpt(f, lines, ctxLines) {
+    var m = /^(\d+)(?:-(\d+))?$/.exec(String(lines));
+    var a = +m[1], b = +(m[2] || m[1]), c = ctxLines === undefined ? 3 : ctxLines;
+    var side = f.status === "D" ? "old" : "new";
+    var table = h("table", { class: "diff" });
+    f.hunks.forEach(function (hk) {
+      var lo = hk[side + "_start"], hi = lo + Math.max(hk[side + "_len"], 1) - 1;
+      if (a > hi || b < lo) return;
+      table.appendChild(diffRows(hk, function (n) { return n >= a - c && n <= b + c; }, side, a, b));
+    });
+    return table;
+  }
+
+  function diffRows(hk, keep, side, hlA, hlB) {
+    var frag = document.createDocumentFragment();
+    frag.appendChild(h("tr", { class: "hh" }, h("td", { colspan: "4", text: "@@ −" + hk.old_start + "," + hk.old_len + " +" + hk.new_start + "," + hk.new_len + " @@ " + (hk.header || "") })));
+    var o = hk.old_start, n = hk.new_start;
+    hk.lines.forEach(function (ln) {
+      var t = ln[0], ref = side === "old" ? o : n;
+      var show = !keep || keep(t === "+" ? n : t === "-" ? (side === "old" ? o : n) : ref);
+      if (show) {
+        var inRange = hlA && ref >= hlA && ref <= hlB && t !== (side === "old" ? "+" : "-");
+        frag.appendChild(h("tr", { class: (t === "+" ? "a" : t === "-" ? "d" : "") + (inRange ? " hl" : ""), "data-n": t === "-" ? null : n },
+          h("td", { class: "ln", text: t === "+" ? "" : o }),
+          h("td", { class: "ln", text: t === "-" ? "" : n }),
+          h("td", { class: "sg", text: t === " " ? "" : t }),
+          h("td", { class: "code", text: ln[1] })));
+      }
+      if (t !== "+") o++;
+      if (t !== "-") n++;
+    });
+    return frag;
+  }
+
+  // ═════════════════════════════ shell ═════════════════════════════
+  function themeButton() {
+    var modes = ["auto", "light", "dark"];
+    var cur = store("ec:theme") || "auto";
+    function apply() {
+      if (cur === "auto") document.documentElement.removeAttribute("data-theme");
+      else document.documentElement.setAttribute("data-theme", cur);
+      btn.textContent = "◐ " + T["theme" + cap(cur)];
+      btn.title = T.theme;
+    }
+    var btn = h("button", { class: "theme-btn", onclick: function () { cur = modes[(modes.indexOf(cur) + 1) % 3]; store("ec:theme", cur); apply(); } });
+    apply();
+    return btn;
+  }
+
+  var app = document.getElementById("app");
+  var main = h("main");
+  main.appendChild(renderHeader());
+  main.appendChild(renderMap());
+  var below = [{ id: "decisions", title: T.decisions, el: renderDecisions() }].filter(function (x) { return x.el; });
+  below.forEach(function (x) { main.appendChild(x.el); });
+  var navList = h("nav", { class: "topnav" },
+    h("a", { href: "#map", "data-sec": "map", text: T.canvas }),
+    below.map(function (x) {
+      return h("a", { href: "#" + x.id, "data-sec": x.id, text: x.title });
+    }));
+  var bar = h("div", { class: "topbar" },
+    h("a", { class: "brand", href: "#summary" }, h("span", { class: "brand-mark", text: "◇" }), h("span", { class: "brand-name", text: "explain-change" })),
+    navList,
+    themeButton());
+  app.appendChild(bar);
+  app.appendChild(main);
+  app.appendChild(h("footer", { class: "foot faint", text: "explain-change · key " + ctx.key }));
+  document.dispatchEvent(new CustomEvent("ec:mounted"));
+
+  if ("IntersectionObserver" in window) {
+    var links = navList.querySelectorAll("a[data-sec]");
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        links.forEach(function (a) { a.classList.toggle("active", a.getAttribute("data-sec") === en.target.id); });
+      });
+    }, { rootMargin: "-30% 0px -60% 0px" });
+    main.querySelectorAll("section[id]").forEach(function (sct) { io.observe(sct); });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+[project]
+name = "marketplace"
+direction = "Thin controllers; logic lives in services and models; external integrations stay in clients/ and mailers/."
+lang = "en"
+
+# Lanes, drawn top to bottom. [rules] decides what may depend on what.
+[[layers]]
+id = "web"
+name = "Web"
+[[layers]]
+id = "application"
+name = "Application"
+[[layers]]
+id = "domain"
+name = "Domain"
+[[layers]]
+id = "infra"
+name = "Infrastructure"
+
+[rules]
+allow = ["web -> application", "application -> domain", "application -> infra", "infra -> domain"]
+
+[[components]]
+id = "controllers"
+name = "Controllers"
+layer = "web"
+paths = ["app/controllers/**", "config/routes.rb"]
+[[components]]
+id = "refunds"
+name = "Refunds"
+layer = "application"
+paths = ["app/services/refunds/**"]
+desc = "Refund use cases"
+[[components]]
+id = "models"
+name = "Models"
+layer = "domain"
+paths = ["app/models/**"]
+[[components]]
+id = "payments"
+name = "Payment gateway"
+layer = "infra"
+paths = ["app/clients/payments/**"]
+constants = ["Payments::*"]
+[[components]]
+id = "mailers"
+name = "Mailers"
+layer = "infra"
+paths = ["app/mailers/**"]
+
+[[flows]]
+id = "refund"
+title = "Refund an order"
+steps = ["controllers -> refunds : Refunds::Create.call", "refunds -> payments : Payments::Gateway.refund", "refunds -> models : Order#refund!"]

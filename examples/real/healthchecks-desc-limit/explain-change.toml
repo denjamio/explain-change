@@ -1,0 +1,91 @@
+# explain-change config: layers and components named the way the Healthchecks README describes the app.
+[project]
+name = "healthchecks"
+direction = "Django monolith: hc.api owns checks, pings and alerts; hc.front is the dashboard; each notification channel lives in hc.integrations."
+lang = "en"
+
+[[layers]]
+id = "web"
+name = "Web"
+[[layers]]
+id = "core"
+name = "Core"
+[[layers]]
+id = "integrations"
+name = "Integrations"
+[[layers]]
+id = "shared"
+name = "Shared"
+
+[rules]
+# No agreed dependency rules (no import-linter config): no allow-list, so no invented violations.
+same_layer = true
+
+[[components]]
+id = "dashboard"
+name = "Dashboard"
+layer = "web"
+paths = ["hc/front/**"]
+desc = "My Checks screens, check details, project settings"
+[[components]]
+id = "api"
+name = "Ping & management API"
+layer = "web"
+paths = ["hc/api/views.py", "hc/api/urls.py", "hc/api/forms.py", "hc/api/decorators.py"]
+desc = "Ping endpoints and the REST management API"
+[[components]]
+id = "ui"
+name = "Templates & JS"
+layer = "web"
+paths = ["templates/**", "static/js/**"]
+desc = "HTML and email templates, dashboard JavaScript"
+[[components]]
+id = "project"
+name = "Settings & URLs"
+layer = "web"
+paths = ["hc/*.py", "hc/settings/**"]
+desc = "Settings, root URLs, WSGI/ASGI"
+[[components]]
+id = "checks"
+name = "Checks, pings & alerts"
+layer = "core"
+paths = ["hc/api/**"]
+desc = "Check, Ping, Channel and Flip models; sendalerts, sendreports and smtpd commands"
+[[components]]
+id = "accounts"
+name = "Accounts & projects"
+layer = "core"
+paths = ["hc/accounts/**"]
+desc = "Users, projects, team members, 2FA"
+[[components]]
+id = "logs"
+name = "Logs"
+layer = "core"
+paths = ["hc/logs/**"]
+[[components]]
+id = "payments"
+name = "Billing"
+layer = "core"
+paths = ["hc/payments/**"]
+[[components]]
+id = "integrations"
+name = "Integrations"
+layer = "integrations"
+paths = ["hc/integrations/**"]
+desc = "25+ notification channels: Slack, email, webhooks, PagerDuty…"
+[[components]]
+id = "lib"
+name = "lib"
+layer = "shared"
+paths = ["hc/lib/**"]
+desc = "Shared helpers: emails, dates, HTTP"
+
+[[flows]]
+id = "ping"
+title = "Receive a ping"
+steps = ["api -> checks : Check.ping"]
+
+[ignore]
+# templates/docs/*.html-fragment is rendered from the .md files by `manage.py render_docs`.
+paths = ["templates/docs/*.html-fragment", "**/*.lock", "**/package-lock.json", "**/pnpm-lock.yaml", "**/yarn.lock", "**/Gemfile.lock", "**/poetry.lock", "**/*.min.js", "**/*.map", "**/*.generated.*", "**/*.g.cs", "**/*.Designer.cs", "**/dist/**", "**/build/**", "**/bin/**", "**/obj/**", "**/node_modules/**", "**/vendor/**", "db/schema.rb", "**/__snapshots__/**", "**/*.snap"]
+tests = ["**/test/**", "**/tests/**", "**/spec/**", "**/__tests__/**", "**/e2e/**", "**/*.test.*", "**/*.spec.*", "**/*_test.*", "**/*_spec.rb", "**/test_*.py", "**/*Tests/**", "**/*.Tests/**", "**/*Tests.cs", "**/*Test.cs"]
