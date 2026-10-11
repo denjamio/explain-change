@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-import explain_change as ec  # noqa: E402
+import explainchange as ec  # noqa: E402
 
 
 def make(components, layers=None, rules=None):
