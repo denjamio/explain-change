@@ -14,11 +14,17 @@ import sys
 from pathlib import Path
 
 from .constants import CONFIG_NAME, DEFAULT_BUDGET, DEFAULT_IGNORE, DEFAULT_TESTS, SCHEMA_VERSION, TOOL_DIR, WORK_DIR
-from .util import Fail, git, lang_of
+from .util import Fail, git_paths, lang_of
 from .config import Mapper, STRUCTURE_RULES, detect_structure, load_config, structure_layers
 from .collector import collect, ensure_workdir, repo_root
 from .digest import build_digest
 from .render import load_insight, write_render
+
+__all__ = [
+    "load_context", "print_insight_status", "cmd_pr", "cmd_render", "cmd_validate", "toml_str", "cmd_init",
+    "OWNERSHIP_HINTS", "draft_config", "cmd_check", "INSTALL_MARKER", "SKILL_FILES", "install_skill", "install_cli",
+    "cmd_install", "main", "run",
+]
 
 
 def load_context(root: Path) -> dict:
@@ -35,7 +41,8 @@ def print_insight_status(status: str, errs: list[str]):
     if status == "fresh":
         print("  insight: valid ✓")
     elif status == "missing":
-        print(f"  insight: missing → read {WORK_DIR}/digest.md, write {WORK_DIR}/insight.json, run `explain-change render`")
+        print(f"  insight: missing → read {WORK_DIR}/digest.md, write {WORK_DIR}/insight.json, "
+              "run `explain-change render`")
     else:
         print(f"  insight: {status} ✗ ({len(errs)} issues) — fix only these fields:")
         for e in errs:
@@ -50,7 +57,8 @@ def cmd_pr(args) -> int:
         return 2
     if cfg["inferred"]:
         print(f"⚠ No {CONFIG_NAME}: layers and components are inferred from directory names. "
-              "Ask your agent to configure explain-change (CONFIGURE.md), or run `explain-change init`.", file=sys.stderr)
+              "Ask your agent to configure explain-change (CONFIGURE.md), or run `explain-change init`.",
+              file=sys.stderr)
     work = ensure_workdir(root)
     ctx = collect(root, cfg, args.base, args.include_uncommitted, args.ado, args.spec)
     (work / "context.json").write_text(json.dumps(ctx, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
@@ -95,40 +103,57 @@ def cmd_init(args) -> int:
     path = root / CONFIG_NAME
     if path.exists() and not args.force:
         raise Fail(f"{CONFIG_NAME} already exists (use --force to overwrite).")
-    structure = detect_structure(git(["ls-files"], root).splitlines())
+    structure = detect_structure(git_paths(["ls-files"], root))
+    path.write_text(draft_config(root.name, structure), encoding="utf-8", newline="\n")
+    print(f"Wrote {path}: {structure['kind']} layout, {len(structure['components'])} components in "
+          f"{len(structure_layers(structure))} layers. Review it, then run `explain-change check`.")
+    return 0
+
+
+OWNERSHIP_HINTS = {  # the override key that fits each layout, shown commented out under every component
+    "rails": '# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)',
+    "django": '# imports = ["billing.*"]      # dotted modules owned by this component (when not under its paths)',
+    "generic": '# imports = ["@app/orders/*"]  # import specifiers owned by this component',
+}
+
+
+def draft_config(name: str, structure: dict) -> str:
+    """The commented .explain-change.toml that `init` writes for a detected structure."""
     kind, comps, layers = structure["kind"], structure["components"], structure_layers(structure)
     layer_ids = {lid for lid, _ in layers}
     rules = [r for r in STRUCTURE_RULES.get(kind, []) if all(x.strip() in layer_ids for x in r.split("->"))]
     lines = [
         "# explain-change config — the source of truth for components, layers and direction.",
-        f"# Drafted by `explain-change init` from a {kind} layout. Review every section, then run `explain-change check`.",
-        "# Layers are drawn top to bottom in this order (web first, core last); [rules] decides what may depend on what.",
+        f"# Drafted by `explain-change init` from a {kind} layout. "
+        "Review every section, then run `explain-change check`.",
+        "# Layers are drawn top to bottom in this order (web first, core last); "
+        "[rules] decides what may depend on what.",
         "# Layers, components and rules are yours: rename, merge or split them so the map reads like this app.",
         "# A file belongs to the component with the most specific matching path.",
-        "", "[project]", f"name = {toml_str(root.name)}",
+        "", "[project]", f"name = {toml_str(name)}",
         'direction = ""  # one or two sentences: the architecture you want PRs to follow',
         'lang = "en"     # en | es', "",
     ]
-    for lid, name in layers:
-        lines += ["[[layers]]", f"id = {toml_str(lid)}", f"name = {toml_str(name)}", ""]
-    lines += ["[rules]", "# Allow-list of dependency directions (layer or component ids). Anything else is a violation.",
+    for lid, layer_name in layers:
+        lines += ["[[layers]]", f"id = {toml_str(lid)}", f"name = {toml_str(layer_name)}", ""]
+    lines += ["[rules]",
+              "# Allow-list of dependency directions (layer or component ids). Anything else is a violation.",
               "# Suggested for this layout; uncomment once the components below are right.",
               f"# allow = [{', '.join(toml_str(r) for r in rules)}]" if rules else "# allow = []",
               "same_layer = true", ""]
-    hint = {"rails": '# constants = ["Billing::*"]   # Ruby constants owned by this component (when not under its paths)',
-            "django": '# imports = ["billing.*"]      # dotted modules owned by this component (when not under its paths)'}.get(
-        kind, '# imports = ["@app/orders/*"]  # import specifiers owned by this component')
+    hint = OWNERSHIP_HINTS.get(kind, OWNERSHIP_HINTS["generic"])
     for c in comps:
-        lines += ["[[components]]", f"id = {toml_str(c['id'])}", *([f"name = {toml_str(c['name'])}"] if c.get("name") else []),
+        lines += ["[[components]]", f"id = {toml_str(c['id'])}",
+                  *([f"name = {toml_str(c['name'])}"] if c.get("name") else []),
                   f"layer = {toml_str(c['layer'])}",
-                  f"paths = [{', '.join(toml_str(p) for p in c['paths'])}]", f"desc = {toml_str(c.get('desc', ''))}", hint, ""]
+                  f"paths = [{', '.join(toml_str(p) for p in c['paths'])}]",
+                  f"desc = {toml_str(c.get('desc', ''))}", hint, ""]
     lines += ["# [[flows]]  # reference runtime flows; the agent compares changed flows against them",
-              '# id = "checkout"', '# title = "Checkout"', '# steps = ["controllers -> services : PlaceOrder", "services -> models : Order.create!"]', "",
+              '# id = "checkout"', '# title = "Checkout"',
+              '# steps = ["controllers -> services : PlaceOrder", "services -> models : Order.create!"]', "",
               "[ignore]", f"paths = [{', '.join(toml_str(p) for p in DEFAULT_IGNORE)}]",
               f"tests = [{', '.join(toml_str(p) for p in DEFAULT_TESTS)}]", ""]
-    path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-    print(f"Wrote {path}: {kind} layout, {len(comps)} components in {len(layers)} layers. Review it, then run `explain-change check`.")
-    return 0
+    return "\n".join(lines)
 
 
 def cmd_check(args) -> int:
@@ -136,8 +161,11 @@ def cmd_check(args) -> int:
     if not (root / CONFIG_NAME).exists():
         raise Fail(f"No {CONFIG_NAME}. Run `explain-change init`.")
     cfg, errs = load_config(root)
+    if errs:  # a partial config would list a misleading map
+        print(f"{CONFIG_NAME} has errors:", *[f"  - {e}" for e in errs], sep="\n", file=sys.stderr)
+        return 2
     mapper = Mapper(cfg)
-    files = git(["ls-files"], root).splitlines()
+    files = git_paths(["ls-files"], root)
     counts = {c["id"]: 0 for c in cfg["components"]}
     unmapped = []
     for f in files:
@@ -151,8 +179,6 @@ def cmd_check(args) -> int:
             counts[comp] += 1
         elif lang_of(f):
             unmapped.append(f)
-    for e in errs:
-        print(f"error: {e}", file=sys.stderr)
     for cid, n in counts.items():
         if n == 0:
             print(f"warn: component '{cid}' matches no files", file=sys.stderr)
@@ -168,7 +194,7 @@ def cmd_check(args) -> int:
         dirs[d] = dirs.get(d, 0) + 1
     for d, n in sorted(dirs.items(), key=lambda x: (-x[1], x[0]))[:20]:
         print(f"  unmapped: {d}/ ({n} files)")
-    return 1 if errs else 0
+    return 0
 
 
 INSTALL_MARKER = ".explain-change-install"  # marks our install, so a later install may replace it

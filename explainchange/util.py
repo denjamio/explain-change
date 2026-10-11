@@ -9,6 +9,11 @@ from pathlib import Path
 
 from .constants import LANG_BY_EXT, MAX_FILE_BYTES
 
+__all__ = [
+    "Fail", "git", "git_paths", "BlobReader", "glob_re", "matches_any", "strip_jsonc", "camelize", "IRREGULAR_PLURALS",
+    "singularize", "slugify", "lang_of", "line_index",
+]
+
 
 class Fail(Exception):
     """User-facing error: printed without traceback."""
@@ -19,6 +24,11 @@ def git(args: list[str], cwd: Path, check: bool = True) -> str:
     if check and p.returncode != 0:
         raise Fail(f"git {' '.join(args)} failed: {p.stderr.decode(errors='replace').strip()}")
     return p.stdout.decode("utf-8", errors="replace")
+
+
+def git_paths(args: list[str], cwd: Path) -> list[str]:
+    """Paths listed by `git ls-files` or `git ls-tree --name-only`, NUL-separated so no name is ever quoted."""
+    return [p for p in git([*args, "-z"], cwd).split("\0") if p]
 
 
 class BlobReader:

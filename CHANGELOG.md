@@ -29,3 +29,24 @@ First release, not published yet.
   git config; config line endings do not change the insight key.
 - `SKILL.md` for agents with skill support, `PROMPT.md` for the rest.
 - JSON Schemas for the config and the insight, example reports, unit, contract and end-to-end tests, and CI.
+- A smoke test of the report template: every example runs in a minimal DOM under Node, plays its story and clicks
+  every control (`tests/js/smoke.js`).
+
+### Fixed
+
+- Paths with spaces, quotes, tabs or other special characters are read exactly: diff headers are unquoted and
+  stripped of git's trailing TAB, and file lists use `-z`.
+- Ruby lines that start with a word like `required` or `requirements` are scanned for constants again; only real
+  `require` lines are skipped.
+- Endpoints are detected only in route files (`config/routes.rb`, `urls.py`, routers, ASP.NET attributes, Angular
+  routes), so a call like `delete user` in a model is no longer listed as an endpoint.
+- The insight validator rejects non-object list items with their exact index instead of skipping them (which could
+  crash rendering), and checks `version` and `lang`.
+- `check` stops with exit code 2 on config errors instead of listing a map built from a partial config.
+
+### Changed
+
+- The insight key includes `ANALYSIS_VERSION`, so a change to the analysis marks earlier insights stale.
+- The digest's task section takes the decision and hero counts from the validator's limits, like the rest.
+- The `explainchange` package re-exports only each module's `__all__`, not the standard library names they import.
+- Lint enforces 120-character lines in the package; long regexes are marked as data.

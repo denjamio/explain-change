@@ -1,6 +1,6 @@
 {
  "version": 1,
- "key": "e27d89bf89a4b187",
+ "key": "b852e9bed1acfc07",
  "lang": "en",
  "tldr": "Admins can now export all family data as 1 ZIP file. A background job writes 4 CSV files and 1 NDJSON file and attaches the ZIP to a FamilyExport record.",
  "intent": "Let a family take a full copy of its data out of Maybe.",

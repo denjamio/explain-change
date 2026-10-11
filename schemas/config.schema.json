@@ -105,28 +105,28 @@
             "items": {
               "type": "string"
             },
-            "description": "Globs with ** support; a plain dir matches everything below it."
+            "description": "Path globs: * and ? stay inside one folder, ** crosses folders; a plain dir matches everything below it."
           },
           "imports": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "TS/Python/require specifiers owned by this component (fnmatch)."
+            "description": "TS/Python/require specifiers owned by this component. fnmatch patterns over the whole specifier: * matches any characters, including / and ., so billing.* covers billing.models.invoice."
           },
           "namespaces": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "C# namespaces (fnmatch)."
+            "description": "C# namespaces. fnmatch patterns: * matches any characters, including ., so Shop.Billing* covers Shop.Billing.Invoices."
           },
           "constants": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Ruby constants (fnmatch)."
+            "description": "Ruby constants. fnmatch patterns: * matches any characters, including ::, so Billing::* covers Billing::Stripe::Charge."
           }
         }
       }

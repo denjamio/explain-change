@@ -68,6 +68,14 @@ class RailsTests(unittest.TestCase):
         edges, _ = edges_for(files, comps)
         self.assertEqual(edges, {"web->billing": 1, "web->models": 1, "billing->models": 1, "tasks->models": 1})
 
+    def test_lines_starting_with_require_are_still_read(self):
+        files = {"app/models/a.rb": "class A\n  def x\n    required = Billing::Plan.find(1)\n  end\nend\n",
+                 "app/services/billing/plan.rb": "module Billing\n  class Plan\n  end\nend\n"}
+        comps = [{"id": "models", "layer": "domain", "paths": ["app/models/**"]},
+                 {"id": "billing", "layer": "app", "paths": ["app/services/billing/**"]}]
+        edges, _ = edges_for(files, comps)
+        self.assertEqual(edges, {"models->billing": 1})
+
     def test_constant_override(self):
         files = {"app/models/a.rb": "class A\n  Stripe::Charge.create\nend\n", "lib/stripe_client.rb": ""}
         comps = [{"id": "models", "layer": "domain", "paths": ["app/models/**"]},
@@ -253,6 +261,39 @@ deleted file mode 100644
                                ("endpoint", "resources refunds", "added"), ("endpoint", "path invoices/<int:pk>/", "added")})
 
 
+class EndpointScopeTests(unittest.TestCase):
+    @staticmethod
+    def symbols(path, line):
+        f = {"path": path, "hunks": [{"old_start": 1, "new_start": 1, "lines": [["+", line]]}]}
+        return {(s["kind"], s["name"]) for s in ec.extract_symbols(f)}
+
+    def test_routes_only_in_route_files(self):
+        self.assertEqual(self.symbols("config/routes.rb", "  delete :sessions"), {("endpoint", "delete sessions")})
+        self.assertEqual(self.symbols("config/routes/admin.rb", "  get 'stats'"), {("endpoint", "get stats")})
+        self.assertEqual(self.symbols("app/models/user.rb", "    delete user"), set())
+        self.assertEqual(self.symbols("orders/urls.py", 'path("orders/", views.index),'), {("endpoint", "path orders/")})
+        self.assertEqual(self.symbols("orders/api/urls/v1.py", 'path("v1/", api),'), {("endpoint", "path v1/")})
+        self.assertEqual(self.symbols("orders/services.py", 'x = path("orders/", y)'), set())
+        self.assertEqual(self.symbols("api/routers.py", 'router.register(r"orders", OrderViewSet)'),
+                         {("endpoint", "register orders")})
+
+
+class DiffPathTests(unittest.TestCase):
+    def test_quoted_and_spaced_paths(self):
+        self.assertEqual(ec.diff_path("b/moved space.py\t"), "b/moved space.py")
+        self.assertEqual(ec.diff_path('"b/quo\\"te.py"'), 'b/quo"te.py')
+        self.assertEqual(ec.diff_path('"a/tab\\there.py"'), "a/tab\there.py")
+        self.assertEqual(ec.diff_path('"a/\\303\\261.py"'), "a/ñ.py")
+        diff = ("diff --git a/with space.py b/moved space.py\nsimilarity index 50%\nrename from with space.py\n"
+                "rename to moved space.py\n--- a/with space.py\t\n+++ b/moved space.py\t\n@@ -1 +1,2 @@\n x\n+y\n"
+                'diff --git "a/tab\\there.py" "b/tab\\tmoved.py"\nsimilarity index 100%\n'
+                'rename from "tab\\there.py"\nrename to "tab\\tmoved.py"\n'
+                "diff --git a/same name.py b/same name.py\nold mode 100644\nnew mode 100755\n")
+        got = [(f["path"], f["old_path"], f["status"]) for f in ec.parse_diff(diff)]
+        self.assertEqual(got, [("moved space.py", "with space.py", "R"), ("tab\tmoved.py", "tab\there.py", "R"),
+                               ("same name.py", None, "M")])
+
+
 class ExcerptTests(unittest.TestCase):
     def test_prune_keeps_only_referenced_lines(self):
         lines = [[" ", "a"], ["-", "b"], ["+", "B"], [" ", "c"]] + [["+", f"x{i}"] for i in range(20)] + [[" ", "z"]]
@@ -288,6 +329,23 @@ class InsightValidationTests(unittest.TestCase):
 
     def test_valid(self):
         self.assertEqual(ec.validate_insight(self.valid(), self.CTX), [])
+
+    def test_version_and_lang(self):
+        ctx = {**self.CTX, "config": {**self.CTX["config"], "lang": "es"}}
+        self.assertEqual(ec.validate_insight(self.valid(version=1, lang="es"), ctx), [])
+        errs = "\n".join(ec.validate_insight(self.valid(version=7, lang="en"), ctx))
+        self.assertIn("version: '7' must be 1", errs)
+        self.assertIn("lang: 'en' must be 'es'", errs)
+
+    def test_non_object_items_are_errors_with_exact_indices(self):
+        ins = self.valid(changes=["a", {"id": "a", "summary": "s"}], decisions=[{"title": "t", "why": "w"}, 3],
+                         flows=[{"id": "f", "title": "t", "steps": ["x", {"from": "a", "to": "b", "msg": "m",
+                                                                         "status": "new"}]}])
+        errs = ec.validate_insight(ins, self.CTX)
+        for needle in ("changes[0]: must be an object", "decisions[1]: must be an object",
+                       "flows[0].steps[0]: must be an object"):
+            self.assertIn(needle, errs)
+        self.assertFalse(any(e.startswith("changes[1]") for e in errs), errs)
 
     def test_stale_key_only(self):
         errs = ec.validate_insight(self.valid(key="k0"), self.CTX)

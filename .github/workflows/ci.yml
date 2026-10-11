@@ -25,7 +25,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Unit and end-to-end tests
+      - uses: actions/setup-node@v4  # runs the report template in tests/test_package.py
+        with:
+          node-version: "20"
+      - name: Unit, end-to-end and template tests
         run: python -m unittest discover -s tests -v
       - name: Install into a temporary home
         run: |

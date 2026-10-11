@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import json
+from html import escape as html_escape
 from pathlib import Path
 
 from .constants import TOOL_DIR, WORK_DIR
 from .util import slugify
 from .openspec import spec_requirements
 from .insight import REF_RE, normalize_insight, validate_insight
+
+__all__ = ["EXCERPT_MARGIN", "excerpt_ranges", "prune_hunks", "render_html", "load_insight", "write_render"]
 
 
 EXCERPT_MARGIN = 3  # context lines kept around each referenced range (the page shows at most 2)
@@ -40,7 +43,8 @@ def prune_hunks(f: dict, ranges: list[tuple[int, int]]) -> list[dict]:
             ln = n if side_new else (o if t != "+" else n)
             if any(a <= ln <= b for a, b in ranges):
                 if cur is None:
-                    cur = {"old_start": o, "old_len": 0, "new_start": n, "new_len": 0, "header": h.get("header", ""), "lines": []}
+                    cur = {"old_start": o, "old_len": 0, "new_start": n, "new_len": 0,
+                           "header": h.get("header", ""), "lines": []}
                     out.append(cur)
                 cur["lines"].append([t, body])
                 cur["old_len"] += t != "+"
@@ -64,8 +68,7 @@ def render_html(ctx: dict, insight: dict | None, status: str, errors: list[str])
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     payload = payload.replace("</", "<\\/").replace("<!--", "<\\!--")
     title = f"{ctx['config']['name']} · {ctx['source']['title']}"
-    esc = lambda s: s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")  # noqa: E731
-    return (html.replace("{{TITLE}}", esc(title))
+    return (html.replace("{{TITLE}}", html_escape(title, quote=False))
                 .replace("{{LANG}}", ctx["config"]["lang"])
                 .replace("/*{{CSS}}*/", css)
                 .replace("/*{{JS}}*/", js.replace("</script", "<\\/script"))
