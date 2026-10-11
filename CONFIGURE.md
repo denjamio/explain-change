@@ -1,7 +1,7 @@
 # Configure explain-change for a repository
 
 Follow this when the user asks to set up, write or improve `.explain-change.toml`. The goal is a map that reads the
-way the team talks about the app: a newcomer should recognise every lane and box. Work from the repository root.
+way the team talks about the app: a newcomer should recognize every lane and box. Work from the repository root.
 
 ## 1. Draft
 

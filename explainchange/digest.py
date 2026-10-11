@@ -171,11 +171,11 @@ def build_digest(ctx: dict, budget: int) -> str:
             "another reviewer covers those.",
             f"- Component ids (only these): in this change {', '.join(c['id'] for c in ctx['components'])}"
             + (f"; elsewhere {', '.join(insight_components(ctx)[len(ctx['components']):])}" if len(insight_components(ctx)) > len(ctx["components"]) else "") + ".",
-            "- changes: one line per changed component saying what it now does differently (behaviour, not file names).",
+            "- changes: one line per changed component saying what it now does differently (behavior, not file names).",
             "- decisions (0-5): the design choices that explain why the change is built this way: what was chosen, why, "
             "and the main alternative.",
             f"- flows (0-{L['flows']}): runtime paths through the changed components, steps in call order. step status: "
-            "same = existed unchanged | changed = existed, different data/behaviour | new | removed. "
+            "same = existed unchanged | changed = existed, different data/behavior | new | removed. "
             "Reuse a reference flow id when it is the same flow. A step with no dependency in the code is drawn as unverified (?).",
             f"- story ({STORY_MIN}-{L['story']}, ideally 3-6): the guided tour a reader plays over the diagrams. One step = one change "
             "(added, removed, now, moved, replaced), headline change first, overview last. heading: the thing + what happened to it, "
@@ -186,7 +186,7 @@ def build_digest(ctx: dict, budget: int) -> str:
             "- flow step data (optional): what travels on the step: the type a reader of the code knows, and only the fields "
             "that matter; prefix + added, - removed, ~ changed. Put it on steps whose data changed.",
             "- data_model (when entities, tables, schemas or migrations change): the entities touched, with changed fields "
-            "(+ - ~) and their relations; unchanged neighbours as change 'same' (no evidence needed). "
+            "(+ - ~) and their relations; unchanged neighbors as change 'same' (no evidence needed). "
             "evidence = file:a-b of the model or migration hunk. Story stage 'data' focuses entity ids.",
             f"- Prose: {PROSE_RULES}",
             "- hero (0-2): the dependency the change is really about, as from/to of a drawn edge; optional short label.",
@@ -196,7 +196,7 @@ def build_digest(ctx: dict, budget: int) -> str:
             "```json", insight_template(ctx), "```"]
     if spec_requirements(ctx):
         task.insert(-3, "- spec: one entry per ADDED/MODIFIED requirement (REMOVED optional): does the code implement it? "
-                        "implemented = behaviour present (components and/or tests that prove it) | partial | missing | n/a. "
+                        "implemented = behavior present (components and/or tests that prove it) | partial | missing | n/a. "
                         "partial/missing need a note. A scenario that is a runtime path can be a flow with \"scenario\": \"<req-id>#<scenario-id>\".")
     tail = "\n".join(task)
 
