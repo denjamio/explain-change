@@ -10,6 +10,7 @@ import json
 import os
 import posixpath
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -26,7 +27,7 @@ from .render import load_insight, write_render
 __all__ = [
     "load_context", "print_insight_status", "cmd_pr", "cmd_render", "cmd_validate", "toml_str", "cmd_init",
     "OWNERSHIP_HINTS", "draft_config", "cmd_check", "INSTALL_MARKER", "SKILL_FILES", "install_skill", "install_cli",
-    "cmd_install", "main", "run",
+    "cmd_install", "cmd_update", "main", "run",
 ]
 
 
@@ -202,7 +203,8 @@ def cmd_check(args) -> int:
 
 INSTALL_MARKER = ".explain-change-install"  # marks our install, so a later install may replace it
 # What the skill runs on. Tests, examples and git data stay in the source folder.
-SKILL_FILES = ["SKILL.md", "CONFIGURE.md", "PROMPT.md", "explain_change.py", "explainchange", "schemas", "template"]
+SKILL_FILES = ["SKILL.md", "CONFIGURE.md", "PROMPT.md", "explain_change.py", "install.py", "explainchange", "schemas",
+               "template"]
 
 
 def install_skill(dest: Path, force: bool) -> str:
@@ -271,8 +273,18 @@ def cmd_install(args) -> int:
         print("note: the skill is a copy; run install again after updating this folder")
     path_dirs = {os.path.normcase(os.path.abspath(p)) for p in os.environ.get("PATH", "").split(os.pathsep) if p}
     if os.path.normcase(str(bindir)) not in path_dirs:
-        print(f"note: add {bindir} to your PATH to run `explain-change` from any folder")
+        rc = {"zsh": "~/.zshrc", "bash": "~/.bashrc"}.get(Path(os.environ.get("SHELL", "")).name)
+        how = (f": echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> {rc}, then open a new terminal" if rc else "")
+        print(f"note: add {bindir} to your PATH to run `explain-change` from any folder{how}")
     return 1 if skipped else 0
+
+
+def cmd_update(args) -> int:
+    """Installs the latest release (or --version) with install.py, the same installer as the first time."""
+    if (TOOL_DIR / ".git").exists():
+        raise Fail(f"{TOOL_DIR} is a git clone: update it with `git pull`, then run `explain-change install`.")
+    env = {**os.environ, **({"EXPLAIN_CHANGE_VERSION": args.version} if args.version else {})}
+    return subprocess.call([sys.executable, str(TOOL_DIR / "install.py")], env=env)
 
 
 def main(argv=None) -> int:
@@ -298,6 +310,9 @@ def main(argv=None) -> int:
     p.add_argument("--force", action="store_true", help=f"overwrite an existing {CONFIG_NAME}")
     p.set_defaults(fn=cmd_init)
     sub.add_parser("check", help=f"validate {CONFIG_NAME} and list unmapped files").set_defaults(fn=cmd_check)
+    p = sub.add_parser("update", help="install the latest release (needs no git)")
+    p.add_argument("--version", metavar="TAG", help="a release tag such as v0.1.0 (default: the latest)")
+    p.set_defaults(fn=cmd_update)
     p = sub.add_parser("install", help="link the skill into ~/.agents/skills, ~/.claude/skills and ~/.local/bin")
     p.add_argument("--force", action="store_true", help="replace folders that are not an explain-change install")
     p.set_defaults(fn=cmd_install)

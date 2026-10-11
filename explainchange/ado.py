@@ -1,7 +1,7 @@
 """Azure DevOps pull requests: the PR's commits through git, its title and links through the `az` CLI.
 
-Everything runs without prompts, so an agent never hangs on a login. Git authenticates with the user's own
-credentials first and, on an HTTPS Azure DevOps remote, retries with the `az login` token.
+Git never prompts: it authenticates with the user's own credentials first and, on an HTTPS Azure DevOps remote,
+retries with the `az login` token. When az has no session or it expired, `az login` runs once, in the browser.
 """
 from __future__ import annotations
 
@@ -10,14 +10,17 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from .constants import ADO_RESOURCE, AZ_TIMEOUT, FETCH_TIMEOUT
+from .constants import ADO_RESOURCE, AZ_TIMEOUT, FETCH_TIMEOUT, LOGIN_TIMEOUT
 from .util import Fail, git
 
-__all__ = ["AZ_SETUP", "ado_pr_id", "ado_web_url", "az_hint", "ado_metadata", "is_ado_https", "is_ado_repo_url",
-           "az_token", "ado_fetch", "ado_remote", "ado_source"]
+__all__ = [
+    "AZ_SETUP", "ado_pr_id", "ado_web_url", "needs_login", "az_login", "az_hint", "ado_metadata", "is_ado_https",
+    "is_ado_repo_url", "az_token", "ado_fetch", "ado_remote", "ado_source",
+]
 
 AZ_SETUP = "install the az CLI, then `az extension add --name azure-devops` and `az login`"
 
@@ -52,12 +55,45 @@ def _az(args: list[str], cwd: Path) -> subprocess.CompletedProcess | str:
         return f"az timed out after {AZ_TIMEOUT}s"
 
 
+def needs_login(stderr: str) -> bool:
+    low = stderr.lower()
+    return any(w in low for w in ("az login", "aadsts", "credentials", "unauthorized", "expired")) or bool(
+        re.search(r"(?<![\w])401(?![\w])", low))  # not inside ADO codes like TF401180
+
+
+_login = {"tried": False}  # az login runs at most once per command
+
+
+def az_login(root: Path) -> bool:
+    """Runs `az login` in the user's terminal and browser, once. Its output is shown, so a device code is too."""
+    az = shutil.which("az")
+    if not az or _login["tried"]:
+        return False
+    _login["tried"] = True
+    print("explain-change: az has no valid session; running `az login`…", file=sys.stderr, flush=True)
+    env = {**os.environ, "AZURE_CORE_LOGIN_EXPERIENCE_V2": "off"}  # no subscription picker to answer
+    try:
+        p = subprocess.run([az, "login", "--allow-no-subscriptions", "--only-show-errors", "-o", "none"], cwd=root,
+                           env=env, stdout=sys.stderr, timeout=LOGIN_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return False
+    return p.returncode == 0
+
+
+def _az_logged_in(args: list[str], cwd: Path) -> subprocess.CompletedProcess | str:
+    """_az, logging in and retrying once when az has no valid session."""
+    p = _az(args, cwd)
+    if not isinstance(p, str) and p.returncode != 0 and needs_login(p.stderr) and az_login(cwd):
+        p = _az(args, cwd)
+    return p
+
+
 def az_hint(stderr: str) -> str:
     """az's error, with the fix for the usual causes."""
     low = stderr.lower()
     if "azure-devops" in low or "misspelled or not recognized" in low:
         return "the azure-devops extension is missing: run `az extension add --name azure-devops`"
-    if "az login" in low or "credentials" in low or "unauthorized" in low or "401" in low:
+    if needs_login(stderr):
         return "not logged in: run `az login`"
     if "organization" in low:
         return ("no organization detected from the git remote: run "
@@ -68,7 +104,7 @@ def az_hint(stderr: str) -> str:
 
 def ado_metadata(root: Path, pr_id: str, notes: list[str]) -> dict:
     """`az repos pr show`, or {} with a note saying what is missing and how to fix it."""
-    p = _az(["repos", "pr", "show", "--id", pr_id, "-o", "json"], root)
+    p = _az_logged_in(["repos", "pr", "show", "--id", pr_id, "-o", "json"], root)
     if isinstance(p, str):
         notes.append(f"{p}: no PR title, description or file links ({AZ_SETUP}).")
         return {}
@@ -93,7 +129,8 @@ def is_ado_repo_url(url: str) -> bool:
 
 def az_token(root: Path) -> str | None:
     """An Azure DevOps access token from `az login`, or None."""
-    p = _az(["account", "get-access-token", "--resource", ADO_RESOURCE, "--query", "accessToken", "-o", "tsv"], root)
+    p = _az_logged_in(["account", "get-access-token", "--resource", ADO_RESOURCE, "--query", "accessToken",
+                       "-o", "tsv"], root)
     if isinstance(p, str) or p.returncode != 0:
         return None
     return p.stdout.strip() or None

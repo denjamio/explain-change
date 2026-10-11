@@ -13,6 +13,8 @@ insight schema and the report to change between 0.x versions.
 
 - `.explain-change/insights/<key>.json`: every accepted insight is kept per change, and going back to a change that
   was already explained restores it without the agent.
+- One-line install without git clone (`install.py`, run with `curl … | python3 -` or `irm … | py -3 -`), and
+  `explain-change update` to move to the latest release (or `--version <tag>`).
 - `explain-change --version`: the version, the analysis version and the folder it runs from.
 - CI runs the tests on Windows too.
 - `explain-change pr`: collects a local branch diff (`--base`, `--include-uncommitted`) or an Azure DevOps PR
@@ -46,8 +48,9 @@ insight schema and the report to change between 0.x versions.
     CLI prints a note with the fix instead of silently dropping the title, description and file links.
   - A PR without a merge ref (merge conflicts, completed, abandoned) falls back to its source branch against the
     merge base with its target, instead of stopping.
-  - git and `az` never prompt, and they time out (10 min per fetch, 60 s per `az` call), so an agent never hangs on
-    a login. On an HTTPS Azure DevOps remote, a failed fetch retries with the `az login` token, passed through the
+  - When `az` has no session or it expired, `az login` runs once in the browser and the command goes on.
+  - git never prompts, and git and `az` time out (10 min per fetch, 60 s per `az` call, 5 min for `az login`).
+    On an HTTPS Azure DevOps remote, a failed fetch retries with the `az login` token, passed through the
     environment.
   - The remote is the one matching the PR's repository, else `origin`, else the only one; it was always `origin`.
 

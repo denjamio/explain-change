@@ -6,9 +6,10 @@ from pathlib import Path
 
 __all__ = [
     "VERSION", "SCHEMA_VERSION", "ANALYSIS_VERSION", "TOOL_DIR", "CONFIG_NAME", "WORK_DIR", "MAX_SCAN_FILES",
-    "MAX_FILE_BYTES", "MAX_DIFF_LINES", "DEFAULT_BUDGET", "AZ_TIMEOUT", "FETCH_TIMEOUT", "ADO_RESOURCE", "DIFF_FLAGS",
-    "GENERATED_RE", "GENERATED_HEAD", "DEFAULT_TESTS", "DEFAULT_IGNORE", "FRAMEWORK_CONFIG", "MIGRATION_PATTERNS",
-    "CONFIG_EXT", "CONFIG_NAMES", "DOC_EXT", "LANG_BY_EXT", "LAYER_HINTS", "CONTAINER_DIRS",
+    "MAX_FILE_BYTES", "MAX_DIFF_LINES", "DEFAULT_BUDGET", "AZ_TIMEOUT", "LOGIN_TIMEOUT", "FETCH_TIMEOUT",
+    "ADO_RESOURCE", "DIFF_FLAGS", "GENERATED_RE", "GENERATED_HEAD", "DEFAULT_TESTS", "DEFAULT_IGNORE",
+    "FRAMEWORK_CONFIG", "MIGRATION_PATTERNS", "CONFIG_EXT", "CONFIG_NAMES", "DOC_EXT", "LANG_BY_EXT", "LAYER_HINTS",
+    "CONTAINER_DIRS",
 ]
 
 
@@ -25,6 +26,7 @@ MAX_FILE_BYTES = 512 * 1024
 MAX_DIFF_LINES = 30000
 DEFAULT_BUDGET = 12000  # digest chars, ~3k tokens
 AZ_TIMEOUT = 60  # seconds for one az call
+LOGIN_TIMEOUT = 300  # seconds to finish `az login` in the browser
 FETCH_TIMEOUT = 600  # seconds for one git fetch of a PR
 ADO_RESOURCE = "499b84ac-1321-427f-aa17-267ca6975798"  # Azure DevOps, the resource of `az account get-access-token`
 # Pinned so a user's git config (diff.noprefix, diff.algorithm, diff.relative…) cannot change the diff, and so the key.
