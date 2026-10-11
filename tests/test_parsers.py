@@ -253,6 +253,22 @@ deleted file mode 100644
                                ("endpoint", "resources refunds", "added"), ("endpoint", "path invoices/<int:pk>/", "added")})
 
 
+class DiffPathTests(unittest.TestCase):
+    def test_quoted_and_spaced_paths(self):
+        self.assertEqual(ec.diff_path("b/moved space.py\t"), "b/moved space.py")
+        self.assertEqual(ec.diff_path('"b/quo\\"te.py"'), 'b/quo"te.py')
+        self.assertEqual(ec.diff_path('"a/tab\\there.py"'), "a/tab\there.py")
+        self.assertEqual(ec.diff_path('"a/\\303\\261.py"'), "a/ñ.py")
+        diff = ("diff --git a/with space.py b/moved space.py\nsimilarity index 50%\nrename from with space.py\n"
+                "rename to moved space.py\n--- a/with space.py\t\n+++ b/moved space.py\t\n@@ -1 +1,2 @@\n x\n+y\n"
+                'diff --git "a/tab\\there.py" "b/tab\\tmoved.py"\nsimilarity index 100%\n'
+                'rename from "tab\\there.py"\nrename to "tab\\tmoved.py"\n'
+                "diff --git a/same name.py b/same name.py\nold mode 100644\nnew mode 100755\n")
+        got = [(f["path"], f["old_path"], f["status"]) for f in ec.parse_diff(diff)]
+        self.assertEqual(got, [("moved space.py", "with space.py", "R"), ("tab\tmoved.py", "tab\there.py", "R"),
+                               ("same name.py", None, "M")])
+
+
 class ExcerptTests(unittest.TestCase):
     def test_prune_keeps_only_referenced_lines(self):
         lines = [[" ", "a"], ["-", "b"], ["+", "B"], [" ", "c"]] + [["+", f"x{i}"] for i in range(20)] + [[" ", "z"]]

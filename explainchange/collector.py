@@ -12,7 +12,7 @@ from .constants import (
     CONFIG_NAME, DIFF_FLAGS, GENERATED_HEAD, GENERATED_RE, MAX_DIFF_LINES, MAX_FILE_BYTES, MAX_SCAN_FILES,
     SCHEMA_VERSION, WORK_DIR,
 )
-from .util import BlobReader, Fail, git, lang_of
+from .util import BlobReader, Fail, git, git_paths, lang_of
 from .config import Mapper
 from .diff import parse_diff, resolve_base, untracked_as_diff
 from .deps import SideIndex, build_edges, extract, extract_symbols, load_tsconfigs, rule_violation
@@ -108,7 +108,7 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
     if total_lines >= MAX_DIFF_LINES:
         notes.append(f"Diff larger than {MAX_DIFF_LINES} lines: some files are listed without hunks.")
 
-    base_files = set(git(["ls-tree", "-r", "--name-only", mb], root).splitlines())
+    base_files = set(git_paths(["ls-tree", "-r", "--name-only", mb], root))
     head_files = (base_files - {f["old_path"] or f["path"] for f in files if f["status"] in "DR"}) | {
         f["path"] for f in files if f["status"] != "D"}
     touched = {f["component"] for f in files if f["component"] and f["category"] not in ("test", "ignored")}

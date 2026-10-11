@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from .constants import CONFIG_NAME, DEFAULT_BUDGET, DEFAULT_IGNORE, DEFAULT_TESTS, SCHEMA_VERSION, TOOL_DIR, WORK_DIR
-from .util import Fail, git, lang_of
+from .util import Fail, git_paths, lang_of
 from .config import Mapper, STRUCTURE_RULES, detect_structure, load_config, structure_layers
 from .collector import collect, ensure_workdir, repo_root
 from .digest import build_digest
@@ -103,7 +103,7 @@ def cmd_init(args) -> int:
     path = root / CONFIG_NAME
     if path.exists() and not args.force:
         raise Fail(f"{CONFIG_NAME} already exists (use --force to overwrite).")
-    structure = detect_structure(git(["ls-files"], root).splitlines())
+    structure = detect_structure(git_paths(["ls-files"], root))
     path.write_text(draft_config(root.name, structure), encoding="utf-8", newline="\n")
     print(f"Wrote {path}: {structure['kind']} layout, {len(structure['components'])} components in "
           f"{len(structure_layers(structure))} layers. Review it, then run `explain-change check`.")
@@ -162,7 +162,7 @@ def cmd_check(args) -> int:
         raise Fail(f"No {CONFIG_NAME}. Run `explain-change init`.")
     cfg, errs = load_config(root)
     mapper = Mapper(cfg)
-    files = git(["ls-files"], root).splitlines()
+    files = git_paths(["ls-files"], root)
     counts = {c["id"]: 0 for c in cfg["components"]}
     unmapped = []
     for f in files:

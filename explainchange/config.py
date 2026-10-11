@@ -10,7 +10,7 @@ from .constants import (
     CONFIG_EXT, CONFIG_NAME, CONFIG_NAMES, CONTAINER_DIRS, DEFAULT_BUDGET, DEFAULT_IGNORE, DEFAULT_TESTS, DOC_EXT,
     FRAMEWORK_CONFIG, LAYER_HINTS, MIGRATION_PATTERNS,
 )
-from .util import Fail, camelize, git, glob_re, lang_of, matches_any, slugify
+from .util import Fail, camelize, git_paths, glob_re, lang_of, matches_any, slugify
 
 __all__ = [
     "parse_flow_step", "load_config", "normalize_config", "RAILS_KINDS", "RAILS_UI", "STRUCTURE_LAYERS",
@@ -297,7 +297,7 @@ def structure_layers(structure: dict) -> list[tuple[str, str]]:
 
 
 def infer_config(root: Path) -> dict:
-    structure = detect_structure(git(["ls-files"], root).splitlines())
+    structure = detect_structure(git_paths(["ls-files"], root))
     layers = [{"id": lid, "name": name} for lid, name in structure_layers(structure)]
     cfg, _ = normalize_config({"project": {"name": root.name}, "layers": layers, "components": structure["components"]},
                               inferred=True)
