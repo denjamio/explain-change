@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from .constants import SCHEMA_VERSION
 from .openspec import spec_requirements
 
 __all__ = [
@@ -149,7 +150,7 @@ class InsightValidator:
             self.errs.append(f"{path}: '{value}' must be one of {'|'.join(INSIGHT_ENUMS[key])}")
 
     def objects(self, path, value, max_items=None) -> list[tuple[int, dict]]:
-        """(index, item) for each object of an optional array; other items are skipped."""
+        """(index, item) for each object of an optional array; any other item is an error, so indices stay exact."""
         if value is None:
             return []
         if not isinstance(value, list):
@@ -157,7 +158,13 @@ class InsightValidator:
             return []
         if max_items is not None and len(value) > max_items:
             self.errs.append(f"{path}: {len(value)} items, max {max_items}")
-        return [(i, v) for i, v in enumerate(value) if isinstance(v, dict)]
+        out = []
+        for i, v in enumerate(value):
+            if isinstance(v, dict):
+                out.append((i, v))
+            else:
+                self.errs.append(f"{path}[{i}]: must be an object")
+        return out
 
     def location(self, path, value, required):
         """file:line or file:a-b, inside a hunk of a changed file (so the report can show it)."""
@@ -186,6 +193,11 @@ class InsightValidator:
         if ins.get("key") not in (None, self.ctx["key"]):
             self.errs.append(f"key: '{ins.get('key')}' is stale; the change now has key '{self.ctx['key']}'. "
                              "Re-read the digest and regenerate.")
+        if ins.get("version") not in (None, SCHEMA_VERSION):
+            self.errs.append(f"version: '{ins.get('version')}' must be {SCHEMA_VERSION}")
+        lang = self.ctx["config"].get("lang", "en")
+        if ins.get("lang") not in (None, lang):
+            self.errs.append(f"lang: '{ins.get('lang')}' must be '{lang}', the report language; write the prose in it")
 
     def changes(self, value):
         touched = touched_components(self.ctx)

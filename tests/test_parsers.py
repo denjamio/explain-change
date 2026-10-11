@@ -330,6 +330,23 @@ class InsightValidationTests(unittest.TestCase):
     def test_valid(self):
         self.assertEqual(ec.validate_insight(self.valid(), self.CTX), [])
 
+    def test_version_and_lang(self):
+        ctx = {**self.CTX, "config": {**self.CTX["config"], "lang": "es"}}
+        self.assertEqual(ec.validate_insight(self.valid(version=1, lang="es"), ctx), [])
+        errs = "\n".join(ec.validate_insight(self.valid(version=7, lang="en"), ctx))
+        self.assertIn("version: '7' must be 1", errs)
+        self.assertIn("lang: 'en' must be 'es'", errs)
+
+    def test_non_object_items_are_errors_with_exact_indices(self):
+        ins = self.valid(changes=["a", {"id": "a", "summary": "s"}], decisions=[{"title": "t", "why": "w"}, 3],
+                         flows=[{"id": "f", "title": "t", "steps": ["x", {"from": "a", "to": "b", "msg": "m",
+                                                                         "status": "new"}]}])
+        errs = ec.validate_insight(ins, self.CTX)
+        for needle in ("changes[0]: must be an object", "decisions[1]: must be an object",
+                       "flows[0].steps[0]: must be an object"):
+            self.assertIn(needle, errs)
+        self.assertFalse(any(e.startswith("changes[1]") for e in errs), errs)
+
     def test_stale_key_only(self):
         errs = ec.validate_insight(self.valid(key="k0"), self.CTX)
         self.assertTrue(any(e.startswith("key:") for e in errs))
