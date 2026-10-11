@@ -13,7 +13,10 @@ import shutil
 import sys
 from pathlib import Path
 
-from .constants import CONFIG_NAME, DEFAULT_BUDGET, DEFAULT_IGNORE, DEFAULT_TESTS, SCHEMA_VERSION, TOOL_DIR, WORK_DIR
+from .constants import (
+    ANALYSIS_VERSION, CONFIG_NAME, DEFAULT_BUDGET, DEFAULT_IGNORE, DEFAULT_TESTS, SCHEMA_VERSION, TOOL_DIR, VERSION,
+    WORK_DIR,
+)
 from .util import Fail, git_paths, lang_of
 from .config import Mapper, STRUCTURE_RULES, detect_structure, load_config, structure_layers
 from .collector import collect, ensure_workdir, repo_root
@@ -274,6 +277,8 @@ def cmd_install(args) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="explain-change", description=__doc__.split("\n\n")[0])
+    ap.add_argument("--version", action="version", version=f"explain-change {VERSION} "
+                    f"(analysis {ANALYSIS_VERSION}, schema {SCHEMA_VERSION}) · {TOOL_DIR}")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("pr", help="collect a change (local branch or Azure DevOps PR), write digest, render")
     p.add_argument("--base", help="base ref (default: project.base, else origin/HEAD, main, master or develop)")

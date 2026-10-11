@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 import explainchange as ec  # noqa: E402
 
 # Import order, as README.md and explainchange/__init__.py describe it: no module imports a later one.
-MODULES = ["constants", "util", "config", "diff", "deps", "openspec", "collector", "insight", "digest", "render", "cli"]
+MODULES = ["constants", "util", "config", "diff", "deps", "openspec", "ado", "collector", "insight", "digest", "render", "cli"]
 
 
 def public_names(module: str) -> list[str]:

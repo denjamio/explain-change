@@ -4,12 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.0] - 2026-10-11
 
-First release, not published yet.
+First release, for use in practice on Rails and Django repositories before a stable 1.0.0. Expect the config, the
+insight schema and the report to change between 0.x versions.
 
 ### Added
 
+- `.explain-change/insights/<key>.json`: every accepted insight is kept per change, and going back to a change that
+  was already explained restores it without the agent.
+- `explain-change --version`: the version, the analysis version and the folder it runs from.
+- CI runs the tests on Windows too.
 - `explain-change pr`: collects a local branch diff (`--base`, `--include-uncommitted`) or an Azure DevOps PR
   (`--ado`), maps files to components, builds the dependency delta and checks `[rules]`.
 - `digest.md`: a budgeted summary for the agent (`--budget` or `project.budget`, default 12000 chars ≈ 3k tokens).
@@ -33,6 +38,18 @@ First release, not published yet.
   every control (`tests/js/smoke.js`).
 
 ### Fixed
+
+- Azure DevOps PRs are ready for daily use (`explainchange/ado.py`):
+  - A PR URL with a query (`…/pullrequest/42?_a=files&path=/db/0099`) reads the right id, and `!42` works. Before,
+    such a URL failed, or took a number from the query as the PR id.
+  - When `az` is missing, not logged in, lacks the `azure-devops` extension or cannot detect the organization, the
+    CLI prints a note with the fix instead of silently dropping the title, description and file links.
+  - A PR without a merge ref (merge conflicts, completed, abandoned) falls back to its source branch against the
+    merge base with its target, instead of stopping.
+  - git and `az` never prompt, and they time out (10 min per fetch, 60 s per `az` call), so an agent never hangs on
+    a login. On an HTTPS Azure DevOps remote, a failed fetch retries with the `az login` token, passed through the
+    environment.
+  - The remote is the one matching the PR's repository, else `origin`, else the only one; it was always `origin`.
 
 - Paths with spaces, quotes, tabs or other special characters are read exactly: diff headers are unquoted and
   stripped of git's trailing TAB, and file lists use `-z`.

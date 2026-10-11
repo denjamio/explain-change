@@ -10,7 +10,10 @@ from .util import slugify
 from .openspec import spec_requirements
 from .insight import REF_RE, normalize_insight, validate_insight
 
-__all__ = ["EXCERPT_MARGIN", "excerpt_ranges", "prune_hunks", "render_html", "load_insight", "write_render"]
+__all__ = [
+    "EXCERPT_MARGIN", "excerpt_ranges", "prune_hunks", "render_html", "cached_insight", "restore_insight",
+    "load_insight", "write_render",
+]
 
 
 EXCERPT_MARGIN = 3  # context lines kept around each referenced range (the page shows at most 2)
@@ -75,8 +78,35 @@ def render_html(ctx: dict, insight: dict | None, status: str, errors: list[str])
                 .replace("{{DATA}}", payload))
 
 
+def cached_insight(work: Path, key: str) -> Path:
+    return work / "insights" / f"{key}.json"
+
+
+def restore_insight(work: Path, ctx: dict) -> bool:
+    """Brings back the insight already accepted for this exact change, so going back to a PR costs no tokens.
+    An insight.json being written for this change (or unreadable, so mid-write) is left alone; one for another
+    change is archived under its own key first."""
+    path, cached = work / "insight.json", cached_insight(work, ctx["key"])
+    if not cached.exists():
+        return False
+    if path.exists():
+        try:
+            current = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return False
+        old = current.get("key") if isinstance(current, dict) else None
+        if not isinstance(old, str) or old == ctx["key"]:
+            return False
+        if not cached_insight(work, old).exists():
+            cached_insight(work, old).write_bytes(path.read_bytes())
+    path.write_bytes(cached.read_bytes())
+    return True
+
+
 def load_insight(work: Path, ctx: dict) -> tuple[dict | None, str, list[str]]:
+    """The insight's status for this change. A valid one is also kept in insights/<key>.json for restore_insight."""
     path = work / "insight.json"
+    restore_insight(work, ctx)
     if not path.exists():
         return None, "missing", []
     try:
@@ -89,6 +119,10 @@ def load_insight(work: Path, ctx: dict) -> tuple[dict | None, str, list[str]]:
         return None, "stale", stale
     if errs:
         return None, "invalid", errs
+    cached = cached_insight(work, ctx["key"])
+    cached.parent.mkdir(exist_ok=True)
+    cached.write_text(json.dumps({**ins, "key": ctx["key"]}, ensure_ascii=False, indent=1), encoding="utf-8",
+                      newline="\n")
     return normalize_insight(ins, ctx), "fresh", []
 
 
