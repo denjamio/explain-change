@@ -203,6 +203,35 @@ class AdoTests(unittest.TestCase):
         self.assertIn("az devops configure", ec.az_hint("ERROR: --organization must be specified."))
 
 
+class PrDetectionTests(unittest.TestCase):
+    """`pr <id|url>` is an Azure DevOps PR, detected from the URL or the remotes; `local` is the branch."""
+
+    def setUp(self):
+        self.repo = Repo()
+        self.addCleanup(self.repo.close)
+
+    def test_ado_remote_or_url_is_accepted(self):
+        self.repo.git("remote", "add", "origin", "https://org@dev.azure.com/org/proj/_git/repo")
+        ec.require_ado(self.repo.path, "42")
+        ec.require_ado(self.repo.path, "https://org.visualstudio.com/proj/_git/repo/pullrequest/42")
+
+    def test_other_hosts_are_refused(self):
+        self.repo.git("remote", "add", "origin", "git@github.com:org/repo.git")
+        for pr in ("42", "https://github.com/org/repo/pull/42", "https://dev.azure.com.evil.io/x/pullrequest/42"):
+            with self.assertRaises(ec.Fail, msg=pr) as e:
+                ec.require_ado(self.repo.path, pr)
+            self.assertIn("explain-change local", str(e.exception))
+
+    def test_cli(self):
+        self.repo.git("remote", "add", "origin", "git@github.com:org/repo.git")
+        res = self.repo.run("pr", "42")
+        self.assertEqual(res.returncode, 2)
+        self.assertIn("Azure DevOps", res.stderr)
+        res = self.repo.run("pr", "42", "--base", "main")
+        self.assertIn("--base", res.stderr)
+        self.assertEqual(self.repo.run("local", "--base", "main").returncode, 0)
+
+
 class AzLoginTests(unittest.TestCase):
     """An expired or missing az session runs `az login` once and retries; other errors never do."""
 
@@ -443,7 +472,7 @@ class DeterminismTests(unittest.TestCase):
             env = {"GIT_CONFIG_COUNT": str(len(cfg))}
             for i, (k, v) in enumerate(cfg.items()):
                 env |= {f"GIT_CONFIG_KEY_{i}": k, f"GIT_CONFIG_VALUE_{i}": v}
-            res = repo.run("pr", "--base", "main", "--out", "out.html", env=env)
+            res = repo.run("local", "--base", "main", "--out", "out.html", env=env)
             self.assertEqual(res.returncode, 0, res.stderr)
             out[json.dumps(cfg)] = (repo.context()["key"], (repo.path / "out.html").read_bytes())
         self.assertEqual(len(set(out.values())), 1, list(out))
@@ -476,7 +505,7 @@ class ConfigAndDigestTests(unittest.TestCase):
         repo.commit("big")
         sizes = []
         for args in ((), ("--budget", "30000")):
-            self.assertEqual(repo.run("pr", "--base", "main", *args).returncode, 0)
+            self.assertEqual(repo.run("local", "--base", "main", *args).returncode, 0)
             sizes.append(len((repo.path / ".explain-change" / "digest.md").read_text(encoding="utf-8")))
         self.assertLess(sizes[0], sizes[1])
 

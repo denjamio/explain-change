@@ -12,7 +12,8 @@ insight schema and the report to change between 0.x versions.
 ### Added
 
 **Collecting a change**
-- `explain-change pr`: a local branch diff (`--base`, `--include-uncommitted`) or an Azure DevOps PR (`--ado`).
+- `explain-change local` explains the current branch (`--base`, `--include-uncommitted`); `explain-change pr <id|url>`
+  an Azure DevOps PR, detected from the URL or the remotes.
   Maps files to components, builds the dependency delta and checks `[rules]`.
 - Azure DevOps PRs by id, `!id` or a URL pasted from the browser. The code comes from git (`refs/pull/<id>/merge`,
   or the PR branches when there is no merge ref); title, description and file links come from `az`. The remote is
@@ -48,7 +49,7 @@ insight schema and the report to change between 0.x versions.
 - `explain-change install` links the runtime files into `~/.agents/skills` and `~/.claude/skills` (copies on
   Windows) and adds `explain-change` to `~/.local/bin`, with the PATH line to add when needed.
 - `explain-change init` and `check`: draft and verify `.explain-change.toml`, which `CONFIGURE.md` guides an agent
-  through. `pr` and `check` exit with 2 on config errors.
+  through. `local`, `pr` and `check` exit with 2 on config errors.
 - `explain-change --version`: the version, the analysis version and the folder it runs from.
 
 **Quality**

@@ -19,7 +19,7 @@ from .util import Fail, git
 
 __all__ = [
     "AZ_SETUP", "ado_pr_id", "ado_web_url", "needs_login", "az_login", "az_hint", "ado_metadata", "is_ado_https",
-    "is_ado_repo_url", "az_token", "ado_fetch", "ado_remote", "ado_source",
+    "is_ado_repo_url", "require_ado", "az_token", "ado_fetch", "ado_remote", "ado_source",
 ]
 
 AZ_SETUP = "install the az CLI, then `az extension add --name azure-devops` and `az login`"
@@ -30,7 +30,8 @@ def ado_pr_id(pr: str) -> str:
     s = pr.strip()
     m = re.fullmatch(r"!?(\d+)", s) or re.search(r"/pullrequest/(\d+)(?:/|$)", urlsplit(s).path, re.I)
     if not m:
-        raise Fail(f"--ado expects a PR id or a pull request URL (…/pullrequest/<id>), got '{pr}'")
+        raise Fail(f"Expected a PR id or a pull request URL (…/pullrequest/<id>), got '{pr}'. To explain a branch, "
+                   "run `explain-change local` on it.")
     return m.group(1)
 
 
@@ -125,6 +126,20 @@ def is_ado_https(url: str) -> bool:
 
 def is_ado_repo_url(url: str) -> bool:
     return "/_git/" in url or "ssh.dev.azure.com" in url or "vs-ssh.visualstudio.com" in url
+
+
+def require_ado(root: Path, pr: str):
+    """A PR is explained from Azure DevOps: its URL, or else a remote of this repository, must be one."""
+    host = urlsplit(pr.strip()).netloc.lower()
+    if host:
+        if not re.search(r"(^|\.)dev\.azure\.com$|\.visualstudio\.com$", host.split("@")[-1]):
+            raise Fail(f"Only Azure DevOps PRs are supported, not {host}. Check out the PR branch and run "
+                       "`explain-change local`.")
+        return
+    urls = [git(["remote", "get-url", r], root, check=False).strip().lower() for r in git(["remote"], root).split()]
+    if not any(is_ado_https(u) or is_ado_repo_url(u) for u in urls):
+        raise Fail("PR ids work with Azure DevOps remotes, and this repository has none. Check out the PR branch "
+                   "and run `explain-change local`.")
 
 
 def az_token(root: Path) -> str | None:
