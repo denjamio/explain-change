@@ -68,6 +68,14 @@ class RailsTests(unittest.TestCase):
         edges, _ = edges_for(files, comps)
         self.assertEqual(edges, {"web->billing": 1, "web->models": 1, "billing->models": 1, "tasks->models": 1})
 
+    def test_lines_starting_with_require_are_still_read(self):
+        files = {"app/models/a.rb": "class A\n  def x\n    required = Billing::Plan.find(1)\n  end\nend\n",
+                 "app/services/billing/plan.rb": "module Billing\n  class Plan\n  end\nend\n"}
+        comps = [{"id": "models", "layer": "domain", "paths": ["app/models/**"]},
+                 {"id": "billing", "layer": "app", "paths": ["app/services/billing/**"]}]
+        edges, _ = edges_for(files, comps)
+        self.assertEqual(edges, {"models->billing": 1})
+
     def test_constant_override(self):
         files = {"app/models/a.rb": "class A\n  Stripe::Charge.create\nend\n", "lib/stripe_client.rb": ""}
         comps = [{"id": "models", "layer": "domain", "paths": ["app/models/**"]},
@@ -251,6 +259,23 @@ deleted file mode 100644
         got = {(s["kind"], s["name"], s["change"]) for f in (rb, routes, urls) for s in ec.extract_symbols(f)}
         self.assertEqual(got, {("class", "Order", "modified"), ("def", "refund!", "added"),
                                ("endpoint", "resources refunds", "added"), ("endpoint", "path invoices/<int:pk>/", "added")})
+
+
+class EndpointScopeTests(unittest.TestCase):
+    @staticmethod
+    def symbols(path, line):
+        f = {"path": path, "hunks": [{"old_start": 1, "new_start": 1, "lines": [["+", line]]}]}
+        return {(s["kind"], s["name"]) for s in ec.extract_symbols(f)}
+
+    def test_routes_only_in_route_files(self):
+        self.assertEqual(self.symbols("config/routes.rb", "  delete :sessions"), {("endpoint", "delete sessions")})
+        self.assertEqual(self.symbols("config/routes/admin.rb", "  get 'stats'"), {("endpoint", "get stats")})
+        self.assertEqual(self.symbols("app/models/user.rb", "    delete user"), set())
+        self.assertEqual(self.symbols("orders/urls.py", 'path("orders/", views.index),'), {("endpoint", "path orders/")})
+        self.assertEqual(self.symbols("orders/api/urls/v1.py", 'path("v1/", api),'), {("endpoint", "path v1/")})
+        self.assertEqual(self.symbols("orders/services.py", 'x = path("orders/", y)'), set())
+        self.assertEqual(self.symbols("api/routers.py", 'router.register(r"orders", OrderViewSet)'),
+                         {("endpoint", "register orders")})
 
 
 class DiffPathTests(unittest.TestCase):

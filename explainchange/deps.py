@@ -13,8 +13,8 @@ from .config import Mapper
 __all__ = [
     "TS_RE", "PY_IMPORT", "PY_FROM", "RB_REQ", "RB_DECL", "RB_ASSOC", "RB_CLASS_NAME", "RB_ACRONYM", "RB_INFLECT",
     "PY_DJ_MODEL", "PY_GET_MODEL", "PY_DOTTED_CALL", "PY_APP_LABEL", "RB_CONST", "RB_STR", "CS_USING", "CS_NS",
-    "CSPROJ_REF", "Ref", "extract", "SideIndex", "load_tsconfigs", "build_edges", "rule_violation", "SYMBOL_RES",
-    "ENDPOINT_RES", "extract_symbols",
+    "CSPROJ_REF", "RB_REQUIRE_LINE", "Ref", "extract", "SideIndex", "load_tsconfigs", "build_edges", "rule_violation",
+    "SYMBOL_RES", "RAILS_ROUTES", "PY_ROUTES", "ENDPOINT_RES", "extract_symbols",
 ]
 
 
@@ -36,6 +36,7 @@ RB_STR = re.compile(r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'')
 CS_USING = re.compile(r"^[ \t]*(?:global[ \t]+)?using[ \t]+(?:static[ \t]+)?(?:\w+[ \t]*=[ \t]*)?([A-Za-z_][\w.]*)[ \t]*;", re.M)  # noqa: E501
 CS_NS = re.compile(r"^[ \t]*namespace[ \t]+([A-Za-z_][\w.]*)", re.M)
 CSPROJ_REF = re.compile(r"""<ProjectReference\s+Include\s*=\s*["']([^"']+)["']""", re.I)
+RB_REQUIRE_LINE = re.compile(r"require(?:_relative|_dependency)?\b")
 
 
 class Ref(NamedTuple):
@@ -105,7 +106,7 @@ def extract(path: str, text: str) -> dict:
 
         for i, line in enumerate(text.split("\n"), 1):
             stripped = line.strip()
-            if not stripped or stripped.startswith("#") or stripped.startswith("require"):
+            if not stripped or stripped.startswith("#") or RB_REQUIRE_LINE.match(stripped):  # requires are read above
                 continue
             indent = len(line) - len(line.lstrip())
             while stack and stack[-1][0] >= indent:
@@ -414,18 +415,25 @@ SYMBOL_RES = {  # each regex exposes (?P<k>kind) or a fixed kind, and (?P<n>name
     "cs": [(None, re.compile(r"^\s*public\s+(?:(?:static|sealed|abstract|partial|readonly|ref)\s+)*(?P<k>class|interface|record|struct|enum)\s+(?P<n>\w+)")),  # noqa: E501
            ("method", re.compile(r"^\s*public\s+(?:(?:static|async|override|virtual|abstract|sealed|new|extern)\s+)*(?!class\b|interface\b|record\b|struct\b|enum\b)[\w.?\[\],]+(?:<[^>]*>)?\??\s+(?P<n>\w+)\s*[(<]"))],  # noqa: E501
 }
-ENDPOINT_RES = [  # Rails routes, Django urls, ASP.NET attributes, Angular routes
-    re.compile(r"^\s*(?P<k>get|post|put|patch|delete|resources|resource)\s+['\":]?(?P<n>[\w/:{}.-]+)"),
-    re.compile(r"\b(?P<k>re_path|path)\(\s*r?['\"](?P<n>[^'\"]*)['\"]"),
-    re.compile(r"\[(?P<k>Http(?:Get|Post|Put|Patch|Delete)|Route)(?:\(\s*\"(?P<n>[^\"]*)\"[^)]*\))?\]"),
-    re.compile(r"\b(?P<k>path)\s*:\s*['\"](?P<n>[^'\"]*)['\"]\s*,\s*(?:component|loadComponent|loadChildren|children|redirectTo)"),  # noqa: E501
-    re.compile(r"\b(?P<k>register)\(\s*r?['\"](?P<n>[^'\"]+)['\"]\s*,"),
+RAILS_ROUTES = re.compile(r"(?:^|/)config/routes(?:\.rb|/.+\.rb)$")
+PY_ROUTES = re.compile(r"(?:^|/)(?:urls|routers?|routes|routing)(?:\.py|/.+\.py)$")
+# Endpoint patterns, each limited to the files where it declares a route: elsewhere `get url` or `delete user` is a
+# plain method call. Rails routes, Django urls and DRF routers, ASP.NET attributes, Angular routes.
+ENDPOINT_RES = [
+    (RAILS_ROUTES.search, re.compile(r"^\s*(?P<k>get|post|put|patch|delete|resources|resource)\s+['\":]?(?P<n>[\w/:{}.-]+)")),  # noqa: E501
+    (PY_ROUTES.search, re.compile(r"\b(?P<k>re_path|path)\(\s*r?['\"](?P<n>[^'\"]*)['\"]")),
+    (PY_ROUTES.search, re.compile(r"\b(?P<k>register)\(\s*r?['\"](?P<n>[^'\"]+)['\"]\s*,")),
+    (lambda p: lang_of(p) == "cs",
+     re.compile(r"\[(?P<k>Http(?:Get|Post|Put|Patch|Delete)|Route)(?:\(\s*\"(?P<n>[^\"]*)\"[^)]*\))?\]")),
+    (lambda p: lang_of(p) == "ts", re.compile(
+        r"\b(?P<k>path)\s*:\s*['\"](?P<n>[^'\"]*)['\"]\s*,\s*(?:component|loadComponent|loadChildren|children|redirectTo)")),  # noqa: E501
 ]
 
 
 def extract_symbols(f: dict) -> list[dict]:
     """Public symbols and endpoints added, removed or modified on the changed lines of one file."""
     lang = lang_of(f["path"])
+    endpoints = [rx for applies, rx in ENDPOINT_RES if applies(f["path"])]
     found: dict[tuple, dict] = {}
     for h in f["hunks"]:
         old, new = h["old_start"], h["new_start"]
@@ -437,12 +445,11 @@ def extract_symbols(f: dict) -> list[dict]:
                     if m and not m.group("n").startswith("_"):
                         hits.append((kind or m.group("k"), m.group("n")))
                         break
-                if lang and lang != "erb":
-                    for rx in ENDPOINT_RES:
-                        m = rx.search(body)
-                        if m:
-                            hits.append(("endpoint", f"{m.group('k')} {m.group('n') or ''}".strip()))
-                            break
+                for rx in endpoints:
+                    m = rx.search(body)
+                    if m:
+                        hits.append(("endpoint", f"{m.group('k')} {m.group('n') or ''}".strip()))
+                        break
                 for kind, name in hits:
                     e = found.setdefault((kind, name), {"file": f["path"], "line": new if t == "+" else old,
                                                         "kind": kind, "name": name, "added": False, "removed": False})
