@@ -47,6 +47,8 @@ class BlobReader:
             self.p.wait(timeout=5)
         except Exception:
             self.p.kill()
+        finally:
+            self.p.stdout.close()
 
 
 _glob_cache: dict[str, re.Pattern] = {}

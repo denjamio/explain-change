@@ -25,6 +25,13 @@
         "base": {
           "type": "string",
           "description": "Default base ref (else origin/HEAD, main, master or develop, remote first)."
+        },
+        "budget": {
+          "type": "integer",
+          "minimum": 2000,
+          "maximum": 100000,
+          "default": 12000,
+          "description": "Digest size in characters (~4 characters per token). --budget overrides it."
         }
       }
     },

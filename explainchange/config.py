@@ -7,8 +7,8 @@ import tomllib
 from pathlib import Path
 
 from .constants import (
-    CONFIG_EXT, CONFIG_NAME, CONFIG_NAMES, CONTAINER_DIRS, DEFAULT_IGNORE, DEFAULT_TESTS, DOC_EXT, FRAMEWORK_CONFIG,
-    LAYER_HINTS, MIGRATION_PATTERNS,
+    CONFIG_EXT, CONFIG_NAME, CONFIG_NAMES, CONTAINER_DIRS, DEFAULT_BUDGET, DEFAULT_IGNORE, DEFAULT_TESTS, DOC_EXT,
+    FRAMEWORK_CONFIG, LAYER_HINTS, MIGRATION_PATTERNS,
 )
 from .util import Fail, camelize, git, glob_re, lang_of, matches_any, slugify
 
@@ -41,10 +41,14 @@ def normalize_config(raw: dict, inferred: bool) -> tuple[dict, list[str]]:
         "direction": str(project.get("direction", "")),
         "lang": str(project.get("lang", "en")),
         "base": str(project.get("base", "")),
+        "budget": project.get("budget", DEFAULT_BUDGET),
         "layers": [], "components": [], "flows": [],
         "rules": {"allow": [], "forbid": [], "same_layer": True},
         "ignore": {"paths": DEFAULT_IGNORE, "tests": DEFAULT_TESTS},
     }
+    if not isinstance(cfg["budget"], int) or isinstance(cfg["budget"], bool) or not 2000 <= cfg["budget"] <= 100000:
+        errors.append(f"project.budget: '{cfg['budget']}' must be an integer between 2000 and 100000 (digest chars)")
+        cfg["budget"] = DEFAULT_BUDGET
     if cfg["lang"] not in ("en", "es"):
         errors.append(f"project.lang: '{cfg['lang']}' must be 'en' or 'es'")
         cfg["lang"] = "en"

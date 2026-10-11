@@ -8,7 +8,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from .constants import CONFIG_NAME, MAX_DIFF_LINES, MAX_FILE_BYTES, MAX_SCAN_FILES, SCHEMA_VERSION, WORK_DIR
+from .constants import (
+    CONFIG_NAME, DIFF_FLAGS, GENERATED_HEAD, GENERATED_RE, MAX_DIFF_LINES, MAX_FILE_BYTES, MAX_SCAN_FILES,
+    SCHEMA_VERSION, WORK_DIR,
+)
 from .util import BlobReader, Fail, git, lang_of
 from .config import Mapper
 from .diff import parse_diff, resolve_base, untracked_as_diff
@@ -72,6 +75,24 @@ def ado_source(root: Path, pr: str) -> dict:
     return src
 
 
+def looks_generated(f: dict) -> bool:
+    """A generator marker in the first lines of the file (only visible when the first hunk starts at the top)."""
+    if not f["hunks"] or f["hunks"][0]["new_start"] > GENERATED_HEAD:
+        return False
+    head = [body for t, body in f["hunks"][0]["lines"] if t != "-"][:GENERATED_HEAD]
+    return any(GENERATED_RE.search(line) for line in head)
+
+
+def generated_paths(root: Path, paths: list[str]) -> set[str]:
+    """Paths marked `linguist-generated` in .gitattributes."""
+    if not paths:
+        return set()
+    p = subprocess.run(["git", "-c", "core.quotepath=off", "check-attr", "-z", "--stdin", "linguist-generated"],
+                       cwd=root, input="\0".join(paths).encode() + b"\0", capture_output=True)
+    parts = p.stdout.decode("utf-8", errors="replace").split("\0") if p.returncode == 0 else []
+    return {parts[i] for i in range(0, len(parts) - 2, 3) if parts[i + 2] in ("set", "true")}
+
+
 def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado: str | None,
             specs: list[str] | None = None) -> dict:
     mapper = Mapper(cfg)
@@ -94,7 +115,7 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
     src["head_date"] = git(["log", "-1", "--format=%cI", src["head_sha"]], root).strip()
     src["commits"] = int(git(["rev-list", "--count", f"{mb}..{src['head_sha']}"], root).strip() or 0)
 
-    diff_args = ["diff", "--no-color", "--no-ext-diff", "-M", "-U3", mb]
+    diff_args = ["diff", *DIFF_FLAGS, mb]
     if head_rev:
         diff_args.append(head_rev)
     raw_diff = git(diff_args, root)
@@ -107,9 +128,10 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
     files.sort(key=lambda f: f["path"])
 
     total_lines = 0
+    generated = generated_paths(root, [f["path"] for f in files if f["status"] != "D"])
     for f in files:
         f["component"] = mapper.component(f["path"]) or (mapper.component(f["old_path"]) if f["old_path"] else None)
-        f["category"] = mapper.category(f["path"])
+        f["category"] = "ignored" if f["path"] in generated or looks_generated(f) else mapper.category(f["path"])
         n = sum(len(h["lines"]) for h in f["hunks"])
         f["truncated"] = False
         if total_lines + n > MAX_DIFF_LINES or f["category"] == "ignored":
@@ -218,7 +240,8 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
     }
     if total_lines >= MAX_DIFF_LINES:
         notes.append(f"Diff larger than {MAX_DIFF_LINES} lines: some files are listed without hunks.")
-    cfg_bytes = (root / CONFIG_NAME).read_bytes() if (root / CONFIG_NAME).exists() else b""
+    # CRLF from a Windows checkout must not change the key.
+    cfg_bytes = (root / CONFIG_NAME).read_bytes().replace(b"\r\n", b"\n") if (root / CONFIG_NAME).exists() else b""
     key = hashlib.sha256(raw_diff.encode() + b"\0" + cfg_bytes + b"\0" + str(SCHEMA_VERSION).encode()
                          + b"\0" + ",".join(sorted(specs or [])).encode()).hexdigest()[:16]
     public_cfg = {k: cfg[k] for k in ("inferred", "name", "direction", "lang", "layers", "flows")}

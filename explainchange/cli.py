@@ -54,7 +54,7 @@ def cmd_pr(args) -> int:
     work = ensure_workdir(root)
     ctx = collect(root, cfg, args.base, args.include_uncommitted, args.ado, args.spec)
     (work / "context.json").write_text(json.dumps(ctx, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
-    digest = build_digest(ctx, args.budget)
+    digest = build_digest(ctx, args.budget or cfg["budget"])
     (work / "digest.md").write_text(digest, encoding="utf-8", newline="\n")
     st = ctx["stats"]
     target, status, errs = write_render(root, ctx, args.out)
@@ -171,29 +171,41 @@ def cmd_check(args) -> int:
     return 1 if errs else 0
 
 
-INSTALL_MARKER = ".explain-change-install"  # marks a copied install, so a later install may replace it
+INSTALL_MARKER = ".explain-change-install"  # marks our install, so a later install may replace it
+# What the skill runs on. Tests, examples and git data stay in the source folder.
+SKILL_FILES = ["SKILL.md", "CONFIGURE.md", "PROMPT.md", "explain_change.py", "explainchange", "schemas", "template"]
 
 
 def install_skill(dest: Path, force: bool) -> str:
-    """Links (or, on Windows, copies) the skill into `dest`. Replaces our own previous installs; asks for
-    --force before replacing anything else."""
-    if dest.is_symlink() and dest.resolve() == TOOL_DIR:
+    """Installs SKILL_FILES into `dest`: one symlink per entry, so edits to this folder show at once, or copies on
+    Windows, where symlinks need Developer Mode. Replaces our own earlier installs; asks for --force before
+    replacing anything else."""
+    if not dest.is_symlink() and dest.resolve() == TOOL_DIR:  # the source folder itself, cloned in place
         return "ok  "
-    ours = dest.is_symlink() or (dest / INSTALL_MARKER).exists()
+    copy = os.name == "nt"
+    marker = dest / INSTALL_MARKER
+    if not copy and not dest.is_symlink() and marker.exists() and all(
+            (dest / n).is_symlink() and (dest / n).resolve() == TOOL_DIR / n for n in SKILL_FILES):
+        return "ok  "
+    ours = dest.is_symlink() or marker.exists()
     if dest.exists() or dest.is_symlink():
         if not (ours or force):
             return "skip"  # caller explains
         if dest.is_symlink() or dest.is_file():
             dest.unlink()
         else:
-            shutil.rmtree(dest)
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    if os.name == "nt":  # symlinks need Developer Mode on Windows: copy instead
-        shutil.copytree(TOOL_DIR, dest, ignore=shutil.ignore_patterns(".git", "__pycache__", "tests", "examples"))
-        (dest / INSTALL_MARKER).write_text(str(TOOL_DIR), encoding="utf-8")
-        return "copy"
-    dest.symlink_to(TOOL_DIR, target_is_directory=True)
-    return "link"
+            shutil.rmtree(dest)  # removes the links, never what they point to
+    dest.mkdir(parents=True)
+    for name in SKILL_FILES:
+        src, dst = TOOL_DIR / name, dest / name
+        if not copy:
+            dst.symlink_to(src, target_is_directory=src.is_dir())
+        elif src.is_dir():
+            shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
+        else:
+            shutil.copy2(src, dst)
+    marker.write_text(str(TOOL_DIR), encoding="utf-8")
+    return "copy" if copy else "link"
 
 
 def install_cli(bindir: Path) -> Path:
@@ -243,7 +255,7 @@ def main(argv=None) -> int:
     p.add_argument("--ado", metavar="ID|URL", help="Azure DevOps PR id or URL (fetches refs/pull/<id>/merge)")
     p.add_argument("--spec", action="append", metavar="CHANGE_ID",
                    help="also explain this OpenSpec change when the diff does not touch it (repeatable)")
-    p.add_argument("--budget", type=int, default=DEFAULT_BUDGET, help="digest size in chars (default %(default)s)")
+    p.add_argument("--budget", type=int, help=f"digest size in chars (default: project.budget, else {DEFAULT_BUDGET})")
     p.add_argument("--out", help="output HTML path")
     p.set_defaults(fn=cmd_pr)
     p = sub.add_parser("render", help="validate insight.json and render the HTML")

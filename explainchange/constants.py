@@ -1,6 +1,7 @@
 """Shared constants: tool paths, limits, file categories and layer hints."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 
@@ -12,6 +13,12 @@ MAX_SCAN_FILES = 20000
 MAX_FILE_BYTES = 512 * 1024
 MAX_DIFF_LINES = 30000
 DEFAULT_BUDGET = 12000  # digest chars, ~3k tokens
+# Pinned so a user's git config (diff.noprefix, diff.algorithm, diff.relative…) cannot change the diff, and so the key.
+DIFF_FLAGS = ["--no-color", "--no-ext-diff", "--no-textconv", "--no-relative", "--src-prefix=a/", "--dst-prefix=b/",
+              "--diff-algorithm=myers", "--indent-heuristic", "-M", "-U3"]
+# Markers of generated files, read from their first lines (plus `linguist-generated` in .gitattributes).
+GENERATED_RE = re.compile(r"@generated|do not edit|auto-?generated|<meta name=\"generator\"", re.I)
+GENERATED_HEAD = 10
 
 DEFAULT_TESTS = [
     "**/test/**", "**/tests/**", "**/spec/**", "**/__tests__/**", "**/e2e/**",

@@ -34,6 +34,8 @@ jobs:
           python explain_change.py install   # a second run must be a no-op
           "$HOME/.local/bin/explain-change" --help
           test -f "$HOME/.claude/skills/explain-change/SKILL.md"
+          test ! -e "$HOME/.claude/skills/explain-change/examples"   # only runtime files are linked
+          "$HOME/.claude/skills/explain-change/explain_change.py" --help   # runs through the link
 
   lint:
     runs-on: ubuntu-latest
