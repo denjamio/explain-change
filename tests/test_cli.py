@@ -289,6 +289,16 @@ class SpecialPathTests(unittest.TestCase):
             self.assertTrue(files[n]["hunks"], n)
 
 
+class CheckTests(unittest.TestCase):
+    def test_config_errors_stop_before_the_listing(self):
+        repo = Repo('[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "nope"\npaths = ["app/**"]\n')
+        self.addCleanup(repo.close)
+        res = repo.run("check")
+        self.assertEqual(res.returncode, 2)
+        self.assertIn("layer 'nope' is not declared", res.stderr)
+        self.assertNotIn("components,", res.stdout)
+
+
 class InitTests(unittest.TestCase):
     def test_draft_config_loads_without_errors(self):
         rails = ["config/application.rb", "Gemfile", "config/routes.rb", "app/controllers/orders_controller.rb",

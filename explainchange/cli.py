@@ -161,6 +161,9 @@ def cmd_check(args) -> int:
     if not (root / CONFIG_NAME).exists():
         raise Fail(f"No {CONFIG_NAME}. Run `explain-change init`.")
     cfg, errs = load_config(root)
+    if errs:  # a partial config would list a misleading map
+        print(f"{CONFIG_NAME} has errors:", *[f"  - {e}" for e in errs], sep="\n", file=sys.stderr)
+        return 2
     mapper = Mapper(cfg)
     files = git_paths(["ls-files"], root)
     counts = {c["id"]: 0 for c in cfg["components"]}
@@ -176,8 +179,6 @@ def cmd_check(args) -> int:
             counts[comp] += 1
         elif lang_of(f):
             unmapped.append(f)
-    for e in errs:
-        print(f"error: {e}", file=sys.stderr)
     for cid, n in counts.items():
         if n == 0:
             print(f"warn: component '{cid}' matches no files", file=sys.stderr)
@@ -193,7 +194,7 @@ def cmd_check(args) -> int:
         dirs[d] = dirs.get(d, 0) + 1
     for d, n in sorted(dirs.items(), key=lambda x: (-x[1], x[0]))[:20]:
         print(f"  unmapped: {d}/ ({n} files)")
-    return 1 if errs else 0
+    return 0
 
 
 INSTALL_MARKER = ".explain-change-install"  # marks our install, so a later install may replace it
