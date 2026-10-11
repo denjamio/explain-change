@@ -19,7 +19,7 @@ from .util import Fail, git
 
 __all__ = [
     "AZ_SETUP", "ado_pr_id", "ado_web_url", "needs_login", "az_login", "az_hint", "ado_metadata", "is_ado_https",
-    "is_ado_repo_url", "require_ado", "az_token", "ado_fetch", "ado_remote", "ado_source",
+    "is_ado_repo_url", "require_ado", "ado_repo_name", "branch_pr", "az_token", "ado_fetch", "ado_remote", "ado_source",
 ]
 
 AZ_SETUP = "install the az CLI, then `az extension add --name azure-devops` and `az login`"
@@ -129,7 +129,7 @@ def is_ado_repo_url(url: str) -> bool:
 
 
 def require_ado(root: Path, pr: str):
-    """A PR is explained from Azure DevOps: its URL, or else a remote of this repository, must be one."""
+    """A PR is explained from Azure DevOps: its URL, or else (an id, or no PR yet) a remote of this repository."""
     host = urlsplit(pr.strip()).netloc.lower()
     if host:
         if not re.search(r"(^|\.)dev\.azure\.com$|\.visualstudio\.com$", host.split("@")[-1]):
@@ -140,6 +140,44 @@ def require_ado(root: Path, pr: str):
     if not any(is_ado_https(u) or is_ado_repo_url(u) for u in urls):
         raise Fail("PR ids work with Azure DevOps remotes, and this repository has none. Check out the PR branch "
                    "and run `explain-change local`.")
+
+
+def ado_repo_name(root: Path) -> str | None:
+    """The repository name in the first Azure DevOps remote (…/_git/<name> or ssh …/v3/org/project/<name>)."""
+    for r in git(["remote"], root).split():
+        url = git(["remote", "get-url", r], root, check=False).strip().rstrip("/")
+        if is_ado_https(url) or is_ado_repo_url(url):
+            name = unquote(url.rsplit("/", 1)[-1])
+            return name[:-4] if name.endswith(".git") else name
+    return None
+
+
+def branch_pr(root: Path) -> str:
+    """The id of the active PR from the current branch: what `explain-change pr` without an id explains."""
+    require_ado(root, "")
+    branch = git(["branch", "--show-current"], root).strip()
+    if not branch:
+        raise Fail("HEAD is detached: pass the PR id, `explain-change pr <id>`.")
+    args = ["repos", "pr", "list", "--source-branch", branch, "--status", "active", "-o", "json"]
+    repo = ado_repo_name(root)
+    p = _az_logged_in(args + (["--repository", repo] if repo else []), root)
+    if isinstance(p, str):
+        raise Fail(f"{p}: pass the PR id, or {AZ_SETUP}.")
+    if p.returncode != 0:
+        raise Fail(f"az repos pr list failed: {az_hint(p.stderr)}. Pass the PR id instead.")
+    try:
+        prs = json.loads(p.stdout)
+    except json.JSONDecodeError:
+        prs = None
+    if not isinstance(prs, list):
+        raise Fail("az repos pr list returned no list. Pass the PR id instead.")
+    if not prs:
+        raise Fail(f"No active PR from '{branch}'. Run `explain-change local` to explain the branch.")
+    if len(prs) > 1:
+        found = ", ".join(f"{x.get('pullRequestId')} → {(x.get('targetRefName') or '').removeprefix('refs/heads/')}"
+                          for x in prs)
+        raise Fail(f"Several active PRs from '{branch}' ({found}): pass the id, `explain-change pr <id>`.")
+    return str(prs[0]["pullRequestId"])
 
 
 def az_token(root: Path) -> str | None:

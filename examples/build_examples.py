@@ -619,12 +619,12 @@ def build(sc: dict, tmp: Path, out_dir: Path = HERE) -> dict:
     sh(["git", "add", "-A"], repo)
     sh(["git", "commit", "-qm", sc["message"]], repo)
     out = out_dir / f"{sc['name']}.html"
-    sh([sys.executable, str(TOOL), "local", "--base", "main", "--out", str(out)], repo)
+    sh([sys.executable, str(TOOL), "local", "--base", "main", "--no-open", "--out", str(out)], repo)
     if sc["insight"]:
         ctx = json.loads((repo / ".explain-change" / "context.json").read_text())
         ins = {"version": 1, "key": ctx["key"], "lang": ctx["config"]["lang"], **sc["insight"]}
         (repo / ".explain-change" / "insight.json").write_text(json.dumps(ins, ensure_ascii=False, indent=1))
-        res = subprocess.run([sys.executable, str(TOOL), "render", "--out", str(out)], cwd=repo, capture_output=True, text=True)
+        res = subprocess.run([sys.executable, str(TOOL), "render", "--no-open", "--out", str(out)], cwd=repo, env=ENV, capture_output=True, text=True)
         if res.returncode != 0:
             sys.exit(f"{sc['name']}: insight rejected\n{res.stdout}")
     ctx = json.loads((repo / ".explain-change" / "context.json").read_text())

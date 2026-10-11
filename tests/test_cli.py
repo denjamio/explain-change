@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT))
 import explainchange as ec  # noqa: E402
 from explainchange import ado, cli, collector, render  # noqa: E402
 
-GIT_ENV = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1",
+GIT_ENV = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1", "EXPLAIN_CHANGE_NO_OPEN": "1",
            "GIT_AUTHOR_NAME": "dev", "GIT_AUTHOR_EMAIL": "dev@example.com",
            "GIT_COMMITTER_NAME": "dev", "GIT_COMMITTER_EMAIL": "dev@example.com",
            "GIT_AUTHOR_DATE": "2026-10-01T10:00:00+00:00", "GIT_COMMITTER_DATE": "2026-10-01T10:00:00+00:00"}
@@ -230,6 +230,66 @@ class PrDetectionTests(unittest.TestCase):
         res = self.repo.run("pr", "42", "--base", "main")
         self.assertIn("--base", res.stderr)
         self.assertEqual(self.repo.run("local", "--base", "main").returncode, 0)
+
+
+class BranchPrTests(unittest.TestCase):
+    """`pr` without an id explains the active PR from the current branch, found with az."""
+
+    def setUp(self):
+        self.repo = Repo()
+        self.addCleanup(self.repo.close)
+        self.repo.git("remote", "add", "origin", "https://org@dev.azure.com/org/proj/_git/My%20Repo")
+
+    def find(self, prs):
+        out = subprocess.CompletedProcess([], 0, json.dumps(prs), "")
+        with mock.patch.object(ado, "_az_logged_in", return_value=out) as az:
+            pr = ec.branch_pr(self.repo.path)
+        return pr, az.call_args.args[0]
+
+    def test_one_active_pr(self):
+        pr, args = self.find([{"pullRequestId": 42, "targetRefName": "refs/heads/main"}])
+        self.assertEqual(pr, "42")
+        self.assertEqual(args[args.index("--source-branch") + 1], "feature")
+        self.assertEqual(args[args.index("--repository") + 1], "My Repo")
+
+    def test_none_or_several(self):
+        with self.assertRaises(ec.Fail) as e:
+            self.find([])
+        self.assertIn("explain-change local", str(e.exception))
+        with self.assertRaises(ec.Fail) as e:
+            self.find([{"pullRequestId": 1, "targetRefName": "refs/heads/main"},
+                       {"pullRequestId": 2, "targetRefName": "refs/heads/release"}])
+        self.assertIn("1 → main, 2 → release", str(e.exception))
+
+
+class OpenReportTests(unittest.TestCase):
+    """The finished report opens in the browser, from WSL through Windows; never with --no-open, in CI or tests."""
+
+    def open(self, wsl=False, env=None, no_open=False):
+        args = mock.Mock(no_open=no_open)
+        with mock.patch.dict(os.environ, env or {}, clear=True), \
+             mock.patch.object(cli, "in_wsl", return_value=wsl), \
+             mock.patch.object(cli.webbrowser, "open", return_value=True) as web, \
+             mock.patch.object(cli.shutil, "which", side_effect=lambda n: "/usr/bin/wslview" if n == "wslview" else None), \
+             mock.patch.object(cli.subprocess, "Popen") as popen, mock.patch("sys.stdout", io.StringIO()):
+            cli.open_report(Path("/tmp/r.html"), args)
+        return web, popen
+
+    def test_browser(self):
+        web, popen = self.open()
+        web.assert_called_once_with(Path("/tmp/r.html").resolve().as_uri())
+        popen.assert_not_called()
+
+    def test_wsl_goes_through_windows(self):
+        web, popen = self.open(wsl=True)
+        web.assert_not_called()
+        self.assertEqual(popen.call_args.args[0][0], "/usr/bin/wslview")
+
+    def test_never_in_ci_tests_or_with_no_open(self):
+        for kw in ({"env": {"CI": "true"}}, {"env": {"EXPLAIN_CHANGE_NO_OPEN": "1"}}, {"no_open": True}):
+            web, popen = self.open(**kw)
+            web.assert_not_called()
+            popen.assert_not_called()
 
 
 class AzLoginTests(unittest.TestCase):

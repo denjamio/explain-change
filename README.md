@@ -89,6 +89,7 @@ explain-change check                   # validate config, list unmapped files
 explain-change local                   # current branch vs the base (--base <ref> to override)
 explain-change local --include-uncommitted
 explain-change pr 1234                 # Azure DevOps PR: id, !id or the PR URL
+explain-change pr                      # the active Azure DevOps PR from the current branch
 explain-change local --spec add-2fa    # also an OpenSpec change the branch implements without touching it
 explain-change render                  # after writing or fixing insight.json
 explain-change validate                # check insight.json without rendering
@@ -96,12 +97,15 @@ explain-change --version               # version, analysis version and where it 
 ```
 
 - Sources: `local` is the current branch (any git host); `pr <id|url>` is an Azure DevOps PR, detected from the
-  URL or the repository's remotes. GitHub and GitLab PRs work through their local branch
+  URL or the repository's remotes, and `pr` alone is the active PR from the current branch. GitHub and GitLab PRs work through their local branch
   (`gh pr checkout 123 && explain-change local`).
 - The base is `--base`, else `project.base`, else the first that exists of `origin/HEAD`, `origin/main`,
   `origin/master`, `main`, `master`, `origin/develop` and `develop`.
 - `local`, `pr` and `render` write to `.explain-change/out/<branch>.html`; `--out <path>` writes elsewhere. The
-  first run adds `/.explain-change/` to `.git/info/exclude`, so the work folder never shows in `git status`.
+  first run adds `/.explain-change/` to `.git/info/exclude` (local to your clone, never committed), so the work
+  folder and its reports never show in `git status`.
+- A finished report (with a valid insight) opens in the default browser; from WSL, in the Windows one. It does not
+  open with `--no-open`, when `CI` is set or with `EXPLAIN_CHANGE_NO_OPEN=1`.
 - `local`, `pr` and `check` exit with 2 when `.explain-change.toml` has errors, and list them.
 - `render` exits with 1 when the insight is invalid. `render --force` exits with 0 and renders the data-only page.
 
@@ -114,6 +118,8 @@ Without an agent, `local` and `pr` still render the map with an automatic story 
 
 `explain-change pr <id|!id|url>` explains a PR without checking it out. A URL pasted from the browser works, query
 and all. Azure DevOps is detected from the URL or, for an id, from the repository's remotes; there is no flag.
+Without an id, `explain-change pr` finds the active PR from the current branch with `az repos pr list` (and asks for
+the id when there are several).
 
 It needs the `az` CLI with the `azure-devops` extension (`az extension add --name azure-devops`). When `az` has no
 session or it expired, explain-change runs `az login` itself, once, in the browser, and goes on.

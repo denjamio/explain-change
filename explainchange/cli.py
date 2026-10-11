@@ -1,7 +1,7 @@
 """explain-change: architecture-first visual explanation of a code change.
 
     explain-change local [--base REF] [--include-uncommitted] [--spec CHANGE_ID]
-    explain-change pr ID|URL [--spec CHANGE_ID]
+    explain-change pr [ID|URL] [--spec CHANGE_ID]
     explain-change render | validate | init | check | update | install
 """
 from __future__ import annotations
@@ -13,6 +13,7 @@ import posixpath
 import shutil
 import subprocess
 import sys
+import webbrowser
 from pathlib import Path
 
 from .constants import (
@@ -21,14 +22,14 @@ from .constants import (
 )
 from .util import Fail, git_paths, lang_of
 from .config import Mapper, STRUCTURE_RULES, detect_structure, load_config, structure_layers
-from .ado import require_ado
+from .ado import branch_pr, require_ado
 from .collector import collect, ensure_workdir, repo_root
 from .digest import build_digest
 from .render import load_insight, write_render
 
 __all__ = [
-    "load_context", "print_insight_status", "cmd_explain", "cmd_render", "cmd_validate", "toml_str", "cmd_init",
-    "OWNERSHIP_HINTS", "draft_config", "cmd_check", "INSTALL_MARKER", "SKILL_FILES", "install_skill", "install_cli",
+    "load_context", "print_insight_status", "in_wsl", "open_report", "cmd_explain", "cmd_render", "cmd_validate",
+    "toml_str", "cmd_init", "OWNERSHIP_HINTS", "draft_config", "cmd_check", "INSTALL_MARKER", "SKILL_FILES", "install_skill", "install_cli",
     "cmd_install", "cmd_update", "main", "run",
 ]
 
@@ -55,6 +56,32 @@ def print_insight_status(status: str, errs: list[str]):
             print(f"    - {e}")
 
 
+def in_wsl() -> bool:
+    try:
+        return "microsoft" in Path("/proc/version").read_text(encoding="utf-8", errors="replace").lower()
+    except OSError:
+        return False
+
+
+def open_report(path: Path, args) -> None:
+    """Opens the finished report in the default browser, also from WSL. Off with --no-open, in CI or with
+    EXPLAIN_CHANGE_NO_OPEN=1."""
+    if getattr(args, "no_open", False) or os.environ.get("CI") or os.environ.get("EXPLAIN_CHANGE_NO_OPEN"):
+        return
+    path = path.resolve()
+    try:
+        if in_wsl():  # Linux browsers rarely exist there; Windows opens the file instead
+            opener = shutil.which("wslview") or shutil.which("explorer.exe") or "/mnt/c/Windows/explorer.exe"
+            arg = str(path) if opener.endswith("wslview") else subprocess.run(
+                ["wslpath", "-w", str(path)], capture_output=True, text=True, check=True).stdout.strip()
+            subprocess.Popen([opener, arg], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        elif not webbrowser.open(path.as_uri()):
+            return
+    except (OSError, subprocess.CalledProcessError):
+        return
+    print("  opened in the browser")
+
+
 def cmd_explain(args) -> int:
     """`local` (args.pr is None) or `pr`: collect the change, write context and digest, render."""
     root = repo_root()
@@ -67,8 +94,12 @@ def cmd_explain(args) -> int:
               "Ask your agent to configure explain-change (CONFIGURE.md), or run `explain-change init`.",
               file=sys.stderr)
     work = ensure_workdir(root)
-    if args.pr:
-        require_ado(root, args.pr)
+    if args.cmd == "pr":
+        if args.pr:
+            require_ado(root, args.pr)
+        else:
+            args.pr = branch_pr(root)
+            print(f"explain-change: PR {args.pr}, the active PR from this branch")
     ctx = collect(root, cfg, args.base, args.include_uncommitted, args.pr, args.spec)
     (work / "context.json").write_text(json.dumps(ctx, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
     digest = build_digest(ctx, args.budget or cfg["budget"])
@@ -83,6 +114,8 @@ def cmd_explain(args) -> int:
     print(f"  html:    {target}{'' if status == 'fresh' else ' (data-only)'}")
     for n in ctx["notes"]:
         print(f"  note:    {n}")
+    if status == "fresh":
+        open_report(target, args)
     return 0
 
 
@@ -92,6 +125,8 @@ def cmd_render(args) -> int:
     target, status, errs = write_render(root, ctx, args.out)
     print_insight_status(status, errs)
     print(f"  html:    {target}{'' if status == 'fresh' else ' (data-only)'}")
+    if status == "fresh":
+        open_report(target, args)
     return 0 if status in ("fresh", "missing") or args.force else 1
 
 
@@ -303,15 +338,18 @@ def main(argv=None) -> int:
     change.add_argument("--budget", type=int,
                         help=f"digest size in chars (default: project.budget, else {DEFAULT_BUDGET})")
     change.add_argument("--out", help="output HTML path")
+    change.add_argument("--no-open", action="store_true", help="do not open the finished report in the browser")
     p = sub.add_parser("local", parents=[change], help="explain the current branch: write the digest, render")
     p.add_argument("--base", help="base ref (default: project.base, else origin/HEAD, main, master or develop)")
     p.add_argument("--include-uncommitted", action="store_true", help="diff the working tree, incl. untracked files")
     p.set_defaults(fn=cmd_explain, pr=None)
     p = sub.add_parser("pr", parents=[change], help="explain an Azure DevOps PR: write the digest, render")
-    p.add_argument("pr", metavar="ID|URL", help="the PR id, !id or URL (Azure DevOps, detected from it or the remote)")
+    p.add_argument("pr", nargs="?", metavar="ID|URL",
+                   help="the PR id, !id or URL (Azure DevOps); without it, the active PR from the current branch")
     p.set_defaults(fn=cmd_explain, base=None, include_uncommitted=False)
     p = sub.add_parser("render", help="validate insight.json and render the HTML")
     p.add_argument("--out", help="output HTML path")
+    p.add_argument("--no-open", action="store_true", help="do not open the finished report in the browser")
     p.add_argument("--force", action="store_true", help="exit 0 even if the insight is invalid (renders data-only)")
     p.set_defaults(fn=cmd_render)
     sub.add_parser("validate", help="validate insight.json against the collected change").set_defaults(fn=cmd_validate)

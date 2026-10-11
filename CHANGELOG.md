@@ -13,7 +13,8 @@ insight schema and the report to change between 0.x versions.
 
 **Collecting a change**
 - `explain-change local` explains the current branch (`--base`, `--include-uncommitted`); `explain-change pr <id|url>`
-  an Azure DevOps PR, detected from the URL or the remotes.
+  an Azure DevOps PR, detected from the URL or the remotes; `explain-change pr` the active PR from the current
+  branch.
   Maps files to components, builds the dependency delta and checks `[rules]`.
 - Azure DevOps PRs by id, `!id` or a URL pasted from the browser. The code comes from git (`refs/pull/<id>/merge`,
   or the PR branches when there is no merge ref); title, description and file links come from `az`. The remote is
@@ -37,6 +38,8 @@ insight schema and the report to change between 0.x versions.
 - `SKILL.md` for agents with skill support, `PROMPT.md` for the rest.
 
 **The report**
+- The finished report opens in the browser (from WSL, in Windows); `--no-open`, `CI` or `EXPLAIN_CHANGE_NO_OPEN`
+  turn it off. The work folder is excluded from git in `.git/info/exclude`, so reports are never committed.
 - One self-contained, offline HTML page: architecture map, guided story, data flows, data model, OpenSpec
   traceability and design decisions, in English or Spanish, light or dark.
 - Deterministic: byte-identical HTML for the same change and config. The diff options are pinned against the
