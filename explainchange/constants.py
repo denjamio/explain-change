@@ -5,13 +5,14 @@ import re
 from pathlib import Path
 
 __all__ = [
-    "SCHEMA_VERSION", "ANALYSIS_VERSION", "TOOL_DIR", "CONFIG_NAME", "WORK_DIR", "MAX_SCAN_FILES", "MAX_FILE_BYTES",
-    "MAX_DIFF_LINES", "DEFAULT_BUDGET", "DIFF_FLAGS", "GENERATED_RE", "GENERATED_HEAD", "DEFAULT_TESTS",
-    "DEFAULT_IGNORE", "FRAMEWORK_CONFIG", "MIGRATION_PATTERNS", "CONFIG_EXT", "CONFIG_NAMES", "DOC_EXT", "LANG_BY_EXT",
-    "LAYER_HINTS", "CONTAINER_DIRS",
+    "VERSION", "SCHEMA_VERSION", "ANALYSIS_VERSION", "TOOL_DIR", "CONFIG_NAME", "WORK_DIR", "MAX_SCAN_FILES",
+    "MAX_FILE_BYTES", "MAX_DIFF_LINES", "DEFAULT_BUDGET", "AZ_TIMEOUT", "FETCH_TIMEOUT", "ADO_RESOURCE", "DIFF_FLAGS",
+    "GENERATED_RE", "GENERATED_HEAD", "DEFAULT_TESTS", "DEFAULT_IGNORE", "FRAMEWORK_CONFIG", "MIGRATION_PATTERNS",
+    "CONFIG_EXT", "CONFIG_NAMES", "DOC_EXT", "LANG_BY_EXT", "LAYER_HINTS", "CONTAINER_DIRS",
 ]
 
 
+VERSION = "0.1.0"  # the tool; CHANGELOG.md lists what each one changed
 SCHEMA_VERSION = 1
 # Part of the insight key. Bump it when a change to the analysis (parsers, mapping, edges, symbols) can change
 # context.json for the same diff, so insights written against the old analysis are reported stale, not valid.
@@ -23,6 +24,9 @@ MAX_SCAN_FILES = 20000
 MAX_FILE_BYTES = 512 * 1024
 MAX_DIFF_LINES = 30000
 DEFAULT_BUDGET = 12000  # digest chars, ~3k tokens
+AZ_TIMEOUT = 60  # seconds for one az call
+FETCH_TIMEOUT = 600  # seconds for one git fetch of a PR
+ADO_RESOURCE = "499b84ac-1321-427f-aa17-267ca6975798"  # Azure DevOps, the resource of `az account get-access-token`
 # Pinned so a user's git config (diff.noprefix, diff.algorithm, diff.relative…) cannot change the diff, and so the key.
 DIFF_FLAGS = ["--no-color", "--no-ext-diff", "--no-textconv", "--no-relative", "--src-prefix=a/", "--dst-prefix=b/",
               "--diff-algorithm=myers", "--indent-heuristic", "-M", "-U3"]

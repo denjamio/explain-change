@@ -48,7 +48,8 @@ repo" (see [Config](#config)).
 
 - Python 3.11+ and git, already installed. The script uses only the standard library and stops with a clear message
   on an older Python.
-- Optional: `az` CLI, to add the Azure DevOps PR title, description and file links.
+- For Azure DevOps PRs: git 2.31+ and the `az` CLI with the `azure-devops` extension, logged in with `az login`
+  (see [Azure DevOps](#azure-devops)).
 
 ## Install
 
@@ -74,10 +75,11 @@ explain-change init                    # once per repo: draft .explain-change.to
 explain-change check                   # validate config, list unmapped files
 explain-change pr                      # branch vs the base (--base <ref> to override)
 explain-change pr --include-uncommitted
-explain-change pr --ado 1234           # Azure DevOps PR (fetches refs/pull/1234/merge)
+explain-change pr --ado 1234           # Azure DevOps PR: id, !id or the PR URL
 explain-change pr --spec add-2fa       # also an OpenSpec change the branch implements without touching it
 explain-change render                  # after writing or fixing insight.json
 explain-change validate                # check insight.json without rendering
+explain-change --version               # version, analysis version and where it runs from
 ```
 
 - Sources: a local branch (any git host) or an Azure DevOps PR. GitHub and GitLab PRs work through their local
@@ -93,6 +95,34 @@ With an agent, ask it to "explain this change". Agents with skill support follow
 follows `PROMPT.md` (reference it from `AGENTS.md`).
 
 Without an agent, `pr` still renders the map with an automatic story built from the dependency changes.
+
+## Azure DevOps
+
+`explain-change pr --ado <id|!id|url>` explains a PR without checking it out. A URL pasted from the browser works,
+query and all.
+
+One-time setup on each machine:
+
+```bash
+az extension add --name azure-devops
+az login
+```
+
+- **Metadata** (title, description, branches, links to each file in the PR) comes from `az repos pr show`. The
+  organization and project are detected from the git remote. If they are not, run
+  `az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>`. Without `az`, the
+  report still renders from git alone, and the CLI prints a `note:` saying what is missing and how to fix it.
+- **Code** comes from git: `refs/pull/<id>/merge`, the PR applied to its target, the same change the PR page shows.
+  A PR without a merge ref (merge conflicts, completed or abandoned) falls back to its source branch against the
+  merge base with its target, and says so in a note. This fallback needs the branch names, so it needs `az`.
+- **Authentication**: git first uses your own credentials (SSH key or credential manager), without prompting.
+  On an HTTPS Azure DevOps remote that fails, it retries once with the `az login` token
+  (`az account get-access-token`), passed through the environment, never on the command line or stored. So
+  `az login` is enough, and nothing prompts or hangs when an agent runs the command.
+- **Remote**: the one whose URL matches the PR's repository, else `origin`, else the only remote.
+- Fetched refs live under `refs/explain-change/pr-<id>/`, never touching your branches. Remove them with
+  `git for-each-ref --format='%(refname)' refs/explain-change | xargs -n1 git update-ref -d`.
+- Timeouts: 60 s per `az` call, 10 min per fetch.
 
 ## Config
 
@@ -179,6 +209,8 @@ Unverified steps are drawn dashed with a `?`.
   changed, `pr` reports `insight: valid ✓` and the agent stops (0 tokens). `ANALYSIS_VERSION` in
   `explainchange/constants.py` goes up whenever the analysis can draw a different map for the same diff, so an
   insight written against the old map is reported stale.
+- Every accepted insight is also kept as `.explain-change/insights/<key>.json`. Going back to a PR or branch that
+  was already explained restores it, so alternating between changes does not cost tokens again.
 - Paths are read exactly as git stores them: spaces, quotes, tabs and non-ASCII names included.
 - The agent's prose is the only non-deterministic part. It is bounded by the validator (ids, counts, lengths,
   sentence length, refused words), and once valid it is reused until the change or the config changes.
@@ -193,7 +225,7 @@ Unverified steps are drawn dashed with a `?`.
 
 `explain_change.py` is the command. The code is the `explainchange/` package, one module per pipeline stage:
 `config` (read or infer `.explain-change.toml`, map paths to components) → `diff` → `deps` (references and the
-dependency graph) → `openspec` → `collector` (context.json) → `insight` (validation and limits) → `digest`
+dependency graph) → `openspec` → `ado` (Azure DevOps PRs through git and `az`) → `collector` (context.json) → `insight` (validation and limits) → `digest`
 (digest.md and the agent's rules, built from those limits) → `render` (HTML from `template/`), wired into commands
 by `cli`. No module imports a later one, and each module lists its public names in `__all__`, which the package
 re-exports; `tests/test_package.py` checks both.
@@ -206,7 +238,7 @@ python3 -m unittest discover -s tests
 
 `tests/test_package.py` also runs every example report in a minimal DOM with Node (`tests/js/smoke.js`): it plays
 the story and clicks every control, and fails on any script error. Without `node` on PATH that test is skipped
-locally; CI always runs it. After changing the template or the collector, rebuild the examples with
+locally; CI (GitHub Actions) always runs it, on Linux and Windows. After changing the template or the collector, rebuild the examples with
 `python3 examples/build_examples.py`: CI fails when the committed reports differ.
 
 ## Roadmap

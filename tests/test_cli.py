@@ -12,7 +12,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import explainchange as ec  # noqa: E402
-from explainchange import cli, collector  # noqa: E402
+from explainchange import ado, cli, collector, render  # noqa: E402
 
 GIT_ENV = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1",
            "GIT_AUTHOR_NAME": "dev", "GIT_AUTHOR_EMAIL": "dev@example.com",
@@ -105,53 +105,180 @@ class UncommittedTests(unittest.TestCase):
 
 
 class AdoTests(unittest.TestCase):
-    """ado_source with git and az replaced: only the parsing and the fallbacks are under test."""
+    """A local clone of a 'server' repo that has ADO's refs/pull/<id>/merge: real git, az replaced."""
 
     def setUp(self):
-        self.calls = []
+        self.server = Repo()
+        self.addCleanup(self.server.close)
+        s = self.server
+        s.git("checkout", "-q", "main")
+        s.git("merge", "-q", "--no-ff", "feature", "-m", "Merge PR 42")
+        s.git("update-ref", "refs/pull/42/merge", "HEAD")
+        s.git("reset", "-q", "--hard", "HEAD~1")
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.path = Path(tmp.name)
+        subprocess.run(["git", "clone", "-q", str(s.path), str(self.path)], env={**os.environ, **GIT_ENV}, check=True)
+        self.notes = []
 
-        def fake_git(args, cwd, check=True):
-            self.calls.append(args)
-            return self.parents if args[0] == "rev-list" else ""
+    def source(self, pr, meta=None):
+        az = subprocess.CompletedProcess([], 0, stdout=json.dumps(meta), stderr="") if meta else "az CLI not found"
+        with mock.patch.object(ado, "_az", return_value=az), mock.patch.dict(os.environ, GIT_ENV):
+            return ec.ado_source(self.path, pr, self.notes)
 
-        self.parents = "m3rge base head\n"
-        patcher = mock.patch.object(collector, "git", side_effect=fake_git)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+    def changed(self, src) -> list[str]:
+        return collector.git(["diff", "--name-only", src["merge_base"], src["head_sha"]], self.path).split()
 
-    def source(self, pr, az_out=None, az_code=0):
-        which = "/usr/bin/az" if az_out is not None else None
-        done = subprocess.CompletedProcess([], az_code, stdout=az_out or "", stderr="")
-        with mock.patch.object(collector.shutil, "which", return_value=which), \
-             mock.patch.object(collector.subprocess, "run", return_value=done):
-            return ec.ado_source(Path("."), pr)
+    def meta(self, **kw):
+        return {"title": "Add line items", "description": "x" * 5000, "sourceRefName": "refs/heads/feature",
+                "targetRefName": "refs/heads/main", "repository": {"name": "repo", "webUrl": "https://ado/repo",
+                                                                   "remoteUrl": str(self.server.path)}, **kw}
 
-    def test_without_az(self):
-        src = self.source("https://dev.azure.com/org/proj/_git/repo/pullrequest/42/")
-        self.assertEqual((src["pr_id"], src["head_sha"], src["merge_base"]), ("42", "m3rge", "base"))
-        self.assertEqual(src["url"], "https://dev.azure.com/org/proj/_git/repo/pullrequest/42/")
-        self.assertIn("+refs/pull/42/merge:refs/explain-change/pr/42", self.calls[0])
+    def test_merge_ref_without_az(self):
+        src = self.source("42")
+        self.assertEqual(self.changed(src), ["app/models/order.rb"])
+        self.assertEqual((src["title"], src["branch"], src["url"]), ("PR 42", "pr-42", ""))
+        self.assertIn("az CLI not found", self.notes[0])
 
-    def test_with_az(self):
-        meta = {"title": "Add refunds", "description": "x" * 5000, "sourceRefName": "refs/heads/feat/refunds",
-                "targetRefName": "refs/heads/main", "repository": {"webUrl": "https://ado/repo"}}
-        src = self.source("42", json.dumps(meta))
-        self.assertEqual((src["title"], src["branch"], src["base_ref"]), ("Add refunds", "feat/refunds", "main"))
+    def test_merge_ref_with_az_and_a_pasted_url(self):
+        src = self.source("https://dev.azure.com/org/proj/_git/repo/pullrequest/42?_a=files&path=/db/0099",
+                          self.meta())
+        self.assertEqual((src["pr_id"], src["title"], src["branch"], src["base_ref"]),
+                         ("42", "Add line items", "feature", "main"))
         self.assertEqual(len(src["description"]), 4000)
         self.assertEqual(src["url"], "https://ado/repo/pullrequest/42")
+        self.assertEqual(self.notes, [])
 
-    def test_az_failure_keeps_defaults(self):
-        for out, code in (("not json", 0), ("", 1)):
-            src = self.source("7", out, code)
-            self.assertEqual((src["title"], src["branch"], src["description"]), ("PR 7", "pr-7", ""))
+    def test_pasted_url_is_kept_without_its_query(self):
+        src = self.source("https://dev.azure.com/org/proj/_git/repo/pullrequest/42?_a=files")
+        self.assertEqual(src["url"], "https://dev.azure.com/org/proj/_git/repo/pullrequest/42")
 
-    def test_errors(self):
-        with self.assertRaises(ec.Fail):
-            self.source("feature-branch")
-        self.parents = "head base\n"  # not a merge commit
+    def test_no_merge_ref_falls_back_to_the_branches(self):
+        self.server.git("checkout", "-q", "main")
+        self.server.write({"app/models/line_item.rb": "class LineItem\n  belongs_to :order\nend\n"})
+        self.server.commit("main moves on")
+        src = self.source("43", self.meta(mergeStatus="conflicts"))
+        self.assertEqual(self.changed(src), ["app/models/order.rb"])  # not main's later commit
+        self.assertEqual(src["head_ref"], "refs/explain-change/pr-43/source")
+        self.assertIn("conflicts", self.notes[-1])
+
+    def test_no_merge_ref_and_no_az_stops(self):
         with self.assertRaises(ec.Fail) as e:
-            self.source("42")
-        self.assertIn("mergeable", str(e.exception))
+            self.source("43")
+        self.assertIn("az login", str(e.exception))
+
+    def test_deleted_branch_stops(self):
+        with self.assertRaises(ec.Fail) as e:
+            self.source("43", self.meta(sourceRefName="refs/heads/gone"))
+        self.assertIn("cannot be fetched", str(e.exception))
+
+    def test_remote_is_found_by_url(self):
+        collector.git(["remote", "rename", "origin", "upstream"], self.path)
+        collector.git(["remote", "add", "fork", "https://example.com/other.git"], self.path)
+        self.assertEqual(ec.ado_remote(self.path, self.meta()), "upstream")
+        with self.assertRaises(ec.Fail):
+            ec.ado_remote(self.path, {})
+
+    def test_remote_is_found_by_ado_repo_name(self):
+        collector.git(["remote", "rename", "origin", "ado"], self.path)
+        collector.git(["remote", "add", "github", "https://github.com/x/repo.git"], self.path)
+        collector.git(["remote", "set-url", "ado", "git@ssh.dev.azure.com:v3/org/proj/Repo"], self.path)
+        self.assertEqual(ec.ado_remote(self.path, {"repository": {"name": "repo"}}), "ado")
+
+    def test_pr_ids(self):
+        for pr in ("42", "!42", " 42 ", "https://dev.azure.com/o/p/_git/r/pullrequest/42",
+                   "https://o.visualstudio.com/p/_git/r/pullRequest/42/?_a=overview#x"):
+            self.assertEqual(ec.ado_pr_id(pr), "42", pr)
+        for pr in ("feature-branch", "https://dev.azure.com/o/p/_git/r?path=/a/42"):
+            with self.assertRaises(ec.Fail):
+                ec.ado_pr_id(pr)
+
+    def test_az_hints(self):
+        self.assertIn("az extension add", ec.az_hint("ERROR: 'repos' is misspelled or not recognized by the system."))
+        self.assertIn("az login", ec.az_hint("ERROR: Please run 'az login' to setup account."))
+        self.assertIn("az devops configure", ec.az_hint("ERROR: --organization must be specified."))
+
+
+class AdoFetchTests(unittest.TestCase):
+    """git authenticates first with the user's credentials; an HTTPS Azure DevOps remote retries with az's token."""
+
+    def fetch(self, url, results, token="tok"):
+        calls = []
+
+        def fake_fetch(root, args, tok):
+            calls.append(tok)
+            return results[len(calls) - 1]
+
+        with mock.patch.object(ado, "_fetch", side_effect=fake_fetch), \
+             mock.patch.object(ado, "az_token", return_value=token), \
+             mock.patch.object(ado, "git", return_value=url + "\n"):
+            return ec.ado_fetch(Path("."), "origin", ["x"]), calls
+
+    def test_ok_without_token(self):
+        self.assertEqual(self.fetch("https://dev.azure.com/o/p/_git/r", [None]), (None, [None]))
+
+    def test_auth_failure_retries_with_the_az_token(self):
+        err, calls = self.fetch("https://org@dev.azure.com/o/p/_git/r", ["fatal: Authentication failed", None])
+        self.assertEqual((err, calls), (None, [None, "tok"]))
+
+    def test_missing_ref_is_returned_without_retry(self):
+        err, calls = self.fetch("https://dev.azure.com/o/p/_git/r", ["fatal: couldn't find remote ref x"])
+        self.assertIn("couldn't find", err)
+        self.assertEqual(calls, [None])
+
+    def test_auth_failure_stops_with_a_hint(self):
+        for url, token in (("https://dev.azure.com/o/p/_git/r", None), ("git@ssh.dev.azure.com:v3/o/p/r", "tok")):
+            with self.assertRaises(ec.Fail) as e:
+                self.fetch(url, ["fatal: Authentication failed", "fatal: Authentication failed"], token)
+            self.assertIn("az login", str(e.exception))
+
+
+class InsightCacheTests(unittest.TestCase):
+    """A valid insight is kept per change key, so going back to an explained PR costs no tokens."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.work = Path(tmp.name)
+        for name in ("validate_insight", "normalize_insight"):  # validation itself is tested elsewhere
+            patcher = mock.patch.object(render, name, side_effect=self.validate if name[0] == "v" else
+                                        (lambda ins, ctx: ins))
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    @staticmethod
+    def validate(ins, ctx, root):
+        return [] if ins.get("key") == ctx["key"] else [f"key: '{ins.get('key')}' is stale"]
+
+    def write(self, ins):
+        (self.work / "insight.json").write_text(json.dumps(ins), encoding="utf-8")
+
+    def status(self, key):
+        return render.load_insight(self.work, {"key": key})[1]
+
+    def test_going_back_to_a_change_restores_its_insight(self):
+        self.write({"key": "a", "tldr": "A"})
+        self.assertEqual(self.status("a"), "fresh")
+        self.assertEqual(self.status("b"), "stale")  # another change, not written yet
+        self.write({"key": "b", "tldr": "B"})
+        self.assertEqual(self.status("b"), "fresh")
+        self.assertEqual(self.status("a"), "fresh")  # back to A: restored, no agent needed
+        self.assertEqual(json.loads((self.work / "insight.json").read_text())["tldr"], "A")
+        self.assertEqual(self.status("b"), "fresh")
+
+    def test_never_validated_insight_is_archived_not_lost(self):
+        self.write({"key": "a"})
+        self.status("a")
+        self.write({"key": "b", "tldr": "draft"})  # written for b, never rendered
+        self.assertEqual(self.status("a"), "fresh")
+        self.assertEqual(json.loads(render.cached_insight(self.work, "b").read_text())["tldr"], "draft")
+
+    def test_draft_for_this_change_is_left_alone(self):
+        self.write({"key": "a"})
+        self.status("a")
+        (self.work / "insight.json").write_text("{ half written", encoding="utf-8")
+        self.assertEqual(self.status("a"), "invalid")
+        self.assertEqual((self.work / "insight.json").read_text(), "{ half written")
 
 
 class InstallTests(unittest.TestCase):

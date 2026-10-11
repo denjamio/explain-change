@@ -2,9 +2,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
-import re
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -17,9 +14,10 @@ from .config import Mapper
 from .diff import parse_diff, resolve_base, untracked_as_diff
 from .deps import SideIndex, build_edges, extract, extract_symbols, load_tsconfigs, rule_violation
 from .openspec import collect_openspec
+from .ado import ado_source
 
 __all__ = [
-    "repo_root", "ensure_workdir", "ado_source", "looks_generated", "generated_paths", "collect", "change_source",
+    "repo_root", "ensure_workdir", "looks_generated", "generated_paths", "collect", "change_source",
     "changed_files", "scan_sides", "relevant_edges", "component_rows", "change_stats", "insight_key", "public_config",
 ]
 
@@ -47,39 +45,6 @@ def ensure_workdir(root: Path) -> Path:
     return work
 
 
-def ado_source(root: Path, pr: str) -> dict:
-    m = re.search(r"(\d+)\s*$", pr.rstrip("/"))
-    if not m:
-        raise Fail(f"--ado expects a PR id or URL, got '{pr}'")
-    pr_id = m.group(1)
-    ref = f"refs/explain-change/pr/{pr_id}"
-    git(["fetch", "--quiet", "--no-tags", "origin", f"+refs/pull/{pr_id}/merge:{ref}"], root)
-    parents = git(["rev-list", "--parents", "-n", "1", ref], root).split()
-    if len(parents) < 3:
-        raise Fail(f"refs/pull/{pr_id}/merge is not a merge commit; is the PR mergeable?")
-    src = {"mode": "ado", "pr_id": pr_id, "head_ref": ref, "head_sha": parents[0], "base_ref": parents[1],
-           "merge_base": parents[1], "branch": f"pr-{pr_id}", "title": f"PR {pr_id}", "description": "", "url": ""}
-    az = shutil.which("az")  # full path, so az.cmd runs on Windows without a shell
-    if az:
-        p = subprocess.run([az, "repos", "pr", "show", "--id", pr_id, "-o", "json"],
-                           cwd=root, capture_output=True, text=True)
-        if p.returncode == 0:
-            try:
-                meta = json.loads(p.stdout)
-                src["title"] = meta.get("title") or src["title"]
-                src["description"] = (meta.get("description") or "")[:4000]
-                src["branch"] = (meta.get("sourceRefName") or "").replace("refs/heads/", "") or src["branch"]
-                src["base_ref"] = (meta.get("targetRefName") or "").replace("refs/heads/", "") or src["base_ref"]
-                repo = meta.get("repository", {}) or {}
-                if repo.get("webUrl"):
-                    src["url"] = f"{repo['webUrl']}/pullrequest/{pr_id}"
-            except json.JSONDecodeError:
-                pass
-    if pr.startswith("http"):
-        src["url"] = src["url"] or pr
-    return src
-
-
 def looks_generated(f: dict) -> bool:
     """A generator marker in the first lines of the file (only visible when the first hunk starts at the top)."""
     if not f["hunks"] or f["hunks"][0]["new_start"] > GENERATED_HEAD:
@@ -103,7 +68,7 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
     """The whole change as context.json: source, files, components, dependency delta, symbols, stats, OpenSpec."""
     mapper = Mapper(cfg)
     notes: list[str] = []
-    src, mb, head_rev = change_source(root, cfg, base_arg, uncommitted, ado)
+    src, mb, head_rev = change_source(root, cfg, base_arg, uncommitted, ado, notes)
     files, raw_diff, total_lines = changed_files(root, mapper, mb, head_rev, uncommitted and not ado)
     if total_lines >= MAX_DIFF_LINES:
         notes.append(f"Diff larger than {MAX_DIFF_LINES} lines: some files are listed without hunks.")
@@ -123,11 +88,11 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
             "notes": notes, "openspec": scan["openspec"], "deps": sorted([a, b] for a, b in scan["head_edges"])}
 
 
-def change_source(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool,
-                  ado: str | None) -> tuple[dict, str, str | None]:
+def change_source(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado: str | None,
+                  notes: list[str] | None = None) -> tuple[dict, str, str | None]:
     """(source metadata, merge base, head revision). The head revision is None for the working tree."""
     if ado:
-        src = ado_source(root, ado)
+        src = ado_source(root, ado, notes)
         mb, head_rev = src["merge_base"], src["head_sha"]
     else:
         base = resolve_base(root, base_arg, cfg["base"])
