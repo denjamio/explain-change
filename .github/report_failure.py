@@ -12,14 +12,14 @@ MAX_ANNOTATIONS = 10  # GitHub shows at most 10 errors per step
 MAX_CHARS = 3500
 
 
-def annotate(title: str, body: str):
+def annotate(title: str, body: str):  # stdout is UTF-8 (see __main__), so any traceback prints
     body = body[-MAX_CHARS:] if len(body) > MAX_CHARS else body
     esc = body.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
     print(f"::error title={title.replace(',', ';').replace(':', ' ')}::{esc}")
 
 
 def tests(log_path: str):
-    text = open(log_path, encoding="utf-8", errors="replace").read()
+    text = open(log_path, encoding="utf-8", errors="replace").read().replace("\r\n", "\n")
     blocks = re.findall(r"^={20,}\n((?:FAIL|ERROR): .+?)\n-{20,}\n(.*?)(?=^={20,}\n|^-{20,}\nRan )", text, re.M | re.S)
     for head, trace in blocks[:MAX_ANNOTATIONS]:
         annotate(head, trace.strip())
@@ -60,4 +60,5 @@ def examples():
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     tests(sys.argv[2]) if sys.argv[1] == "tests" else examples()

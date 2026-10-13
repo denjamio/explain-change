@@ -35,7 +35,7 @@ jobs:
       - name: Unit, end-to-end and template tests
         shell: bash
         run: |  # failures become annotations, readable without signing in
-          python -m unittest discover -s tests -v 2>&1 | tee "$RUNNER_TEMP/tests.log"
+          PYTHONIOENCODING=utf-8 python -m unittest discover -s tests -v 2>&1 | tee "$RUNNER_TEMP/tests.log"
           status=${PIPESTATUS[0]}
           [ "$status" -eq 0 ] || python .github/report_failure.py tests "$RUNNER_TEMP/tests.log"
           exit "$status"

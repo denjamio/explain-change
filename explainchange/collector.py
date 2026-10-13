@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import subprocess
 from pathlib import Path
 
@@ -106,7 +107,8 @@ def change_source(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool
                "merge_base": mb, "title": subject if detached else branch, "description": "",
                "pr_id": "", "url": "", "include_uncommitted": uncommitted}
         head_rev = None if uncommitted else head_sha
-    src["head_date"] = git(["log", "-1", "--format=%cI", src["head_sha"]], root).strip()
+    # Newer git prints UTC as "Z", older as "+00:00": one form, so the page does not depend on the git version.
+    src["head_date"] = re.sub(r"Z$", "+00:00", git(["log", "-1", "--format=%cI", src["head_sha"]], root).strip())
     src["commits"] = int(git(["rev-list", "--count", f"{mb}..{src['head_sha']}"], root).strip() or 0)
     return src, mb, head_rev
 

@@ -41,7 +41,7 @@ class Repo:
 
     def git(self, *args, env=None) -> str:
         p = subprocess.run(["git", *args], cwd=self.path, env={**os.environ, **GIT_ENV, **(env or {})},
-                           capture_output=True, text=True, check=True)
+                           capture_output=True, text=True, encoding="utf-8", check=True)
         return p.stdout
 
     def write(self, files: dict):
@@ -56,7 +56,8 @@ class Repo:
 
     def run(self, *args, env=None) -> subprocess.CompletedProcess:
         return subprocess.run([sys.executable, str(ROOT / "explain_change.py"), *args], cwd=self.path,
-                              env={**os.environ, **GIT_ENV, **(env or {})}, capture_output=True, text=True)
+                              env={**os.environ, **GIT_ENV, **(env or {})}, capture_output=True, text=True,
+                              encoding="utf-8")
 
     def context(self) -> dict:
         return json.loads((self.path / ".explain-change" / "context.json").read_text(encoding="utf-8"))
@@ -413,6 +414,8 @@ class InstallerTests(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.home = Path(tmp.name)
+        self.env = {"HOME": str(self.home), "USERPROFILE": str(self.home), "LOCALAPPDATA": str(self.home / "local"),
+                    "XDG_DATA_HOME": str(self.home / "share")}
         spec = importlib.util.spec_from_file_location("installer", ROOT / "install.py")
         self.installer = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.installer)
@@ -426,8 +429,7 @@ class InstallerTests(unittest.TestCase):
         return buf.getvalue()
 
     def install(self, version: str) -> int:
-        env = {"HOME": str(self.home), "USERPROFILE": str(self.home), "LOCALAPPDATA": str(self.home / "local"),
-               "XDG_DATA_HOME": str(self.home / "share"), "EXPLAIN_CHANGE_VERSION": f"v{version}"}
+        env = {**self.env, "EXPLAIN_CHANGE_VERSION": f"v{version}"}
         quiet = functools.partial(subprocess.call, stdout=subprocess.DEVNULL)
         with mock.patch.dict(os.environ, env), mock.patch("sys.stdout", io.StringIO()), \
              mock.patch.object(self.installer.subprocess, "call", side_effect=quiet), \
@@ -436,7 +438,8 @@ class InstallerTests(unittest.TestCase):
 
     def test_install_then_update(self):
         self.assertEqual(self.install("0.1.0"), 0)
-        target = self.home / "share" / "explain-change"
+        with mock.patch.dict(os.environ, self.env):
+            target = self.installer.home_dir()  # ~/.local/share or %LOCALAPPDATA%
         self.assertEqual((target / ".release").read_text().strip(), "v0.1.0")
         skill = self.home / ".claude" / "skills" / "explain-change"
         self.assertTrue((skill / "SKILL.md").exists())
