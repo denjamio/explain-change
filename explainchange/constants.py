@@ -13,7 +13,7 @@ __all__ = [
 ]
 
 
-VERSION = "0.1.2"  # the tool; CHANGELOG.md lists what each one changed
+VERSION = "0.1.3"  # the tool; CHANGELOG.md lists what each one changed
 SCHEMA_VERSION = 1
 # Part of the insight key. Bump it when a change to the analysis (parsers, mapping, edges, symbols) can change
 # context.json for the same diff, so insights written against the old analysis are reported stale, not valid.
