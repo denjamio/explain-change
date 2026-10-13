@@ -251,7 +251,7 @@ def install_skill(dest: Path, force: bool) -> str:
     """Installs SKILL_FILES into `dest`: one symlink per entry, so edits to this folder show at once, or copies on
     Windows, where symlinks need Developer Mode. Replaces our own earlier installs; asks for --force before
     replacing anything else."""
-    if not dest.is_symlink() and dest.resolve() == TOOL_DIR:  # the source folder itself, cloned in place
+    if not dest.is_symlink() and dest.resolve() == TOOL_DIR.resolve():  # the source folder itself, cloned in place
         return "ok  "
     copy = os.name == "nt"
     marker = dest / INSTALL_MARKER

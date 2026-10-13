@@ -20,7 +20,7 @@ ENV = {**os.environ, "GIT_AUTHOR_DATE": "2026-10-01T10:00:00+00:00", "GIT_COMMIT
 
 
 def sh(args, cwd):
-    p = subprocess.run(args, cwd=cwd, env=ENV, capture_output=True, text=True)
+    p = subprocess.run(args, cwd=cwd, env=ENV, capture_output=True, text=True, encoding="utf-8")
     if p.returncode != 0:
         sys.exit(f"{' '.join(map(str, args))}\n{p.stdout}\n{p.stderr}")
     return p.stdout
@@ -621,13 +621,13 @@ def build(sc: dict, tmp: Path, out_dir: Path = HERE) -> dict:
     out = out_dir / f"{sc['name']}.html"
     sh([sys.executable, str(TOOL), "local", "--base", "main", "--no-open", "--out", str(out)], repo)
     if sc["insight"]:
-        ctx = json.loads((repo / ".explain-change" / "context.json").read_text())
+        ctx = json.loads((repo / ".explain-change" / "context.json").read_text(encoding="utf-8"))
         ins = {"version": 1, "key": ctx["key"], "lang": ctx["config"]["lang"], **sc["insight"]}
-        (repo / ".explain-change" / "insight.json").write_text(json.dumps(ins, ensure_ascii=False, indent=1))
-        res = subprocess.run([sys.executable, str(TOOL), "render", "--no-open", "--out", str(out)], cwd=repo, env=ENV, capture_output=True, text=True)
+        (repo / ".explain-change" / "insight.json").write_text(json.dumps(ins, ensure_ascii=False, indent=1), encoding="utf-8")
+        res = subprocess.run([sys.executable, str(TOOL), "render", "--no-open", "--out", str(out)], cwd=repo, env=ENV, capture_output=True, text=True, encoding="utf-8")
         if res.returncode != 0:
             sys.exit(f"{sc['name']}: insight rejected\n{res.stdout}")
-    ctx = json.loads((repo / ".explain-change" / "context.json").read_text())
+    ctx = json.loads((repo / ".explain-change" / "context.json").read_text(encoding="utf-8"))
     (out_dir / f"{sc['name']}.context.json").write_text(json.dumps(ctx, ensure_ascii=False, indent=1), encoding="utf-8") if out_dir != HERE else None
     st = ctx["stats"]
     return {"file": out.name, "project": ctx["config"]["name"], "branch": ctx["source"]["title"],

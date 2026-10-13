@@ -60,7 +60,7 @@ class TemplateSmokeTests(unittest.TestCase):
         for report in REPORTS:
             with self.subTest(report=report.name):
                 p = subprocess.run([NODE, str(ROOT / "tests" / "js" / "smoke.js"), str(report)],
-                                   capture_output=True, text=True, timeout=60)
+                                   capture_output=True, text=True, encoding="utf-8", timeout=60)
                 self.assertEqual(p.returncode, 0, p.stderr[-2000:])
                 out = json.loads(p.stdout)
                 self.assertGreater(out["elements"], 100)

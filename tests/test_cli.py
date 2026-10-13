@@ -467,7 +467,7 @@ class InstallTests(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        self.src = Path(tmp.name) / "src"
+        self.src = Path(tmp.name).resolve() / "src"  # TOOL_DIR is resolved; on Windows, temp paths are not
         for name in cli.SKILL_FILES:
             target = self.src / name
             if "." in name:
@@ -586,7 +586,9 @@ class SpecialPathTests(unittest.TestCase):
     def test_spaces_quotes_and_tabs_in_paths(self):
         repo = Repo()
         self.addCleanup(repo.close)
-        names = ["app/models/with space.rb", 'app/models/quo"te.rb', "app/models/tab\tname.rb", "app/models/ñandú.rb"]
+        names = ["app/models/with space.rb", "app/models/ñandú.rb", "app/models/it's.rb"]
+        if os.name != "nt":  # Windows forbids quotes and tabs in file names
+            names += ['app/models/quo"te.rb', "app/models/tab\tname.rb"]
         repo.write({n: "class X\n  def y; end\nend\n" for n in names})
         repo.commit("special names")
         repo.write({"app/models/new file.rb": "class Z\nend\n"})  # untracked
