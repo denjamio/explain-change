@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.1] - 2026-10-13
+
+Report layout: easier to read and to follow.
 
 ### Changed
 - The code of the active story step sits in a wide panel below the map, not squeezed into the story column.
@@ -12,6 +14,11 @@ All notable changes to this project are documented here. The format follows
   remembered per browser, and resizing keeps the zoom.
 - Larger text in the story, the inspector, the code and the Spec diagram; the Spec pipeline is only as tall as its
   content, so the diagram is drawn bigger.
+- The map bar only holds what the diagram shows (stage tabs, and before/after for the architecture). Zoom, fit and
+  pause float over the canvas, faded until the pointer is over the map.
+- The legend lists only what the current diagram draws.
+- The header groups its figures by question: size (files · lines), components (new · changed · removed), coverage
+  and broken rules when they apply, and OpenSpec (requirements · tasks).
 
 ## [0.1.0] - 2026-10-13
 

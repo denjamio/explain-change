@@ -227,19 +227,28 @@
     ctx.components.forEach(function (c) { if (counts[c.status] !== undefined) counts[c.status]++; });
     var srcLabel = src.mode === "ado" ? T.ado + " #" + src.pr_id : T.local;
     var coverage = st.code_lines ? Math.round(100 * (st.mapped_lines || 0) / st.code_lines) : 100;
+    // One chip per question: how big (files, lines), what moved (components), is the spec met, what to check.
+    function part(v, label, cls) { return [h("b", { class: cls || "", text: String(v) }), h("span", { text: label })]; }
+    function group(parts, title) {
+      var el = h("span", { class: "stat-chip", title: title || null });
+      parts.filter(Boolean).forEach(function (pt, i) { if (i) el.appendChild(h("span", { class: "sep", text: "·" })); append(el, pt); });
+      return el;
+    }
+    var moved = [counts.new ? part(counts.new, counts.new === 1 ? T.lNew : T.nNew, "new") : null,
+      counts.changed ? part(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
+      counts.removed ? part(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null].filter(Boolean);
     var chips = [
-      chip(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
-      h("span", { class: "stat-chip" }, h("b", null, h("span", { class: "add", text: "+" + fmt(st.add) }), " ", h("span", { class: "del", text: "−" + fmt(st.del) })), h("span", { text: T.kLines })),
-      counts.new ? chip(counts.new, counts.new === 1 ? T.lNew : T.nNew, "new") : null,
-      counts.changed ? chip(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
-      counts.removed ? chip(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null,
+      group([part(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
+        [h("b", null, h("span", { class: "add", text: "+" + fmt(st.add) }), " ", h("span", { class: "del", text: "−" + fmt(st.del) })), h("span", { text: T.kLines })]]),
+      moved.length ? group(moved) : null,
       coverage < 100 ? h("span", { class: "stat-chip", title: T.coverageHint }, h("b", { text: coverage + "%" }), h("span", { text: T.onMap })) : null,
       st.violations_new ? chip(st.violations_new, st.violations_new === 1 ? T.brokenRule : T.brokenRules, "violation") : null];
     if (OS) {
       var tdone = 0, ttotal = 0;
       OS.changes.forEach(function (c) { if (c.tasks) { tdone += c.tasks.done; ttotal += c.tasks.total; } });
-      if (REQS.length) chips.push(chip(REQS.length, T.kReqs, "accent"));
-      if (ttotal) chips.push(chip(tdone + "/" + ttotal, T.kTasks, tdone === ttotal ? "ok" : "warn"));
+      var spec = [REQS.length ? part(REQS.length, T.kReqs, "accent") : null,
+        ttotal ? part(tdone + "/" + ttotal, T.kTasks, tdone === ttotal ? "ok" : "warn") : null].filter(Boolean);
+      if (spec.length) chips.push(group(spec));
     }
     return h("header", { class: "hero", id: "summary" },
       cfg.inferred ? h("div", { class: "config-warn", role: "note" },
@@ -939,7 +948,10 @@
       } }));
     });
     var motionBtn = h("button", { class: "icon-btn", title: T.motion, "aria-pressed": String(motion), onclick: function () { setMotion(!motion); } });
-    var tools = h("div", { class: "canvas-tools" }, seg,
+    // The bar holds what the diagram shows (stage, and before/after for the architecture); the view controls float
+    // over the canvas, out of the way until needed.
+    var tools = h("div", { class: "canvas-tools" }, seg);
+    var viewTools = h("div", { class: "view-tools" },
       h("button", { class: "icon-btn", title: T.zoomOut, text: "−", onclick: function () { zoom(1.25); } }),
       h("button", { class: "icon-btn wide", title: T.fit, text: T.fit, onclick: function () { fly(fullBox(), true); } }),
       h("button", { class: "icon-btn", title: T.zoomIn, text: "+", onclick: function () { zoom(0.8); } }),
@@ -1083,28 +1095,29 @@
     function renderCaption(id) {
       caption.textContent = "";
       legend.textContent = "";
+      // Only what the current diagram draws: [kind, colour, label, selector of an element that uses it].
+      var keys = {
+        architecture: [["swatch", "var(--new)", T.lNew, ".node.st-new"], ["swatch", "var(--changed)", T.lChanged, ".node.st-changed"],
+          ["swatch", "var(--removed)", T.lRemoved, ".node.st-removed"], ["swatch", "var(--context)", T.lContext, ".node.st-context"],
+          ["line anim", "var(--new)", T.lNew, ".edge.e-new"], ["line", "var(--context)", T.lSame, ".edge.e-same"],
+          ["line dashed", "var(--removed)", T.lRemoved, ".edge.e-removed"], ["line", "var(--violation)", T.lViolation, ".edge.e-violation"],
+          ["line", "var(--accent)", T.lHero, ".edge-g.hero"]],
+        flow: [["line", "var(--new)", T.lNew, ".msg.st-new"], ["line", "var(--changed)", T.lChanged, ".msg.st-changed"],
+          ["line", "var(--muted)", T.lSame, ".msg.st-same"], ["line dashed", "var(--removed)", T.lRemoved, ".msg.st-removed"]],
+        data: [["swatch", "var(--new)", T.lNew, ".entity.st-new"], ["swatch", "var(--changed)", T.lChanged, ".entity.st-changed"],
+          ["swatch", "var(--removed)", T.lRemoved, ".entity.st-removed"], ["swatch", "var(--context)", T.lContext, ".entity.st-context"]],
+        spec: [["swatch", "var(--new)", T.opADDED, ".req.op-ADDED"], ["swatch", "var(--changed)", T.opMODIFIED, ".req.op-MODIFIED"],
+          ["swatch", "var(--removed)", T.opREMOVED, ".req.op-REMOVED"], ["line", "var(--new)", T.implemented, ".link.ls-implemented"],
+          ["line", "var(--warn)", T.partial, ".link.ls-partial"], ["line dashed", "var(--violation)", T.missing, ".link.ls-missing"]]
+      }[id.slice(0, 5) === "flow:" ? "flow" : id] || [];
+      append(legend, keys.filter(function (k) { return current.svg.querySelector(k[3]); }).map(function (k) { return legendItem(k[0], k[1], k[2]); }));
       if (id === "architecture") {
-        append(legend, [legendItem("swatch", "var(--new)", T.lNew), legendItem("swatch", "var(--changed)", T.lChanged),
-          legendItem("swatch", "var(--removed)", T.lRemoved), legendItem("swatch", "var(--context)", T.lContext),
-          legendItem("line anim", "var(--new)", T.lNew), legendItem("line", "var(--context)", T.lSame),
-          legendItem("line dashed", "var(--removed)", T.lRemoved), legendItem("line", "var(--violation)", T.lViolation),
-          ins && ins.hero.length ? legendItem("line", "var(--accent)", T.lHero) : null]);
         var foot = [];
         if (st.unresolved) foot.push(st.unresolved + " " + T.unresolved);
         if (st.unmapped.length) foot.push(st.unmapped.length + " " + T.unmapped);
         if (foot.length) caption.appendChild(h("span", { class: "faint", text: foot.join(" · ") }));
       } else if (id.slice(0, 5) === "flow:") {
-        var fl = flowById[id.slice(5)];
-        append(legend, [legendItem("line", "var(--new)", T.lNew), legendItem("line", "var(--changed)", T.lChanged),
-          legendItem("line", "var(--muted)", T.lSame), legendItem("line dashed", "var(--removed)", T.lRemoved)]);
-        flowNotes(fl).forEach(function (n) { caption.appendChild(n); });
-      } else if (id === "data") {
-        append(legend, [legendItem("swatch", "var(--new)", T.lNew), legendItem("swatch", "var(--changed)", T.lChanged),
-          legendItem("swatch", "var(--removed)", T.lRemoved), legendItem("swatch", "var(--context)", T.lContext)]);
-      } else if (id === "spec") {
-        append(legend, [legendItem("swatch", "var(--new)", T.opADDED), legendItem("swatch", "var(--changed)", T.opMODIFIED),
-          legendItem("swatch", "var(--removed)", T.opREMOVED), legendItem("line", "var(--new)", T.implemented),
-          legendItem("line", "var(--warn)", T.partial), legendItem("line dashed", "var(--violation)", T.missing)]);
+        flowNotes(flowById[id.slice(5)]).forEach(function (n) { caption.appendChild(n); });
       }
     }
 
@@ -1341,7 +1354,7 @@
     var root = h("section", { class: "map", id: "map" },
       h("div", { class: "map-bar" }, tabs, tools),
       h("div", { class: "map-body" },
-        h("div", { class: "map-canvas" }, viewport, h("div", { class: "map-foot" }, legend, caption, h("span", { class: "hint faint", text: T.canvasHint }))),
+        h("div", { class: "map-canvas" }, h("div", { class: "stage-wrap" }, viewport, viewTools), h("div", { class: "map-foot" }, legend, caption, h("span", { class: "hint faint", text: T.canvasHint }))),
         splitter, codePane, side));
     setMotion(motion);
     if (store("ec:map-h")) setHeight(store("ec:map-h"), false);
