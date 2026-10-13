@@ -184,9 +184,12 @@ never hidden. Flow steps are checked against the code, and unverified ones are d
 
 When the change touches `openspec/changes/<id>/` (active or archived) or `openspec/specs/<capability>/spec.md`, the
 script parses the proposal, design decisions, tasks and requirement deltas (`ADDED`, `MODIFIED`, `REMOVED`,
-`RENAMED`, with their GIVEN/WHEN/THEN scenarios). The page shows the spec-driven pipeline (proposal → specs → design
-→ tasks → code → archive) and traces each requirement to the components and tests that implement it
-(`implemented | partial | missing | n/a`). A data flow can realize a scenario and shows its WHEN/THEN next to it.
+`RENAMED`, with their GIVEN/WHEN/THEN scenarios). The SDD section below the map shows the spec-driven pipeline
+(proposal → specs → design → tasks → code → archive) as a stepper, a bar of how many requirements are met, and a
+requirement × component matrix with tests and status (`implemented | partial | missing | n/a`). A requirement opens
+to its scenarios as GIVEN → WHEN → THEN panels, or as a table when it has several, so what differs between them
+stands out. The map does not redraw the spec: a story step on it lights the components that implement the
+requirement. A data flow can realize a scenario and shows it next to the flow.
 
 ## Develop
 

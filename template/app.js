@@ -1,6 +1,7 @@
 /* explain-change renderer. Pure, deterministic: same data → same DOM/SVG. No dependencies.
-   Layout: a canvas (architecture lanes · data flows · OpenSpec traceability) driven by a story whose steps
-   move the camera and light what changed; the design decisions below it. */
+   Layout: a canvas (architecture lanes · data flows · data model) driven by a story whose steps move the camera
+   and light what changed; below it the SDD (OpenSpec pipeline, requirement × component matrix, scenarios) and the
+   design decisions. */
 (function () {
   "use strict";
   var DATA = JSON.parse(document.getElementById("ec-data").textContent);
@@ -44,9 +45,9 @@
       implemented: "implemented", partial: "partial", missing: "missing", "n/a": "n/a", notMapped: "not mapped",
       opADDED: "added", opMODIFIED: "modified", opREMOVED: "removed", opRENAMED: "renamed", opSPEC: "spec",
       scenarios: "Scenarios", why: "Why", whatChanges: "What changes", impact: "Impact",
-      scenario: "Scenario", showFlow: "Show flow",
+      scenario: "Scenario", showFlow: "Show flow", kGIVEN: "Given", kWHEN: "When", kTHEN: "Then", but: "but",
+      status: "Status", seeReqs: "See the requirements", showOnMap: "Show on the map",
       pendingMap: "Requirements not linked to code yet.", mainSpec: "main spec", merged: "merged",
-      reqsComponents: "Implemented in", reqsTests: "Tested by",
       dataStage: "Data", migrations: "Migrations", fields: "Fields", relations: "Relations", evidence: "Evidence",
 
 
@@ -94,9 +95,9 @@
       implemented: "implementado", partial: "parcial", missing: "falta", "n/a": "n/a", notMapped: "sin mapear",
       opADDED: "añadido", opMODIFIED: "modificado", opREMOVED: "eliminado", opRENAMED: "renombrado", opSPEC: "spec",
       scenarios: "Escenarios", why: "Por qué", whatChanges: "Qué cambia", impact: "Impacto",
-      scenario: "Escenario", showFlow: "Ver flujo",
+      scenario: "Escenario", showFlow: "Ver flujo", kGIVEN: "Dado", kWHEN: "Cuando", kTHEN: "Entonces", but: "pero",
+      status: "Estado", seeReqs: "Ver los requisitos", showOnMap: "Ver en el mapa",
       pendingMap: "Requisitos aún sin enlazar al código.", mainSpec: "spec principal", merged: "fusionado",
-      reqsComponents: "Implementado en", reqsTests: "Probado por",
       dataStage: "Datos", migrations: "Migraciones", fields: "Campos", relations: "Relaciones", evidence: "Evidencia",
 
 
@@ -192,6 +193,23 @@
   var specMap = {};
   if (ins && ins.spec) ins.spec.forEach(function (m) { specMap[m.req] = m; });
   function reqsOfComp(id) { return REQS.filter(function (r) { var m = specMap[r.id]; return m && m.components.indexOf(id) > -1; }); }
+  // Requirement ids → the components that implement them; component ids pass through.
+  function specComponents(ids) {
+    var out = [];
+    ids.forEach(function (id) {
+      var comps = reqById[id] ? (specMap[id] || { components: [] }).components : compById[id] ? [id] : [];
+      comps.forEach(function (c) { if (out.indexOf(c) < 0) out.push(c); });
+    });
+    return out;
+  }
+  // implemented | partial | missing | n/a from the agent; pending = no map yet; none = removed or renamed, not mapped.
+  function reqStatus(r) {
+    var m = specMap[r.id];
+    if (m) return m.status;
+    return (ins && ins.spec && ins.spec.length) || r.op === "REMOVED" || r.op === "RENAMED" ? "none" : "pending";
+  }
+  var RS_ICON = { implemented: "✓", partial: "◐", missing: "✗", "n/a": "–", pending: "…", none: "–" };
+  function rsLabel(stt) { return stt === "pending" ? T.notMapped : stt === "none" ? "—" : T[stt] || stt; }
 
   // A file reference links to that file in the PR when the source has one; otherwise it is plain text.
   function prFileUrl(path) {
@@ -229,8 +247,8 @@
     var coverage = st.code_lines ? Math.round(100 * (st.mapped_lines || 0) / st.code_lines) : 100;
     // One chip per question: how big (files, lines), what moved (components), is the spec met, what to check.
     function part(v, label, cls) { return [h("b", { class: cls || "", text: String(v) }), h("span", { text: label })]; }
-    function group(parts, title) {
-      var el = h("span", { class: "stat-chip", title: title || null });
+    function group(parts, title, href) {
+      var el = h(href ? "a" : "span", { class: "stat-chip", title: title || null, href: href || null });
       parts.filter(Boolean).forEach(function (pt, i) { if (i) el.appendChild(h("span", { class: "sep", text: "·" })); append(el, pt); });
       return el;
     }
@@ -248,7 +266,7 @@
       OS.changes.forEach(function (c) { if (c.tasks) { tdone += c.tasks.done; ttotal += c.tasks.total; } });
       var spec = [REQS.length ? part(REQS.length, T.kReqs, "accent") : null,
         ttotal ? part(tdone + "/" + ttotal, T.kTasks, tdone === ttotal ? "ok" : "warn") : null].filter(Boolean);
-      if (spec.length) chips.push(group(spec));
+      if (spec.length) chips.push(group(spec, null, "#sdd"));
     }
     return h("header", { class: "hero", id: "summary" },
       cfg.inferred ? h("div", { class: "config-warn", role: "note" },
@@ -668,155 +686,6 @@
     return S;
   }
 
-  // ── Spec: the SDD pipeline of each OpenSpec change, then tests ← requirements → components ──
-  function wrapText(text, chars, lines) {
-    var out = [], cur = "";
-    String(text || "").split(/\s+/).forEach(function (w) {
-      if (!w) return;
-      if (cur && (cur + " " + w).length > chars) { out.push(cur); cur = w; } else cur = cur ? cur + " " + w : w;
-    });
-    if (cur) out.push(cur);
-    if (out.length > lines) { out = out.slice(0, lines); out[lines - 1] = trunc(out[lines - 1] + " …", chars); }
-    return out.map(function (l) { return trunc(l, chars); });
-  }
-  function textLines(g, x, y, lines, step, cls) {
-    lines.forEach(function (l, i) { g.appendChild(s("text", { x: x, y: y + i * step, class: cls || "info", text: l })); });
-  }
-  // Spread boxes along y near their wanted centre, in order, without overlap.
-  function placeColumn(items, top, gap) {
-    items.sort(function (a, b) { return a.want - b.want || (a.key < b.key ? -1 : 1); });
-    var y = top;
-    items.forEach(function (it) { it.y = Math.max(y, it.want - it.h / 2); y = it.y + it.h + gap; });
-    return items;
-  }
-
-  function buildSpec(onNode) {
-    // One row per OpenSpec change (its pipeline), then requirements → components. Tests sit inside the requirement
-    // they cover; each fact is drawn once and the inspector holds the detail.
-    var mapped = !!(ins && ins.spec && ins.spec.length);
-    var W = 880, PH = 92;
-    var RW = 520, CW = 240, GAPX = 120;
-    var RX = 0, CX = RX + RW + GAPX;
-    var y0 = OS.changes.length * PH + 36;
-    function testPath(t) { return t.replace(/:\d+(-\d+)?$/, ""); }
-    // requirement cards (height depends on text, scenario and test chips)
-    var cards = [], y = y0, lastCap = null, capHeads = [];
-    REQS.forEach(function (r) {
-      var m = specMap[r.id];
-      var capKey = r.cap + (r.change ? "" : " · " + T.mainSpec);
-      if (capKey !== lastCap) { capHeads.push({ y: y, text: capKey }); y += 28; lastCap = capKey; }
-      var lines = wrapText(r.text, 66, 2);
-      var chips = [], cx = 0, row = 0;
-      function place(chip, w) {
-        if (cx && cx + w > RW - 32) { row++; cx = 0; }
-        chip.x = cx; chip.row = row; chip.w = w; chips.push(chip);
-        cx += w + 6;
-      }
-      r.scenarios.forEach(function (sc) {
-        var flow = ins ? ins.flows.filter(function (f) { return f.scenario === r.id + "#" + sc.id; })[0] : null;
-        var label = (flow ? "▶ " : "◇ ") + trunc(sc.name, 36);
-        place({ sc: sc, flow: flow, label: label }, label.length * (flow ? 7.6 : 7) + 22);
-      });
-      var seen = {};
-      (m ? m.tests : []).forEach(function (t) {
-        var path = testPath(t);
-        if (seen[path]) return;
-        seen[path] = true;
-        var label = "⚗ " + trunc(path.split("/").pop(), 30);
-        place({ test: path, ref: t, label: label }, label.length * 7.4 + 22);
-      });
-      var hgt = 54 + lines.length * 17 + (chips.length ? (row + 1) * 27 + 6 : 0) + 8;
-      cards.push({ r: r, y: y, h: hgt, lines: lines, chips: chips });
-      y += hgt + 12;
-    });
-    var reqBottom = y;
-    // components sit next to the requirements that use them
-    var compWant = {};
-    cards.forEach(function (c) {
-      var m = specMap[c.r.id];
-      if (m) m.components.forEach(function (id) { (compWant[id] = compWant[id] || []).push(c.y + c.h / 2); });
-    });
-    function avg(a) { return a.reduce(function (x, v) { return x + v; }, 0) / a.length; }
-    var comps = placeColumn(Object.keys(compWant).map(function (k) { return { key: k, want: avg(compWant[k]), h: 52 }; }), y0, 12);
-    var H = Math.max(reqBottom, comps.length ? comps[comps.length - 1].y + 64 : 0) + 8;
-    var S = newStage("spec", W, H);
-    var svg = S.svg;
-    OS.changes.forEach(function (c, ci) { drawPipeline(svg, S, c, 0, ci * PH, W, onNode); });
-    [[RX, T.reqs], [CX, T.reqsComponents]].forEach(function (x) {
-      svg.appendChild(s("text", { x: x[0], y: y0 - 16, class: "col-label", text: x[1].toUpperCase() }));
-    });
-    capHeads.forEach(function (ch) { svg.appendChild(s("text", { x: RX, y: ch.y + 18, class: "cap-label", text: trunc(ch.text, 60) })); });
-    var linkLayer = s("g", { class: "links" });
-    svg.appendChild(linkLayer);
-    var cPos = {};
-    comps.forEach(function (c) { cPos[c.key] = { x: CX, y: c.y, w: CW, h: c.h }; });
-    S.links = [];
-    function curve(x1, y1, x2, y2) { var mx = (x1 + x2) / 2; return "M" + r1(x1) + "," + r1(y1) + " C" + r1(mx) + "," + r1(y1) + " " + r1(mx) + "," + r1(y2) + " " + r1(x2) + "," + r1(y2); }
-    cards.forEach(function (card) {
-      var r = card.r, m = specMap[r.id];
-      var box = { x: RX, y: card.y, w: RW, h: card.h };
-      S.geo["req:" + r.id] = box;
-      var stt = m ? m.status : (mapped || r.op === "REMOVED" || r.op === "RENAMED" ? "none" : "pending");
-      var g = s("g", { class: "req op-" + r.op + " rs-" + stt.replace("/", ""), "data-k": "req:" + r.id, tabindex: "0", role: "button" },
-        s("title", { text: r.name + (m && m.note ? "\n— " + m.note : "") }),
-        s("rect", { x: box.x, y: box.y, width: box.w, height: box.h, rx: 12, class: "box" }),
-        s("rect", { x: box.x, y: box.y + 10, width: 4, height: box.h - 20, rx: 2, class: "op-bar" }),
-        s("text", { x: box.x + 16, y: box.y + 20, class: "tag" },
-          s("tspan", { text: (T["op" + r.op] || r.op).toUpperCase() + (r.merged ? " · " + T.merged : "") }),
-          m ? s("tspan", { class: "req-state", text: "  ·  " + (T[m.status] || "").toUpperCase() }) : null),
-        s("text", { x: box.x + 16, y: box.y + 42, class: "name", text: trunc(r.name, 56) }));
-      textLines(g, box.x + 16, box.y + 62, card.lines, 17, "info");
-      var chipTop = box.y + 54 + card.lines.length * 17 + 4;
-      card.chips.forEach(function (ch) {
-        var key = ch.test ? "test:" + ch.test : "scn:" + r.id + "#" + ch.sc.id;
-        var cg = s("g", { class: ch.test ? "test-chip" : "scn" + (ch.flow ? " has-flow" : ""), "data-k": key },
-          s("title", { text: ch.test ? ch.ref : ch.sc.name + "\n" + ch.sc.steps.map(function (x) { return x.k + " " + x.t; }).join("\n") }),
-          s("rect", { x: box.x + 16 + ch.x, y: chipTop + ch.row * 27, width: r1(ch.w), height: 22, rx: 11 }),
-          s("text", { x: box.x + 27 + ch.x, y: chipTop + ch.row * 27 + 15.5, text: ch.label }));
-        if (ch.test) {
-          S.links.push(["req:" + r.id, key]);
-          cg.addEventListener("click", function (ev) { ev.stopPropagation(); });
-          onOpen(cg, ch.ref);
-        } else {
-          cg.addEventListener("click", function (ev) {
-            ev.stopPropagation();
-            if (ch.flow) mapApi.showFlow(ch.flow.id); else mapApi.inspect("req:" + r.id);
-          });
-        }
-        g.appendChild(cg);
-      });
-      if (onNode) onNode(g, "req:" + r.id);
-      svg.appendChild(g);
-      if (!m) return;
-      m.components.forEach(function (c) {
-        var b = cPos[c];
-        linkLayer.appendChild(s("path", { d: curve(box.x + box.w, box.y + 24, b.x, b.y + b.h / 2), class: "link ls-" + m.status.replace("/", ""), "data-a": "req:" + r.id, "data-b": "comp:" + c }));
-        S.links.push(["req:" + r.id, "comp:" + c]);
-      });
-    });
-    comps.forEach(function (it) {
-      var c = it.key, b = cPos[c], cc = changeComp[c], stt = cc ? cc.status : "context";
-      S.geo["comp:" + c] = b;
-      var g = s("g", { class: "node mini st-" + stt, "data-k": "comp:" + c, tabindex: "0", role: "button" },
-        s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 11, class: "box" }),
-        s("text", { x: b.x + 12, y: b.y + 21, class: "name", text: trunc(compName(c), 26) }),
-        s("text", { x: b.x + 12, y: b.y + 38, class: "info", text: trunc(layerName(c), 20) + (stt !== "context" ? " · " + statusLabel(stt) : "") }));
-      if (onNode) onNode(g, c);
-      svg.appendChild(g);
-    });
-    if (!mapped && REQS.length) svg.appendChild(s("text", { x: CX, y: y0 + 18, class: "pending-note", text: trunc(T.pendingMap, 44) }));
-    S.keyOf = function (id) { return /^(pipe|scn|req|comp|test):/.test(id) ? id : reqById[id] ? "req:" + id : "comp:" + id; };
-    S.expand = function (set) {
-      var add = {};
-      S.links.forEach(function (l) { if (set[l[0]]) add[l[1]] = true; if (set[l[1]]) add[l[0]] = true; });
-      Object.keys(set).forEach(function (k) { if (k.slice(0, 4) === "scn:") add["req:" + k.slice(4).split("#")[0]] = true; });
-      Object.keys(add).forEach(function (k) { set[k] = true; });
-      return set;
-    };
-    return S;
-  }
-
-
   function artifactState(c, kind) {
     var list = c.artifacts.filter(function (a) { return a.kind === kind; });
     if (!list.length) return { cls: "absent", text: T.sAbsent };
@@ -840,41 +709,11 @@
         : { cls: "absent", text: tk && tk.done < tk.total ? tf("openTasksN", { n: tk.total - tk.done }) : T.pending } }
     ];
   }
-  function drawPipeline(svg, S, c, x0, y0, W, onNode) {
-    var steps = pipelineSteps(c), n = steps.length, GAP = 16, BW = (W - GAP * (n - 1)) / n, BH = 50;
-    var phase = c.moved_to_archive ? T.phaseArchiving : c.archived ? T.phaseArchived : T.phaseActive;
-    svg.appendChild(s("text", { x: x0, y: y0 + 13, class: "pipe-title" }, s("tspan", { class: "pipe-id", text: "openspec/" + c.id }), s("tspan", { text: "  ·  " + phase })));
-    if (!svg.querySelector("#pipe-arrow")) {
-      svg.insertBefore(s("defs", null, s("marker", { id: "pipe-arrow", viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "8", markerHeight: "8", markerUnits: "userSpaceOnUse", orient: "auto" },
-        s("path", { d: "M0,0 L10,5 L0,10 z", class: "arrow arrow-pipe" }))), svg.firstChild);
-    }
-    var top = y0 + 24;
-    steps.forEach(function (stp, i) {
-      var x = x0 + i * (BW + GAP), key = "pipe:" + stp.id + ":" + c.id;
-      S.geo[key] = { x: x, y: top, w: BW, h: BH };
-      var g = s("g", { class: "pipe ps-" + stp.state.cls, "data-k": key, tabindex: "0", role: "button" },
-        s("title", { text: stp.title + " · " + stp.state.text }));
-      g.appendChild(s("rect", { x: x, y: top, width: BW, height: BH, rx: 10, class: "box" }));
-      g.appendChild(s("text", { x: x + 12, y: top + 21, class: "name", text: stp.title }));
-      var p = stp.progress;
-      g.appendChild(s("text", { x: x + 12, y: top + 39, class: "state", text: p ? p[0] + "/" + p[1] : trunc(stp.state.text, 18) }));
-      if (p) {
-        var px = x + 52, pw = BW - 64;
-        g.appendChild(s("rect", { x: px, y: top + 34, width: pw, height: 5, rx: 2.5, class: "prog-bg" }));
-        g.appendChild(s("rect", { x: px, y: top + 34, width: r1(p[1] ? pw * p[0] / p[1] : 0), height: 5, rx: 2.5, class: "prog" + (p[0] === p[1] ? " full" : "") }));
-      }
-      if (i < n - 1) svg.appendChild(s("path", { d: "M" + r1(x + BW + 2) + "," + r1(top + BH / 2) + " l" + (GAP - 6) + ",0", class: "pipe-arrow", "marker-end": "url(#pipe-arrow)" }));
-      if (onNode) onNode(g, key);
-      svg.appendChild(g);
-    });
-  }
-
 
   // ═════════════════════════════ canvas + story ═════════════════════════════
   var STAGES = [{ id: "architecture", title: T.architecture }];
   if (ins) ins.flows.forEach(function (fl) { STAGES.push({ id: "flow:" + fl.id, title: fl.title, flow: fl }); });
   if (ins && ins.data_model && ins.data_model.entities.length) STAGES.push({ id: "data", title: T.dataStage });
-  if (OS && REQS.length) STAGES.push({ id: "spec", title: T.spec + " · " + T.openspec });
   var flowById = {};
   if (ins) ins.flows.forEach(function (fl) { flowById[fl.id] = fl; });
 
@@ -899,7 +738,8 @@
         steps.push({ heading: tf("autoChangedH", { x: compName(c.id) }), body: tf("autoChangedB", { n: c.files, a: c.add, d: c.del }), stage: "architecture", focus: [c.id] });
       });
     if (OS && REQS.length) OS.changes.forEach(function (c) {
-      if (c.requirements.length) steps.push({ heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }), body: c.why || T.autoSpecB, stage: "spec", focus: [] });
+      if (c.requirements.length) steps.push({ heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }), body: c.why || T.autoSpecB, stage: "spec",
+        focus: c.requirements.map(function (r) { return r.id; }) });
     });
     return steps;
   }
@@ -1034,7 +874,6 @@
       if (cache[key]) return cache[key];
       var S;
       if (id === "architecture") S = buildArchitecture(archMode, compact, wireNode);
-      else if (id === "spec") S = buildSpec(wireNode);
       else if (id === "data") S = buildData(wireNode);
       else S = buildFlow(flowById[id.slice(5)]);
       return (cache[key] = S);
@@ -1046,6 +885,8 @@
       g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); inspect(id); } });
     }
     function show(id, focus, animate) {
+      // The spec has no diagram of its own: a requirement lights the components that implement it.
+      if (id === "spec") { focus = specComponents(focus || []); id = "architecture"; }
       var prev = current;
       current = stageFor(id);
       if (prev !== current) {
@@ -1082,10 +923,7 @@
         flow: [["line", "var(--new)", T.lNew, ".msg.st-new"], ["line", "var(--changed)", T.lChanged, ".msg.st-changed"],
           ["line", "var(--muted)", T.lSame, ".msg.st-same"], ["line dashed", "var(--removed)", T.lRemoved, ".msg.st-removed"]],
         data: [["swatch", "var(--new)", T.lNew, ".entity.st-new"], ["swatch", "var(--changed)", T.lChanged, ".entity.st-changed"],
-          ["swatch", "var(--removed)", T.lRemoved, ".entity.st-removed"], ["swatch", "var(--context)", T.lContext, ".entity.st-context"]],
-        spec: [["swatch", "var(--new)", T.opADDED, ".req.op-ADDED"], ["swatch", "var(--changed)", T.opMODIFIED, ".req.op-MODIFIED"],
-          ["swatch", "var(--removed)", T.opREMOVED, ".req.op-REMOVED"], ["line", "var(--new)", T.implemented, ".link.ls-implemented"],
-          ["line", "var(--warn)", T.partial, ".link.ls-partial"], ["line dashed", "var(--violation)", T.missing, ".link.ls-missing"]]
+          ["swatch", "var(--removed)", T.lRemoved, ".entity.st-removed"], ["swatch", "var(--context)", T.lContext, ".entity.st-context"]]
       }[id.slice(0, 5) === "flow:" ? "flow" : id] || [];
       append(legend, keys.filter(function (k) { return current.svg.querySelector(k[3]); }).map(function (k) { return legendItem(k[0], k[1], k[2]); }));
       if (id === "architecture") {
@@ -1116,7 +954,10 @@
         h("button", { class: "step-head", onclick: function () { go(i); } },
           h("span", { class: "step-n", text: String(i + 1) }),
           h("span", { class: "step-h", text: stp.heading })),
-        h("div", { class: "step-body" }, h("p", { text: stp.body })));
+        h("div", { class: "step-body" }, h("p", { text: stp.body }),
+          stp.stage === "spec" ? h("button", { class: "chip step-link", text: T.seeReqs + " ↓", onclick: function () {
+            sddApi.open((stp.focus || []).filter(function (x) { return reqById[x]; }));
+          } }) : null));
       storyList.appendChild(li);
       return li;
     });
@@ -1196,8 +1037,7 @@
 
     // ── inspector ──
     function inspect(key) {
-      if (key.slice(0, 4) === "req:") return inspectReq(key.slice(4));
-      if (key.slice(0, 5) === "pipe:") return inspectArtifact(key);
+      if (key.slice(0, 4) === "req:") return sddApi.open([key.slice(4)]);
       if (key.slice(0, 4) === "ent:") return inspectEntity(key.slice(4));
       var id = key.replace(/^comp:/, "");
       inspecting = id;
@@ -1225,30 +1065,10 @@
         reqs.length ? inspList(T.reqs, reqs.map(function (r) { return reqRow(r); })) : null]);
       storyPane.hidden = true; codePane.hidden = codeSplit.hidden = true;
       inspector.hidden = false;
-      var stageId = current.id === "spec" ? "spec" : current.id;
-      var focusId = current.id === "spec" ? id : id;
+      var stageId = current.id;
       if (current.id.slice(0, 5) === "flow:" && !current.geo["p:" + id]) stageId = "architecture";
-      show(stageId, [focusId], true);
+      show(stageId, [id], true);
       inspecting = id;
-    }
-    function inspectReq(rid) {
-      var r = reqById[rid], m = specMap[rid];
-      inspecting = rid;
-      inspector.textContent = "";
-      append(inspector, [
-        h("button", { class: "back", text: "← " + T.back, onclick: function () { go(stepIdx); } }),
-        h("div", { class: "insp-title" }, h("span", { class: "badge op-" + r.op, text: T["op" + r.op] || r.op }), h("h3", { text: r.name })),
-        h("div", { class: "faint", text: r.cap + (r.change ? " · " + r.change : " · " + T.mainSpec) }),
-        r.text ? h("p", { class: "insp-summary", text: r.text }) : null,
-        m ? h("div", { class: "insp-status rs-" + m.status.replace("/", "") }, h("b", { text: T[m.status] }), m.note ? " — " + m.note : "") :
-          h("div", { class: "insp-status rs-pending" }, h("b", { text: T.notMapped })),
-        r.scenarios.length ? inspList(T.scenarios, r.scenarios.map(scenarioBlock)) : null,
-        m && m.tests.length ? inspList(T.reqsTests, m.tests.map(function (t) { return h("div", { class: "insp-row" }, fileLink(t)); })) : null,
-        h("div", { class: "insp-row" }, fileLink(r.file + ":" + r.line, r.file.split("/").slice(-3).join("/")))]);
-      storyPane.hidden = true; codePane.hidden = codeSplit.hidden = true;
-      inspector.hidden = false;
-      show("spec", [rid], true);
-      inspecting = rid;
     }
     function inspectEntity(eid) {
       var e = entById[eid], stt = { added: "new", changed: "changed", removed: "removed", same: "context" }[e.change];
@@ -1273,47 +1093,7 @@
       show("data", [eid], true);
       inspecting = eid;
     }
-    // A step of the SDD pipeline: what the OpenSpec document says, in full, with a link to it.
-    function inspectArtifact(key) {
-      var parts = key.split(":"), kind = parts[1], cid = parts.slice(2).join(":");
-      var c = OS.changes.filter(function (x) { return x.id === cid; })[0];
-      var stp = pipelineSteps(c).filter(function (x) { return x.id === kind; })[0];
-      var art = c.artifacts.filter(function (a) { return a.kind === (kind === "spec" ? "spec" : kind); });
-      var body = [];
-      if (kind === "proposal") {
-        if (c.why) body.push(inspList(T.why, [h("p", { class: "insp-summary", text: c.why })]));
-        if (c.what.length) body.push(inspList(T.whatChanges, [h("ul", { class: "tight" }, c.what.map(function (x) { return h("li", { text: x }); }))]));
-        if (c.impact.length) body.push(inspList(T.impact, [h("ul", { class: "tight" }, c.impact.map(function (x) { return h("li", { text: x }); }))]));
-      } else if (kind === "design") {
-        if (c.decisions.length) body.push(inspList(T.decisionsDoc, [h("ul", { class: "tight" }, c.decisions.map(function (x) { return h("li", { text: x }); }))]));
-      } else if (kind === "tasks" && c.tasks) {
-        c.tasks.groups.forEach(function (g, gi) {
-          body.push(inspList(g.title + " · " + g.done + "/" + g.total, c.tasks.items.filter(function (x) { return x.group === gi; }).map(function (x) {
-            return h("div", { class: "insp-row task" + (x.done ? " done" : "") }, h("span", { class: "task-box", text: x.done ? "✓" : "" }), h("span", { text: x.t }));
-          })));
-        });
-      } else if (kind === "spec") {
-        body.push(inspList(T.reqs, c.requirements.map(reqRow)));
-      } else if (kind === "code") {
-        body.push(inspList(T.kComponents, ctx.components.filter(function (x) { return x.status !== "context"; }).map(function (x) {
-          return h("div", { class: "insp-row" }, h("span", { class: "badge " + x.status, text: statusLabel(x.status) }),
-            h("a", { href: "#", text: compName(x.id), onclick: function (ev) { ev.preventDefault(); inspect(x.id); } }));
-        })));
-      }
-      inspector.textContent = "";
-      append(inspector, [
-        h("button", { class: "back", text: "← " + T.back, onclick: function () { go(stepIdx); } }),
-        h("div", { class: "insp-title" }, h("span", { class: "badge " + (stp.state.cls === "changed" ? "new" : "context"), text: stp.state.text }), h("h3", { text: stp.title })),
-        h("div", { class: "faint" }, "openspec/" + c.id),
-        body,
-        art.length ? h("div", { class: "insp-list" }, art.map(function (a) { return h("div", { class: "insp-row" }, fileLink(a.path, a.path.split("/").slice(-3).join("/"))); })) : null]);
-      storyPane.hidden = true; codePane.hidden = codeSplit.hidden = true;
-      inspector.hidden = false;
-      show("spec", [key], true);
-      inspecting = key;
-    }
     function closeInspector() { inspecting = null; inspector.hidden = true; storyPane.hidden = false; codePane.hidden = codeSplit.hidden = !codePane.firstChild; }
-    function inspList(title, rows) { return h("div", { class: "insp-list" }, h("h4", { text: title }), rows); }
     function edgeRow(other) {
       return function (e) {
         var k = e.violation ? "violation" : e.status;
@@ -1380,8 +1160,7 @@
     if (fl.scenario) {
       var parts = fl.scenario.split("#"), r = reqById[parts[0]];
       var sc = r ? r.scenarios.filter(function (x) { return x.id === parts[1]; })[0] : null;
-      if (sc) out.push(h("div", { class: "scenario-note" }, h("b", { text: T.scenario + ": " + sc.name }),
-        h("span", { class: "faint", text: " · " + r.name }), scenarioSteps(sc)));
+      if (sc) out.push(scenarioStrip(r, sc, true));
     }
     if (ref) {
       var diff = function (a, b) {
@@ -1399,18 +1178,214 @@
       unverified.map(function (x) { return compName(x.from) + " → " + compName(x.to); }).join(", ")));
     return out;
   }
-  function scenarioSteps(sc) {
-    return h("ul", { class: "gwt" }, sc.steps.map(function (x) { return h("li", null, h("b", { text: x.k }), " " + x.t); }));
+  // ── scenarios: GIVEN → WHEN → THEN as panels; AND/BUT belong to the panel above them ──
+  var GWT = ["GIVEN", "WHEN", "THEN"];
+  function gwtGroups(sc) {
+    var g = { GIVEN: [], WHEN: [], THEN: [] }, cur = "GIVEN";
+    sc.steps.forEach(function (x) {
+      var k = String(x.k).toUpperCase();
+      if (g[k]) cur = k;
+      g[cur].push({ but: k === "BUT", t: x.t });
+    });
+    return g;
   }
-  function scenarioBlock(sc) {
-    var flows = ins ? ins.flows.filter(function (f) { return f.scenario && f.scenario.split("#")[1] === sc.id; }) : [];
-    return h("div", { class: "scenario" }, h("div", { class: "scenario-name", text: sc.name }), scenarioSteps(sc),
-      flows.map(function (f) { return h("button", { class: "chip", text: "▶ " + T.showFlow + ": " + f.title, onclick: function () { mapApi.showFlow(f.id); } }); }));
+  function gwtLines(lines) {
+    return lines.map(function (l) { return h("div", { class: "gwt-line" }, l.but ? h("b", { class: "gwt-but", text: T.but + " " }) : null, l.t); });
   }
+  function flowButtons(r, sc) {
+    return (ins ? ins.flows : []).filter(function (f) { return f.scenario === r.id + "#" + sc.id; }).map(function (f) {
+      return h("button", { class: "chip flow-chip", title: f.title, text: "▶ " + T.showFlow, onclick: function () { mapApi.showFlow(f.id); } });
+    });
+  }
+  // One scenario: three panels in reading order. Compact is the flow caption's version.
+  function scenarioStrip(r, sc, compact) {
+    var g = gwtGroups(sc), panels = [];
+    GWT.filter(function (k) { return g[k].length; }).forEach(function (k, i) {
+      if (i) panels.push(h("span", { class: "gwt-arrow", "aria-hidden": "true", text: "→" }));
+      panels.push(h("div", { class: "gwt-panel k-" + k.toLowerCase() }, h("span", { class: "gwt-k", text: T["k" + k] }), gwtLines(g[k])));
+    });
+    return h("div", { class: "scn-card" + (compact ? " compact" : "") },
+      h("div", { class: "scn-head" }, h("b", { text: (compact ? T.scenario + ": " : "") + sc.name }),
+        compact ? h("span", { class: "faint", text: "· " + r.name }) : flowButtons(r, sc)),
+      h("div", { class: "gwt-strip" }, panels));
+  }
+  // Several scenarios: one row each, so what differs between them stands out; a cell equal to the one above fades.
+  function scenarioTable(r) {
+    var gs = r.scenarios.map(gwtGroups);
+    var keys = GWT.filter(function (k) { return gs.some(function (g) { return g[k].length; }); });
+    return h("div", { class: "gwt-table", style: "--gwt-cols:" + keys.length },
+      h("div", { class: "gwt-tr gwt-th" }, h("span", { text: T.scenario }),
+        keys.map(function (k) { return h("span", { class: "gwt-k k-" + k.toLowerCase(), text: T["k" + k] }); })),
+      r.scenarios.map(function (sc, i) {
+        return h("div", { class: "gwt-tr" },
+          h("div", { class: "gwt-name" }, h("b", { text: sc.name }), flowButtons(r, sc)),
+          keys.map(function (k) {
+            var lines = gs[i][k], same = i > 0 && lines.length && JSON.stringify(lines) === JSON.stringify(gs[i - 1][k]);
+            return h("div", { class: "gwt-td k-" + k.toLowerCase() + (same ? " same" : "") + (lines.length ? "" : " empty"), "data-label": T["k" + k] },
+              lines.length ? gwtLines(lines) : "—");
+          }));
+      }));
+  }
+  function scenarioView(r) { return r.scenarios.length > 1 ? scenarioTable(r) : scenarioStrip(r, r.scenarios[0]); }
   function reqRow(r) {
-    var m = specMap[r.id];
-    return h("div", { class: "insp-row" }, h("span", { class: "rs-dot rs-" + (m ? m.status.replace("/", "") : "pending") }),
-      h("a", { href: "#", text: trunc(r.name, 48), onclick: function (ev) { ev.preventDefault(); mapApi.inspect("req:" + r.id); } }));
+    var stt = reqStatus(r);
+    return h("div", { class: "insp-row" }, h("span", { class: "rs-dot rs-" + stt.replace("/", "") }),
+      h("a", { href: "#sdd", text: trunc(r.name, 48), onclick: function (ev) { ev.preventDefault(); sddApi.open([r.id]); } }));
+  }
+
+  // ═════════════════════════════ SDD · OpenSpec ═════════════════════════════
+  // Each change as its pipeline, then one matrix for all requirements: requirement × component, tests and status.
+  // A row opens to its scenarios and evidence. The map does not draw the spec; it lights the components it names.
+  var sddApi = { open: function () {} };
+  function artifactBody(c, kind) {
+    var body = [];
+    if (kind === "proposal") {
+      if (c.why) body.push(inspList(T.why, [h("p", { class: "insp-summary", text: c.why })]));
+      if (c.what.length) body.push(inspList(T.whatChanges, [h("ul", { class: "tight" }, c.what.map(function (x) { return h("li", { text: x }); }))]));
+      if (c.impact.length) body.push(inspList(T.impact, [h("ul", { class: "tight" }, c.impact.map(function (x) { return h("li", { text: x }); }))]));
+    } else if (kind === "design") {
+      if (c.decisions.length) body.push(inspList(T.decisionsDoc, [h("ul", { class: "tight" }, c.decisions.map(function (x) { return h("li", { text: x }); }))]));
+    } else if (kind === "tasks" && c.tasks) {
+      c.tasks.groups.forEach(function (g, gi) {
+        body.push(inspList(g.title + " · " + g.done + "/" + g.total, c.tasks.items.filter(function (x) { return x.group === gi; }).map(function (x) {
+          return h("div", { class: "insp-row task" + (x.done ? " done" : "") }, h("span", { class: "task-box", text: x.done ? "✓" : "" }), h("span", { text: x.t }));
+        })));
+      });
+    } else if (kind === "spec") {
+      if (c.requirements.length) body.push(inspList(T.reqs, c.requirements.map(reqRow)));
+    } else if (kind === "code") {
+      var touched = ctx.components.filter(function (x) { return x.status !== "context"; });
+      if (touched.length) body.push(inspList(T.kComponents, touched.map(function (x) {
+        return h("div", { class: "insp-row" }, h("span", { class: "badge " + x.status, text: statusLabel(x.status) }),
+          h("a", { href: "#map", text: compName(x.id), onclick: function (ev) { ev.preventDefault(); mapApi.inspect(x.id); } }));
+      })));
+    }
+    var art = c.artifacts.filter(function (a) { return a.kind === kind; });
+    if (art.length) body.push(h("div", { class: "insp-list" }, art.map(function (a) { return h("div", { class: "insp-row" }, fileLink(a.path, a.path.split("/").slice(-3).join("/"))); })));
+    return body.length ? body : null;
+  }
+  function inspList(title, rows) { return h("div", { class: "insp-list" }, h("h4", { text: title }), rows); }
+
+  // The pipeline as a stepper; a step opens its document right below it.
+  function sddPipeline(c) {
+    var panel = h("div", { class: "sdd-doc", hidden: true }), open = null;
+    var list = h("ol", { class: "sdd-pipe" }, pipelineSteps(c).map(function (stp, i) {
+      var body = artifactBody(c, stp.id), p = stp.progress;
+      var btn = h("button", { class: "pstep ps-" + stp.state.cls, disabled: !body, "aria-expanded": body ? "false" : null, title: stp.title + " · " + stp.state.text },
+        h("span", { class: "pdot", text: { present: "✓", removed: "✗" }[stp.state.cls] || String(i + 1) }),
+        h("span", { class: "pname", text: stp.title }),
+        h("span", { class: "pstate", text: p ? p[0] + "/" + p[1] : stp.state.text }),
+        p ? h("span", { class: "pbar" }, h("i", { class: p[0] === p[1] ? "full" : "", style: "width:" + (p[1] ? Math.round(100 * p[0] / p[1]) : 0) + "%" })) : null);
+      if (body) btn.addEventListener("click", function () {
+        var again = open === btn;
+        if (open) { open.classList.remove("on"); open.setAttribute("aria-expanded", "false"); }
+        panel.textContent = ""; panel.hidden = true; open = null;
+        if (again) return;
+        open = btn; btn.classList.add("on"); btn.setAttribute("aria-expanded", "true");
+        append(panel, body); panel.hidden = false;
+      });
+      return h("li", null, btn);
+    }));
+    return [h("div", { class: "sdd-pipe-wrap" }, list), panel];
+  }
+
+  // How many requirements are met, as one bar.
+  function sddCoverage() {
+    var n = {};
+    REQS.forEach(function (r) { var k = reqStatus(r); n[k] = (n[k] || 0) + 1; });
+    var shown = ["implemented", "partial", "missing", "n/a", "pending"].filter(function (k) { return n[k]; });
+    if (!shown.length) return null;
+    return h("div", { class: "sdd-cov" },
+      h("div", { class: "cov-bar", role: "img", "aria-label": shown.map(function (k) { return n[k] + " " + rsLabel(k); }).join(", ") },
+        shown.map(function (k) { return h("span", { class: "rs-" + k.replace("/", ""), style: "flex:" + n[k], title: n[k] + " " + rsLabel(k) }); })),
+      h("div", { class: "cov-legend" }, shown.map(function (k) {
+        return h("span", null, h("i", { class: "rs-dot rs-" + k.replace("/", "") }), h("b", { text: String(n[k]) }), rsLabel(k));
+      })));
+  }
+
+  function sddMatrix() {
+    var comps = [];
+    REQS.forEach(function (r) { var m = specMap[r.id]; if (m) m.components.forEach(function (c) { if (comps.indexOf(c) < 0) comps.push(c); }); });
+    comps.sort(byCompRank);
+    var heads = {}, reqs = [];
+    // Hovering a row lights its components' columns; hovering a column lights the rows that use it.
+    function lightRow(det, on) { det.comps.forEach(function (c) { heads[c].classList.toggle("lit", on); }); }
+    function lightCol(c, on) {
+      heads[c].classList.toggle("lit", on);
+      reqs.forEach(function (det) { if (det.comps.indexOf(c) > -1) det.classList.toggle("lit", on); });
+    }
+    var grid = h("div", { class: "sdd-grid", style: "--cols:minmax(240px, 520px) 136px 56px" + (comps.length ? " repeat(" + comps.length + ", 46px)" : "") },
+      h("div", { class: "sdd-row sdd-head" },
+        h("span", { text: T.reqs }),
+        h("span", { text: T.status }),
+        h("span", { class: "num", text: T.tests }),
+        comps.map(function (c) {
+          var stt = (changeComp[c] || {}).status || "context";
+          return (heads[c] = h("button", { class: "sdd-comp st-" + stt, title: compName(c) + " · " + layerName(c) + " · " + statusLabel(stt),
+            onclick: function () { mapApi.inspect(c); }, onmouseenter: function () { lightCol(c, true); }, onmouseleave: function () { lightCol(c, false); } },
+            h("span", { class: "vtext", text: trunc(compName(c), 28) })));
+        })));
+    var lastCap = null;
+    REQS.forEach(function (r) {
+      var capKey = r.cap + (r.change ? "" : " · " + T.mainSpec);
+      if (capKey !== lastCap) { grid.appendChild(h("div", { class: "sdd-cap", text: capKey })); lastCap = capKey; }
+      var m = specMap[r.id], stt = reqStatus(r), cls = stt.replace("/", "");
+      var tests = m ? m.tests.filter(function (x, i, a) { return a.indexOf(x) === i; }) : [];
+      var det = h("details", { class: "sdd-req op-" + r.op + " rs-" + cls, open: stt === "partial" || stt === "missing" || REQS.length <= 3 },
+        h("summary", { class: "sdd-row" },
+          h("span", { class: "sdd-name" },
+            h("span", { class: "op-tag op-" + r.op, text: (T["op" + r.op] || r.op) + (r.merged ? " · " + T.merged : "") }),
+            h("b", { text: r.name }),
+            r.scenarios.length ? h("span", { class: "faint scn-count", text: r.scenarios.length + " " + (r.scenarios.length === 1 ? T.scenario : T.scenarios).toLowerCase() }) : null),
+          h("span", { class: "rs-pill rs-" + cls, text: RS_ICON[stt] + " " + rsLabel(stt) }),
+          h("span", { class: "sdd-cell num" + (tests.length ? "" : " faint"), title: tests.join("\n") || null, text: tests.length ? "⚗ " + tests.length : "—" }),
+          comps.map(function (c) {
+            var on = !!m && m.components.indexOf(c) > -1;
+            return h("span", { class: "sdd-cell", title: on ? compName(c) : null }, on ? h("i", { class: "cell-dot rs-" + cls }) : null);
+          })),
+        h("div", { class: "sdd-detail" },
+          r.text ? h("p", { class: "sdd-text", text: r.text }) : null,
+          m && m.note ? h("div", { class: "sdd-note rs-" + cls }, h("b", { text: RS_ICON[stt] + " " + cap(rsLabel(stt)) }), " " + m.note) : null,
+          m && m.components.length ? h("div", { class: "sdd-comps-m" }, m.components.map(function (c) { return h("span", { class: "badge " + ((changeComp[c] || {}).status || "context"), text: compName(c) }); })) : null,
+          r.scenarios.length ? scenarioView(r) : null,
+          h("div", { class: "sdd-foot" },
+            tests.map(function (x) { return h("span", { class: "test-ref" }, "⚗ ", fileLink(x, x.split("/").pop())); }),
+            h("span", { class: "faint" }, "spec ", fileLink(r.file + ":" + r.line, r.file.split("/").slice(-3).join("/"))),
+            m && m.components.length ? h("button", { class: "chip", text: "◇ " + T.showOnMap, onclick: function () { mapApi.focus("architecture", m.components); } }) : null)));
+      det.comps = m ? m.components : [];
+      det.rid = r.id;
+      det.addEventListener("mouseenter", function () { lightRow(det, true); });
+      det.addEventListener("mouseleave", function () { lightRow(det, false); });
+      reqs.push(det);
+      grid.appendChild(det);
+    });
+    sddApi.open = function (ids) {
+      var hit = reqs.filter(function (d) { return ids.indexOf(d.rid) > -1; });
+      hit.forEach(function (d) {
+        d.open = true;
+        d.classList.remove("flash");
+        void d.offsetWidth;
+        d.classList.add("flash");
+      });
+      var target = hit[0] || document.getElementById("sdd");
+      if (target) target.scrollIntoView({ block: hit[0] ? "center" : "start", behavior: REDUCED ? "auto" : "smooth" });
+    };
+    return h("div", { class: "sdd-matrix" }, grid,
+      !(ins && ins.spec && ins.spec.length) ? h("p", { class: "empty sdd-pending", text: T.pendingMap }) : null);
+  }
+
+  function renderSpec() {
+    if (!OS || !REQS.length) return null;
+    return sectionShell("sdd", T.spec + " · " + T.openspec, [
+      OS.changes.map(function (c) {
+        var phase = c.moved_to_archive ? T.phaseArchiving : c.archived ? T.phaseArchived : T.phaseActive;
+        return h("div", { class: "card sdd-change" },
+          h("div", { class: "sdd-change-head" }, h("code", { class: "sdd-id", text: "openspec/" + c.id }),
+            h("span", { class: "badge " + (c.archived || c.moved_to_archive ? "context" : "changed"), text: phase })),
+          c.why ? h("p", { class: "sdd-why", text: c.why }) : null,
+          sddPipeline(c));
+      }),
+      h("div", { class: "card sdd-reqs" }, h("h3", { text: T.reqs }), sddCoverage(), sddMatrix())]);
   }
 
   // ═════════════════════════════ sections below the map ═════════════════════════════
@@ -1482,7 +1457,7 @@
   var main = h("main");
   main.appendChild(renderHeader());
   main.appendChild(renderMap());
-  var below = [{ id: "decisions", title: T.decisions, el: renderDecisions() }].filter(function (x) { return x.el; });
+  var below = [{ id: "sdd", title: T.spec, el: renderSpec() }, { id: "decisions", title: T.decisions, el: renderDecisions() }].filter(function (x) { return x.el; });
   below.forEach(function (x) { main.appendChild(x.el); });
   var navList = h("nav", { class: "topnav" },
     h("a", { href: "#map", "data-sec": "map", text: T.canvas }),

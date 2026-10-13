@@ -190,7 +190,8 @@ def digest_task(ctx: dict) -> str:
     ids = insight_components(ctx)
     shown = [c["id"] for c in ctx["components"]]
     stages = "architecture | flow:<flow-id> | data" + (" | spec" if has_spec else "")
-    focus_ids = "components; flow participants or step numbers '#2'" + ("; requirement ids" if has_spec else "")
+    focus_ids = ("components; flow participants or step numbers '#2'"
+                 + ("; requirement ids, which light the components that implement them" if has_spec else ""))
     elsewhere = f"; elsewhere {', '.join(ids[len(shown):])}" if len(ids) > len(shown) else ""
     task = ["\n## Task",
             f"Write {WORK_DIR}/insight.json (JSON only; prose in '{cfg['lang']}'), then run `explain-change render`.",

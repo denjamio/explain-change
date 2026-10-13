@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- SDD · OpenSpec is a section below the map instead of a map tab. Each change shows its pipeline as a stepper;
+  a step opens its document (proposal, design, tasks) in place. A bar shows how many requirements are met.
+- Requirements form one matrix: requirement, status, tests, and one column per component that implements them.
+  Hovering a row lights its columns and the other way round. Partial and missing requirements open by default.
+- Scenarios read as GIVEN → WHEN → THEN panels. A requirement with several scenarios shows them as a table, and a
+  cell equal to the one above fades, so what differs stands out. The flow caption uses the same panels.
+- A story step on the spec lights, on the architecture, the components that implement its requirements, and links
+  to them in the SDD section. The header's requirements chip links there too.
+
 ## [0.1.3] - 2026-10-13
 
 Fixes the code panel handle of 0.1.2.
