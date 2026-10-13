@@ -9,7 +9,7 @@
 
   var I18N = {
     en: {
-      story: "Story", canvas: "Map", architecture: "Architecture", spec: "Spec",
+      story: "Story", canvas: "Map", architecture: "Architecture", spec: "SDD",
       design: "Design",
       openspec: "OpenSpec",
       local: "Local branch", ado: "Azure DevOps PR", commit: "commit", commits: "commits",
@@ -59,7 +59,7 @@
       decisionsDoc: "Decisions", openTasksN: "{n} open"
     },
     es: {
-      story: "Historia", canvas: "Mapa", architecture: "Arquitectura", spec: "Spec",
+      story: "Historia", canvas: "Mapa", architecture: "Arquitectura", spec: "SDD",
       design: "Diseño",
       openspec: "OpenSpec",
       local: "Rama local", ado: "PR de Azure DevOps", commit: "commit", commits: "commits",

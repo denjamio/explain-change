@@ -12,6 +12,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 - The report footer names the explain-change version that rendered it, so an old report is easy to tell apart.
+- The Spec tab is now called SDD · OpenSpec.
 
 ## [0.1.2] - 2026-10-13
 
