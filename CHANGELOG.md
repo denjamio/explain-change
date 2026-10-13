@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- The handle below the code panel did nothing when dragged down on a short excerpt: it only set a maximum height.
+  It now sets the height of the code area.
+
+### Changed
+- The report footer names the explain-change version that rendered it, so an old report is easy to tell apart.
+
 ## [0.1.2] - 2026-10-13
 
 Report: a full-width code panel and a simpler Spec view.

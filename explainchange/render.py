@@ -5,7 +5,7 @@ import json
 from html import escape as html_escape
 from pathlib import Path
 
-from .constants import TOOL_DIR, WORK_DIR
+from .constants import TOOL_DIR, VERSION, WORK_DIR
 from .util import slugify
 from .openspec import spec_requirements
 from .insight import REF_RE, normalize_insight, validate_insight
@@ -67,7 +67,7 @@ def render_html(ctx: dict, insight: dict | None, status: str, errors: list[str])
     html = (tpl / "index.html").read_text(encoding="utf-8")
     css = (tpl / "styles.css").read_text(encoding="utf-8")
     js = (tpl / "app.js").read_text(encoding="utf-8")
-    data = {"context": ctx, "insight": insight, "insightStatus": status, "insightErrors": errors[:20]}
+    data = {"tool": VERSION, "context": ctx, "insight": insight, "insightStatus": status, "insightErrors": errors[:20]}
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     payload = payload.replace("</", "<\\/").replace("<!--", "<\\!--")
     title = f"{ctx['config']['name']} · {ctx['source']['title']}"

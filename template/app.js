@@ -1157,12 +1157,15 @@
         apply({ x: vb.x, y: vb.y + (vb.h - nh) / 2, w: vb.w, h: nh });
       } else relayout();
     }
+    // Set by the reader, the code area is exactly that tall (taller than a short excerpt too); by default it fits
+    // the excerpt, up to 60% of the window.
     function setCodeHeight(px, save) {
+      codePane.classList.toggle("sized", px !== null);
       if (px === null) codePane.style.removeProperty("--code-h");
       else codePane.style.setProperty("--code-h", clampH(px, MIN_CODE) + "px");
       if (save) store("ec:code-h", px === null ? null : clampH(px, MIN_CODE));
     }
-    function codeHeight() { var ex = codePane.querySelector(".excerpt"); return ex ? ex.clientHeight : 0; }
+    function codeHeight() { var ex = codePane.querySelector(".excerpt"); return ex ? ex.offsetHeight : 0; }
     // A drag handle: drag or arrow keys change a height, double-click or Home restores the default.
     function splitter(cls, getH, setH) {
       var el = h("div", { class: "splitter " + cls, role: "separator", tabindex: "0", "aria-orientation": "horizontal",
@@ -1492,7 +1495,7 @@
     themeButton());
   app.appendChild(bar);
   app.appendChild(main);
-  app.appendChild(h("footer", { class: "foot faint", text: "explain-change · key " + ctx.key }));
+  app.appendChild(h("footer", { class: "foot faint", text: "explain-change " + (DATA.tool || "") + " · key " + ctx.key }));
   document.dispatchEvent(new CustomEvent("ec:mounted"));
 
   if ("IntersectionObserver" in window) {

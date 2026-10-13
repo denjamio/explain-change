@@ -185,6 +185,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .map-code .step-code { margin: 0; }
 .map-code .step-code-head { font-size: 13px; margin-bottom: 6px; }
 .map-code .excerpt { max-height: var(--code-h, 60vh); overflow: auto; }
+.map-code.sized .excerpt { height: var(--code-h); max-height: none; background: var(--surface); }
 .map-code .diff { font-size: 13px; }
 /* Wide screens wrap long lines, so the code scrolls only vertically; small ones keep lines whole and scroll sideways. */
 .map-code .diff td.code { white-space: pre-wrap; overflow-wrap: anywhere; }
