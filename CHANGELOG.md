@@ -59,3 +59,4 @@ insight schema and the report to change between 0.x versions.
 - JSON Schemas for the config and the insight, and example reports.
 - Unit, contract, end-to-end and installer tests, plus a smoke test of the report template under Node.
 - CI on Linux (Python 3.11–3.13) and Windows, lint, and a check that the committed examples are up to date.
+  Failures show as annotations on the run page, which GitHub shows without signing in (unlike the logs).
