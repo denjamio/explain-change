@@ -30,6 +30,7 @@
       alternative: "Alternative", unverified: "The code has no dependency between these components", viaPort: "Linked through {x}: both depend on it",
       unverifiedNote: "No dependency in the code:",
       prev: "Previous", next: "Next", fit: "Fit", zoomIn: "Zoom in", zoomOut: "Zoom out", motion: "Animation",
+      resize: "Drag to resize the map · double-click to reset",
       canvasHint: "Drag to pan · Ctrl/⌘ + wheel to zoom · click a component for details · ← → to step",
       back: "Story", files: "Files", dependsOn: "Depends on", usedBy: "Used by", reqs: "Requirements", symbols: "Public API",
       storyAuto: "Automatic summary.",
@@ -79,6 +80,7 @@
       alternative: "Alternativa", unverified: "El código no tiene dependencia entre estos componentes", viaPort: "Conectados a través de {x}: ambos dependen de él",
       unverifiedNote: "Sin dependencia en el código:",
       prev: "Anterior", next: "Siguiente", fit: "Ajustar", zoomIn: "Acercar", zoomOut: "Alejar", motion: "Animación",
+      resize: "Arrastra para cambiar el alto del mapa · doble clic para restaurar",
       canvasHint: "Arrastra para mover · Ctrl/⌘ + rueda para zoom · clic en un componente para ver detalle · ← → para avanzar",
       back: "Historia", files: "Archivos", dependsOn: "Depende de", usedBy: "Usado por", reqs: "Requisitos", symbols: "API pública",
       storyAuto: "Resumen automático.",
@@ -681,8 +683,8 @@
 
   function buildSpec(onNode) {
     var mapped = !!(ins && ins.spec && ins.spec.length);
-    var W = 1120, PH = 196;
-    var TW = 210, RW = 440, CW = 230, GAPX = 70;
+    var W = 1060, PH = pipelineHeight() + 24;
+    var TW = 200, RW = 440, CW = 230, GAPX = 64;
     var cols = TW + GAPX + RW + GAPX + CW, ox = (W - cols) / 2;
     var TX = ox, RX = ox + TW + GAPX, CX = RX + RW + GAPX;
     var y0 = OS.changes.length * PH + 40;
@@ -691,16 +693,16 @@
     REQS.forEach(function (r) {
       var capKey = r.cap + (r.change ? "" : " · " + T.mainSpec);
       if (capKey !== lastCap) { capHeads.push({ y: y, text: capKey }); y += 28; lastCap = capKey; }
-      var lines = wrapText(r.text, 66, 2);
+      var lines = wrapText(r.text, 60, 2);
       var chips = [], cx = 0, row = 0;
       r.scenarios.forEach(function (sc) {
         var flow = ins ? ins.flows.filter(function (f) { return f.scenario === r.id + "#" + sc.id; })[0] : null;
-        var label = (flow ? "▶ " : "◇ ") + trunc(sc.name, 38), w = label.length * 6.3 + 22;
+        var label = (flow ? "▶ " : "◇ ") + trunc(sc.name, 36), w = label.length * (flow ? 7.6 : 7) + 22;
         if (cx && cx + w > RW - 32) { row++; cx = 0; }
         chips.push({ sc: sc, flow: flow, label: label, x: cx, row: row, w: w });
         cx += w + 6;
       });
-      var hgt = 50 + lines.length * 15 + (chips.length ? (row + 1) * 26 + 6 : 0) + 8;
+      var hgt = 54 + lines.length * 17 + (chips.length ? (row + 1) * 27 + 6 : 0) + 8;
       cards.push({ r: r, y: y, h: hgt, lines: lines, chips: chips });
       y += hgt + 12;
     });
@@ -745,14 +747,14 @@
         s("rect", { x: box.x, y: box.y, width: box.w, height: box.h, rx: 12, class: "box" }),
         s("rect", { x: box.x, y: box.y + 10, width: 4, height: box.h - 20, rx: 2, class: "op-bar" }),
         s("text", { x: box.x + 16, y: box.y + 20, class: "tag", text: (T["op" + r.op] || r.op).toUpperCase() + (r.merged ? " · " + T.merged : "") + (m ? "  ·  " + (T[m.status] || "").toUpperCase() : "") }),
-        s("text", { x: box.x + 16, y: box.y + 40, class: "name", text: trunc(r.name, 52) }));
-      textLines(g, box.x + 16, box.y + 58, card.lines, 15, "info");
-      var chipTop = box.y + 50 + card.lines.length * 15 + 4;
+        s("text", { x: box.x + 16, y: box.y + 42, class: "name", text: trunc(r.name, 48) }));
+      textLines(g, box.x + 16, box.y + 62, card.lines, 17, "info");
+      var chipTop = box.y + 54 + card.lines.length * 17 + 4;
       card.chips.forEach(function (ch) {
         var cg = s("g", { class: "scn" + (ch.flow ? " has-flow" : ""), "data-k": "scn:" + r.id + "#" + ch.sc.id },
           s("title", { text: ch.sc.name + "\n" + ch.sc.steps.map(function (x) { return x.k + " " + x.t; }).join("\n") }),
-          s("rect", { x: box.x + 16 + ch.x, y: chipTop + ch.row * 26, width: r1(ch.w), height: 21, rx: 10.5 }),
-          s("text", { x: box.x + 27 + ch.x, y: chipTop + ch.row * 26 + 14.5, text: ch.label }));
+          s("rect", { x: box.x + 16 + ch.x, y: chipTop + ch.row * 27, width: r1(ch.w), height: 22, rx: 11 }),
+          s("text", { x: box.x + 27 + ch.x, y: chipTop + ch.row * 27 + 15.5, text: ch.label }));
         cg.addEventListener("click", function (ev) {
           ev.stopPropagation();
           if (ch.flow) mapApi.showFlow(ch.flow.id); else mapApi.inspect("req:" + r.id);
@@ -791,7 +793,7 @@
       var g = s("g", { class: "test-node", "data-k": "test:" + t },
         s("title", { text: t }),
         s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 9, class: "box" }),
-        s("text", { x: b.x + 12, y: b.y + 23.5, class: "name", text: trunc(t.split("/").pop(), 28) }));
+        s("text", { x: b.x + 12, y: b.y + 23.5, class: "name", text: trunc(t.split("/").pop(), 24) }));
       svg.appendChild(onOpen(g, t));
     });
     if (!mapped && REQS.length) svg.appendChild(s("text", { x: CX, y: y0 + 18, class: "pending-note", text: trunc(T.pendingMap, 44) }));
@@ -825,20 +827,31 @@
     var add = 0, del = 0;
     touched.forEach(function (x) { add += x.add; del += x.del; });
     return [
-      { id: "proposal", title: T.proposal, state: artifactState(c, "proposal"), lines: wrapText(c.why || (c.what[0] || ""), 25, 5) },
+      { id: "proposal", title: T.proposal, state: artifactState(c, "proposal"), lines: wrapText(c.why || (c.what[0] || ""), 20, 5) },
       { id: "spec", title: T.specs, state: artifactState(c, "spec"),
-        lines: Object.keys(caps).map(function (k) { return "▸ " + trunc(k, 14) + " · " + caps[k] + " req"; }).slice(0, 2)
+        lines: Object.keys(caps).map(function (k) { return "▸ " + trunc(k, 11) + " · " + caps[k] + " req"; }).slice(0, 2)
           .concat([["ADDED", "+"], ["MODIFIED", "~"], ["REMOVED", "−"], ["RENAMED", "→"]].filter(function (o) { return ops[o[0]]; })
             .map(function (o) { return o[1] + ops[o[0]]; }).join("  "))
           .concat(nScn ? [nScn + " " + T.scenarios.toLowerCase()] : []) },
-      { id: "design", title: T.designDoc, state: artifactState(c, "design"), lines: c.decisions.slice(0, 4).map(function (d) { return "• " + trunc(d, 23); }) },
+      { id: "design", title: T.designDoc, state: artifactState(c, "design"), lines: c.decisions.slice(0, 4).map(function (d) { return "• " + trunc(d, 19); }) },
       { id: "tasks", title: T.tasks, state: artifactState(c, "tasks"), progress: tk ? [tk.done, tk.total] : null,
-        lines: tk ? tk.groups.slice(0, 3).map(function (g) { return (g.done === g.total ? "✓ " : "◐ ") + trunc(g.title, 17) + " " + g.done + "/" + g.total; }) : [] },
+        lines: tk ? tk.groups.slice(0, 3).map(function (g) { return (g.done === g.total ? "✓ " : "◐ ") + trunc(g.title, 13) + " " + g.done + "/" + g.total; }) : [] },
       { id: "code", title: T.code, state: touched.length ? { cls: "changed", text: "+" + add + " −" + del } : { cls: "absent", text: "—" },
-        lines: touched.slice(0, 4).map(function (x) { return "▸ " + trunc(compName(x.id), 22); }).concat(touched.length > 4 ? ["+" + (touched.length - 4) + " …"] : []) },
+        lines: touched.slice(0, 4).map(function (x) { return "▸ " + trunc(compName(x.id), 18); }).concat(touched.length > 4 ? ["+" + (touched.length - 4) + " …"] : []) },
       { id: "archive", title: T.archive, state: c.archived ? { cls: c.moved_to_archive ? "changed" : "present", text: c.moved_to_archive ? T.phaseArchiving : T.phaseArchived } : { cls: "absent", text: T.pending },
-        lines: c.archived ? [] : wrapText(tk && tk.done < tk.total ? tf("openTasksN", { n: tk.total - tk.done }) : "", 25, 2) }
+        lines: c.archived ? [] : wrapText(tk && tk.done < tk.total ? tf("openTasksN", { n: tk.total - tk.done }) : "", 20, 2) }
     ];
+  }
+  // The pipeline boxes are as tall as the fullest box of any change, so no row is mostly empty.
+  var PIPE_LINES = 6, PIPE_STEP = 19;
+  function pipelineHeight() {
+    var most = 1;
+    OS.changes.forEach(function (c) {
+      pipelineSteps(c).forEach(function (stp) {
+        most = Math.max(most, (stp.progress ? 2 + Math.min(3, stp.lines.length) : Math.min(PIPE_LINES, stp.lines.length)));
+      });
+    });
+    return 46 + most * PIPE_STEP + 6;
   }
   function drawPipeline(svg, S, c, x0, y0, W, H, onNode) {
     var steps = pipelineSteps(c), n = steps.length, GAP = 22, BW = (W - GAP * (n - 1)) / n;
@@ -856,15 +869,15 @@
       g.appendChild(s("rect", { x: x, y: top, width: BW, height: H, rx: 12, class: "box" }));
       g.appendChild(s("text", { x: x + 14, y: top + 23, class: "name", text: stp.title }));
       g.appendChild(s("text", { x: x + BW - 12, y: top + 23, "text-anchor": "end", class: "state", text: trunc(stp.state.text, 16) }));
-      var ly = top + 46;
+      var ly = top + 48;
       if (stp.progress) {
         var p = stp.progress, pw = BW - 28;
         g.appendChild(s("text", { x: x + 14, y: ly + 4, class: "big", text: p[0] + "/" + p[1] }));
         g.appendChild(s("rect", { x: x + 14, y: ly + 14, width: pw, height: 6, rx: 3, class: "prog-bg" }));
         g.appendChild(s("rect", { x: x + 14, y: ly + 14, width: r1(p[1] ? pw * p[0] / p[1] : 0), height: 6, rx: 3, class: "prog" + (p[0] === p[1] ? " full" : "") }));
-        ly += 42;
+        ly += 2 * PIPE_STEP + 4;
       }
-      textLines(g, x + 14, ly, stp.lines.slice(0, stp.progress ? 3 : 6), 17, "info");
+      textLines(g, x + 14, ly, stp.lines.slice(0, stp.progress ? 3 : PIPE_LINES), PIPE_STEP, "info");
       if (i < n - 1) svg.appendChild(s("path", { d: "M" + r1(x + BW + 3) + "," + r1(top + H / 2) + " l" + (GAP - 8) + ",0", class: "pipe-arrow", "marker-end": "url(#pipe-arrow)" }));
       if (onNode) onNode(g, key);
       svg.appendChild(g);
@@ -1113,9 +1126,7 @@
         h("button", { class: "step-head", onclick: function () { go(i); } },
           h("span", { class: "step-n", text: String(i + 1) }),
           h("span", { class: "step-h", text: stp.heading })),
-        h("div", { class: "step-body" },
-          h("p", { text: stp.body }),
-          stp.code ? codeExcerpt(stp.code) : null));
+        h("div", { class: "step-body" }, h("p", { text: stp.body })));
       storyList.appendChild(li);
       return li;
     });
@@ -1126,12 +1137,68 @@
       var stp = STORY[stepIdx];
       items.forEach(function (li, j) { li.classList.toggle("active", j === stepIdx); li.classList.toggle("seen", j < stepIdx); });
       counter.textContent = (stepIdx + 1) + " / " + STORY.length;
+      showCode(stp.code);
       show(stp.stage || "architecture", stp.focus || [], true);
       var li = items[stepIdx];
       if (li && storyList.scrollHeight > storyList.clientHeight) {
         storyList.scrollTo({ top: li.offsetTop - storyList.offsetTop - 8, behavior: REDUCED ? "auto" : "smooth" });
       }
     }
+
+    // ── code of the active step, below the canvas; the splitter above it sets the canvas height ──
+    var codePane = h("div", { class: "map-code", hidden: true });
+    function showCode(ref) {
+      codePane.textContent = "";
+      var ex = ref ? codeExcerpt(ref) : null;
+      if (ex) codePane.appendChild(ex);
+      codePane.hidden = !ex || !!inspecting;
+    }
+    var MIN_H = 240;
+    function maxH() { return Math.max(MIN_H, Math.round(window.innerHeight * 0.88)); }
+    function setHeight(px, save) {
+      var before = viewport.clientHeight;
+      if (px === null) { viewport.style.height = ""; if (save) store("ec:map-h", null); }
+      else {
+        px = Math.round(Math.max(MIN_H, Math.min(maxH(), px)));
+        viewport.style.height = px + "px";
+        if (save) store("ec:map-h", px);
+      }
+      splitter.setAttribute("aria-valuenow", String(viewport.clientHeight || px || 0));
+      // Same zoom, more or less of the stage around the centre: resizing never rescales the diagram.
+      if (current && vb && before && viewport.clientHeight) {
+        cancelAnimationFrame(anim);
+        var nh = vb.h * viewport.clientHeight / before;
+        apply({ x: vb.x, y: vb.y + (vb.h - nh) / 2, w: vb.w, h: nh });
+      } else relayout();
+    }
+    var splitter = h("div", { class: "splitter", role: "separator", tabindex: "0", "aria-orientation": "horizontal",
+      "aria-label": T.resize, title: T.resize, "aria-valuemin": String(MIN_H) }, h("span", { class: "grip" }));
+    var resizing = null;
+    splitter.addEventListener("pointerdown", function (ev) {
+      if (ev.button) return;
+      ev.preventDefault();
+      resizing = { y: ev.clientY, h: viewport.clientHeight };
+      splitter.classList.add("dragging");
+      try { splitter.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
+    });
+    splitter.addEventListener("pointermove", function (ev) {
+      if (!resizing) return;
+      setHeight(resizing.h + ev.clientY - resizing.y, false);
+    });
+    function endResize() {
+      if (!resizing) return;
+      resizing = null;
+      splitter.classList.remove("dragging");
+      store("ec:map-h", viewport.clientHeight);
+    }
+    splitter.addEventListener("pointerup", endResize);
+    splitter.addEventListener("pointercancel", endResize);
+    splitter.addEventListener("dblclick", function () { setHeight(null, true); });
+    splitter.addEventListener("keydown", function (ev) {
+      var d = { ArrowUp: -40, ArrowDown: 40, PageUp: -160, PageDown: 160 }[ev.key];
+      if (ev.key === "Home") { ev.preventDefault(); setHeight(null, true); }
+      else if (d) { ev.preventDefault(); ev.stopPropagation(); setHeight(viewport.clientHeight + d, true); }
+    });
 
     // ── inspector ──
     function inspect(key) {
@@ -1162,7 +1229,7 @@
         outE.length ? inspList(T.dependsOn, outE.map(edgeRow(function (e) { return e.to; }))) : null,
         inE.length ? inspList(T.usedBy, inE.map(edgeRow(function (e) { return e.from; }))) : null,
         reqs.length ? inspList(T.reqs, reqs.map(function (r) { return reqRow(r); })) : null]);
-      storyPane.hidden = true;
+      storyPane.hidden = true; codePane.hidden = true;
       inspector.hidden = false;
       var stageId = current.id === "spec" ? "spec" : current.id;
       var focusId = current.id === "spec" ? id : id;
@@ -1184,7 +1251,7 @@
         r.scenarios.length ? inspList(T.scenarios, r.scenarios.map(scenarioBlock)) : null,
         m && m.tests.length ? inspList(T.reqsTests, m.tests.map(function (t) { return h("div", { class: "insp-row" }, fileLink(t)); })) : null,
         h("div", { class: "insp-row" }, fileLink(r.file + ":" + r.line, r.file.split("/").slice(-3).join("/")))]);
-      storyPane.hidden = true;
+      storyPane.hidden = true; codePane.hidden = true;
       inspector.hidden = false;
       show("spec", [rid], true);
       inspecting = rid;
@@ -1207,7 +1274,7 @@
             h("a", { href: "#", text: (entById[other] || {}).name || other, onclick: function (ev) { ev.preventDefault(); inspectEntity(other); } }));
         })) : null,
         e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null]);
-      storyPane.hidden = true;
+      storyPane.hidden = true; codePane.hidden = true;
       inspector.hidden = false;
       show("data", [eid], true);
       inspecting = eid;
@@ -1246,12 +1313,12 @@
         h("div", { class: "faint" }, "openspec/" + c.id),
         body,
         art.length ? h("div", { class: "insp-list" }, art.map(function (a) { return h("div", { class: "insp-row" }, fileLink(a.path, a.path.split("/").slice(-3).join("/"))); })) : null]);
-      storyPane.hidden = true;
+      storyPane.hidden = true; codePane.hidden = true;
       inspector.hidden = false;
       show("spec", [key], true);
       inspecting = key;
     }
-    function closeInspector() { inspecting = null; inspector.hidden = true; storyPane.hidden = false; }
+    function closeInspector() { inspecting = null; inspector.hidden = true; storyPane.hidden = false; codePane.hidden = !codePane.firstChild; }
     function inspList(title, rows) { return h("div", { class: "insp-list" }, h("h4", { text: title }), rows); }
     function edgeRow(other) {
       return function (e) {
@@ -1275,8 +1342,9 @@
       h("div", { class: "map-bar" }, tabs, tools),
       h("div", { class: "map-body" },
         h("div", { class: "map-canvas" }, viewport, h("div", { class: "map-foot" }, legend, caption, h("span", { class: "hint faint", text: T.canvasHint }))),
-        side));
+        splitter, codePane, side));
     setMotion(motion);
+    if (store("ec:map-h")) setHeight(store("ec:map-h"), false);
 
     document.addEventListener("keydown", function (ev) {
       if (ev.target && /input|textarea|select/i.test(ev.target.tagName)) return;
