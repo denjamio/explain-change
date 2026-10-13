@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.4] - 2026-10-13
+
+SDD · OpenSpec moves out of the map into its own section, built for review.
 
 ### Changed
 - SDD · OpenSpec is a section below the map instead of a map tab. Each change shows its pipeline as a stepper;
