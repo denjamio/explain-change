@@ -151,8 +151,8 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .stage-tab:hover { background: var(--surface-2); color: var(--text); }
 .stage-tab.on { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
 .canvas-tools { display: flex; gap: 6px; align-items: center; margin-left: auto; }
-.map-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto auto 1fr;
-  grid-template-areas: "canvas side" "split side" "code side"; }
+.map-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto;
+  grid-template-areas: "canvas side" "split split" "code code" "csplit csplit"; }
 .map-canvas { grid-area: canvas; min-width: 0; display: flex; flex-direction: column; }
 .viewport { position: relative; height: min(62vh, 640px); min-height: 240px; background-color: var(--canvas);
   background-image: radial-gradient(var(--grid) 1px, transparent 1.2px); background-size: 18px 18px; cursor: grab; touch-action: none; outline: none; overflow: hidden; }
@@ -184,8 +184,11 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .map-code { grid-area: code; min-width: 0; padding: 12px 14px 14px; border-top: 1px solid var(--border); }
 .map-code .step-code { margin: 0; }
 .map-code .step-code-head { font-size: 13px; margin-bottom: 6px; }
-.map-code .excerpt { max-height: 46vh; overflow: auto; }
+.map-code .excerpt { max-height: var(--code-h, 60vh); overflow: auto; }
 .map-code .diff { font-size: 13px; }
+/* Wide screens wrap long lines, so the code scrolls only vertically; small ones keep lines whole and scroll sideways. */
+.map-code .diff td.code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.splitter.code-split { grid-area: csplit; border-top: 1px solid var(--border); }
 
 /* story pane: as tall as the canvas column beside it, never taller */
 .map-side { grid-area: side; position: relative; min-height: 0; background: var(--surface); border-left: 1px solid var(--border); }
@@ -365,6 +368,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   .map-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "canvas" "side" "code"; }
   .splitter { display: none; }
   .map-side { border-left: 0; border-top: 1px solid var(--border); }
+  .map-code .diff td.code { white-space: pre; overflow-wrap: normal; }
   .map-side > * { position: static; }
   .story-steps { max-height: 340px; }
 }

@@ -30,7 +30,7 @@
       alternative: "Alternative", unverified: "The code has no dependency between these components", viaPort: "Linked through {x}: both depend on it",
       unverifiedNote: "No dependency in the code:",
       prev: "Previous", next: "Next", fit: "Fit", zoomIn: "Zoom in", zoomOut: "Zoom out", motion: "Animation",
-      resize: "Drag to resize the map · double-click to reset",
+      resize: "Drag to resize · double-click to reset",
       canvasHint: "Drag to pan · Ctrl/⌘ + wheel to zoom · click a component for details · ← → to step",
       back: "Story", files: "Files", dependsOn: "Depends on", usedBy: "Used by", reqs: "Requirements", symbols: "Public API",
       storyAuto: "Automatic summary.",
@@ -80,7 +80,7 @@
       alternative: "Alternativa", unverified: "El código no tiene dependencia entre estos componentes", viaPort: "Conectados a través de {x}: ambos dependen de él",
       unverifiedNote: "Sin dependencia en el código:",
       prev: "Anterior", next: "Siguiente", fit: "Ajustar", zoomIn: "Acercar", zoomOut: "Alejar", motion: "Animación",
-      resize: "Arrastra para cambiar el alto del mapa · doble clic para restaurar",
+      resize: "Arrastra para cambiar el alto · doble clic para restaurar",
       canvasHint: "Arrastra para mover · Ctrl/⌘ + rueda para zoom · clic en un componente para ver detalle · ← → para avanzar",
       back: "Historia", files: "Archivos", dependsOn: "Depende de", usedBy: "Usado por", reqs: "Requisitos", symbols: "API pública",
       storyAuto: "Resumen automático.",
@@ -1158,25 +1158,21 @@
       }
     }
 
-    // ── code of the active step, below the canvas; the splitter above it sets the canvas height ──
+    // ── code of the active step, full width below the map. One splitter sets the map height, one the code height ──
     var codePane = h("div", { class: "map-code", hidden: true });
     function showCode(ref) {
       codePane.textContent = "";
       var ex = ref ? codeExcerpt(ref) : null;
       if (ex) codePane.appendChild(ex);
-      codePane.hidden = !ex || !!inspecting;
+      codePane.hidden = codeSplit.hidden = !ex || !!inspecting;
     }
-    var MIN_H = 240;
+    var MIN_H = 240, MIN_CODE = 120;
     function maxH() { return Math.max(MIN_H, Math.round(window.innerHeight * 0.88)); }
+    function clampH(px, min) { return Math.round(Math.max(min, Math.min(maxH(), px))); }
     function setHeight(px, save) {
       var before = viewport.clientHeight;
-      if (px === null) { viewport.style.height = ""; if (save) store("ec:map-h", null); }
-      else {
-        px = Math.round(Math.max(MIN_H, Math.min(maxH(), px)));
-        viewport.style.height = px + "px";
-        if (save) store("ec:map-h", px);
-      }
-      splitter.setAttribute("aria-valuenow", String(viewport.clientHeight || px || 0));
+      viewport.style.height = px === null ? "" : clampH(px, MIN_H) + "px";
+      if (save) store("ec:map-h", px === null ? null : viewport.clientHeight || clampH(px, MIN_H));
       // Same zoom, more or less of the stage around the centre: resizing never rescales the diagram.
       if (current && vb && before && viewport.clientHeight) {
         cancelAnimationFrame(anim);
@@ -1184,34 +1180,39 @@
         apply({ x: vb.x, y: vb.y + (vb.h - nh) / 2, w: vb.w, h: nh });
       } else relayout();
     }
-    var splitter = h("div", { class: "splitter", role: "separator", tabindex: "0", "aria-orientation": "horizontal",
-      "aria-label": T.resize, title: T.resize, "aria-valuemin": String(MIN_H) }, h("span", { class: "grip" }));
-    var resizing = null;
-    splitter.addEventListener("pointerdown", function (ev) {
-      if (ev.button) return;
-      ev.preventDefault();
-      resizing = { y: ev.clientY, h: viewport.clientHeight };
-      splitter.classList.add("dragging");
-      try { splitter.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-    });
-    splitter.addEventListener("pointermove", function (ev) {
-      if (!resizing) return;
-      setHeight(resizing.h + ev.clientY - resizing.y, false);
-    });
-    function endResize() {
-      if (!resizing) return;
-      resizing = null;
-      splitter.classList.remove("dragging");
-      store("ec:map-h", viewport.clientHeight);
+    function setCodeHeight(px, save) {
+      if (px === null) codePane.style.removeProperty("--code-h");
+      else codePane.style.setProperty("--code-h", clampH(px, MIN_CODE) + "px");
+      if (save) store("ec:code-h", px === null ? null : clampH(px, MIN_CODE));
     }
-    splitter.addEventListener("pointerup", endResize);
-    splitter.addEventListener("pointercancel", endResize);
-    splitter.addEventListener("dblclick", function () { setHeight(null, true); });
-    splitter.addEventListener("keydown", function (ev) {
-      var d = { ArrowUp: -40, ArrowDown: 40, PageUp: -160, PageDown: 160 }[ev.key];
-      if (ev.key === "Home") { ev.preventDefault(); setHeight(null, true); }
-      else if (d) { ev.preventDefault(); ev.stopPropagation(); setHeight(viewport.clientHeight + d, true); }
-    });
+    function codeHeight() { var ex = codePane.querySelector(".excerpt"); return ex ? ex.clientHeight : 0; }
+    // A drag handle: drag or arrow keys change a height, double-click or Home restores the default.
+    function splitter(cls, getH, setH) {
+      var el = h("div", { class: "splitter " + cls, role: "separator", tabindex: "0", "aria-orientation": "horizontal",
+        "aria-label": T.resize, title: T.resize }, h("span", { class: "grip" }));
+      var drag = null;
+      el.addEventListener("pointerdown", function (ev) {
+        if (ev.button) return;
+        ev.preventDefault();
+        drag = { y: ev.clientY, h: getH() };
+        el.classList.add("dragging");
+        try { el.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
+      });
+      el.addEventListener("pointermove", function (ev) { if (drag) setH(drag.h + ev.clientY - drag.y, false); });
+      function end() { if (drag) { drag = null; el.classList.remove("dragging"); setH(getH(), true); } }
+      el.addEventListener("pointerup", end);
+      el.addEventListener("pointercancel", end);
+      el.addEventListener("dblclick", function () { setH(null, true); });
+      el.addEventListener("keydown", function (ev) {
+        var d = { ArrowUp: -40, ArrowDown: 40, PageUp: -160, PageDown: 160 }[ev.key];
+        if (ev.key === "Home") { ev.preventDefault(); setH(null, true); }
+        else if (d) { ev.preventDefault(); ev.stopPropagation(); setH(getH() + d, true); }
+      });
+      return el;
+    }
+    var mapSplit = splitter("map-split", function () { return viewport.clientHeight; }, setHeight);
+    var codeSplit = splitter("code-split", codeHeight, setCodeHeight);
+    codeSplit.hidden = true;
 
     // ── inspector ──
     function inspect(key) {
@@ -1242,7 +1243,7 @@
         outE.length ? inspList(T.dependsOn, outE.map(edgeRow(function (e) { return e.to; }))) : null,
         inE.length ? inspList(T.usedBy, inE.map(edgeRow(function (e) { return e.from; }))) : null,
         reqs.length ? inspList(T.reqs, reqs.map(function (r) { return reqRow(r); })) : null]);
-      storyPane.hidden = true; codePane.hidden = true;
+      storyPane.hidden = true; codePane.hidden = codeSplit.hidden = true;
       inspector.hidden = false;
       var stageId = current.id === "spec" ? "spec" : current.id;
       var focusId = current.id === "spec" ? id : id;
@@ -1264,7 +1265,7 @@
         r.scenarios.length ? inspList(T.scenarios, r.scenarios.map(scenarioBlock)) : null,
         m && m.tests.length ? inspList(T.reqsTests, m.tests.map(function (t) { return h("div", { class: "insp-row" }, fileLink(t)); })) : null,
         h("div", { class: "insp-row" }, fileLink(r.file + ":" + r.line, r.file.split("/").slice(-3).join("/")))]);
-      storyPane.hidden = true; codePane.hidden = true;
+      storyPane.hidden = true; codePane.hidden = codeSplit.hidden = true;
       inspector.hidden = false;
       show("spec", [rid], true);
       inspecting = rid;
@@ -1287,7 +1288,7 @@
             h("a", { href: "#", text: (entById[other] || {}).name || other, onclick: function (ev) { ev.preventDefault(); inspectEntity(other); } }));
         })) : null,
         e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null]);
-      storyPane.hidden = true; codePane.hidden = true;
+      storyPane.hidden = true; codePane.hidden = codeSplit.hidden = true;
       inspector.hidden = false;
       show("data", [eid], true);
       inspecting = eid;
@@ -1326,12 +1327,12 @@
         h("div", { class: "faint" }, "openspec/" + c.id),
         body,
         art.length ? h("div", { class: "insp-list" }, art.map(function (a) { return h("div", { class: "insp-row" }, fileLink(a.path, a.path.split("/").slice(-3).join("/"))); })) : null]);
-      storyPane.hidden = true; codePane.hidden = true;
+      storyPane.hidden = true; codePane.hidden = codeSplit.hidden = true;
       inspector.hidden = false;
       show("spec", [key], true);
       inspecting = key;
     }
-    function closeInspector() { inspecting = null; inspector.hidden = true; storyPane.hidden = false; codePane.hidden = !codePane.firstChild; }
+    function closeInspector() { inspecting = null; inspector.hidden = true; storyPane.hidden = false; codePane.hidden = codeSplit.hidden = !codePane.firstChild; }
     function inspList(title, rows) { return h("div", { class: "insp-list" }, h("h4", { text: title }), rows); }
     function edgeRow(other) {
       return function (e) {
@@ -1355,9 +1356,10 @@
       h("div", { class: "map-bar" }, tabs, tools),
       h("div", { class: "map-body" },
         h("div", { class: "map-canvas" }, h("div", { class: "stage-wrap" }, viewport, viewTools), h("div", { class: "map-foot" }, legend, caption, h("span", { class: "hint faint", text: T.canvasHint }))),
-        splitter, codePane, side));
+        mapSplit, codePane, codeSplit, side));
     setMotion(motion);
     if (store("ec:map-h")) setHeight(store("ec:map-h"), false);
+    if (store("ec:code-h")) setCodeHeight(store("ec:code-h"), false);
 
     document.addEventListener("keydown", function (ev) {
       if (ev.target && /input|textarea|select/i.test(ev.target.tagName)) return;

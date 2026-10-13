@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- The code panel spans the full width of the map, under the story too, and is taller by default (up to 60% of the
+  window). A second handle below it sets its height, also remembered per browser.
+- Long code lines wrap, so the code only scrolls vertically; on small screens lines stay whole and scroll sideways.
+
 ## [0.1.1] - 2026-10-13
 
 Report layout: easier to read and to follow.
