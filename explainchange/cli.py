@@ -29,8 +29,8 @@ from .render import load_insight, write_render
 
 __all__ = [
     "load_context", "print_insight_status", "in_wsl", "open_report", "cmd_explain", "cmd_render", "cmd_validate",
-    "toml_str", "cmd_init", "OWNERSHIP_HINTS", "draft_config", "cmd_check", "INSTALL_MARKER", "SKILL_FILES", "install_skill", "install_cli",
-    "cmd_install", "cmd_update", "main", "run",
+    "toml_str", "cmd_init", "OWNERSHIP_HINTS", "draft_config", "cmd_check", "INSTALL_MARKER", "SKILL_FILES",
+    "install_skill", "install_cli", "cmd_install", "cmd_update", "main", "run",
 ]
 
 

@@ -19,7 +19,6 @@ if sys.version_info < (3, 11):
 import json  # noqa: E402
 import os  # noqa: E402
 import re  # noqa: E402
-import shutil  # noqa: E402
 import subprocess  # noqa: E402
 import tarfile  # noqa: E402
 import tempfile  # noqa: E402
