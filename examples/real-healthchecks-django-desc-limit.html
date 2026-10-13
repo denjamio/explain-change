@@ -314,7 +314,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .pipe-title { font-size: 13px; font-weight: 650; fill: var(--muted) !important; letter-spacing: .02em; }
 .pipe .box { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.3; }
 .pipe .name { font-size: 14px; font-weight: 650; }
-.pipe .info { font-size: 13px; fill: var(--muted) !important; }
 .pipe.ps-changed .box { fill: var(--accent-bg); stroke: var(--accent); }
 .pipe.ps-absent .box { fill: transparent; stroke-dasharray: 4 4; } .pipe.ps-absent .name { fill: var(--faint) !important; }
 .pipe.ps-removed .box { fill: var(--removed-bg); stroke: var(--removed); }
@@ -330,19 +329,16 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .req .tag { font-size: 11px; font-weight: 700; letter-spacing: .07em; fill: var(--muted) !important; }
 .req .name { font-size: 15px; font-weight: 650; }
 .req .info { font-size: 13px; fill: var(--muted) !important; }
-.req-status circle { fill: var(--surface-2); }
-.req-status text { font-size: 13px; font-weight: 800; }
-.rs-implemented .req-status circle { fill: var(--new-bg); } .rs-implemented .req-status text { fill: var(--new) !important; }
-.rs-partial .req-status circle { fill: var(--warn-bg); } .rs-partial .req-status text { fill: var(--warn) !important; }
-.rs-missing .box { stroke: var(--violation); } .rs-missing .req-status circle { fill: var(--violation-bg); } .rs-missing .req-status text { fill: var(--violation) !important; }
-.rs-pending .req-status text { fill: var(--faint) !important; }
+.rs-missing .box { stroke: var(--violation); }
+.req-state { font-weight: 800; } .rs-implemented .req-state { fill: var(--new) !important; } .rs-partial .req-state { fill: var(--warn) !important; }
+.rs-missing .req-state { fill: var(--violation) !important; }
+.test-chip { cursor: pointer; }
+.test-chip rect { fill: var(--surface); stroke: var(--accent); stroke-dasharray: 3 3; }
+.test-chip text { font-size: 12.5px; font-family: var(--mono); fill: var(--accent) !important; }
+.test-chip:hover rect { stroke-width: 2; }
 .link { fill: none; stroke: var(--border-strong); stroke-width: 1.8; }
 .link.ls-implemented { stroke: var(--new); } .link.ls-partial { stroke: var(--warn); } .link.ls-missing { stroke: var(--violation); stroke-dasharray: 5 4; }
-.link.test-link { stroke: var(--accent); stroke-dasharray: 3 4; }
 .node.mini .name { font-size: 14px; }
-.test-node { cursor: pointer; }
-.test-node .box { fill: var(--surface); stroke: var(--accent); stroke-dasharray: 3 3; }
-.test-node .name { font-size: 13px; font-family: var(--mono); fill: var(--accent) !important; }
 .pending-note { font-size: 13.5px; fill: var(--faint) !important; font-style: italic; }
 
 /* ── lists ── */
@@ -410,8 +406,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 /* ── spec stage ── */
 .col-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; fill: var(--faint) !important; }
 .pipe { cursor: pointer; outline: none; }
-.pipe .state { font-size: 11.5px; fill: var(--muted) !important; }
-.pipe .big { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pipe .state { font-size: 12.5px; fill: var(--muted) !important; }
 .pipe:hover .box, .pipe.on .box, .pipe:focus-visible .box { stroke-width: 2.2; }
 .pipe-id { font-family: var(--mono); fill: var(--text) !important; }
 .scn { cursor: pointer; }
@@ -1152,58 +1147,65 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   }
 
   function buildSpec(onNode) {
+    // One row per OpenSpec change (its pipeline), then requirements → components. Tests sit inside the requirement
+    // they cover; each fact is drawn once and the inspector holds the detail.
     var mapped = !!(ins && ins.spec && ins.spec.length);
-    var W = 1060, PH = pipelineHeight() + 24;
-    var TW = 200, RW = 440, CW = 230, GAPX = 64;
-    var cols = TW + GAPX + RW + GAPX + CW, ox = (W - cols) / 2;
-    var TX = ox, RX = ox + TW + GAPX, CX = RX + RW + GAPX;
-    var y0 = OS.changes.length * PH + 40;
-    // requirement cards (height depends on text and scenario chips)
+    var W = 880, PH = 92;
+    var RW = 520, CW = 240, GAPX = 120;
+    var RX = 0, CX = RX + RW + GAPX;
+    var y0 = OS.changes.length * PH + 36;
+    function testPath(t) { return t.replace(/:\d+(-\d+)?$/, ""); }
+    // requirement cards (height depends on text, scenario and test chips)
     var cards = [], y = y0, lastCap = null, capHeads = [];
     REQS.forEach(function (r) {
+      var m = specMap[r.id];
       var capKey = r.cap + (r.change ? "" : " · " + T.mainSpec);
       if (capKey !== lastCap) { capHeads.push({ y: y, text: capKey }); y += 28; lastCap = capKey; }
-      var lines = wrapText(r.text, 60, 2);
+      var lines = wrapText(r.text, 66, 2);
       var chips = [], cx = 0, row = 0;
+      function place(chip, w) {
+        if (cx && cx + w > RW - 32) { row++; cx = 0; }
+        chip.x = cx; chip.row = row; chip.w = w; chips.push(chip);
+        cx += w + 6;
+      }
       r.scenarios.forEach(function (sc) {
         var flow = ins ? ins.flows.filter(function (f) { return f.scenario === r.id + "#" + sc.id; })[0] : null;
-        var label = (flow ? "▶ " : "◇ ") + trunc(sc.name, 36), w = label.length * (flow ? 7.6 : 7) + 22;
-        if (cx && cx + w > RW - 32) { row++; cx = 0; }
-        chips.push({ sc: sc, flow: flow, label: label, x: cx, row: row, w: w });
-        cx += w + 6;
+        var label = (flow ? "▶ " : "◇ ") + trunc(sc.name, 36);
+        place({ sc: sc, flow: flow, label: label }, label.length * (flow ? 7.6 : 7) + 22);
+      });
+      var seen = {};
+      (m ? m.tests : []).forEach(function (t) {
+        var path = testPath(t);
+        if (seen[path]) return;
+        seen[path] = true;
+        var label = "⚗ " + trunc(path.split("/").pop(), 30);
+        place({ test: path, ref: t, label: label }, label.length * 7.4 + 22);
       });
       var hgt = 54 + lines.length * 17 + (chips.length ? (row + 1) * 27 + 6 : 0) + 8;
       cards.push({ r: r, y: y, h: hgt, lines: lines, chips: chips });
       y += hgt + 12;
     });
     var reqBottom = y;
-    // components and tests sit next to the requirements that use them
-    var compWant = {}, testWant = {};
+    // components sit next to the requirements that use them
+    var compWant = {};
     cards.forEach(function (c) {
       var m = specMap[c.r.id];
-      if (!m) return;
-      var mid = c.y + c.h / 2;
-      m.components.forEach(function (id) { (compWant[id] = compWant[id] || []).push(mid); });
-      m.tests.forEach(function (t) { var p = t.replace(/:\d+(-\d+)?$/, ""); (testWant[p] = testWant[p] || []).push(mid); });
+      if (m) m.components.forEach(function (id) { (compWant[id] = compWant[id] || []).push(c.y + c.h / 2); });
     });
     function avg(a) { return a.reduce(function (x, v) { return x + v; }, 0) / a.length; }
     var comps = placeColumn(Object.keys(compWant).map(function (k) { return { key: k, want: avg(compWant[k]), h: 52 }; }), y0, 12);
-    var tests = placeColumn(Object.keys(testWant).map(function (k) { return { key: k, want: avg(testWant[k]), h: 38 }; }), y0, 10);
-    var H = Math.max(reqBottom, comps.length ? comps[comps.length - 1].y + 64 : 0, tests.length ? tests[tests.length - 1].y + 50 : 0) + 8;
+    var H = Math.max(reqBottom, comps.length ? comps[comps.length - 1].y + 64 : 0) + 8;
     var S = newStage("spec", W, H);
     var svg = S.svg;
-    OS.changes.forEach(function (c, ci) { drawPipeline(svg, S, c, 0, ci * PH, W, PH - 24, onNode); });
-    // column titles
-    [[TX, T.tests], [RX, T.reqs], [CX, T.reqsComponents]].forEach(function (x) {
-      if (x[0] === TX && !tests.length) return;
+    OS.changes.forEach(function (c, ci) { drawPipeline(svg, S, c, 0, ci * PH, W, onNode); });
+    [[RX, T.reqs], [CX, T.reqsComponents]].forEach(function (x) {
       svg.appendChild(s("text", { x: x[0], y: y0 - 16, class: "col-label", text: x[1].toUpperCase() }));
     });
     capHeads.forEach(function (ch) { svg.appendChild(s("text", { x: RX, y: ch.y + 18, class: "cap-label", text: trunc(ch.text, 60) })); });
     var linkLayer = s("g", { class: "links" });
     svg.appendChild(linkLayer);
-    var cPos = {}, tPos = {};
+    var cPos = {};
     comps.forEach(function (c) { cPos[c.key] = { x: CX, y: c.y, w: CW, h: c.h }; });
-    tests.forEach(function (t) { tPos[t.key] = { x: TX, y: t.y, w: TW, h: t.h }; });
     S.links = [];
     function curve(x1, y1, x2, y2) { var mx = (x1 + x2) / 2; return "M" + r1(x1) + "," + r1(y1) + " C" + r1(mx) + "," + r1(y1) + " " + r1(mx) + "," + r1(y2) + " " + r1(x2) + "," + r1(y2); }
     cards.forEach(function (card) {
@@ -1211,28 +1213,34 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       var box = { x: RX, y: card.y, w: RW, h: card.h };
       S.geo["req:" + r.id] = box;
       var stt = m ? m.status : (mapped || r.op === "REMOVED" || r.op === "RENAMED" ? "none" : "pending");
-      var icon = { implemented: "✓", partial: "◐", missing: "✕", "n/a": "–", none: "", pending: "?" }[stt];
       var g = s("g", { class: "req op-" + r.op + " rs-" + stt.replace("/", ""), "data-k": "req:" + r.id, tabindex: "0", role: "button" },
         s("title", { text: r.name + (m && m.note ? "\n— " + m.note : "") }),
         s("rect", { x: box.x, y: box.y, width: box.w, height: box.h, rx: 12, class: "box" }),
         s("rect", { x: box.x, y: box.y + 10, width: 4, height: box.h - 20, rx: 2, class: "op-bar" }),
-        s("text", { x: box.x + 16, y: box.y + 20, class: "tag", text: (T["op" + r.op] || r.op).toUpperCase() + (r.merged ? " · " + T.merged : "") + (m ? "  ·  " + (T[m.status] || "").toUpperCase() : "") }),
-        s("text", { x: box.x + 16, y: box.y + 42, class: "name", text: trunc(r.name, 48) }));
+        s("text", { x: box.x + 16, y: box.y + 20, class: "tag" },
+          s("tspan", { text: (T["op" + r.op] || r.op).toUpperCase() + (r.merged ? " · " + T.merged : "") }),
+          m ? s("tspan", { class: "req-state", text: "  ·  " + (T[m.status] || "").toUpperCase() }) : null),
+        s("text", { x: box.x + 16, y: box.y + 42, class: "name", text: trunc(r.name, 56) }));
       textLines(g, box.x + 16, box.y + 62, card.lines, 17, "info");
       var chipTop = box.y + 54 + card.lines.length * 17 + 4;
       card.chips.forEach(function (ch) {
-        var cg = s("g", { class: "scn" + (ch.flow ? " has-flow" : ""), "data-k": "scn:" + r.id + "#" + ch.sc.id },
-          s("title", { text: ch.sc.name + "\n" + ch.sc.steps.map(function (x) { return x.k + " " + x.t; }).join("\n") }),
+        var key = ch.test ? "test:" + ch.test : "scn:" + r.id + "#" + ch.sc.id;
+        var cg = s("g", { class: ch.test ? "test-chip" : "scn" + (ch.flow ? " has-flow" : ""), "data-k": key },
+          s("title", { text: ch.test ? ch.ref : ch.sc.name + "\n" + ch.sc.steps.map(function (x) { return x.k + " " + x.t; }).join("\n") }),
           s("rect", { x: box.x + 16 + ch.x, y: chipTop + ch.row * 27, width: r1(ch.w), height: 22, rx: 11 }),
           s("text", { x: box.x + 27 + ch.x, y: chipTop + ch.row * 27 + 15.5, text: ch.label }));
-        cg.addEventListener("click", function (ev) {
-          ev.stopPropagation();
-          if (ch.flow) mapApi.showFlow(ch.flow.id); else mapApi.inspect("req:" + r.id);
-        });
+        if (ch.test) {
+          S.links.push(["req:" + r.id, key]);
+          cg.addEventListener("click", function (ev) { ev.stopPropagation(); });
+          onOpen(cg, ch.ref);
+        } else {
+          cg.addEventListener("click", function (ev) {
+            ev.stopPropagation();
+            if (ch.flow) mapApi.showFlow(ch.flow.id); else mapApi.inspect("req:" + r.id);
+          });
+        }
         g.appendChild(cg);
       });
-      if (icon) g.appendChild(s("g", { class: "req-status" }, s("circle", { cx: box.x + box.w - 22, cy: box.y + 22, r: 12 }),
-        s("text", { x: box.x + box.w - 22, y: box.y + 26.5, "text-anchor": "middle", text: icon })));
       if (onNode) onNode(g, "req:" + r.id);
       svg.appendChild(g);
       if (!m) return;
@@ -1241,30 +1249,16 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
         linkLayer.appendChild(s("path", { d: curve(box.x + box.w, box.y + 24, b.x, b.y + b.h / 2), class: "link ls-" + m.status.replace("/", ""), "data-a": "req:" + r.id, "data-b": "comp:" + c }));
         S.links.push(["req:" + r.id, "comp:" + c]);
       });
-      m.tests.forEach(function (t) {
-        var p = t.replace(/:\d+(-\d+)?$/, ""), b = tPos[p];
-        linkLayer.appendChild(s("path", { d: curve(box.x, box.y + 24, b.x + b.w, b.y + b.h / 2), class: "link test-link", "data-a": "req:" + r.id, "data-b": "test:" + p }));
-        S.links.push(["req:" + r.id, "test:" + p]);
-      });
     });
     comps.forEach(function (it) {
       var c = it.key, b = cPos[c], cc = changeComp[c], stt = cc ? cc.status : "context";
       S.geo["comp:" + c] = b;
       var g = s("g", { class: "node mini st-" + stt, "data-k": "comp:" + c, tabindex: "0", role: "button" },
         s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 11, class: "box" }),
-        s("text", { x: b.x + 12, y: b.y + 21, class: "name", text: trunc(compName(c), 25) }),
+        s("text", { x: b.x + 12, y: b.y + 21, class: "name", text: trunc(compName(c), 26) }),
         s("text", { x: b.x + 12, y: b.y + 38, class: "info", text: trunc(layerName(c), 20) + (stt !== "context" ? " · " + statusLabel(stt) : "") }));
       if (onNode) onNode(g, c);
       svg.appendChild(g);
-    });
-    tests.forEach(function (it) {
-      var t = it.key, b = tPos[t];
-      S.geo["test:" + t] = b;
-      var g = s("g", { class: "test-node", "data-k": "test:" + t },
-        s("title", { text: t }),
-        s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 9, class: "box" }),
-        s("text", { x: b.x + 12, y: b.y + 23.5, class: "name", text: trunc(t.split("/").pop(), 24) }));
-      svg.appendChild(onOpen(g, t));
     });
     if (!mapped && REQS.length) svg.appendChild(s("text", { x: CX, y: y0 + 18, class: "pending-note", text: trunc(T.pendingMap, 44) }));
     S.keyOf = function (id) { return /^(pipe|scn|req|comp|test):/.test(id) ? id : reqById[id] ? "req:" + id : "comp:" + id; };
@@ -1278,6 +1272,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     return S;
   }
 
+
   function artifactState(c, kind) {
     var list = c.artifacts.filter(function (a) { return a.kind === kind; });
     if (!list.length) return { cls: "absent", text: T.sAbsent };
@@ -1288,71 +1283,48 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   }
   function pipelineSteps(c) {
     var touched = ctx.components.filter(function (x) { return x.status !== "context"; });
-    var ops = {};
-    c.requirements.forEach(function (r) { ops[r.op] = (ops[r.op] || 0) + 1; });
-    var caps = {};
-    c.requirements.forEach(function (r) { caps[r.cap] = (caps[r.cap] || 0) + 1; });
-    var nScn = c.requirements.reduce(function (a, r) { return a + r.scenarios.length; }, 0);
     var tk = c.tasks;
     var add = 0, del = 0;
     touched.forEach(function (x) { add += x.add; del += x.del; });
     return [
-      { id: "proposal", title: T.proposal, state: artifactState(c, "proposal"), lines: wrapText(c.why || (c.what[0] || ""), 20, 5) },
-      { id: "spec", title: T.specs, state: artifactState(c, "spec"),
-        lines: Object.keys(caps).map(function (k) { return "▸ " + trunc(k, 11) + " · " + caps[k] + " req"; }).slice(0, 2)
-          .concat([["ADDED", "+"], ["MODIFIED", "~"], ["REMOVED", "−"], ["RENAMED", "→"]].filter(function (o) { return ops[o[0]]; })
-            .map(function (o) { return o[1] + ops[o[0]]; }).join("  "))
-          .concat(nScn ? [nScn + " " + T.scenarios.toLowerCase()] : []) },
-      { id: "design", title: T.designDoc, state: artifactState(c, "design"), lines: c.decisions.slice(0, 4).map(function (d) { return "• " + trunc(d, 19); }) },
-      { id: "tasks", title: T.tasks, state: artifactState(c, "tasks"), progress: tk ? [tk.done, tk.total] : null,
-        lines: tk ? tk.groups.slice(0, 3).map(function (g) { return (g.done === g.total ? "✓ " : "◐ ") + trunc(g.title, 13) + " " + g.done + "/" + g.total; }) : [] },
-      { id: "code", title: T.code, state: touched.length ? { cls: "changed", text: "+" + add + " −" + del } : { cls: "absent", text: "—" },
-        lines: touched.slice(0, 4).map(function (x) { return "▸ " + trunc(compName(x.id), 18); }).concat(touched.length > 4 ? ["+" + (touched.length - 4) + " …"] : []) },
-      { id: "archive", title: T.archive, state: c.archived ? { cls: c.moved_to_archive ? "changed" : "present", text: c.moved_to_archive ? T.phaseArchiving : T.phaseArchived } : { cls: "absent", text: T.pending },
-        lines: c.archived ? [] : wrapText(tk && tk.done < tk.total ? tf("openTasksN", { n: tk.total - tk.done }) : "", 20, 2) }
+      { id: "proposal", title: T.proposal, state: artifactState(c, "proposal") },
+      { id: "spec", title: T.specs, state: artifactState(c, "spec") },
+      { id: "design", title: T.designDoc, state: artifactState(c, "design") },
+      { id: "tasks", title: T.tasks, state: artifactState(c, "tasks"), progress: tk ? [tk.done, tk.total] : null },
+      { id: "code", title: T.code, state: touched.length ? { cls: "changed", text: "+" + add + " −" + del } : { cls: "absent", text: "—" } },
+      { id: "archive", title: T.archive, state: c.archived ? { cls: c.moved_to_archive ? "changed" : "present", text: c.moved_to_archive ? T.phaseArchiving : T.phaseArchived }
+        : { cls: "absent", text: tk && tk.done < tk.total ? tf("openTasksN", { n: tk.total - tk.done }) : T.pending } }
     ];
   }
-  // The pipeline boxes are as tall as the fullest box of any change, so no row is mostly empty.
-  var PIPE_LINES = 6, PIPE_STEP = 19;
-  function pipelineHeight() {
-    var most = 1;
-    OS.changes.forEach(function (c) {
-      pipelineSteps(c).forEach(function (stp) {
-        most = Math.max(most, (stp.progress ? 2 + Math.min(3, stp.lines.length) : Math.min(PIPE_LINES, stp.lines.length)));
-      });
-    });
-    return 46 + most * PIPE_STEP + 6;
-  }
-  function drawPipeline(svg, S, c, x0, y0, W, H, onNode) {
-    var steps = pipelineSteps(c), n = steps.length, GAP = 22, BW = (W - GAP * (n - 1)) / n;
+  function drawPipeline(svg, S, c, x0, y0, W, onNode) {
+    var steps = pipelineSteps(c), n = steps.length, GAP = 16, BW = (W - GAP * (n - 1)) / n, BH = 50;
     var phase = c.moved_to_archive ? T.phaseArchiving : c.archived ? T.phaseArchived : T.phaseActive;
     svg.appendChild(s("text", { x: x0, y: y0 + 13, class: "pipe-title" }, s("tspan", { class: "pipe-id", text: "openspec/" + c.id }), s("tspan", { text: "  ·  " + phase })));
     if (!svg.querySelector("#pipe-arrow")) {
-      svg.insertBefore(s("defs", null, s("marker", { id: "pipe-arrow", viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "9", markerHeight: "9", markerUnits: "userSpaceOnUse", orient: "auto" },
+      svg.insertBefore(s("defs", null, s("marker", { id: "pipe-arrow", viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "8", markerHeight: "8", markerUnits: "userSpaceOnUse", orient: "auto" },
         s("path", { d: "M0,0 L10,5 L0,10 z", class: "arrow arrow-pipe" }))), svg.firstChild);
     }
-    var top = y0 + 26;
+    var top = y0 + 24;
     steps.forEach(function (stp, i) {
       var x = x0 + i * (BW + GAP), key = "pipe:" + stp.id + ":" + c.id;
-      S.geo[key] = { x: x, y: top, w: BW, h: H };
-      var g = s("g", { class: "pipe ps-" + stp.state.cls, "data-k": key, tabindex: "0", role: "button" });
-      g.appendChild(s("rect", { x: x, y: top, width: BW, height: H, rx: 12, class: "box" }));
-      g.appendChild(s("text", { x: x + 14, y: top + 23, class: "name", text: stp.title }));
-      g.appendChild(s("text", { x: x + BW - 12, y: top + 23, "text-anchor": "end", class: "state", text: trunc(stp.state.text, 16) }));
-      var ly = top + 48;
-      if (stp.progress) {
-        var p = stp.progress, pw = BW - 28;
-        g.appendChild(s("text", { x: x + 14, y: ly + 4, class: "big", text: p[0] + "/" + p[1] }));
-        g.appendChild(s("rect", { x: x + 14, y: ly + 14, width: pw, height: 6, rx: 3, class: "prog-bg" }));
-        g.appendChild(s("rect", { x: x + 14, y: ly + 14, width: r1(p[1] ? pw * p[0] / p[1] : 0), height: 6, rx: 3, class: "prog" + (p[0] === p[1] ? " full" : "") }));
-        ly += 2 * PIPE_STEP + 4;
+      S.geo[key] = { x: x, y: top, w: BW, h: BH };
+      var g = s("g", { class: "pipe ps-" + stp.state.cls, "data-k": key, tabindex: "0", role: "button" },
+        s("title", { text: stp.title + " · " + stp.state.text }));
+      g.appendChild(s("rect", { x: x, y: top, width: BW, height: BH, rx: 10, class: "box" }));
+      g.appendChild(s("text", { x: x + 12, y: top + 21, class: "name", text: stp.title }));
+      var p = stp.progress;
+      g.appendChild(s("text", { x: x + 12, y: top + 39, class: "state", text: p ? p[0] + "/" + p[1] : trunc(stp.state.text, 18) }));
+      if (p) {
+        var px = x + 52, pw = BW - 64;
+        g.appendChild(s("rect", { x: px, y: top + 34, width: pw, height: 5, rx: 2.5, class: "prog-bg" }));
+        g.appendChild(s("rect", { x: px, y: top + 34, width: r1(p[1] ? pw * p[0] / p[1] : 0), height: 5, rx: 2.5, class: "prog" + (p[0] === p[1] ? " full" : "") }));
       }
-      textLines(g, x + 14, ly, stp.lines.slice(0, stp.progress ? 3 : PIPE_LINES), PIPE_STEP, "info");
-      if (i < n - 1) svg.appendChild(s("path", { d: "M" + r1(x + BW + 3) + "," + r1(top + H / 2) + " l" + (GAP - 8) + ",0", class: "pipe-arrow", "marker-end": "url(#pipe-arrow)" }));
+      if (i < n - 1) svg.appendChild(s("path", { d: "M" + r1(x + BW + 2) + "," + r1(top + BH / 2) + " l" + (GAP - 6) + ",0", class: "pipe-arrow", "marker-end": "url(#pipe-arrow)" }));
       if (onNode) onNode(g, key);
       svg.appendChild(g);
     });
   }
+
 
   // ═════════════════════════════ canvas + story ═════════════════════════════
   var STAGES = [{ id: "architecture", title: T.architecture }];

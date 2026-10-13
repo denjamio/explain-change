@@ -307,7 +307,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .pipe-title { font-size: 13px; font-weight: 650; fill: var(--muted) !important; letter-spacing: .02em; }
 .pipe .box { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.3; }
 .pipe .name { font-size: 14px; font-weight: 650; }
-.pipe .info { font-size: 13px; fill: var(--muted) !important; }
 .pipe.ps-changed .box { fill: var(--accent-bg); stroke: var(--accent); }
 .pipe.ps-absent .box { fill: transparent; stroke-dasharray: 4 4; } .pipe.ps-absent .name { fill: var(--faint) !important; }
 .pipe.ps-removed .box { fill: var(--removed-bg); stroke: var(--removed); }
@@ -323,19 +322,16 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .req .tag { font-size: 11px; font-weight: 700; letter-spacing: .07em; fill: var(--muted) !important; }
 .req .name { font-size: 15px; font-weight: 650; }
 .req .info { font-size: 13px; fill: var(--muted) !important; }
-.req-status circle { fill: var(--surface-2); }
-.req-status text { font-size: 13px; font-weight: 800; }
-.rs-implemented .req-status circle { fill: var(--new-bg); } .rs-implemented .req-status text { fill: var(--new) !important; }
-.rs-partial .req-status circle { fill: var(--warn-bg); } .rs-partial .req-status text { fill: var(--warn) !important; }
-.rs-missing .box { stroke: var(--violation); } .rs-missing .req-status circle { fill: var(--violation-bg); } .rs-missing .req-status text { fill: var(--violation) !important; }
-.rs-pending .req-status text { fill: var(--faint) !important; }
+.rs-missing .box { stroke: var(--violation); }
+.req-state { font-weight: 800; } .rs-implemented .req-state { fill: var(--new) !important; } .rs-partial .req-state { fill: var(--warn) !important; }
+.rs-missing .req-state { fill: var(--violation) !important; }
+.test-chip { cursor: pointer; }
+.test-chip rect { fill: var(--surface); stroke: var(--accent); stroke-dasharray: 3 3; }
+.test-chip text { font-size: 12.5px; font-family: var(--mono); fill: var(--accent) !important; }
+.test-chip:hover rect { stroke-width: 2; }
 .link { fill: none; stroke: var(--border-strong); stroke-width: 1.8; }
 .link.ls-implemented { stroke: var(--new); } .link.ls-partial { stroke: var(--warn); } .link.ls-missing { stroke: var(--violation); stroke-dasharray: 5 4; }
-.link.test-link { stroke: var(--accent); stroke-dasharray: 3 4; }
 .node.mini .name { font-size: 14px; }
-.test-node { cursor: pointer; }
-.test-node .box { fill: var(--surface); stroke: var(--accent); stroke-dasharray: 3 3; }
-.test-node .name { font-size: 13px; font-family: var(--mono); fill: var(--accent) !important; }
 .pending-note { font-size: 13.5px; fill: var(--faint) !important; font-style: italic; }
 
 /* ── lists ── */
@@ -403,8 +399,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 /* ── spec stage ── */
 .col-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; fill: var(--faint) !important; }
 .pipe { cursor: pointer; outline: none; }
-.pipe .state { font-size: 11.5px; fill: var(--muted) !important; }
-.pipe .big { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pipe .state { font-size: 12.5px; fill: var(--muted) !important; }
 .pipe:hover .box, .pipe.on .box, .pipe:focus-visible .box { stroke-width: 2.2; }
 .pipe-id { font-family: var(--mono); fill: var(--text) !important; }
 .scn { cursor: pointer; }
