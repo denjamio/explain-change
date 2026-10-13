@@ -76,7 +76,7 @@ def main() -> int:
     tag = os.environ.get("EXPLAIN_CHANGE_VERSION") or latest_tag()
     target = home_dir()
     target.parent.mkdir(parents=True, exist_ok=True)
-    print(f"explain-change {tag} → {target}")
+    print(f"explain-change {tag} → {target}", flush=True)
     with tempfile.TemporaryDirectory(dir=target.parent, prefix=".explain-change-") as tmp:
         new = download(tag, Path(tmp))
         (new / ".release").write_text(tag + "\n", encoding="utf-8")
