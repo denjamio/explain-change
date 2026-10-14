@@ -21,7 +21,7 @@ __all__ = [
 INSIGHT_LIMITS = {
     "tldr": 280, "intent": 200,
     "changes.summary": 140, "decisions": 5, "decisions.title": 80, "decisions.why": 200,
-    "decisions.alternative": 140, "flows": 3, "flows.title": 60, "flows.steps": 12, "flows.steps.msg": 50,
+    "decisions.alternative": 140, "flows": 3, "flows.title": 60, "flows.trigger": 60, "flows.steps": 12, "flows.steps.msg": 50,
     "hero": 2, "hero.label": 40, "story": 8, "story.heading": 60, "story.body": 160, "story.focus": 6,
     "spec": 80, "spec.components": 6, "spec.tests": 4, "spec.note": 160,
     "flows.steps.data.type": 40, "flows.steps.data.fields": 8, "flows.steps.data.fields.item": 60,
@@ -317,13 +317,15 @@ class InsightValidator:
         L = INSIGHT_LIMITS
         scenario_ids = {f"{r['id']}#{sc['id']}" for r in self.reqs for sc in r["scenarios"]}
         flow_steps: dict[str, list[dict]] = {}
+        titles: set[str] = set()
         for i, fl in self.objects("flows", value, L["flows"]):
             fid = str(fl.get("id", ""))
             if not KEBAB_RE.match(fid):
                 self.errs.append(f"flows[{i}].id: '{fid}' must be kebab-case")
             elif fid in flow_steps:
                 self.errs.append(f"flows[{i}].id: '{fid}' is used twice")
-            self.text(f"flows[{i}].title", fl.get("title"), L["flows.title"])
+            self.flow_title(f"flows[{i}].title", fl.get("title"), titles)
+            self.trigger(f"flows[{i}].trigger", fl.get("trigger"))
             if fl.get("scenario") is not None and fl.get("scenario") not in scenario_ids:
                 known = ", ".join(sorted(scenario_ids)[:12]) or "none"
                 self.errs.append(f"flows[{i}].scenario: '{fl.get('scenario')}' is not a scenario of this change "
@@ -338,6 +340,37 @@ class InsightValidator:
             for j, s in valid_steps:
                 self.flow_step(f"flows[{i}].steps[{j}]", s)
         return flow_steps
+
+    def flow_title(self, path: str, title, titles: set[str]):
+        """The tab's name: an action, distinct from the boxes on the map and from the other flows."""
+        before = len(self.errs)
+        self.text(path, title, INSIGHT_LIMITS["flows.title"])
+        if len(self.errs) > before or not isinstance(title, str):
+            return
+        key = title.strip().lower()
+        boxes = {c["id"].lower() for c in self.ctx["config"]["components"]}
+        boxes |= {(c.get("name") or "").lower() for c in self.ctx["config"]["components"]}
+        if key in boxes:
+            self.errs.append(f"{path}: '{title}' is a component's name; name the action that starts the flow")
+        elif key in titles:
+            self.errs.append(f"{path}: '{title}' is used by another flow; say what sets them apart")
+        elif title.rstrip().endswith("."):
+            self.errs.append(f"{path}: a title, not a sentence: drop the final '.'")
+        titles.add(key)
+
+    def trigger(self, path: str, value):
+        """The code that starts the flow, exactly as written: a handler, a job, a command or a route."""
+        if value is None:
+            return
+        if not isinstance(value, str) or not value.strip() or len(value) > INSIGHT_LIMITS["flows.trigger"]:
+            self.errs.append(f"{path}: the code that starts the flow, like 'OrdersController#create' or "
+                             f"'POST /orders' (max {INSIGHT_LIMITS['flows.trigger']} chars)")
+            return
+        verbs = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+        unknown = [w for w in re.findall(r"[A-Za-z_][\w?!]*", value)
+                   if w not in verbs and len(w) > 2 and not self.known(w)]
+        if unknown:
+            self.errs.append(f"{path}: {', '.join(unknown)} not found in the change; write the trigger as in the code")
 
     def flow_step(self, path: str, s: dict):
         L = INSIGHT_LIMITS

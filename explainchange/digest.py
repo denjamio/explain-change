@@ -6,11 +6,14 @@ import re
 from typing import NamedTuple
 
 from .constants import CONFIG_NAME, SCHEMA_VERSION, WORK_DIR
+from .deps import SYMBOL_RES
 from .openspec import spec_requirements, trunc_text
+from .util import lang_of
 from .insight import INSIGHT_ENUMS, INSIGHT_LIMITS, STORY_MIN, insight_components, prose_rules, touched_components
 
 __all__ = [
-    "DATA_PATH_RE", "data_files", "hunk_ref", "best_hunk", "hero_candidates", "story_outline", "insight_template",
+    "DATA_PATH_RE", "data_files", "hunk_ref", "best_hunk", "hero_candidates", "ENTRY_RES", "NOT_ENTRY_RE",
+    "IMPORT_LINE_RE", "CALL_RE", "enclosing", "flow_outline", "story_outline", "insight_template",
     "hunk_score", "format_hunk", "digest_overview", "digest_task", "ScoredHunk", "digest_hunks",
     "build_digest",
 ]
@@ -49,6 +52,106 @@ def hero_candidates(ctx: dict) -> list[dict]:
     return sorted(edges, key=lambda e: (-(e["head_count"] - e["base_count"]), e["from"], e["to"]))
 
 
+# Where a runtime path starts: a request handler, a background job or a command. First match wins.
+ENTRY_RES = [
+    ("request", re.compile(r"(?:^|/)(?:controllers|views|api|handlers|endpoints|resolvers|graphql)/|(?:^|/)views\.py$"
+                           r"|Controller\.\w+$")),
+    ("job", re.compile(r"(?:^|/)(?:jobs|workers|consumers|subscribers|listeners)/|(?:^|/)tasks\.py$")),
+    ("command", re.compile(r"(?:^|/)(?:management/commands|commands|lib/tasks|bin)/")),
+]
+NOT_ENTRY_RE = re.compile(r"\.(?:erb|haml|slim|html?|jinja2?|j2|hbs|mustache|liquid|txt|md)$")
+IMPORT_LINE_RE = re.compile(r"^\s*(?:import|from\s+\S+\s+import|require(?:_relative)?|using|export\s+.*\bfrom)\b")
+CALL_RE = re.compile(r"(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*(?:\.[a-z_]\w*[?!]?)?|\b[a-z_]\w*\.[a-z_]\w*[?!]?(?=\()")
+
+
+def enclosing(f: dict, line: int) -> tuple[str | None, str | None, str]:
+    """(class, method, text of the line) around a new-side line of a changed file, read from its hunk: the code
+    above it in the hunk, then git's function header."""
+    rules = SYMBOL_RES.get(lang_of(f["path"]) or "", [])
+    for h in f["hunks"]:
+        n, cls, fn = h["new_start"], None, None
+        for t, body in h["lines"]:
+            if t == "-":
+                continue
+            for kind, rx in rules:
+                m = rx.match(body)
+                if m:
+                    if (kind or m.group("k")) in ("class", "module", "interface", "record", "struct"):
+                        cls, fn = m.group("n"), None
+                    else:
+                        fn = m.group("n")
+                    break
+            if n == line:
+                for kind, rx in rules if not (cls or fn) else []:
+                    m = rx.match(h.get("header") or "")
+                    if m:
+                        fn = m.group("n")
+                return cls, fn, body
+            n += 1
+    return None, None, ""
+
+
+def flow_outline(ctx: dict) -> list[dict]:
+    """Runtime paths the change starts, read from the code: an entry point (request handler, job, command) whose
+    changed lines call another component, then the calls onward from each component reached. Each path names its
+    trigger and its steps with the call the code makes. Same change → same paths."""
+    L, files = INSIGHT_LIMITS, {f["path"]: f for f in ctx["files"] if f["hunks"] and f["category"] == "code"}
+    added: dict[str, dict[int, str]] = {}  # the lines this change adds, by file: only they can start or carry a path
+    for path, f in files.items():
+        for h in f["hunks"]:
+            n = h["new_start"]
+            for t, body in h["lines"]:
+                if t == "+" and not IMPORT_LINE_RE.match(body):
+                    added.setdefault(path, {})[n] = body
+                if t != "-":
+                    n += 1
+    calls: list[tuple] = []  # (from, to, edge status, file, line)
+    for e in ctx["edges"]:
+        if e["status"] == "removed":
+            continue
+        for r in e["refs"]:
+            path, _, line = r.rpartition(":")
+            if line.isdigit() and int(line) in added.get(path, {}):
+                calls.append((e["from"], e["to"], e["status"], path, int(line)))
+    calls.sort(key=lambda c: (c[3], c[4], c[1]))
+
+    def kind_of(path):
+        if NOT_ENTRY_RE.search(path):
+            return None
+        return next((i for i, (_, rx) in enumerate(ENTRY_RES) if rx.search(path)), None)
+
+    def step(c):
+        _, _, text = enclosing(files[c[3]], c[4])
+        m = CALL_RE.search(text.strip())
+        return {"from": c[0], "to": c[1], "msg": m.group(0) if m else f"<≤{L['flows.steps.msg']}: the call>",
+                "status": "new" if c[2] == "new" else "changed"}
+
+    out, covered = [], set()
+    for c in sorted(calls, key=lambda c: (kind_of(c[3]) if kind_of(c[3]) is not None else 9, c[3], c[4])):
+        if kind_of(c[3]) is None or (c[0], c[1]) in covered or len(out) == L["flows"]:
+            continue
+        cls, fn, _ = enclosing(files[c[3]], c[4])
+        sep = "#" if lang_of(c[3]) == "rb" else "."
+        trigger = (f"{cls}{sep}{fn}" if cls and fn else fn or cls
+                   or c[3].rsplit("/", 1)[-1].split(".")[0])[:L["flows.trigger"]]
+        same = [x for x in calls if x[3] == c[3] and enclosing(files[x[3]], x[4])[:2] == (cls, fn)]
+        steps, seen, queue = [], set(), [x for x in same if x[0] == c[0]]
+        while queue and len(steps) < 6:
+            x = queue.pop(0)
+            if (x[0], x[1]) in seen:
+                continue
+            seen.add((x[0], x[1]))
+            steps.append(step(x))
+            queue += [y for y in calls if y[0] == x[1] and y[1] != c[0] and (y[0], y[1]) not in seen]
+        covered |= seen
+        fid = re.sub(r"[^a-z0-9]+", "-", re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", trigger).lower()).strip("-")[:40]
+        fid = fid or "flow"
+        if any(fl["id"] == fid for fl in out):
+            fid = f"{fid}-{len(out) + 1}"
+        out.append({"id": fid, "trigger": trigger, "steps": steps})
+    return out
+
+
 def story_outline(ctx: dict) -> list[dict]:
     """The story's skeleton from the facts: what each step is about, its stage, focus and code. The agent writes the
     words and keeps this order unless the hunks show another headline. Same change → same outline."""
@@ -71,6 +174,10 @@ def story_outline(ctx: dict) -> list[dict]:
     for c in changed[:max(0, 4 - len(steps))]:
         steps.append({"about": f"{c['id']} changed", "stage": "architecture", "focus": [c["id"]],
                       "code": best_hunk(ctx, files_of.get(c["id"], []))})
+    flows = flow_outline(ctx) if len(ctx["components"]) >= 2 else []
+    if flows:
+        steps.append({"about": f"what happens when {flows[0]['trigger']} runs", "stage": f"flow:{flows[0]['id']}",
+                      "focus": [], "code": None})
     if data_files(ctx):
         steps.append({"about": "the data model", "stage": "data", "focus": ["<entity-id>"],
                       "code": best_hunk(ctx, data_files(ctx)[:1])})
@@ -105,14 +212,19 @@ def insight_template(ctx: dict) -> str:
         shown = {c["id"] for c in ctx["components"]}
         ref = next((fl for fl in cfg["flows"]
                     if any(s["from"] in shown or s["to"] in shown for s in fl["steps"])), None)
+        title = f"<≤{L['flows.title']}: the action, verb + object>"
+        flows = [{"id": fl["id"], "title": title, "trigger": fl["trigger"], "steps": fl["steps"]}
+                 for fl in flow_outline(ctx)]
         if ref:
-            steps = [{"from": s["from"], "to": s["to"], "msg": s["msg"], "status": "same"} for s in ref["steps"]]
-        else:
-            steps = [{"from": "<id>", "to": "<id>", "msg": f"<≤{L['flows.steps.msg']}>",
-                      "status": "|".join(E["flows.steps.status"]),
-                      "data": {"type": "Order", "fields": ["+email: string"]}}]
-        out["flows"] = [{"id": ref["id"] if ref else "<kebab-id>",
-                         "title": ref.get("title") or ref["id"] if ref else f"<≤{L['flows.title']}>", "steps": steps}]
+            flows.insert(0, {"id": ref["id"], "title": ref.get("title") or ref["id"],
+                             "steps": [{"from": s["from"], "to": s["to"], "msg": s["msg"], "status": "same"}
+                                       for s in ref["steps"]]})
+        if not flows:
+            flows = [{"id": "<kebab-id>", "title": title, "trigger": f"<≤{L['flows.trigger']}: the code that starts it>",
+                      "steps": [{"from": "<id>", "to": "<id>", "msg": f"<≤{L['flows.steps.msg']}: the call>",
+                                 "status": "|".join(E["flows.steps.status"]),
+                                 "data": {"type": "Order", "fields": ["+email: string"]}}]}]
+        out["flows"] = flows[:L["flows"]]
         if reqs:
             out["flows"][0]["scenario"] = "<requirement-id>#<scenario-id>, optional"
     dfs = data_files(ctx)
@@ -302,8 +414,11 @@ def digest_task(ctx: dict) -> str:
     if has_flows:
         task.append(f"- flows (0-{L['flows']}): runtime paths through the changed components, steps in call order. "
                     "title: the action that starts it, verb first with its object, as precise as the code "
-                    "(\"Create a partial refund\"), without the word flow. "
-                    "step status: same = existed unchanged | changed = existed, different data/behavior | new | "
+                    "(\"Create a partial refund\"), without the word flow; it names the map tab. trigger: the code "
+                    "that starts it, as written (`RefundsController#create`, `POST /refunds`). msg: the call as the "
+                    "code makes it (`Refund.create!`) or a short verb phrase. The paths in the template come from the "
+                    "entry points of the change: keep their trigger and steps, fix a step that misreads the code, "
+                    "drop a path that says nothing. step status: same = existed unchanged | changed = existed, different data/behavior | new | "
                     "removed. A step with no dependency in the code is drawn as unverified (?). data (optional): the "
                     "type a reader of the code knows and only the fields that matter (+ added, - removed, ~ changed), "
                     "on steps whose data changed."

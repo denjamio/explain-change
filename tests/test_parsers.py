@@ -458,6 +458,24 @@ class InsightValidationTests(unittest.TestCase):
                                 "as in the code, or in plain words"])  # alternative and data.type are not checked
 
 
+    def test_flow_titles_name_an_action_and_triggers_exist(self):
+        ctx = {**self.CTX, "files": [{**self.CTX["files"][0], "hunks": [{**self.CTX["files"][0]["hunks"][0],
+                                                                        "lines": [["+", "  def refund_order"]]}]}]}
+        step = {"from": "a", "to": "b", "msg": "m", "status": "new"}
+        ok = self.valid(flows=[{"id": "f", "title": "Refund an order", "trigger": "POST refund_order",
+                                "steps": [step]}])
+        self.assertEqual(ec.validate_insight(ok, ctx), [])
+        name = ctx["config"]["components"][0]["id"]
+        bad = self.valid(flows=[{"id": "f", "title": name, "steps": [step]},
+                                {"id": "g", "title": "Refund it.", "trigger": "GhostController#create", "steps": [step]},
+                                {"id": "h", "title": "Refund it.", "steps": [step]}])
+        errs = ec.validate_insight(bad, ctx)
+        self.assertTrue(any(e.startswith("flows[0].title:") and "component's name" in e for e in errs), errs)
+        self.assertTrue(any(e.startswith("flows[1].title:") and "final '.'" in e for e in errs), errs)
+        self.assertTrue(any(e.startswith("flows[1].trigger: GhostController") for e in errs), errs)
+        self.assertTrue(any(e.startswith("flows[2].title:") and "another flow" in e for e in errs), errs)
+
+
 class OpenSpecParserTests(unittest.TestCase):
     SPEC = """## ADDED Requirements
 ### Requirement: Order confirmation email

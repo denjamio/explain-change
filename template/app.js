@@ -24,7 +24,7 @@
       refs: "refs", unresolved: "references not resolved", unmapped: "changed files outside the map",
       archEmpty: "No configured component is touched by this change.",
 
-      vsReference: "Compared with the reference flow", extraSteps: "new steps", missingSteps: "steps missing", matchesReference: "matches the reference flow",
+      startsAt: "Starts at", vsReference: "Compared with the reference flow", extraSteps: "new steps", missingSteps: "steps missing", matchesReference: "matches the reference flow",
 
       tests: "Tests",
       theme: "Theme", themeAuto: "auto", themeLight: "light", themeDark: "dark",
@@ -77,7 +77,7 @@
       refs: "refs", unresolved: "referencias sin resolver", unmapped: "archivos cambiados fuera del mapa",
       archEmpty: "Este cambio no toca ningún componente configurado.",
 
-      vsReference: "Frente al flujo de referencia", extraSteps: "pasos nuevos", missingSteps: "pasos que faltan", matchesReference: "coincide con el flujo de referencia",
+      startsAt: "Empieza en", vsReference: "Frente al flujo de referencia", extraSteps: "pasos nuevos", missingSteps: "pasos que faltan", matchesReference: "coincide con el flujo de referencia",
 
       tests: "Tests",
       theme: "Tema", themeAuto: "auto", themeLight: "claro", themeDark: "oscuro",
@@ -793,7 +793,8 @@
       tabs.appendChild(h("button", { role: "tab", class: "stage-tab" + (stg.flow ? " flow" : ""), "data-stage": stg.id,
         "aria-label": stg.title + (n ? " · " + tf("stageSteps", { n: n }) : ""),
         onmouseenter: function () {
-          if (label.scrollWidth > label.clientWidth) this.title = stg.title; else this.removeAttribute("title");
+          var tip = (label.scrollWidth > label.clientWidth ? [stg.title] : []).concat(stg.flow && stg.flow.trigger ? [stg.flow.trigger] : []);
+          if (tip.length) this.title = tip.join("\n"); else this.removeAttribute("title");
         },
         onclick: function () {
           closeInspector();
@@ -1177,6 +1178,7 @@
 
   function flowNotes(fl) {
     var out = [];
+    if (fl.trigger) out.push(h("span", { class: "flow-trigger" }, h("b", { text: T.startsAt + " " }), h("code", { text: fl.trigger })));
     var ref = cfg.flows.filter(function (f) { return f.id === fl.id; })[0];
     if (fl.scenario) {
       var parts = fl.scenario.split("#"), r = reqById[parts[0]];

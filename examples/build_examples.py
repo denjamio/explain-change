@@ -256,7 +256,7 @@ end
             "relations": [{"from": "order", "to": "refund", "label": "1 → 0..n", "change": "added"}]},
         "changes": [{"id": "controllers", "summary": "Nueva ruta POST /refunds; el controlador exige Idempotency-Key y delega."}, {"id": "refunds", "summary": "Nuevo caso de uso: deduplica por clave, registra el reembolso, llama a la pasarela y avisa."}, {"id": "models", "summary": "Nuevo modelo Refund; Order calcula el importe reembolsable y crea reembolsos."}, {"id": "payments", "summary": "La pasarela expone refund() propagando la clave de idempotencia."}, {"id": "mailers", "summary": "Nuevo email de confirmación de reembolso."}],
         "decisions": [{"title": "Idempotencia por cabecera Idempotency-Key", "why": "El cliente controla los reintentos y la misma clave llega a la pasarela.", "alternative": "Deduplicar por (pedido, importe) en una ventana de tiempo.", "evidence": "app/controllers/refunds_controller.rb:6"}, {"title": "La regla de importe vive en Order", "why": "Order conoce su total y sus reembolsos; el servicio solo coordina las llamadas.", "evidence": "app/models/order.rb:6"}, {"title": "Email en segundo plano", "why": "deliver_later no bloquea la respuesta ni falla el reembolso si el SMTP cae.", "evidence": "app/services/refunds/create.rb:11"}],
-        "flows": [{"id": "create-refund", "title": "Crear reembolso", "steps": [
+        "flows": [{"id": "create-refund", "title": "Crear reembolso", "trigger": "RefundsController#create", "steps": [
             {"from": "controllers", "to": "refunds", "msg": "Refunds::Create.call", "status": "new", "data": {"type": "RefundParams", "fields": ["+order_id", "+amount", "+idempotency_key"]}},
             {"from": "refunds", "to": "models", "msg": "Refund.find_by(key)", "status": "new"},
             {"from": "refunds", "to": "models", "msg": "order.refund!(amount)", "status": "new", "data": {"type": "Refund", "fields": ["+amount: decimal", "+idempotency_key: string"]}},
@@ -590,7 +590,7 @@ El sistema SHALL crear un pedido con total positivo y un email válido del clien
                     {"id": "notifications", "summary": "Nueva app con send_order_confirmation sobre send_mail."}],
         "decisions": [{"title": "Enviar el email dentro de la transacción", "why": "Es lo más simple: no queda un pedido guardado sin aviso.", "alternative": "transaction.on_commit con una tarea en cola y reintentos.", "evidence": "orders/services.py:10"},
                       {"title": "send_mail directo, sin interfaz propia", "why": "Django ya abstrae el backend de email.", "alternative": "Una interfaz Notifier en orders que notifications implementa.", "evidence": "notifications/email.py:7"}],
-        "flows": [{"id": "create-order", "title": "Crear pedido", "scenario": "orders/email-de-confirmacion#pedido-creado", "steps": [
+        "flows": [{"id": "create-order", "title": "Crear pedido", "trigger": "orders.views.create", "scenario": "orders/email-de-confirmacion#pedido-creado", "steps": [
             {"from": "orders-api", "to": "orders-svc", "msg": "create_order(total, email)", "status": "changed", "data": {"type": "POST /orders/", "fields": ["total: Decimal", "+email: string"]}},
             {"from": "orders-svc", "to": "orders-model", "msg": "Order.place (valida email)", "status": "changed"},
             {"from": "orders-svc", "to": "notifications", "msg": "send_order_confirmation", "status": "new", "data": {"type": "Order", "fields": ["id", "+email"]}}]}],

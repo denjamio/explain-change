@@ -586,8 +586,14 @@ class ConfigAndDigestTests(unittest.TestCase):
         self.assertEqual(json.loads(ec.insight_template(repo.collect())), tpl)  # same change, same outline
         self.assertEqual(tpl["story"][-1]["focus"], [])  # the overview closes the story
         self.assertEqual(tpl["hero"][0], {**tpl["hero"][0], "from": "controllers", "to": "models"})
+        # the path starts at the action whose new line calls another component, and names the call
+        self.assertEqual(tpl["flows"][0]["trigger"], "OrdersController#show")
+        self.assertEqual(tpl["flows"][0]["steps"], [{"from": "controllers", "to": "models", "msg": "Order.new",
+                                                     "status": "new"}])
+        self.assertIn("flow:orders-controller-show", [st["stage"] for st in tpl["story"]])
         ins = {"key": ctx["key"], "tldr": "t", "intent": "i",
                "changes": [{"id": c["id"], "summary": "s"} for c in tpl["changes"]],
+               "flows": [{**tpl["flows"][0], "title": "Show an order"}],
                "story": [{**st, "heading": "h", "body": "b"} for st in tpl["story"] if "<entity-id>" not in st["focus"]]}
         self.assertEqual(ec.validate_insight(ins, ctx, repo.path), [])
         task = ec.digest_task(ctx)

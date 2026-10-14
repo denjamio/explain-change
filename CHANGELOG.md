@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- The digest outlines the runtime paths of the change from its entry points: a request handler, job or command whose
+  added lines call another component, then the calls onward. Each path comes with its trigger
+  (`OrdersController#create`) and its steps with the call the code makes (`Order.new`). The story visits the first
+  one. Same change, same paths.
+- A flow can name its `trigger`: the code that starts it, shown under the diagram ("Starts at") and in the tab's
+  tooltip. Its names must exist in the change or the repository.
+
+### Changed
+- A flow title must not be a component's name, repeat another flow's title or end in a period.
+- The digest asks for step messages as the call the code makes, or a short verb phrase.
+
 ## [0.1.7] - 2026-10-14
 
 Map tabs show the whole flow title.
