@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.7] - 2026-10-14
+
+Map tabs show the whole flow title.
 
 ### Changed
 - Map tabs show the whole title: no cut at 34 characters. Only a flow tab shrinks, and only when the bar has no
