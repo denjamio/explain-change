@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- The map tabs are grouped by kind of view: Architecture │ Flows ▸ one tab per flow │ Data model ("Data" was
+  ambiguous next to the flows). Each tab counts the story steps told on it, and its tooltip shows the full title.
+- The digest asks for flow titles that name the action that starts the flow, verb first, without the word "flow".
+
 ## [0.1.5] - 2026-10-14
 
 The digest outlines the story from the facts, the validator checks the prose harder, and the report ends with

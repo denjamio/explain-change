@@ -48,7 +48,7 @@
       scenario: "Scenario", showFlow: "Show flow", kGIVEN: "Given", kWHEN: "When", kTHEN: "Then", but: "but",
       status: "Status", seeReqs: "See the requirements", showOnMap: "Show on the map",
       pendingMap: "Requirements not linked to code yet.", mainSpec: "main spec", merged: "merged",
-      dataStage: "Data", migrations: "Migrations", fields: "Fields", relations: "Relations", evidence: "Evidence",
+      dataStage: "Data model", flowsGroup: "Flows", flowGroup: "Flow", stageSteps: "{n} story step(s) here", migrations: "Migrations", fields: "Fields", relations: "Relations", evidence: "Evidence",
 
 
 
@@ -101,7 +101,7 @@
       scenario: "Escenario", showFlow: "Ver flujo", kGIVEN: "Dado", kWHEN: "Cuando", kTHEN: "Entonces", but: "pero",
       status: "Estado", seeReqs: "Ver los requisitos", showOnMap: "Ver en el mapa",
       pendingMap: "Requisitos aún sin enlazar al código.", mainSpec: "spec principal", merged: "fusionado",
-      dataStage: "Datos", migrations: "Migraciones", fields: "Campos", relations: "Relaciones", evidence: "Evidencia",
+      dataStage: "Modelo de datos", flowsGroup: "Flujos", flowGroup: "Flujo", stageSteps: "{n} paso(s) de la historia aquí", migrations: "Migraciones", fields: "Campos", relations: "Relaciones", evidence: "Evidencia",
 
 
 
@@ -781,11 +781,22 @@
       h("button", { class: "icon-btn wide", title: T.fit, text: T.fit, onclick: function () { fly(fullBox(), true); } }),
       h("button", { class: "icon-btn", title: T.zoomIn, text: "+", onclick: function () { zoom(0.8); } }),
       motionBtn);
+    // Tabs grouped by kind of view: structure │ Flows ▸ one tab per flow │ data. Each tab counts the story steps
+    // told on it, so the reader sees where the change is told and which views are context.
+    var nFlows = STAGES.filter(function (s) { return s.flow; }).length, lastKind = null;
     STAGES.forEach(function (stg) {
-      tabs.appendChild(h("button", { role: "tab", class: "stage-tab", "data-stage": stg.id, text: trunc(stg.title, 34), onclick: function () {
+      var kind = stg.flow ? "flow" : stg.id;
+      if (lastKind && kind !== lastKind) tabs.appendChild(h("span", { class: "stage-sep", "aria-hidden": "true" }));
+      if (kind === "flow" && lastKind !== "flow") {
+        tabs.appendChild(h("span", { class: "stage-group", text: (nFlows > 1 ? T.flowsGroup : T.flowGroup) + " ▸" }));
+      }
+      lastKind = kind;
+      var n = STORY.filter(function (s) { return s.stage === stg.id; }).length;
+      var title = stg.title + (n ? " · " + tf("stageSteps", { n: n }) : "");
+      tabs.appendChild(h("button", { role: "tab", class: "stage-tab", "data-stage": stg.id, title: title, "aria-label": title, onclick: function () {
         closeInspector();
         show(stg.id, [], true);
-      } }));
+      } }, trunc(stg.title, 34), n ? h("span", { class: "stage-n", text: String(n) }) : null));
     });
     var caption = h("div", { class: "stage-caption" });
     var legend = h("div", { class: "diagram-legend" });
