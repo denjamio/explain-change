@@ -4,7 +4,10 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.5] - 2026-10-14
+
+The digest outlines the story from the facts, the validator checks the prose harder, and the report ends with
+the changes by component.
 
 ### Added
 - A "Changes by component" section closes the report: one row per changed component with its status, layer, the
