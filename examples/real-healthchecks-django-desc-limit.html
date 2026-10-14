@@ -156,13 +156,14 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 /* ── map: canvas + story ── */
 .map { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; scroll-margin-top: 60px; }
 .map-bar { display: flex; gap: var(--s3); align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.stage-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
-.stage-tab { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+.stage-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1 1 auto; }
+.stage-tab { display: inline-flex; align-items: center; flex: none; border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+.stage-tab.flow { flex: 0 1 auto; min-width: 128px; }
+.stage-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .stage-tab:hover { background: var(--surface-2); color: var(--text); }
 .stage-tab.on { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
-.stage-n { display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--surface-2); color: var(--muted); font-size: 11.5px; font-weight: 600; line-height: 18px; text-align: center; }
+.stage-n { flex: none; display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--surface-2); color: var(--muted); font-size: 11.5px; font-weight: 600; line-height: 18px; text-align: center; }
 .stage-tab.on .stage-n { background: var(--accent); color: var(--surface); }
-.stage-group { align-self: center; padding: 0 4px 0 6px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; }
 .stage-sep { flex: none; align-self: center; width: 1px; height: 18px; margin: 0 6px; background: var(--border); }
 .canvas-tools { display: flex; gap: 6px; align-items: center; margin-left: auto; }
 .map-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto;
@@ -628,7 +629,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       scenario: "Scenario", showFlow: "Show flow", kGIVEN: "Given", kWHEN: "When", kTHEN: "Then", but: "but",
       status: "Status", seeReqs: "See the requirements", showOnMap: "Show on the map",
       pendingMap: "Requirements not linked to code yet.", mainSpec: "main spec", merged: "merged",
-      dataStage: "Data model", flowsGroup: "Flows", flowGroup: "Flow", stageSteps: "{n} story step(s) here", migrations: "Migrations", fields: "Fields", relations: "Relations", evidence: "Evidence",
+      dataStage: "Data model", stageSteps: "{n} story step(s) here", migrations: "Migrations", fields: "Fields", relations: "Relations", evidence: "Evidence",
 
 
 
@@ -681,7 +682,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       scenario: "Escenario", showFlow: "Ver flujo", kGIVEN: "Dado", kWHEN: "Cuando", kTHEN: "Entonces", but: "pero",
       status: "Estado", seeReqs: "Ver los requisitos", showOnMap: "Ver en el mapa",
       pendingMap: "Requisitos aún sin enlazar al código.", mainSpec: "spec principal", merged: "fusionado",
-      dataStage: "Modelo de datos", flowsGroup: "Flujos", flowGroup: "Flujo", stageSteps: "{n} paso(s) de la historia aquí", migrations: "Migraciones", fields: "Campos", relations: "Relaciones", evidence: "Evidencia",
+      dataStage: "Modelo de datos", stageSteps: "{n} paso(s) de la historia aquí", migrations: "Migraciones", fields: "Campos", relations: "Relaciones", evidence: "Evidencia",
 
 
 
@@ -1361,22 +1362,24 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       h("button", { class: "icon-btn wide", title: T.fit, text: T.fit, onclick: function () { fly(fullBox(), true); } }),
       h("button", { class: "icon-btn", title: T.zoomIn, text: "+", onclick: function () { zoom(0.8); } }),
       motionBtn);
-    // Tabs grouped by kind of view: structure │ Flows ▸ one tab per flow │ data. Each tab counts the story steps
-    // told on it, so the reader sees where the change is told and which views are context.
-    var nFlows = STAGES.filter(function (s) { return s.flow; }).length, lastKind = null;
+    // One tab per view: architecture │ flows │ data, with the story steps told on each. A title is never cut while it
+    // fits; when the bar runs out of room it ends in "…" and the tooltip shows it whole.
+    var lastKind = null;
     STAGES.forEach(function (stg) {
       var kind = stg.flow ? "flow" : stg.id;
       if (lastKind && kind !== lastKind) tabs.appendChild(h("span", { class: "stage-sep", "aria-hidden": "true" }));
-      if (kind === "flow" && lastKind !== "flow") {
-        tabs.appendChild(h("span", { class: "stage-group", text: (nFlows > 1 ? T.flowsGroup : T.flowGroup) + " ▸" }));
-      }
       lastKind = kind;
       var n = STORY.filter(function (s) { return s.stage === stg.id; }).length;
-      var title = stg.title + (n ? " · " + tf("stageSteps", { n: n }) : "");
-      tabs.appendChild(h("button", { role: "tab", class: "stage-tab", "data-stage": stg.id, title: title, "aria-label": title, onclick: function () {
-        closeInspector();
-        show(stg.id, [], true);
-      } }, trunc(stg.title, 34), n ? h("span", { class: "stage-n", text: String(n) }) : null));
+      var label = h("span", { class: "stage-label", text: stg.title });
+      tabs.appendChild(h("button", { role: "tab", class: "stage-tab" + (stg.flow ? " flow" : ""), "data-stage": stg.id,
+        "aria-label": stg.title + (n ? " · " + tf("stageSteps", { n: n }) : ""),
+        onmouseenter: function () {
+          if (label.scrollWidth > label.clientWidth) this.title = stg.title; else this.removeAttribute("title");
+        },
+        onclick: function () {
+          closeInspector();
+          show(stg.id, [], true);
+        } }, label, n ? h("span", { class: "stage-n", title: tf("stageSteps", { n: n }), text: String(n) }) : null));
     });
     var caption = h("div", { class: "stage-caption" });
     var legend = h("div", { class: "diagram-legend" });

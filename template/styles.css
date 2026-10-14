@@ -149,13 +149,14 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 /* ── map: canvas + story ── */
 .map { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; scroll-margin-top: 60px; }
 .map-bar { display: flex; gap: var(--s3); align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.stage-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
-.stage-tab { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+.stage-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1 1 auto; }
+.stage-tab { display: inline-flex; align-items: center; flex: none; border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+.stage-tab.flow { flex: 0 1 auto; min-width: 128px; }
+.stage-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .stage-tab:hover { background: var(--surface-2); color: var(--text); }
 .stage-tab.on { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
-.stage-n { display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--surface-2); color: var(--muted); font-size: 11.5px; font-weight: 600; line-height: 18px; text-align: center; }
+.stage-n { flex: none; display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--surface-2); color: var(--muted); font-size: 11.5px; font-weight: 600; line-height: 18px; text-align: center; }
 .stage-tab.on .stage-n { background: var(--accent); color: var(--surface); }
-.stage-group { align-self: center; padding: 0 4px 0 6px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; }
 .stage-sep { flex: none; align-self: center; width: 1px; height: 18px; margin: 0 6px; background: var(--border); }
 .canvas-tools { display: flex; gap: 6px; align-items: center; margin-left: auto; }
 .map-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto;

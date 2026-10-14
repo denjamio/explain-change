@@ -301,7 +301,8 @@ def digest_task(ctx: dict) -> str:
             "what was chosen, why, and the main alternative."]
     if has_flows:
         task.append(f"- flows (0-{L['flows']}): runtime paths through the changed components, steps in call order. "
-                    "title: the action that starts it, verb first (\"Create a refund\"), without the word flow. "
+                    "title: the action that starts it, verb first with its object, as precise as the code "
+                    "(\"Create a partial refund\"), without the word flow. "
                     "step status: same = existed unchanged | changed = existed, different data/behavior | new | "
                     "removed. A step with no dependency in the code is drawn as unverified (?). data (optional): the "
                     "type a reader of the code knows and only the fields that matter (+ added, - removed, ~ changed), "

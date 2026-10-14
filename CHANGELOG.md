@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Map tabs show the whole title: no cut at 34 characters. Only a flow tab shrinks, and only when the bar has no
+  room, after the view buttons move to a second row; its tooltip then shows the full title.
+- The "Flows ▸" label is gone; a thin rule still separates architecture, flows and data model.
+- The digest asks for flow titles as precise as the code: the starting action with its object.
+
 ## [0.1.6] - 2026-10-14
 
 The map tabs say what kind of view each one is and how much of the story it tells.
