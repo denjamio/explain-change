@@ -82,7 +82,7 @@ def enclosing(f: dict, line: int) -> tuple[str | None, str | None, str]:
                         fn = m.group("n")
                     break
             if n == line:
-                for kind, rx in rules if not (cls or fn) else []:
+                for _, rx in rules if not (cls or fn) else []:
                     m = rx.match(h.get("header") or "")
                     if m:
                         fn = m.group("n")
@@ -220,7 +220,8 @@ def insight_template(ctx: dict) -> str:
                              "steps": [{"from": s["from"], "to": s["to"], "msg": s["msg"], "status": "same"}
                                        for s in ref["steps"]]})
         if not flows:
-            flows = [{"id": "<kebab-id>", "title": title, "trigger": f"<≤{L['flows.trigger']}: the code that starts it>",
+            flows = [{"id": "<kebab-id>", "title": title,
+                      "trigger": f"<≤{L['flows.trigger']}: the code that starts it>",
                       "steps": [{"from": "<id>", "to": "<id>", "msg": f"<≤{L['flows.steps.msg']}: the call>",
                                  "status": "|".join(E["flows.steps.status"]),
                                  "data": {"type": "Order", "fields": ["+email: string"]}}]}]
@@ -418,7 +419,8 @@ def digest_task(ctx: dict) -> str:
                     "that starts it, as written (`RefundsController#create`, `POST /refunds`). msg: the call as the "
                     "code makes it (`Refund.create!`) or a short verb phrase. The paths in the template come from the "
                     "entry points of the change: keep their trigger and steps, fix a step that misreads the code, "
-                    "drop a path that says nothing. step status: same = existed unchanged | changed = existed, different data/behavior | new | "
+                    "drop a path that says nothing. step status: same = existed unchanged | changed = existed, "
+                    "different data/behavior | new | "
                     "removed. A step with no dependency in the code is drawn as unverified (?). data (optional): the "
                     "type a reader of the code knows and only the fields that matter (+ added, - removed, ~ changed), "
                     "on steps whose data changed."

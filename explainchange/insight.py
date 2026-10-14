@@ -21,7 +21,8 @@ __all__ = [
 INSIGHT_LIMITS = {
     "tldr": 280, "intent": 200,
     "changes.summary": 140, "decisions": 5, "decisions.title": 80, "decisions.why": 200,
-    "decisions.alternative": 140, "flows": 3, "flows.title": 60, "flows.trigger": 60, "flows.steps": 12, "flows.steps.msg": 50,
+    "decisions.alternative": 140, "flows": 3, "flows.title": 60, "flows.trigger": 60, "flows.steps": 12,
+    "flows.steps.msg": 50,
     "hero": 2, "hero.label": 40, "story": 8, "story.heading": 60, "story.body": 160, "story.focus": 6,
     "spec": 80, "spec.components": 6, "spec.tests": 4, "spec.note": 160,
     "flows.steps.data.type": 40, "flows.steps.data.fields": 8, "flows.steps.data.fields.item": 60,
