@@ -60,7 +60,7 @@
   --text: #ececef; --muted: #a0a0a8; --faint: #6f6f78; --accent: #a98bf5; --accent-bg: #2a2342; --canvas: #141416; --grid: rgba(255, 255, 255, .06);
   --new: #4cc97a; --new-bg: rgba(76, 201, 122, .13);
   --changed: #6ea8ff; --changed-bg: rgba(110, 168, 255, .13);
-    --warn: #f0a73a; --warn-bg: rgba(240, 167, 58, .13);
+  --warn: #f0a73a; --warn-bg: rgba(240, 167, 58, .13);
   --removed: #8d8d96; --removed-bg: rgba(141, 141, 150, .14);
   --violation: #f26b6b; --violation-bg: rgba(242, 107, 107, .14);
   --context: #686871; --context-bg: rgba(255, 255, 255, .03);
@@ -91,9 +91,12 @@ h1, h2, h3, h4 { line-height: 1.25; margin: 0; letter-spacing: -.01em; }
 .theme-btn { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 13px; color: var(--muted); flex: none; }
 main { padding: var(--s5) var(--s5) 80px; max-width: 1400px; margin: 0 auto; }
 .foot { text-align: center; font-size: 12px; padding: 0 0 var(--s5); }
-.section { margin-top: var(--s7); }
-.section-head { display: flex; align-items: baseline; gap: var(--s3); margin-bottom: var(--s4); flex-wrap: wrap; }
-.section-head h2 { font-size: 20px; }
+.section { margin-top: var(--s7); padding-top: var(--s5); border-top: 1px solid var(--border); }
+.section-head { display: flex; align-items: baseline; gap: var(--s2) var(--s3); margin-bottom: var(--s4); flex-wrap: wrap; }
+.section-head h2 { font-size: 24px; letter-spacing: -.02em; }
+.section-lead { color: var(--muted); font-size: 14px; }
+.topnav .nav-n { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.topnav a.active .nav-n { color: inherit; opacity: .7; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--s5); }
 .card + .card { margin-top: var(--s4); }
 .card h3 { font-size: 15px; margin-bottom: var(--s3); }
@@ -131,8 +134,8 @@ main { padding: var(--s5) var(--s5) 80px; max-width: 1400px; margin: 0 auto; }
 .config-warn-icon { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--warn); color: #fff; font-weight: 700; font-size: 12px; display: grid; place-items: center; margin-top: 1px; }
 .eyebrow { color: var(--muted); font-size: 13px; display: flex; gap: 6px var(--s2); flex-wrap: wrap; align-items: center; }
 .title { font-size: 30px; margin: var(--s2) 0 0; word-break: break-word; text-wrap: balance; }
-.intent { margin: var(--s2) 0 0; color: var(--muted); max-width: 80ch; }
-.intent b { color: var(--text); margin-right: 6px; }
+.intent { margin: var(--s2) 0 0; color: var(--muted); font-size: 14px; max-width: 90ch; }
+.intent b { color: var(--accent); margin-right: 8px; font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
 .note { margin: var(--s2) 0 0; font-size: 13px; }
 .linked { cursor: pointer; }
 .tldr { font-size: 18px; line-height: 1.5; margin: var(--s3) 0 0; max-width: 80ch; text-wrap: pretty; }
@@ -318,6 +321,21 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .decision p { margin: 0 0 var(--s2); }
 .decision .alt { color: var(--muted); font-size: 14px; }
 
+/* ── changes by component ── */
+.chg-list { padding: var(--s2) var(--s5); }
+.chg + .chg { border-top: 1px solid var(--border); }
+.chg-head { display: flex; flex-direction: column; gap: 4px; padding: var(--s3) 0; cursor: pointer; list-style: none; }
+.chg-head::-webkit-details-marker { display: none; }
+.chg-line { display: flex; gap: var(--s2); align-items: baseline; flex-wrap: wrap; }
+.chg-line::before { content: "▸"; color: var(--faint); font-size: 11px; width: 10px; transition: transform .15s; }
+.chg[open] > .chg-head .chg-line::before { transform: rotate(90deg); }
+.chg-name { font-size: 15px; }
+.chg-count { margin-left: auto; font-size: 12.5px; }
+.chg-summary { color: var(--muted); padding-left: 18px; max-width: 100ch; }
+.chg-files { padding: 0 0 var(--s2) 18px; }
+.chg-files .insp-row > .ref { min-width: 0; overflow-wrap: anywhere; }
+.chg > .chip { margin: 0 0 var(--s3) 18px; }
+
 /* ── files & diff ── */
 .st { font-family: var(--mono); font-weight: 700; font-size: 12px; text-align: center; border-radius: 4px; }
 .st-A { color: var(--new); } .st-M { color: var(--changed); } .st-D { color: var(--violation); } .st-R { color: var(--accent); }
@@ -421,30 +439,43 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 /* scenarios */
 .scn-card { display: flex; flex-direction: column; gap: 8px; }
 .scn-head { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; font-size: 14px; }
-.gwt-strip { display: flex; align-items: stretch; gap: 6px; }
-.gwt-arrow { align-self: center; flex: none; color: var(--faint); font-size: 18px; }
-.gwt-panel, .gwt-td { padding: 8px 12px 10px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; line-height: 1.4; min-width: 0; }
-.gwt-panel { flex: 1 1 0; }
-.gwt-k { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-.gwt-panel.k-given, .gwt-td.k-given { background: var(--surface-2); }
-.gwt-panel.k-when, .gwt-td.k-when { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
-.gwt-panel.k-then, .gwt-td.k-then { background: var(--surface); border-color: var(--border-strong); }
-.k-when.gwt-k, .k-when .gwt-k { color: var(--accent); } .k-then.gwt-k, .k-then .gwt-k { color: var(--text); }
-.gwt-line + .gwt-line { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border); }
-.gwt-but { color: var(--warn); }
-.flow-chip { color: var(--accent); }
-.gwt-table { display: flex; flex-direction: column; gap: 6px; }
-.gwt-tr { display: grid; grid-template-columns: minmax(130px, .7fr) repeat(var(--gwt-cols), minmax(0, 1fr)); gap: 6px; }
-.gwt-th { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
-.gwt-th > * { padding: 0 12px; margin: 0; }
-.gwt-th > :first-child { padding: 0 4px; }
-.gwt-name { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px 4px; font-size: 14px; }
-.gwt-td.same { opacity: .42; }
-.gwt-td.empty { background: transparent; border-style: dashed; color: var(--faint); }
+/* scenario flow: state → action → outcomes */
+.gwt-flow { --gf-off: 11px; --gf-line: var(--border-strong); display: grid; align-items: stretch; }
+.gwt-flow.no-labels { --gf-off: 0px; }
+.gwt-flow.no-labels .gf-k { display: none; }
+.gf-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.gf-col.same { opacity: .42; }
+.gf-k { display: inline-flex; align-items: center; gap: 6px; height: 16px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.gf-ico { font-style: normal; flex: none; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 8px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border-strong); }
+.k-when .gf-k { color: var(--accent); } .k-when .gf-ico { background: var(--accent); border-color: var(--accent); color: #fff; }
+.k-then .gf-k { color: var(--text); } .k-then .gf-ico { background: var(--new-bg); border-color: var(--new); color: var(--new); font-size: 10px; font-weight: 800; }
+.gf-nodes { display: flex; flex-direction: column; justify-content: center; gap: 6px; flex: 1; }
+.gf-node { position: relative; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.k-given .gf-node { background: var(--surface-2); border-style: dashed; border-color: var(--border-strong); }
+.k-when .gf-node { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); font-weight: 600; }
+.k-then .gf-node { border-color: var(--border-strong); box-shadow: inset 3px 0 0 var(--new); padding-left: 15px; }
+.gwt-but { color: var(--warn); text-transform: lowercase; }
+.gf-node.empty { background: transparent; border-style: dashed; color: var(--faint); box-shadow: none; font-weight: 400; }
+/* the arrow sits on the middle of the nodes, below the column label */
+.gf-arrow { position: relative; }
+.gf-arrow::before { content: ""; position: absolute; left: 3px; right: 7px; top: calc(50% + var(--gf-off) - 1px); border-top: 2px solid var(--gf-line); }
+.gf-arrow::after { content: ""; position: absolute; right: 1px; top: calc(50% + var(--gf-off) - 5px); border: 5px solid transparent; border-right: 0; border-left: 7px solid var(--gf-line); }
+.k-when + .gf-arrow::before { border-top-color: var(--accent); } .k-when + .gf-arrow::after { border-left-color: var(--accent); }
+/* several lines in a column: they join (given) or branch (then) on a bar beside the arrow */
+.k-given .gf-nodes.multi { padding-right: 14px; } .k-then .gf-nodes.multi { padding-left: 14px; }
+.k-then .gf-nodes.multi { --gf-line: color-mix(in srgb, var(--accent) 70%, var(--border-strong)); }
+.gf-nodes.multi .gf-node::before { content: ""; position: absolute; top: calc(50% - 1px); width: 14px; border-top: 2px solid var(--gf-line); }
+.gf-nodes.multi .gf-node::after { content: ""; position: absolute; top: -4px; bottom: -4px; border-left: 2px solid var(--gf-line); }
+.gf-nodes.multi .gf-node:first-child::after { top: 50%; } .gf-nodes.multi .gf-node:last-child::after { bottom: 50%; }
+.k-given .gf-nodes.multi .gf-node::before { right: -15px; } .k-given .gf-nodes.multi .gf-node::after { right: -15px; }
+.k-then .gf-nodes.multi .gf-node::before { left: -15px; } .k-then .gf-nodes.multi .gf-node::after { left: -15px; }
+.k-when .gf-nodes.multi { gap: 4px; }
+.scn-list { display: flex; flex-direction: column; gap: var(--s4); }
+.scn-list .scn-card + .scn-card { padding-top: var(--s3); border-top: 1px dashed var(--border); }
 .scn-card.compact { gap: 4px; }
 .scn-card.compact .scn-head { font-size: 13px; }
-.scn-card.compact .gwt-panel { padding: 4px 10px 6px; font-size: 13px; }
-.scn-card.compact .gwt-k { font-size: 10px; margin-bottom: 1px; }
+.gwt-flow.compact .gf-node { padding: 4px 10px; font-size: 13px; }
+.gwt-flow.compact .k-then .gf-node { padding-left: 13px; }
 
 /* ── responsive ── */
 @media (max-width: 1100px) { .step { grid-template-columns: minmax(0, 1fr); } .map-body { grid-template-columns: minmax(0, 1fr) 310px; } }
@@ -477,20 +508,22 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   .sdd-row { grid-template-columns: minmax(0, 1fr) auto auto; padding-left: 12px; }
   .sdd-comps-m { display: flex; }
   .sdd-detail { padding: 2px 4px 16px 16px; }
-  .gwt-strip { flex-direction: column; }
-  .gwt-arrow { transform: rotate(90deg); align-self: flex-start; margin-left: 14px; font-size: 15px; line-height: 1; }
-  .gwt-tr { grid-template-columns: minmax(0, 1fr); }
-  .gwt-tr + .gwt-tr { border-top: 1px solid var(--border); padding-top: 8px; }
-  .gwt-th { display: none; }
-  .gwt-name { padding: 0; flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .gwt-td::before { content: attr(data-label); display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
-  .gwt-td.k-when::before { color: var(--accent); }
+  .gwt-flow { grid-template-columns: minmax(0, 1fr) !important; --gf-off: 0px; }
+  .gf-arrow { height: 20px; }
+  .gf-arrow::before { left: 15px; right: auto; top: 2px; bottom: 7px; border-top: 0; border-left: 2px solid var(--gf-line); }
+  .gf-arrow::after { left: 11px; right: auto; top: auto; bottom: 0; border: 5px solid transparent; border-bottom: 0; border-top: 7px solid var(--gf-line); }
+  .k-when + .gf-arrow::before { border-left-color: var(--accent); } .k-when + .gf-arrow::after { border-top-color: var(--accent); border-left-color: transparent; }
+  .gwt-flow.no-labels .gf-k { display: inline-flex; }
+  .gf-col.empty, .gf-col.empty + .gf-arrow { display: none; }
+  .k-given .gf-nodes.multi, .k-then .gf-nodes.multi { padding: 0; }
+  .gf-nodes.multi .gf-node::before, .gf-nodes.multi .gf-node::after { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .edge.e-new { animation: none; } html { scroll-behavior: auto; } }
 @media print {
   .topbar, .theme-btn, .canvas-tools, .view-tools, .story-nav, .map-foot .hint, .splitter { display: none !important; }
   main { max-width: none; padding: 0; }
   .card, .map { box-shadow: none; break-inside: avoid; }
+  .chg > .chip { display: none; }
   .step-body { display: block; }
 }
 
@@ -540,7 +573,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 <body>
 <div id="app" class="app"></div>
 <noscript><p style="padding:24px">This report uses JavaScript to draw its diagrams. Open it in a browser with scripts enabled.</p></noscript>
-<script type="application/json" id="ec-data">{"tool":"0.1.4","context":{"version":1,"key":"6fd86eb40e443997","source":{"mode":"local","base_ref":"main","branch":"feature/refunds","head_ref":"HEAD","head_sha":"662bdb1ed9bb5ba05f783229dea792dde9f6c85a","merge_base":"de150dafaaf35bd2d71530d40dc659a2895b98e9","title":"feature/refunds","description":"","pr_id":"","url":"","include_uncommitted":false,"head_date":"2026-10-01T10:00:00+00:00","commits":1},"config":{"inferred":false,"name":"marketplace","direction":"Controladores finos; la lógica vive en servicios de aplicación y modelos; integraciones externas aisladas en clients/ y mailers/.","lang":"es","layers":[{"id":"web","name":"Web"},{"id":"application","name":"Aplicación"},{"id":"domain","name":"Dominio"},{"id":"infra","name":"Infraestructura"}],"flows":[],"components":[{"id":"controllers","name":"Controladores","layer":"web","desc":""},{"id":"checkout","name":"Checkout","layer":"application","desc":""},{"id":"refunds","name":"Reembolsos","layer":"application","desc":"Casos de uso de reembolsos"},{"id":"models","name":"Modelos","layer":"domain","desc":""},{"id":"payments","name":"Pasarela de pagos","layer":"infra","desc":""},{"id":"mailers","name":"Mailers","layer":"infra","desc":""}],"rules":{"allow":["web -> application","application -> domain","application -> infra","infra -> domain"],"forbid":[]}},"files":[{"path":"app/clients/payments/gateway.rb","old_path":null,"status":"M","binary":false,"add":4,"del":0,"hunks":[{"old_start":5,"old_len":3,"new_start":5,"new_len":7,"header":"module Payments","lines":[[" ","    end"],["+",""],["+","    def self.refund(order, amount, idempotency_key:)"],["+","      client.refunds.create(charge: order.charge_id, amount: amount, idempotency_key: idempotency_key)"],["+","    end"],[" ","  end"],[" ","end"]]}],"component":"payments","category":"code","truncated":false},{"path":"app/controllers/refunds_controller.rb","old_path":null,"status":"A","binary":false,"add":10,"del":0,"hunks":[{"old_start":0,"old_len":0,"new_start":3,"new_len":7,"header":"","lines":[["+","    refund = Refunds::Create.call("],["+","      order_id: params.require(:order_id),"],["+","      amount: params.require(:amount).to_d,"],["+","      key: request.headers.fetch(\"Idempotency-Key\")"],["+","    )"],["+","    render json: refund, status: :created"],["+","  end"]]}],"component":"controllers","category":"code","truncated":false},{"path":"app/mailers/refund_mailer.rb","old_path":null,"status":"A","binary":false,"add":6,"del":0,"hunks":[],"component":"mailers","category":"code","truncated":false},{"path":"app/models/order.rb","old_path":null,"status":"M","binary":false,"add":8,"del":0,"hunks":[{"old_start":1,"old_len":3,"new_start":1,"new_len":11,"header":"","lines":[[" ","class Order < ApplicationRecord"],["+","  has_many :refunds"],[" ","  validates :total, numericality: { greater_than: 0 }"],["+",""],["+","  def refund!(amount, key:)"],["+","    raise ArgumentError, \"amount exceeds refundable total\" if amount > refundable_total"],["+","    refunds.create!(amount: amount, idempotency_key: key)"],["+","  end"],["+",""],["+","  def refundable_total = total - refunds.sum(:amount)"],[" ","end"]]}],"component":"models","category":"code","truncated":false},{"path":"app/models/refund.rb","old_path":null,"status":"A","binary":false,"add":5,"del":0,"hunks":[],"component":"models","category":"code","truncated":false},{"path":"app/services/refunds/create.rb","old_path":null,"status":"A","binary":false,"add":14,"del":0,"hunks":[{"old_start":0,"old_len":0,"new_start":1,"new_len":14,"header":"","lines":[["+","module Refunds"],["+","  class Create"],["+","    def self.call(order_id:, amount:, key:)"],["+","      existing = Refund.find_by(idempotency_key: key)"],["+","      return existing if existing"],["+",""],["+","      order = Order.find(order_id)"],["+","      refund = order.refund!(amount, key: key)"],["+","      Payments::Gateway.refund(order, amount, idempotency_key: key)"],["+","      RefundMailer.confirmation(refund).deliver_later"],["+","      refund"],["+","    end"],["+","  end"],["+","end"]]}],"component":"refunds","category":"code","truncated":false},{"path":"config/routes.rb","old_path":null,"status":"M","binary":false,"add":1,"del":0,"hunks":[],"component":"controllers","category":"config","truncated":false},{"path":"db/migrate/20261001100000_create_refunds.rb","old_path":null,"status":"A","binary":false,"add":10,"del":0,"hunks":[{"old_start":0,"old_len":0,"new_start":1,"new_len":10,"header":"","lines":[["+","class CreateRefunds < ActiveRecord::Migration[7.2]"],["+","  def change"],["+","    create_table :refunds do |t|"],["+","      t.references :order, null: false, foreign_key: true"],["+","      t.decimal :amount, precision: 10, scale: 2, null: false"],["+","      t.string :idempotency_key, null: false, index: { unique: true }"],["+","      t.timestamps"],["+","    end"],["+","  end"],["+","end"]]}],"component":null,"category":"migration","truncated":false},{"path":"spec/services/refunds/create_spec.rb","old_path":null,"status":"A","binary":false,"add":6,"del":0,"hunks":[],"component":null,"category":"test","truncated":false}],"components":[{"id":"controllers","status":"changed","files":2,"add":11,"del":0},{"id":"refunds","status":"new","files":1,"add":14,"del":0},{"id":"models","status":"changed","files":2,"add":13,"del":0},{"id":"payments","status":"changed","files":1,"add":4,"del":0},{"id":"mailers","status":"changed","files":1,"add":6,"del":0}],"edges":[{"from":"controllers","to":"refunds","status":"new","base_count":0,"head_count":1,"refs":["app/controllers/refunds_controller.rb:3"],"violation":null},{"from":"refunds","to":"mailers","status":"new","base_count":0,"head_count":1,"refs":["app/services/refunds/create.rb:10"],"violation":null},{"from":"refunds","to":"models","status":"new","base_count":0,"head_count":2,"refs":["app/services/refunds/create.rb:4"],"violation":null},{"from":"refunds","to":"payments","status":"new","base_count":0,"head_count":1,"refs":["app/services/refunds/create.rb:9"],"violation":null}],"symbols":[{"file":"app/clients/payments/gateway.rb","line":7,"kind":"def","name":"self.refund","change":"added"},{"file":"app/controllers/refunds_controller.rb","line":1,"kind":"class","name":"RefundsController","change":"added"},{"file":"app/controllers/refunds_controller.rb","line":2,"kind":"def","name":"create","change":"added"},{"file":"app/mailers/refund_mailer.rb","line":1,"kind":"class","name":"RefundMailer","change":"added"},{"file":"app/mailers/refund_mailer.rb","line":2,"kind":"def","name":"confirmation","change":"added"},{"file":"app/models/order.rb","line":5,"kind":"def","name":"refund!","change":"added"},{"file":"app/models/order.rb","line":10,"kind":"def","name":"refundable_total","change":"added"},{"file":"app/models/refund.rb","line":1,"kind":"class","name":"Refund","change":"added"},{"file":"app/services/refunds/create.rb","line":1,"kind":"module","name":"Refunds","change":"added"},{"file":"app/services/refunds/create.rb","line":2,"kind":"class","name":"Create","change":"added"},{"file":"app/services/refunds/create.rb","line":3,"kind":"def","name":"self.call","change":"added"},{"file":"config/routes.rb","line":3,"kind":"endpoint","name":"resources refunds","change":"added"}],"stats":{"files":9,"add":64,"del":0,"test_add":6,"test_del":0,"unmapped":[],"unresolved":0,"violations_new":0,"code_lines":58,"mapped_lines":48},"notes":[],"openspec":null,"deps":[["checkout","models"],["checkout","payments"],["controllers","checkout"],["controllers","refunds"],["refunds","mailers"],["refunds","models"],["refunds","payments"]]},"insight":{"version":1,"key":"6fd86eb40e443997","lang":"es","tldr":"Añade reembolsos parciales de pedidos vía POST /refunds, idempotentes por cabecera Idempotency-Key, con aviso por email al cliente.","intent":"Permitir a soporte devolver parte del importe de un pedido sin duplicar cobros.","story":[{"heading":"Nuevo caso de uso Refunds::Create","body":"Soporte puede devolver parte de un pedido. Un reintento con la misma clave no cobra dos veces.","stage":"architecture","focus":["refunds"],"code":"app/services/refunds/create.rb:4-11"},{"heading":"Order ahora calcula lo reembolsable","body":"La regla de importe vive en el modelo, no en el servicio.","stage":"architecture","focus":["models"],"code":"app/models/order.rb:5-10"},{"heading":"Tabla refunds añadida","body":"Cada reembolso guarda su importe y una clave de idempotencia única. Un pedido tiene 0 o más reembolsos.","stage":"data","focus":["refund"],"code":"db/migrate/20261001100000_create_refunds.rb:3-8"},{"heading":"La pasarela recibe la clave de idempotencia","body":"Gateway.refund propaga Idempotency-Key a la pasarela de pagos.","stage":"flow:create-refund","focus":["#4"],"code":"app/clients/payments/gateway.rb:8-10"},{"heading":"El cliente recibe un email al final","body":"deliver_later: si el SMTP cae, el reembolso no falla.","stage":"flow:create-refund","focus":["#5"]},{"heading":"5 componentes, 0 violaciones","body":"Todas las dependencias nuevas van web → aplicación → dominio/infra.","stage":"architecture","focus":[]}],"hero":[{"from":"refunds","to":"payments","label":"refund + idempotency"}],"changes":[{"id":"controllers","summary":"Nueva ruta POST /refunds; el controlador exige Idempotency-Key y delega."},{"id":"refunds","summary":"Nuevo caso de uso: deduplica por clave, registra el reembolso, llama a la pasarela y avisa."},{"id":"models","summary":"Nuevo modelo Refund; Order calcula el importe reembolsable y crea reembolsos."},{"id":"payments","summary":"La pasarela expone refund() propagando la clave de idempotencia."},{"id":"mailers","summary":"Nuevo email de confirmación de reembolso."}],"decisions":[{"title":"Idempotencia por cabecera Idempotency-Key","why":"El cliente controla los reintentos y la misma clave llega a la pasarela.","alternative":"Deduplicar por (pedido, importe) en una ventana de tiempo.","evidence":"app/controllers/refunds_controller.rb:6"},{"title":"La regla de importe vive en Order","why":"Order conoce su total y sus reembolsos; el servicio solo coordina las llamadas.","evidence":"app/models/order.rb:6"},{"title":"Email en segundo plano","why":"deliver_later no bloquea la respuesta ni falla el reembolso si el SMTP cae.","evidence":"app/services/refunds/create.rb:11"}],"flows":[{"id":"create-refund","title":"Crear reembolso","steps":[{"from":"controllers","to":"refunds","msg":"Refunds::Create.call","status":"new","data":{"type":"RefundParams","fields":["+order_id","+amount","+idempotency_key"]},"verified":true},{"from":"refunds","to":"models","msg":"Refund.find_by(key)","status":"new","verified":true},{"from":"refunds","to":"models","msg":"order.refund!(amount)","status":"new","data":{"type":"Refund","fields":["+amount: decimal","+idempotency_key: string"]},"verified":true},{"from":"refunds","to":"payments","msg":"Gateway.refund","status":"new","data":{"type":"RefundRequest","fields":["+charge","+amount","+idempotency_key"]},"verified":true},{"from":"refunds","to":"mailers","msg":"RefundMailer.confirmation","status":"new","verified":true}]}],"data_model":{"entities":[{"id":"refund","name":"Refund","change":"added","component":"models","evidence":"db/migrate/20261001100000_create_refunds.rb:1-10","fields":["+order_id: references","+amount: decimal(10,2)","+idempotency_key: string (único)","+created_at, updated_at"]},{"id":"order","name":"Order","change":"changed","component":"models","evidence":"app/models/order.rb:1-11","fields":["id","total: decimal","+refunds: has_many","+refundable_total(): total − Σ refunds"]}],"relations":[{"from":"order","to":"refund","label":"1 → 0..n","change":"added"}]},"spec":[]},"insightStatus":"fresh","insightErrors":[]}</script>
+<script type="application/json" id="ec-data">{"tool":"0.1.4","context":{"version":1,"key":"6fd86eb40e443997","source":{"mode":"local","base_ref":"main","branch":"feature/refunds","head_ref":"HEAD","head_sha":"662bdb1ed9bb5ba05f783229dea792dde9f6c85a","merge_base":"de150dafaaf35bd2d71530d40dc659a2895b98e9","title":"feature/refunds","description":"","pr_id":"","url":"","include_uncommitted":false,"head_date":"2026-10-01T10:00:00+00:00","commits":1},"config":{"inferred":false,"name":"marketplace","direction":"Controladores finos; la lógica vive en servicios de aplicación y modelos; integraciones externas aisladas en clients/ y mailers/.","lang":"es","layers":[{"id":"web","name":"Web"},{"id":"application","name":"Aplicación"},{"id":"domain","name":"Dominio"},{"id":"infra","name":"Infraestructura"}],"flows":[],"components":[{"id":"controllers","name":"Controladores","layer":"web","desc":""},{"id":"checkout","name":"Checkout","layer":"application","desc":""},{"id":"refunds","name":"Reembolsos","layer":"application","desc":"Casos de uso de reembolsos"},{"id":"models","name":"Modelos","layer":"domain","desc":""},{"id":"payments","name":"Pasarela de pagos","layer":"infra","desc":""},{"id":"mailers","name":"Mailers","layer":"infra","desc":""}],"rules":{"allow":["web -> application","application -> domain","application -> infra","infra -> domain"],"forbid":[]}},"files":[{"path":"app/clients/payments/gateway.rb","old_path":null,"status":"M","binary":false,"add":4,"del":0,"hunks":[{"old_start":5,"old_len":3,"new_start":5,"new_len":7,"header":"module Payments","lines":[[" ","    end"],["+",""],["+","    def self.refund(order, amount, idempotency_key:)"],["+","      client.refunds.create(charge: order.charge_id, amount: amount, idempotency_key: idempotency_key)"],["+","    end"],[" ","  end"],[" ","end"]]}],"component":"payments","category":"code","truncated":false},{"path":"app/controllers/refunds_controller.rb","old_path":null,"status":"A","binary":false,"add":10,"del":0,"hunks":[{"old_start":0,"old_len":0,"new_start":3,"new_len":7,"header":"","lines":[["+","    refund = Refunds::Create.call("],["+","      order_id: params.require(:order_id),"],["+","      amount: params.require(:amount).to_d,"],["+","      key: request.headers.fetch(\"Idempotency-Key\")"],["+","    )"],["+","    render json: refund, status: :created"],["+","  end"]]}],"component":"controllers","category":"code","truncated":false},{"path":"app/mailers/refund_mailer.rb","old_path":null,"status":"A","binary":false,"add":6,"del":0,"hunks":[],"component":"mailers","category":"code","truncated":false},{"path":"app/models/order.rb","old_path":null,"status":"M","binary":false,"add":8,"del":0,"hunks":[{"old_start":1,"old_len":3,"new_start":1,"new_len":11,"header":"","lines":[[" ","class Order < ApplicationRecord"],["+","  has_many :refunds"],[" ","  validates :total, numericality: { greater_than: 0 }"],["+",""],["+","  def refund!(amount, key:)"],["+","    raise ArgumentError, \"amount exceeds refundable total\" if amount > refundable_total"],["+","    refunds.create!(amount: amount, idempotency_key: key)"],["+","  end"],["+",""],["+","  def refundable_total = total - refunds.sum(:amount)"],[" ","end"]]}],"component":"models","category":"code","truncated":false},{"path":"app/models/refund.rb","old_path":null,"status":"A","binary":false,"add":5,"del":0,"hunks":[],"component":"models","category":"code","truncated":false},{"path":"app/services/refunds/create.rb","old_path":null,"status":"A","binary":false,"add":14,"del":0,"hunks":[{"old_start":0,"old_len":0,"new_start":1,"new_len":14,"header":"","lines":[["+","module Refunds"],["+","  class Create"],["+","    def self.call(order_id:, amount:, key:)"],["+","      existing = Refund.find_by(idempotency_key: key)"],["+","      return existing if existing"],["+",""],["+","      order = Order.find(order_id)"],["+","      refund = order.refund!(amount, key: key)"],["+","      Payments::Gateway.refund(order, amount, idempotency_key: key)"],["+","      RefundMailer.confirmation(refund).deliver_later"],["+","      refund"],["+","    end"],["+","  end"],["+","end"]]}],"component":"refunds","category":"code","truncated":false},{"path":"config/routes.rb","old_path":null,"status":"M","binary":false,"add":1,"del":0,"hunks":[],"component":"controllers","category":"config","truncated":false},{"path":"db/migrate/20261001100000_create_refunds.rb","old_path":null,"status":"A","binary":false,"add":10,"del":0,"hunks":[{"old_start":0,"old_len":0,"new_start":1,"new_len":10,"header":"","lines":[["+","class CreateRefunds < ActiveRecord::Migration[7.2]"],["+","  def change"],["+","    create_table :refunds do |t|"],["+","      t.references :order, null: false, foreign_key: true"],["+","      t.decimal :amount, precision: 10, scale: 2, null: false"],["+","      t.string :idempotency_key, null: false, index: { unique: true }"],["+","      t.timestamps"],["+","    end"],["+","  end"],["+","end"]]}],"component":null,"category":"migration","truncated":false},{"path":"spec/services/refunds/create_spec.rb","old_path":null,"status":"A","binary":false,"add":6,"del":0,"hunks":[],"component":null,"category":"test","truncated":false}],"components":[{"id":"controllers","status":"changed","files":2,"add":11,"del":0},{"id":"refunds","status":"new","files":1,"add":14,"del":0},{"id":"models","status":"changed","files":2,"add":13,"del":0},{"id":"payments","status":"changed","files":1,"add":4,"del":0},{"id":"mailers","status":"changed","files":1,"add":6,"del":0}],"edges":[{"from":"controllers","to":"refunds","status":"new","base_count":0,"head_count":1,"refs":["app/controllers/refunds_controller.rb:3"],"violation":null},{"from":"refunds","to":"mailers","status":"new","base_count":0,"head_count":1,"refs":["app/services/refunds/create.rb:10"],"violation":null},{"from":"refunds","to":"models","status":"new","base_count":0,"head_count":2,"refs":["app/services/refunds/create.rb:4"],"violation":null},{"from":"refunds","to":"payments","status":"new","base_count":0,"head_count":1,"refs":["app/services/refunds/create.rb:9"],"violation":null}],"symbols":[{"file":"app/clients/payments/gateway.rb","line":7,"kind":"def","name":"self.refund","change":"added"},{"file":"app/controllers/refunds_controller.rb","line":1,"kind":"class","name":"RefundsController","change":"added"},{"file":"app/controllers/refunds_controller.rb","line":2,"kind":"def","name":"create","change":"added"},{"file":"app/mailers/refund_mailer.rb","line":1,"kind":"class","name":"RefundMailer","change":"added"},{"file":"app/mailers/refund_mailer.rb","line":2,"kind":"def","name":"confirmation","change":"added"},{"file":"app/models/order.rb","line":5,"kind":"def","name":"refund!","change":"added"},{"file":"app/models/order.rb","line":10,"kind":"def","name":"refundable_total","change":"added"},{"file":"app/models/refund.rb","line":1,"kind":"class","name":"Refund","change":"added"},{"file":"app/services/refunds/create.rb","line":1,"kind":"module","name":"Refunds","change":"added"},{"file":"app/services/refunds/create.rb","line":2,"kind":"class","name":"Create","change":"added"},{"file":"app/services/refunds/create.rb","line":3,"kind":"def","name":"self.call","change":"added"},{"file":"config/routes.rb","line":3,"kind":"endpoint","name":"resources refunds","change":"added"}],"stats":{"files":9,"add":64,"del":0,"test_add":6,"test_del":0,"unmapped":[],"unresolved":0,"violations_new":0,"code_lines":58,"mapped_lines":48},"notes":[],"openspec":null,"deps":[["checkout","models"],["checkout","payments"],["controllers","checkout"],["controllers","refunds"],["refunds","mailers"],["refunds","models"],["refunds","payments"]]},"insight":{"version":1,"key":"6fd86eb40e443997","lang":"es","tldr":"Añade reembolsos parciales de pedidos vía POST /refunds, idempotentes por cabecera Idempotency-Key, con aviso por email al cliente.","intent":"Permitir a soporte devolver parte del importe de un pedido sin duplicar cobros.","story":[{"heading":"Nuevo caso de uso Refunds::Create","body":"Soporte puede devolver parte de un pedido. Un reintento con la misma clave no vuelve a cobrar.","stage":"architecture","focus":["refunds"],"code":"app/services/refunds/create.rb:4-11"},{"heading":"Order ahora calcula lo reembolsable","body":"La regla de importe vive en el modelo, no en el servicio.","stage":"architecture","focus":["models"],"code":"app/models/order.rb:5-10"},{"heading":"Tabla refunds añadida","body":"Cada reembolso guarda su importe y una clave de idempotencia única. Un pedido tiene 0 o más reembolsos.","stage":"data","focus":["refund"],"code":"db/migrate/20261001100000_create_refunds.rb:3-8"},{"heading":"La pasarela recibe la clave de idempotencia","body":"Gateway.refund propaga Idempotency-Key a la pasarela de pagos.","stage":"flow:create-refund","focus":["#4"],"code":"app/clients/payments/gateway.rb:8-10"},{"heading":"El cliente recibe un email al final","body":"deliver_later: si el SMTP cae, el reembolso no falla.","stage":"flow:create-refund","focus":["#5"]},{"heading":"5 componentes, 0 violaciones","body":"Todas las dependencias nuevas van web → aplicación → dominio/infra.","stage":"architecture","focus":[]}],"hero":[{"from":"refunds","to":"payments","label":"refund + idempotency"}],"changes":[{"id":"controllers","summary":"Nueva ruta POST /refunds; el controlador exige Idempotency-Key y delega."},{"id":"refunds","summary":"Nuevo caso de uso: deduplica por clave, registra el reembolso, llama a la pasarela y avisa."},{"id":"models","summary":"Nuevo modelo Refund; Order calcula el importe reembolsable y crea reembolsos."},{"id":"payments","summary":"La pasarela expone refund() propagando la clave de idempotencia."},{"id":"mailers","summary":"Nuevo email de confirmación de reembolso."}],"decisions":[{"title":"Idempotencia por cabecera Idempotency-Key","why":"El cliente controla los reintentos y la misma clave llega a la pasarela.","alternative":"Deduplicar por (pedido, importe) en una ventana de tiempo.","evidence":"app/controllers/refunds_controller.rb:6"},{"title":"La regla de importe vive en Order","why":"Order conoce su total y sus reembolsos; el servicio solo coordina las llamadas.","evidence":"app/models/order.rb:6"},{"title":"Email en segundo plano","why":"deliver_later no bloquea la respuesta ni falla el reembolso si el SMTP cae.","evidence":"app/services/refunds/create.rb:11"}],"flows":[{"id":"create-refund","title":"Crear reembolso","steps":[{"from":"controllers","to":"refunds","msg":"Refunds::Create.call","status":"new","data":{"type":"RefundParams","fields":["+order_id","+amount","+idempotency_key"]},"verified":true},{"from":"refunds","to":"models","msg":"Refund.find_by(key)","status":"new","verified":true},{"from":"refunds","to":"models","msg":"order.refund!(amount)","status":"new","data":{"type":"Refund","fields":["+amount: decimal","+idempotency_key: string"]},"verified":true},{"from":"refunds","to":"payments","msg":"Gateway.refund","status":"new","data":{"type":"RefundRequest","fields":["+charge","+amount","+idempotency_key"]},"verified":true},{"from":"refunds","to":"mailers","msg":"RefundMailer.confirmation","status":"new","verified":true}]}],"data_model":{"entities":[{"id":"refund","name":"Refund","change":"added","component":"models","evidence":"db/migrate/20261001100000_create_refunds.rb:1-10","fields":["+order_id: references","+amount: decimal(10,2)","+idempotency_key: string (único)","+created_at, updated_at"]},{"id":"order","name":"Order","change":"changed","component":"models","evidence":"app/models/order.rb:1-11","fields":["id","total: decimal","+refunds: has_many","+refundable_total(): total − Σ refunds"]}],"relations":[{"from":"order","to":"refund","label":"1 → 0..n","change":"added"}]},"spec":[]},"insightStatus":"fresh","insightErrors":[]}</script>
 <script>/* explain-change renderer. Pure, deterministic: same data → same DOM/SVG. No dependencies.
    Layout: a canvas (architecture lanes · data flows · data model) driven by a story whose steps move the camera
    and light what changed; below it the SDD (OpenSpec pipeline, requirement × component matrix, scenarios) and the
@@ -600,7 +633,10 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       coverageHint: "Share of the changed code that sits in a component on the map.",
       onMap: "on the map", context: "Context",
       noConfig: "No architecture configured", noConfigText: "Layers and components are guessed from folder names. Run explain-change init to define them.",
-      decisionsDoc: "Decisions", openTasksN: "{n} open"
+      decisionsDoc: "Decisions", openTasksN: "{n} open",
+      changesTitle: "Changes by component", outsideMap: "Outside the map", testFiles: "Tests",
+      leadChanges: "{c} components · {f} files", leadDecisions: "{n} decisions: why it is built this way",
+      leadDecision1: "1 decision: why it is built this way", leadSpec: "{n} requirements · {i} implemented"
     },
     es: {
       story: "Historia", canvas: "Mapa", architecture: "Arquitectura", spec: "SDD",
@@ -650,7 +686,10 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       coverageHint: "Parte del código cambiado que está en un componente del mapa.",
       onMap: "en el mapa", context: "Contexto",
       noConfig: "Sin arquitectura configurada", noConfigText: "Capas y componentes deducidos de los nombres de carpetas. Ejecuta explain-change init para definirlos.",
-      decisionsDoc: "Decisiones", openTasksN: "{n} abiertas"
+      decisionsDoc: "Decisiones", openTasksN: "{n} abiertas",
+      changesTitle: "Cambios por componente", outsideMap: "Fuera del mapa", testFiles: "Tests",
+      leadChanges: "{c} componentes · {f} archivos", leadDecisions: "{n} decisiones: por qué está construido así",
+      leadDecision1: "1 decisión: por qué está construido así", leadSpec: "{n} requisitos · {i} implementados"
     }
   };
   var T = I18N[cfg.lang] || I18N.en;
@@ -768,8 +807,10 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref })
       : h("code", { class: "ref", text: label || ref });
   }
-  function sectionShell(id, title, body) {
-    return h("section", { class: "section", id: id }, h("div", { class: "section-head" }, h("h2", { text: title })), body);
+  // A section: its title, one line with its figures, then the body.
+  function sectionShell(id, title, body, lead) {
+    return h("section", { class: "section", id: id },
+      h("div", { class: "section-head" }, h("h2", { text: title }), lead ? h("span", { class: "section-lead", text: lead }) : null), body);
   }
   function legendItem(kind, color, label) {
     if (kind === "swatch") return h("span", null, h("i", { class: "swatch", style: "background:" + color }), label);
@@ -822,8 +863,8 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
         h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.base_ref })),
         h("span", { class: "faint", text: src.commits + " " + (src.commits === 1 ? T.commit : T.commits) + (src.head_date ? " · " + src.head_date.slice(0, 10) : "") })),
       h("h1", { class: "title", text: src.title }),
-      ins ? h("p", { class: "tldr", text: ins.tldr }) : null,
       ins ? h("p", { class: "intent" }, h("b", { text: T.intent }), ins.intent) : null,
+      ins ? h("p", { class: "tldr", text: ins.tldr }) : null,
       notice,
       h("div", { class: "chips" }, chips),
       ctx.notes.map(function (n) { return h("p", { class: "note faint", text: n }); }));
@@ -1732,42 +1773,49 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     });
     return g;
   }
-  function gwtLines(lines) {
-    return lines.map(function (l) { return h("div", { class: "gwt-line" }, l.but ? h("b", { class: "gwt-but", text: T.but + " " }) : null, l.t); });
-  }
   function flowButtons(r, sc) {
     return (ins ? ins.flows : []).filter(function (f) { return f.scenario === r.id + "#" + sc.id; }).map(function (f) {
       return h("button", { class: "chip flow-chip", title: f.title, text: "▶ " + T.showFlow, onclick: function () { mapApi.showFlow(f.id); } });
     });
   }
-  // One scenario: three panels in reading order. Compact is the flow caption's version.
-  function scenarioStrip(r, sc, compact) {
-    var g = gwtGroups(sc), panels = [];
-    GWT.filter(function (k) { return g[k].length; }).forEach(function (k, i) {
-      if (i) panels.push(h("span", { class: "gwt-arrow", "aria-hidden": "true", text: "→" }));
-      panels.push(h("div", { class: "gwt-panel k-" + k.toLowerCase() }, h("span", { class: "gwt-k", text: T["k" + k] }), gwtLines(g[k])));
+  // A scenario drawn as a flow: the state it starts from → the action → each outcome. Every AND/BUT line is a node
+  // of its column; several preconditions join into the arrow and several outcomes branch out of it.
+  var GWT_ICON = { GIVEN: "●", WHEN: "▶", THEN: "✓" }, GWT_FR = { GIVEN: "1fr", WHEN: ".85fr", THEN: "1.15fr" };
+  function gwtFlow(g, keys, opts) {
+    var cells = [];
+    keys.forEach(function (k, i) {
+      if (i) cells.push(h("span", { class: "gf-arrow", "aria-hidden": "true" }));
+      var lines = g[k];
+      cells.push(h("div", { class: "gf-col k-" + k.toLowerCase() + (opts.same && opts.same[k] ? " same" : "") + (lines.length ? "" : " empty"), role: "group", "aria-label": T["k" + k] },
+        h("span", { class: "gf-k" }, h("i", { class: "gf-ico", text: GWT_ICON[k] }), T["k" + k]),
+        h("div", { class: "gf-nodes" + (lines.length > 1 ? " multi" : "") },
+          lines.length ? lines.map(function (l) {
+            return h("div", { class: "gf-node" }, l.but ? h("b", { class: "gwt-but", text: T.but + " " }) : null, l.t);
+          }) : h("div", { class: "gf-node empty", text: "—" }))));
     });
+    return h("div", { class: "gwt-flow" + (opts.labels ? "" : " no-labels") + (opts.compact ? " compact" : ""),
+      style: "grid-template-columns:" + keys.map(function (k) { return "minmax(0," + GWT_FR[k] + ")"; }).join(" 34px ") }, cells);
+  }
+  function gwtKeys(gs) { return GWT.filter(function (k) { return gs.some(function (g) { return g[k].length; }); }); }
+  // One scenario. Compact is the flow caption's version.
+  function scenarioStrip(r, sc, compact) {
+    var g = gwtGroups(sc);
     return h("div", { class: "scn-card" + (compact ? " compact" : "") },
       h("div", { class: "scn-head" }, h("b", { text: (compact ? T.scenario + ": " : "") + sc.name }),
         compact ? h("span", { class: "faint", text: "· " + r.name }) : flowButtons(r, sc)),
-      h("div", { class: "gwt-strip" }, panels));
+      gwtFlow(g, gwtKeys([g]), { labels: true, compact: compact }));
   }
-  // Several scenarios: one row each, so what differs between them stands out; a cell equal to the one above fades.
+  // Several scenarios: one flow each on the same columns, labels once; a column equal to the one above fades,
+  // so what differs between them stands out.
   function scenarioTable(r) {
-    var gs = r.scenarios.map(gwtGroups);
-    var keys = GWT.filter(function (k) { return gs.some(function (g) { return g[k].length; }); });
-    return h("div", { class: "gwt-table", style: "--gwt-cols:" + keys.length },
-      h("div", { class: "gwt-tr gwt-th" }, h("span", { text: T.scenario }),
-        keys.map(function (k) { return h("span", { class: "gwt-k k-" + k.toLowerCase(), text: T["k" + k] }); })),
-      r.scenarios.map(function (sc, i) {
-        return h("div", { class: "gwt-tr" },
-          h("div", { class: "gwt-name" }, h("b", { text: sc.name }), flowButtons(r, sc)),
-          keys.map(function (k) {
-            var lines = gs[i][k], same = i > 0 && lines.length && JSON.stringify(lines) === JSON.stringify(gs[i - 1][k]);
-            return h("div", { class: "gwt-td k-" + k.toLowerCase() + (same ? " same" : "") + (lines.length ? "" : " empty"), "data-label": T["k" + k] },
-              lines.length ? gwtLines(lines) : "—");
-          }));
-      }));
+    var gs = r.scenarios.map(gwtGroups), keys = gwtKeys(gs);
+    return h("div", { class: "scn-list" }, r.scenarios.map(function (sc, i) {
+      var same = {};
+      keys.forEach(function (k) { same[k] = i > 0 && gs[i][k].length && JSON.stringify(gs[i][k]) === JSON.stringify(gs[i - 1][k]); });
+      return h("div", { class: "scn-card" },
+        h("div", { class: "scn-head" }, h("b", { text: sc.name }), flowButtons(r, sc)),
+        gwtFlow(gs[i], keys, { labels: i === 0, same: same }));
+    }));
   }
   function scenarioView(r) { return r.scenarios.length > 1 ? scenarioTable(r) : scenarioStrip(r, r.scenarios[0]); }
   function reqRow(r) {
@@ -1928,11 +1976,12 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
           c.why ? h("p", { class: "sdd-why", text: c.why }) : null,
           sddPipeline(c));
       }),
-      h("div", { class: "card sdd-reqs" }, h("h3", { text: T.reqs }), sddCoverage(), sddMatrix())]);
+      h("div", { class: "card sdd-reqs" }, h("h3", { text: T.reqs }), sddCoverage(), sddMatrix())],
+      tf("leadSpec", { n: REQS.length, i: REQS.filter(function (r) { return reqStatus(r) === "implemented"; }).length }));
   }
 
   // ═════════════════════════════ sections below the map ═════════════════════════════
-  // Order of reading: what to check (findings) → why it is built this way (design) → the code (changes).
+  // Order of reading: why it is built this way (decisions) → what the spec asks (SDD) → where it changed (files).
 
   // Why the change is built this way: the agent's design decisions, each with its main alternative.
   function renderDecisions() {
@@ -1944,7 +1993,50 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
           h("p", { text: d.why }),
           d.alternative ? h("p", { class: "alt" }, h("b", { text: T.alternative + ": " }), d.alternative) : null,
           d.evidence ? fileLink(d.evidence) : null);
-      }))]);
+      }))], ins.decisions.length === 1 ? T.leadDecision1 : tf("leadDecisions", { n: ins.decisions.length }));
+  }
+
+  // Where it changed: one row per changed component (status, summary, files), then tests and files outside the map.
+  // Rows are open when the change is small enough to read whole.
+  function renderChanges() {
+    var comps = ctx.components.filter(function (c) { return c.status !== "context"; }).map(function (c) { return c.id; }).sort(byCompRank);
+    var byComp = {}, tests = [], outside = [];
+    ctx.files.forEach(function (f) {
+      if (f.category === "ignored") return;
+      if (f.category === "test") tests.push(f);
+      else if (f.component && comps.indexOf(f.component) > -1) (byComp[f.component] = byComp[f.component] || []).push(f);
+      else outside.push(f);
+    });
+    var nFiles = ctx.files.filter(function (f) { return f.category !== "ignored"; }).length;
+    if (!nFiles) return null;
+    var open = nFiles <= 24;
+    function nums(add, del) { return h("span", { class: "nums" }, h("span", { class: "add", text: "+" + fmt(add) }), " ", h("span", { class: "del", text: "−" + fmt(del) })); }
+    function sum(fs, k) { return fs.reduce(function (a, f) { return a + f[k]; }, 0); }
+    function fileRows(fs) {
+      return h("div", { class: "chg-files" }, fs.map(function (f) {
+        return h("div", { class: "insp-row" }, h("span", { class: "st st-" + f.status, text: f.status }),
+          fileLink(f.path), nums(f.add, f.del));
+      }));
+    }
+    function group(badge, name, meta, summary, fs, onMap) {
+      return h("details", { class: "chg", open: open },
+        h("summary", { class: "chg-head" },
+          h("span", { class: "chg-line" }, badge, h("b", { class: "chg-name", text: name }),
+            meta ? h("span", { class: "faint", text: meta }) : null,
+            h("span", { class: "chg-count faint", text: fs.length + " " + (fs.length === 1 ? T.file : T.kFiles) }), nums(sum(fs, "add"), sum(fs, "del"))),
+          summary ? h("span", { class: "chg-summary", text: summary }) : null),
+        fileRows(fs),
+        onMap ? h("button", { class: "chip", text: T.showOnMap, onclick: onMap }) : null);
+    }
+    return sectionShell("changes", T.changesTitle, h("div", { class: "card chg-list" }, [
+      comps.filter(function (id) { return byComp[id]; }).map(function (id) {
+        var n = changeComp[id], c = compById[id];
+        return group(h("span", { class: "badge " + n.status, text: statusLabel(n.status) }), compName(id), layerName(id),
+          summaryOf[id] || (c && c.desc) || null, byComp[id], function () { mapApi.inspect(id); });
+      }),
+      tests.length ? group(null, T.testFiles, null, null, tests) : null,
+      outside.length ? group(null, T.outsideMap, null, null, outside) : null]),
+      tf("leadChanges", { c: comps.length, f: nFiles }));
   }
 
   function excerpt(f, lines, ctxLines) {
@@ -2000,12 +2092,16 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   var main = h("main");
   main.appendChild(renderHeader());
   main.appendChild(renderMap());
-  var below = [{ id: "sdd", title: T.spec, el: renderSpec() }, { id: "decisions", title: T.decisions, el: renderDecisions() }].filter(function (x) { return x.el; });
+  var below = [
+    { id: "decisions", title: T.decisions, n: ins ? ins.decisions.length : 0, el: renderDecisions() },
+    { id: "sdd", title: T.spec, n: REQS.length, el: renderSpec() },
+    { id: "changes", title: T.delta, n: ctx.files.filter(function (f) { return f.category !== "ignored"; }).length, el: renderChanges() }
+  ].filter(function (x) { return x.el; });
   below.forEach(function (x) { main.appendChild(x.el); });
   var navList = h("nav", { class: "topnav" },
     h("a", { href: "#map", "data-sec": "map", text: T.canvas }),
     below.map(function (x) {
-      return h("a", { href: "#" + x.id, "data-sec": x.id, text: x.title });
+      return h("a", { href: "#" + x.id, "data-sec": x.id }, x.title, h("span", { class: "nav-n", text: String(x.n) }));
     }));
   var bar = h("div", { class: "topbar" },
     h("a", { class: "brand", href: "#summary" }, h("span", { class: "brand-mark", text: "◇" }), h("span", { class: "brand-name", text: "explain-change" })),

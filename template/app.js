@@ -57,7 +57,10 @@
       coverageHint: "Share of the changed code that sits in a component on the map.",
       onMap: "on the map", context: "Context",
       noConfig: "No architecture configured", noConfigText: "Layers and components are guessed from folder names. Run explain-change init to define them.",
-      decisionsDoc: "Decisions", openTasksN: "{n} open"
+      decisionsDoc: "Decisions", openTasksN: "{n} open",
+      changesTitle: "Changes by component", outsideMap: "Outside the map", testFiles: "Tests",
+      leadChanges: "{c} components · {f} files", leadDecisions: "{n} decisions: why it is built this way",
+      leadDecision1: "1 decision: why it is built this way", leadSpec: "{n} requirements · {i} implemented"
     },
     es: {
       story: "Historia", canvas: "Mapa", architecture: "Arquitectura", spec: "SDD",
@@ -107,7 +110,10 @@
       coverageHint: "Parte del código cambiado que está en un componente del mapa.",
       onMap: "en el mapa", context: "Contexto",
       noConfig: "Sin arquitectura configurada", noConfigText: "Capas y componentes deducidos de los nombres de carpetas. Ejecuta explain-change init para definirlos.",
-      decisionsDoc: "Decisiones", openTasksN: "{n} abiertas"
+      decisionsDoc: "Decisiones", openTasksN: "{n} abiertas",
+      changesTitle: "Cambios por componente", outsideMap: "Fuera del mapa", testFiles: "Tests",
+      leadChanges: "{c} componentes · {f} archivos", leadDecisions: "{n} decisiones: por qué está construido así",
+      leadDecision1: "1 decisión: por qué está construido así", leadSpec: "{n} requisitos · {i} implementados"
     }
   };
   var T = I18N[cfg.lang] || I18N.en;
@@ -225,8 +231,10 @@
     return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref })
       : h("code", { class: "ref", text: label || ref });
   }
-  function sectionShell(id, title, body) {
-    return h("section", { class: "section", id: id }, h("div", { class: "section-head" }, h("h2", { text: title })), body);
+  // A section: its title, one line with its figures, then the body.
+  function sectionShell(id, title, body, lead) {
+    return h("section", { class: "section", id: id },
+      h("div", { class: "section-head" }, h("h2", { text: title }), lead ? h("span", { class: "section-lead", text: lead }) : null), body);
   }
   function legendItem(kind, color, label) {
     if (kind === "swatch") return h("span", null, h("i", { class: "swatch", style: "background:" + color }), label);
@@ -279,8 +287,8 @@
         h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.base_ref })),
         h("span", { class: "faint", text: src.commits + " " + (src.commits === 1 ? T.commit : T.commits) + (src.head_date ? " · " + src.head_date.slice(0, 10) : "") })),
       h("h1", { class: "title", text: src.title }),
-      ins ? h("p", { class: "tldr", text: ins.tldr }) : null,
       ins ? h("p", { class: "intent" }, h("b", { text: T.intent }), ins.intent) : null,
+      ins ? h("p", { class: "tldr", text: ins.tldr }) : null,
       notice,
       h("div", { class: "chips" }, chips),
       ctx.notes.map(function (n) { return h("p", { class: "note faint", text: n }); }));
@@ -1189,42 +1197,49 @@
     });
     return g;
   }
-  function gwtLines(lines) {
-    return lines.map(function (l) { return h("div", { class: "gwt-line" }, l.but ? h("b", { class: "gwt-but", text: T.but + " " }) : null, l.t); });
-  }
   function flowButtons(r, sc) {
     return (ins ? ins.flows : []).filter(function (f) { return f.scenario === r.id + "#" + sc.id; }).map(function (f) {
       return h("button", { class: "chip flow-chip", title: f.title, text: "▶ " + T.showFlow, onclick: function () { mapApi.showFlow(f.id); } });
     });
   }
-  // One scenario: three panels in reading order. Compact is the flow caption's version.
-  function scenarioStrip(r, sc, compact) {
-    var g = gwtGroups(sc), panels = [];
-    GWT.filter(function (k) { return g[k].length; }).forEach(function (k, i) {
-      if (i) panels.push(h("span", { class: "gwt-arrow", "aria-hidden": "true", text: "→" }));
-      panels.push(h("div", { class: "gwt-panel k-" + k.toLowerCase() }, h("span", { class: "gwt-k", text: T["k" + k] }), gwtLines(g[k])));
+  // A scenario drawn as a flow: the state it starts from → the action → each outcome. Every AND/BUT line is a node
+  // of its column; several preconditions join into the arrow and several outcomes branch out of it.
+  var GWT_ICON = { GIVEN: "●", WHEN: "▶", THEN: "✓" }, GWT_FR = { GIVEN: "1fr", WHEN: ".85fr", THEN: "1.15fr" };
+  function gwtFlow(g, keys, opts) {
+    var cells = [];
+    keys.forEach(function (k, i) {
+      if (i) cells.push(h("span", { class: "gf-arrow", "aria-hidden": "true" }));
+      var lines = g[k];
+      cells.push(h("div", { class: "gf-col k-" + k.toLowerCase() + (opts.same && opts.same[k] ? " same" : "") + (lines.length ? "" : " empty"), role: "group", "aria-label": T["k" + k] },
+        h("span", { class: "gf-k" }, h("i", { class: "gf-ico", text: GWT_ICON[k] }), T["k" + k]),
+        h("div", { class: "gf-nodes" + (lines.length > 1 ? " multi" : "") },
+          lines.length ? lines.map(function (l) {
+            return h("div", { class: "gf-node" }, l.but ? h("b", { class: "gwt-but", text: T.but + " " }) : null, l.t);
+          }) : h("div", { class: "gf-node empty", text: "—" }))));
     });
+    return h("div", { class: "gwt-flow" + (opts.labels ? "" : " no-labels") + (opts.compact ? " compact" : ""),
+      style: "grid-template-columns:" + keys.map(function (k) { return "minmax(0," + GWT_FR[k] + ")"; }).join(" 34px ") }, cells);
+  }
+  function gwtKeys(gs) { return GWT.filter(function (k) { return gs.some(function (g) { return g[k].length; }); }); }
+  // One scenario. Compact is the flow caption's version.
+  function scenarioStrip(r, sc, compact) {
+    var g = gwtGroups(sc);
     return h("div", { class: "scn-card" + (compact ? " compact" : "") },
       h("div", { class: "scn-head" }, h("b", { text: (compact ? T.scenario + ": " : "") + sc.name }),
         compact ? h("span", { class: "faint", text: "· " + r.name }) : flowButtons(r, sc)),
-      h("div", { class: "gwt-strip" }, panels));
+      gwtFlow(g, gwtKeys([g]), { labels: true, compact: compact }));
   }
-  // Several scenarios: one row each, so what differs between them stands out; a cell equal to the one above fades.
+  // Several scenarios: one flow each on the same columns, labels once; a column equal to the one above fades,
+  // so what differs between them stands out.
   function scenarioTable(r) {
-    var gs = r.scenarios.map(gwtGroups);
-    var keys = GWT.filter(function (k) { return gs.some(function (g) { return g[k].length; }); });
-    return h("div", { class: "gwt-table", style: "--gwt-cols:" + keys.length },
-      h("div", { class: "gwt-tr gwt-th" }, h("span", { text: T.scenario }),
-        keys.map(function (k) { return h("span", { class: "gwt-k k-" + k.toLowerCase(), text: T["k" + k] }); })),
-      r.scenarios.map(function (sc, i) {
-        return h("div", { class: "gwt-tr" },
-          h("div", { class: "gwt-name" }, h("b", { text: sc.name }), flowButtons(r, sc)),
-          keys.map(function (k) {
-            var lines = gs[i][k], same = i > 0 && lines.length && JSON.stringify(lines) === JSON.stringify(gs[i - 1][k]);
-            return h("div", { class: "gwt-td k-" + k.toLowerCase() + (same ? " same" : "") + (lines.length ? "" : " empty"), "data-label": T["k" + k] },
-              lines.length ? gwtLines(lines) : "—");
-          }));
-      }));
+    var gs = r.scenarios.map(gwtGroups), keys = gwtKeys(gs);
+    return h("div", { class: "scn-list" }, r.scenarios.map(function (sc, i) {
+      var same = {};
+      keys.forEach(function (k) { same[k] = i > 0 && gs[i][k].length && JSON.stringify(gs[i][k]) === JSON.stringify(gs[i - 1][k]); });
+      return h("div", { class: "scn-card" },
+        h("div", { class: "scn-head" }, h("b", { text: sc.name }), flowButtons(r, sc)),
+        gwtFlow(gs[i], keys, { labels: i === 0, same: same }));
+    }));
   }
   function scenarioView(r) { return r.scenarios.length > 1 ? scenarioTable(r) : scenarioStrip(r, r.scenarios[0]); }
   function reqRow(r) {
@@ -1385,11 +1400,12 @@
           c.why ? h("p", { class: "sdd-why", text: c.why }) : null,
           sddPipeline(c));
       }),
-      h("div", { class: "card sdd-reqs" }, h("h3", { text: T.reqs }), sddCoverage(), sddMatrix())]);
+      h("div", { class: "card sdd-reqs" }, h("h3", { text: T.reqs }), sddCoverage(), sddMatrix())],
+      tf("leadSpec", { n: REQS.length, i: REQS.filter(function (r) { return reqStatus(r) === "implemented"; }).length }));
   }
 
   // ═════════════════════════════ sections below the map ═════════════════════════════
-  // Order of reading: what to check (findings) → why it is built this way (design) → the code (changes).
+  // Order of reading: why it is built this way (decisions) → what the spec asks (SDD) → where it changed (files).
 
   // Why the change is built this way: the agent's design decisions, each with its main alternative.
   function renderDecisions() {
@@ -1401,7 +1417,50 @@
           h("p", { text: d.why }),
           d.alternative ? h("p", { class: "alt" }, h("b", { text: T.alternative + ": " }), d.alternative) : null,
           d.evidence ? fileLink(d.evidence) : null);
-      }))]);
+      }))], ins.decisions.length === 1 ? T.leadDecision1 : tf("leadDecisions", { n: ins.decisions.length }));
+  }
+
+  // Where it changed: one row per changed component (status, summary, files), then tests and files outside the map.
+  // Rows are open when the change is small enough to read whole.
+  function renderChanges() {
+    var comps = ctx.components.filter(function (c) { return c.status !== "context"; }).map(function (c) { return c.id; }).sort(byCompRank);
+    var byComp = {}, tests = [], outside = [];
+    ctx.files.forEach(function (f) {
+      if (f.category === "ignored") return;
+      if (f.category === "test") tests.push(f);
+      else if (f.component && comps.indexOf(f.component) > -1) (byComp[f.component] = byComp[f.component] || []).push(f);
+      else outside.push(f);
+    });
+    var nFiles = ctx.files.filter(function (f) { return f.category !== "ignored"; }).length;
+    if (!nFiles) return null;
+    var open = nFiles <= 24;
+    function nums(add, del) { return h("span", { class: "nums" }, h("span", { class: "add", text: "+" + fmt(add) }), " ", h("span", { class: "del", text: "−" + fmt(del) })); }
+    function sum(fs, k) { return fs.reduce(function (a, f) { return a + f[k]; }, 0); }
+    function fileRows(fs) {
+      return h("div", { class: "chg-files" }, fs.map(function (f) {
+        return h("div", { class: "insp-row" }, h("span", { class: "st st-" + f.status, text: f.status }),
+          fileLink(f.path), nums(f.add, f.del));
+      }));
+    }
+    function group(badge, name, meta, summary, fs, onMap) {
+      return h("details", { class: "chg", open: open },
+        h("summary", { class: "chg-head" },
+          h("span", { class: "chg-line" }, badge, h("b", { class: "chg-name", text: name }),
+            meta ? h("span", { class: "faint", text: meta }) : null,
+            h("span", { class: "chg-count faint", text: fs.length + " " + (fs.length === 1 ? T.file : T.kFiles) }), nums(sum(fs, "add"), sum(fs, "del"))),
+          summary ? h("span", { class: "chg-summary", text: summary }) : null),
+        fileRows(fs),
+        onMap ? h("button", { class: "chip", text: T.showOnMap, onclick: onMap }) : null);
+    }
+    return sectionShell("changes", T.changesTitle, h("div", { class: "card chg-list" }, [
+      comps.filter(function (id) { return byComp[id]; }).map(function (id) {
+        var n = changeComp[id], c = compById[id];
+        return group(h("span", { class: "badge " + n.status, text: statusLabel(n.status) }), compName(id), layerName(id),
+          summaryOf[id] || (c && c.desc) || null, byComp[id], function () { mapApi.inspect(id); });
+      }),
+      tests.length ? group(null, T.testFiles, null, null, tests) : null,
+      outside.length ? group(null, T.outsideMap, null, null, outside) : null]),
+      tf("leadChanges", { c: comps.length, f: nFiles }));
   }
 
   function excerpt(f, lines, ctxLines) {
@@ -1457,12 +1516,16 @@
   var main = h("main");
   main.appendChild(renderHeader());
   main.appendChild(renderMap());
-  var below = [{ id: "sdd", title: T.spec, el: renderSpec() }, { id: "decisions", title: T.decisions, el: renderDecisions() }].filter(function (x) { return x.el; });
+  var below = [
+    { id: "decisions", title: T.decisions, n: ins ? ins.decisions.length : 0, el: renderDecisions() },
+    { id: "sdd", title: T.spec, n: REQS.length, el: renderSpec() },
+    { id: "changes", title: T.delta, n: ctx.files.filter(function (f) { return f.category !== "ignored"; }).length, el: renderChanges() }
+  ].filter(function (x) { return x.el; });
   below.forEach(function (x) { main.appendChild(x.el); });
   var navList = h("nav", { class: "topnav" },
     h("a", { href: "#map", "data-sec": "map", text: T.canvas }),
     below.map(function (x) {
-      return h("a", { href: "#" + x.id, "data-sec": x.id, text: x.title });
+      return h("a", { href: "#" + x.id, "data-sec": x.id }, x.title, h("span", { class: "nav-n", text: String(x.n) }));
     }));
   var bar = h("div", { class: "topbar" },
     h("a", { class: "brand", href: "#summary" }, h("span", { class: "brand-mark", text: "◇" }), h("span", { class: "brand-name", text: "explain-change" })),

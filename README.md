@@ -6,14 +6,18 @@ does, where it sits in the architecture, how data flows and why it is built this
 It explains; it does not review. Bugs, gaps and merge readiness belong to your reviewer, and the line-level diff
 belongs to the PR.
 
-The page has three parts:
+The page reads from what to where:
 
-1. **What and why**: title, TL;DR and the goal of the change.
+1. **What and why**: title, the goal of the change and a TL;DR.
 2. **The map and its story**: a map you can pan and zoom, with the **architecture** as lanes (layers), the **data
-   flows** in call order, the **data model** and, for spec-driven changes, the **OpenSpec requirements** traced to
-   the code. A story of 2–8 steps walks through it: each step moves to what changed and shows the code excerpt.
-   Click a component to see what it now does, its files and its dependencies.
+   flows** in call order and the **data model**. A story of 2–8 steps walks through it: each step moves to what
+   changed and shows the code excerpt. Click a component to see what it now does, its files and its dependencies.
 3. **Design decisions**: what was chosen, why, and the main alternative.
+4. **SDD · OpenSpec**, for spec-driven changes: the change's pipeline (proposal, specs, design, tasks), and each
+   requirement traced to the components and tests that implement it. Scenarios are drawn as flows: the starting
+   state, then the action, then each outcome.
+5. **Changes by component**: each changed component with what it now does and its files, then the tests and the
+   files outside the map.
 
 Color encodes the delta (green new, blue changed, gray removed); a dependency that breaks one of your `[rules]` is a
 red arrow. For an Azure DevOps PR, each file reference links to the file in the PR. The page works offline, in light

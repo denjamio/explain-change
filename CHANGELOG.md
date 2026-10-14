@@ -4,6 +4,37 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- A "Changes by component" section closes the report: one row per changed component with its status, layer, the
+  agent's one-line summary and its files, then the tests and the files outside the map. Rows open by default up to
+  24 files. "Show on the map" opens the component in the inspector.
+- Each section names its figures beside its title (decisions, requirements met, components and files), and the top
+  bar shows the same counts.
+- The digest pre-fills the insight from the facts: a story outline (stage, focus and code of each step, overview
+  last), the `hero` candidates, the reference flow and the data-model evidence. The agent writes the words. The
+  same change gets the same outline.
+- When less than 80% of the changed code is on the map, a note names the folders no component holds, so the config
+  does not drift from the code.
+- The validator refuses, besides marketing words: the future and modals (`will`, `should`; `podría`, `va a`),
+  filler (`just`, `simplemente`), judgements (`better`, `mejor`) and numbers in words (`two`, `tres`). Each error
+  says why and what to write. Code names in the prose (snake_case, CamelCase, `Module::Name`, `obj.method()`) must
+  exist in the change or the repository.
+
+### Changed
+- Scenarios are drawn as a flow: the starting state, an arrow to the action, and the outcomes branching out of it.
+  Several preconditions join into the arrow. A requirement with several scenarios stacks one flow per scenario on
+  the same columns, and a column equal to the one above fades.
+- The digest's `## Task` shows a rule only when the change has what it is about (flows, data model, hero, spec),
+  and lists every refused word of the report's language. Its JSON is valid and ready to fill.
+- `SKILL.md` and `PROMPT.md` no longer repeat the digest's rules.
+- The sections below the map read from why to where: design decisions, then SDD · OpenSpec, then the changes.
+- The goal is a short labelled line under the title; the TL;DR follows it. The digest asks for an `intent` that
+  names the need behind the change and does not repeat the TL;DR.
+- Section titles are larger and a rule separates the sections.
+- A test keeps the two copies of the dark palette (system preference, theme button) identical.
+
 ## [0.1.4] - 2026-10-13
 
 SDD · OpenSpec moves out of the map into its own section, built for review.

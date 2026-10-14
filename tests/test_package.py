@@ -71,5 +71,26 @@ class TemplateSmokeTests(unittest.TestCase):
                     self.assertIn(step["heading"], out["text"])
 
 
+class TemplateStyleTests(unittest.TestCase):
+    def test_both_dark_theme_blocks_define_the_same_colors(self):
+        """The dark palette is written twice (system preference, and the theme button); the copies must not drift."""
+        css = (ROOT / "template" / "styles.css").read_text(encoding="utf-8")
+        auto = re.search(r'@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\) \{(.*?)\}', css, re.S)
+        forced = re.search(r':root\[data-theme="dark"\] \{(.*?)\}', css, re.S)
+        self.assertTrue(auto and forced)
+
+        def decls(block):
+            return dict(re.findall(r"([\w-]+)\s*:\s*([^;]+);", block))
+        self.assertEqual(decls(auto.group(1)), decls(forced.group(1)))
+
+    def test_every_color_token_has_a_dark_value(self):
+        css = (ROOT / "template" / "styles.css").read_text(encoding="utf-8")
+        light = re.search(r":root \{(.*?)\n\}", css, re.S).group(1)
+        dark = re.search(r':root\[data-theme="dark"\] \{(.*?)\}', css, re.S).group(1)
+        layout = re.compile(r"--(s\d|radius|font|mono)")
+        missing = sorted(set(re.findall(r"(--[\w-]+)\s*:", light)) - set(re.findall(r"(--[\w-]+)\s*:", dark)))
+        self.assertEqual([m for m in missing if not layout.match(m)], [])
+
+
 if __name__ == "__main__":
     unittest.main()
