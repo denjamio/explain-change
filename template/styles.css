@@ -155,8 +155,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .stage-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .stage-tab:hover { background: var(--surface-2); color: var(--text); }
 .stage-tab.on { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
-.stage-n { flex: none; display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--surface-2); color: var(--muted); font-size: 11.5px; font-weight: 600; line-height: 18px; text-align: center; }
-.stage-tab.on .stage-n { background: var(--accent); color: var(--surface); }
 .stage-sep { flex: none; align-self: center; width: 1px; height: 18px; margin: 0 6px; background: var(--border); }
 .canvas-tools { display: flex; gap: 6px; align-items: center; margin-left: auto; }
 .map-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto;

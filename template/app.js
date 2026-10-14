@@ -48,7 +48,7 @@
       scenario: "Scenario", showFlow: "Show flow", kGIVEN: "Given", kWHEN: "When", kTHEN: "Then", but: "but",
       status: "Status", seeReqs: "See the requirements", showOnMap: "Show on the map",
       pendingMap: "Requirements not linked to code yet.", mainSpec: "main spec", merged: "merged",
-      dataStage: "Data model", stageSteps: "{n} story step(s) here", migrations: "Migrations", fields: "Fields", relations: "Relations", evidence: "Evidence",
+      dataStage: "Data model", migrations: "Migrations", fields: "Fields", relations: "Relations", evidence: "Evidence",
 
 
 
@@ -101,7 +101,7 @@
       scenario: "Escenario", showFlow: "Ver flujo", kGIVEN: "Dado", kWHEN: "Cuando", kTHEN: "Entonces", but: "pero",
       status: "Estado", seeReqs: "Ver los requisitos", showOnMap: "Ver en el mapa",
       pendingMap: "Requisitos aún sin enlazar al código.", mainSpec: "spec principal", merged: "fusionado",
-      dataStage: "Modelo de datos", stageSteps: "{n} paso(s) de la historia aquí", migrations: "Migraciones", fields: "Campos", relations: "Relaciones", evidence: "Evidencia",
+      dataStage: "Modelo de datos", migrations: "Migraciones", fields: "Campos", relations: "Relaciones", evidence: "Evidencia",
 
 
 
@@ -781,17 +781,16 @@
       h("button", { class: "icon-btn wide", title: T.fit, text: T.fit, onclick: function () { fly(fullBox(), true); } }),
       h("button", { class: "icon-btn", title: T.zoomIn, text: "+", onclick: function () { zoom(0.8); } }),
       motionBtn);
-    // One tab per view: architecture │ flows │ data, with the story steps told on each. A title is never cut while it
-    // fits; when the bar runs out of room it ends in "…" and the tooltip shows it whole.
+    // One tab per view: architecture │ flows │ data. A title is never cut while it fits; when the bar runs out of room
+    // it ends in "…" and the tooltip shows it whole.
     var lastKind = null;
     STAGES.forEach(function (stg) {
       var kind = stg.flow ? "flow" : stg.id;
       if (lastKind && kind !== lastKind) tabs.appendChild(h("span", { class: "stage-sep", "aria-hidden": "true" }));
       lastKind = kind;
-      var n = STORY.filter(function (s) { return s.stage === stg.id; }).length;
       var label = h("span", { class: "stage-label", text: stg.title });
       tabs.appendChild(h("button", { role: "tab", class: "stage-tab" + (stg.flow ? " flow" : ""), "data-stage": stg.id,
-        "aria-label": stg.title + (n ? " · " + tf("stageSteps", { n: n }) : ""),
+        "aria-label": stg.title,
         onmouseenter: function () {
           var tip = (label.scrollWidth > label.clientWidth ? [stg.title] : []).concat(stg.flow && stg.flow.trigger ? [stg.flow.trigger] : []);
           if (tip.length) this.title = tip.join("\n"); else this.removeAttribute("title");
@@ -799,7 +798,7 @@
         onclick: function () {
           closeInspector();
           show(stg.id, [], true);
-        } }, label, n ? h("span", { class: "stage-n", title: tf("stageSteps", { n: n }), text: String(n) }) : null));
+        } }, label));
     });
     var caption = h("div", { class: "stage-caption" });
     var legend = h("div", { class: "diagram-legend" });

@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.9] - 2026-10-14
+
+Map tabs without the story-step count.
+
+### Removed
+- The number beside each map tab (the story steps told on it): it read as a count of the view's contents.
+
 ## [0.1.8] - 2026-10-14
 
 Flows are outlined from the code that starts them, and name it.
