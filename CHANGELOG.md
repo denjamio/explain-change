@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.6] - 2026-10-14
+
+The map tabs say what kind of view each one is and how much of the story it tells.
 
 ### Changed
 - The map tabs are grouped by kind of view: Architecture │ Flows ▸ one tab per flow │ Data model ("Data" was
