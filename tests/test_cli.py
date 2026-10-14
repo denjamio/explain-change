@@ -572,6 +572,48 @@ class ConfigAndDigestTests(unittest.TestCase):
             sizes.append(len((repo.path / ".explain-change" / "digest.md").read_text(encoding="utf-8")))
         self.assertLess(sizes[0], sizes[1])
 
+    def test_template_is_valid_json_and_its_outline_validates(self):
+        cfg = ('[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "domain"\n'
+               'paths = ["app/models/**"]\n[[components]]\nid = "controllers"\nlayer = "web"\n'
+               'paths = ["app/controllers/**"]\n')
+        repo = Repo(cfg)
+        self.addCleanup(repo.close)
+        repo.write({"app/controllers/orders_controller.rb": "class OrdersController\n  def show\n    Order.new\n"
+                                                             "  end\nend\n"})
+        repo.commit("controller")
+        ctx = repo.collect()
+        tpl = json.loads(ec.insight_template(ctx))
+        self.assertEqual(json.loads(ec.insight_template(repo.collect())), tpl)  # same change, same outline
+        self.assertEqual(tpl["story"][-1]["focus"], [])  # the overview closes the story
+        self.assertEqual(tpl["hero"][0], {**tpl["hero"][0], "from": "controllers", "to": "models"})
+        ins = {"key": ctx["key"], "tldr": "t", "intent": "i",
+               "changes": [{"id": c["id"], "summary": "s"} for c in tpl["changes"]],
+               "story": [{**st, "heading": "h", "body": "b"} for st in tpl["story"] if "<entity-id>" not in st["focus"]]}
+        self.assertEqual(ec.validate_insight(ins, ctx, repo.path), [])
+        task = ec.digest_task(ctx)
+        self.assertIn("- flows", task)
+        self.assertIn("Candidates: controllers -> models", task)
+        self.assertIn("- data_model", task)  # app/models is a data path
+        self.assertNotIn("- spec", task)
+
+    def test_small_change_gets_a_short_task(self):
+        repo = Repo('[[layers]]\nid = "lib"\n[[components]]\nid = "util"\nlayer = "lib"\npaths = ["lib/**"]\n')
+        self.addCleanup(repo.close)
+        repo.write({"lib/fmt.rb": "def fmt(x)\n  x.to_s\nend\n"})
+        repo.commit("lib")
+        task = ec.digest_task(repo.collect(base="HEAD~1"))
+        for rule in ("- flows", "- data_model", "- hero", "- spec"):
+            self.assertNotIn(rule, task)
+
+    def test_coverage_note_names_the_folders_off_the_map(self):
+        repo = Repo('[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "domain"\n'
+                    'paths = ["app/models/**"]\n')
+        self.addCleanup(repo.close)
+        repo.write({"app/jobs/sync_job.rb": "class SyncJob\n" + "  def run; end\n" * 30 + "end\n"})
+        repo.commit("job")
+        notes = repo.collect()["notes"]
+        self.assertTrue(any("of the changed code is on the map" in n and "app/jobs (1 file)" in n for n in notes), notes)
+
     def test_pr_description_is_quoted_data(self):
         repo = Repo()
         self.addCleanup(repo.close)

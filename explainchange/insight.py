@@ -6,9 +6,11 @@ from pathlib import Path
 
 from .constants import SCHEMA_VERSION
 from .openspec import spec_requirements
+from .util import git
 
 __all__ = [
-    "INSIGHT_LIMITS", "INSIGHT_ENUMS", "INSIGHT_FIELDS", "MAX_SENTENCE_WORDS", "REF_RE", "VAGUE_WORDS", "PROSE_RULES",
+    "INSIGHT_LIMITS", "INSIGHT_ENUMS", "INSIGHT_FIELDS", "MAX_SENTENCE_WORDS", "REF_RE", "PROSE_REFUSED",
+    "CODE_NAME_RE", "PRODUCT_NAMES", "compact_words", "prose_rules",
     "STORY_MIN", "hunk_ranges", "touched_components", "insight_components", "KEBAB_RE", "validate_insight",
     "InsightValidator", "normalize_insight",
 ]
@@ -36,24 +38,65 @@ INSIGHT_FIELDS = ["version", "key", "lang", "tldr", "intent", "story", "hero", "
                   "flows", "data_model", "spec"]
 
 # Prose: the parts of ASD-STE100 (Simplified Technical English) that help a design document, not its restricted
-# dictionary: technical names are the content and stay exactly as in the code. Two rules are enforced (sentence
-# length and a short list of vague words, English and Spanish); the rest is guidance in the digest.
+# dictionary: technical names are the content and stay exactly as in the code. Enforced: sentence length, the words
+# below (by language and by why, so the error says what to write instead) and code names that exist in the change.
+# The rest is guidance in the digest, which prints this whole list for the report's language.
 MAX_SENTENCE_WORDS = 25
 REF_RE = re.compile(r"^(.+?):(\d+)(?:-(\d+))?$")  # file:line or file:a-b
-VAGUE_WORDS = [
-    "leverage", "leverages", "leveraging", "utilize", "utilizes", "orchestrate", "orchestrates", "seamless",
-    "seamlessly", "robust", "facilitate", "facilitates", "in order to", "streamline", "streamlines", "enhance",
-    "enhances", "comprehensive", "holistic", "crucial", "empower", "empowers", "ensures", "delve",
-    "aprovecha", "aprovechar", "orquesta", "orquestar", "robusto", "robusta", "de cara a", "con el fin de",
-    "a nivel de", "potencia", "potenciar", "integral", "garantiza", "optimiza",
-]
-PROSE_RULES = (
-    "Simplified Technical English (ASD-STE100) style, adapted to design documents, in the report's language: "
-    "one idea per sentence; at most 25 words per sentence (enforced); active voice, present tense; say what the "
-    "change does and its effect, not how good it is; simple common verbs (adds, sends, stores, calls, checks, "
-    "replaces); the same word for the same thing, and component, type and field names exactly as in the code and "
-    "on the map; numbers as digits; no idioms, no filler, no marketing words (refused: "
-    + ", ".join(VAGUE_WORDS[:9]) + " …).")
+PROSE_REFUSED = {
+    "en": {
+        "marketing words; say what actually happens": [
+            "leverage", "leverages", "leveraging", "utilize", "utilizes", "orchestrate", "orchestrates", "seamless",
+            "seamlessly", "robust", "facilitate", "facilitates", "in order to", "streamline", "streamlines",
+            "enhance", "enhances", "comprehensive", "holistic", "crucial", "empower", "empowers", "ensures", "delve"],
+        "future or modal; say what the code does now, in the present": ["will", "would", "could", "might", "should"],
+        "filler; remove it": ["basically", "simply", "just", "actually", "really"],
+        "a judgement; say the effect instead": ["better", "cleaner", "nicer", "elegant", "elegantly"],
+        "a number in words; write digits": ["two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
+    },
+    "es": {
+        "palabras de marketing; di qué pasa": [
+            "aprovecha", "aprovechar", "orquesta", "orquestar", "robusto", "robusta", "de cara a", "con el fin de",
+            "a nivel de", "potencia", "potenciar", "integral", "garantiza", "optimiza"],
+        "futuro o condicional; di qué hace el código ahora, en presente": [
+            "podría", "podrían", "debería", "deberían", "va a", "van a", "será", "serán", "permitirá", "permitirán"],
+        "relleno; quítalo": ["básicamente", "simplemente", "realmente"],
+        "un juicio; di el efecto": ["mejor", "más limpio", "más limpia", "elegante", "elegantemente"],
+        "un número en letras; escribe cifras": ["dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve",
+                                                "diez"],
+    },
+}
+# Code names in prose: `backticked`, snake_case, Qualified::Name or obj.method(), and CamelCase with 2+ humps. Each
+# must appear in the change (hunks, paths, symbols, config, OpenSpec, the changed files) or the repository, unless
+# it is a common product name.
+CODE_NAME_RE = re.compile(r"`([^`]+)`|(?<![\w.])((?:[A-Za-z_]\w+(?:::|\.))+[A-Za-z_]\w+(?:\(\))?"
+                          r"|[a-z][a-z0-9]*(?:_[a-z0-9]+)+|[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]+)+)(?![\w])")
+PRODUCT_NAMES = {"OpenSpec", "JavaScript", "TypeScript", "CoffeeScript", "GitHub", "GitLab", "DevOps", "PowerShell",
+                 "WebSocket", "WebSockets", "YouTube", "LinkedIn", "PayPal", "BigQuery", "CloudFront", "ActiveRecord",
+                 "ActiveJob", "ActionMailer", "ActionCable", "PubSub"}
+
+
+def compact_words(words: list[str]) -> str:
+    """'seamless, seamlessly, robust' → 'seamless*, robust': a word that extends another one is folded into it."""
+    out = []
+    for w in words:
+        if any(w != o and w.startswith(o) for o in words):
+            continue
+        out.append(w + ("*" if any(o != w and o.startswith(w) for o in words) else ""))
+    return ", ".join(out)
+
+
+def prose_rules(lang: str) -> str:
+    """The prose rules for the digest, with every word the validator refuses in that language (w* = w and its forms)."""
+    refused = "; ".join(f"{why.split(';')[0]}: {compact_words(words)}"
+                        for why, words in PROSE_REFUSED.get(lang, PROSE_REFUSED["en"]).items())
+    return ("Simplified Technical English (ASD-STE100): one idea per sentence, at most "
+            f"{MAX_SENTENCE_WORDS} words; active voice, present tense; the effect, not how good it is; simple verbs "
+            "(adds, sends, stores, calls, checks, replaces); one word per thing; numbers as digits; no idioms. "
+            "Code names (snake_case, CamelCase, Module::Name, obj.method()) exactly as in the code. "
+            f"Refused: {refused}.")
+
+
 STORY_MIN = 2
 
 
@@ -92,6 +135,39 @@ class InsightValidator:
         self.files = {f["path"]: f for f in ctx["files"]}
         self.reqs = spec_requirements(ctx)
         self.req_ids = [r["id"] for r in self.reqs]
+        self.lang = ctx["config"].get("lang", "en")
+        self.refused = {why: re.compile(r"(?<![\w])(?:" + "|".join(re.escape(w) for w in words) + r")(?![\w])")
+                        for why, words in PROSE_REFUSED.get(self.lang, PROSE_REFUSED["en"]).items()}
+        self._names: str | None = None
+        self._grep: dict[str, bool] = {}
+
+    def names(self) -> str:
+        """Everything a code name in the prose may come from, built on first use."""
+        if self._names is None:
+            cfg, parts = self.ctx["config"], []
+            for f in self.ctx["files"]:
+                parts += [f["path"], f.get("old_path") or ""] + [t for h in f["hunks"] for _, t in h["lines"]]
+                if self.root and f["status"] != "D":
+                    try:
+                        parts.append((self.root / f["path"]).read_text(encoding="utf-8", errors="replace")[:200_000])
+                    except OSError:
+                        pass
+            parts += [x["name"] for x in self.ctx.get("symbols", [])]
+            parts += [c.get(k) or "" for c in cfg["components"] for k in ("id", "name", "desc")]
+            parts += [layer.get(k) or "" for layer in cfg["layers"] for k in ("id", "name")]
+            parts += [r.get(k) or "" for r in self.reqs for k in ("id", "name", "text")]
+            src = self.ctx.get("source", {})
+            parts += [src.get("title") or "", src.get("description") or ""]
+            self._names = "\n".join(parts)
+        return self._names
+
+    def known(self, name: str) -> bool:
+        """A code name is known when the change mentions it, or failing that, when the repository has it."""
+        if name in self.names():
+            return True
+        if name not in self._grep:
+            self._grep[name] = bool(self.root and git(["grep", "-l", "-F", "-e", name], self.root, check=False))
+        return self._grep[name]
 
     def run(self, ins: dict) -> list[str]:
         self.header(ins)
@@ -108,7 +184,7 @@ class InsightValidator:
 
     # ── field helpers ──
 
-    def text(self, path, value, limit, required=True):
+    def text(self, path, value, limit, required=True, names=True):
         if value is None or value == "":
             if required:
                 self.errs.append(f"{path}: required")
@@ -117,9 +193,9 @@ class InsightValidator:
         elif len(value) > limit:
             self.errs.append(f"{path}: {len(value)} chars, max {limit}")
         else:
-            self.prose(path, value)
+            self.prose(path, value, names)
 
-    def prose(self, path, value):
+    def prose(self, path, value, names=True):
         for sentence in re.split(r"(?<=[.!?;])\s+", value):
             n = len(re.findall(r"[\wÀ-ÿ'’-]+", sentence))
             if n > MAX_SENTENCE_WORDS:
@@ -127,9 +203,21 @@ class InsightValidator:
                                  "(Simplified Technical English)")
                 break
         low = value.lower()
-        vague = [w for w in VAGUE_WORDS if re.search(r"(?<![\w])" + re.escape(w) + r"(?![\w])", low)]
-        if vague:
-            self.errs.append(f"{path}: replace vague word(s) {', '.join(vague)} with what actually happens")
+        for why, rx in self.refused.items():
+            found = sorted(set(rx.findall(low)))
+            if found:
+                self.errs.append(f"{path}: {', '.join(found)}: {why}")
+        unknown = []
+        for m in CODE_NAME_RE.finditer(value) if names else []:
+            name = (m.group(1) or m.group(2)).strip()
+            bare = name[:-2] if name.endswith("()") else name
+            # Check.desc or Form.is_valid: each part must exist, not the whole (it is rarely written that way)
+            parts = [x for x in re.split(r"::|\.", bare) if x] if re.fullmatch(r"[\w.:]+", bare) else [bare]
+            if bare and bare not in PRODUCT_NAMES and bare not in unknown and not all(self.known(x) for x in parts):
+                unknown.append(bare)
+        if unknown:
+            self.errs.append(f"{path}: {', '.join(unknown)} not found in the change; write code names exactly as in "
+                             "the code, or in plain words")
 
     def fields(self, path, value, max_items, limit):
         """'+email: string' added | '-fax' removed | '~total: number' changed | 'id: string' unchanged."""
@@ -219,7 +307,9 @@ class InsightValidator:
         for i, d in self.objects("decisions", value, L["decisions"]):
             self.text(f"decisions[{i}].title", d.get("title"), L["decisions.title"])
             self.text(f"decisions[{i}].why", d.get("why"), L["decisions.why"])
-            self.text(f"decisions[{i}].alternative", d.get("alternative"), L["decisions.alternative"], required=False)
+            # The alternative is what was not built: it may name code that is not in the change.
+            self.text(f"decisions[{i}].alternative", d.get("alternative"), L["decisions.alternative"], required=False,
+                      names=False)
             self.location(f"decisions[{i}].evidence", d.get("evidence"), required=False)
 
     def flows(self, value) -> dict[str, list[dict]]:
@@ -263,7 +353,7 @@ class InsightValidator:
         if not isinstance(data, dict):
             self.errs.append(f"{path}.data: must be an object {{type, fields}}")
             return
-        self.text(f"{path}.data.type", data.get("type"), L["flows.steps.data.type"])
+        self.text(f"{path}.data.type", data.get("type"), L["flows.steps.data.type"], names=False)
         self.fields(f"{path}.data.fields", data.get("fields"), L["flows.steps.data.fields"],
                     L["flows.steps.data.fields.item"])
 
@@ -283,7 +373,7 @@ class InsightValidator:
             elif eid in entity_ids:
                 self.errs.append(f"{path}.id: '{eid}' is used twice")
             entity_ids.add(eid)
-            self.text(f"{path}.name", en.get("name"), L["data_model.entities.name"])
+            self.text(f"{path}.name", en.get("name"), L["data_model.entities.name"], names=False)
             self.enum(f"{path}.change", en.get("change"), "data_model.entities.change")
             self.fields(f"{path}.fields", en.get("fields"), L["data_model.entities.fields"],
                         L["data_model.entities.fields.item"])

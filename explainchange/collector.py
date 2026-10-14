@@ -19,7 +19,8 @@ from .ado import ado_source
 
 __all__ = [
     "repo_root", "ensure_workdir", "looks_generated", "generated_paths", "collect", "change_source",
-    "changed_files", "scan_sides", "relevant_edges", "component_rows", "change_stats", "insight_key", "public_config",
+    "changed_files", "scan_sides", "relevant_edges", "component_rows", "change_stats", "COVERAGE_MIN",
+    "COVERAGE_MIN_LINES", "coverage_notes", "insight_key", "public_config",
 ]
 
 
@@ -82,10 +83,13 @@ def collect(root: Path, cfg: dict, base_arg: str | None, uncommitted: bool, ado:
 
     symbols = [s for f in files if f["category"] in ("code", "config") and f["hunks"] for s in extract_symbols(f)]
     edges = relevant_edges(cfg, files, symbols, scan["base_edges"], scan["head_edges"], touched)
+    stats = change_stats(files, edges, scan["head_unresolved"])
+    if not cfg["inferred"]:
+        notes += coverage_notes(files, stats)
     return {"version": SCHEMA_VERSION, "key": insight_key(root, raw_diff, specs), "source": src,
             "config": public_config(cfg, root), "files": files,
             "components": component_rows(cfg, mapper, files, edges, touched, base_files, head_files),
-            "edges": edges, "symbols": symbols, "stats": change_stats(files, edges, scan["head_unresolved"]),
+            "edges": edges, "symbols": symbols, "stats": stats,
             "notes": notes, "openspec": scan["openspec"], "deps": sorted([a, b] for a, b in scan["head_edges"])}
 
 
@@ -255,6 +259,28 @@ def change_stats(files: list[dict], edges: list[dict], unresolved: int) -> dict:
         "code_lines": sum(f["add"] + f["del"] for f in mappable),
         "mapped_lines": sum(f["add"] + f["del"] for f in mappable if f["component"]),
     }
+
+
+COVERAGE_MIN = 80  # percent of the changed code lines that a component holds
+COVERAGE_MIN_LINES = 20  # smaller changes never warn
+
+
+def coverage_notes(files: list[dict], stats: dict) -> list[str]:
+    """When the map shows too little of the change, the folders it misses: the config has drifted from the code."""
+    if stats["code_lines"] < COVERAGE_MIN_LINES:
+        return []
+    pct = round(100 * stats["mapped_lines"] / stats["code_lines"])
+    if pct >= COVERAGE_MIN:
+        return []
+    dirs: dict[str, int] = {}
+    for f in files:
+        if not f["component"] and f["category"] in ("code", "config", "migration"):
+            d = "/".join(f["path"].split("/")[:-1][:2]) or "."
+            dirs[d] = dirs.get(d, 0) + 1
+    top = sorted(dirs.items(), key=lambda x: (-x[1], x[0]))
+    where = ", ".join(f"{d} ({n} file{'s' if n > 1 else ''})" for d, n in top[:5]) + (" …" if len(top) > 5 else "")
+    return [f"Only {pct}% of the changed code is on the map; no component holds {where}. "
+            f"Add them to {CONFIG_NAME} (`explain-change check` lists every unmapped file)."]
 
 
 def insight_key(root: Path, raw_diff: str, specs: list[str] | None) -> str:

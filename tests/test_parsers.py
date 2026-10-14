@@ -422,8 +422,40 @@ class InsightValidationTests(unittest.TestCase):
         long = " ".join(["word"] * 30) + "."
         errs = "\n".join(ec.validate_insight(self.valid(tldr=long, intent="We leverage the queue."), self.CTX))
         self.assertIn("tldr: a sentence has 30 words, max 25", errs)
-        self.assertIn("intent: replace vague word(s) leverage", errs)
+        self.assertIn("intent: leverage: marketing words", errs)
         self.assertEqual(ec.validate_insight(self.valid(tldr="Short one. " * 6), self.CTX), [])
+
+    def test_prose_refuses_by_language_and_says_why(self):
+        errs = "\n".join(ec.validate_insight(self.valid(
+            tldr="It will retry two times.", intent="Just better errors."), self.CTX))
+        self.assertIn("tldr: will: future or modal", errs)
+        self.assertIn("tldr: two: a number in words; write digits", errs)
+        self.assertIn("intent: just: filler", errs)
+        self.assertIn("intent: better: a judgement", errs)
+        es = {**self.CTX, "config": {**self.CTX["config"], "lang": "es"}}
+        errs = "\n".join(ec.validate_insight(self.valid(tldr="Podría reintentar tres veces."), es))
+        self.assertIn("tldr: podría: futuro o condicional", errs)
+        self.assertIn("tldr: tres: un número en letras", errs)
+        self.assertEqual(ec.validate_insight(self.valid(tldr="Will reintenta 3 veces."), es), [])  # English words pass
+        rules = ec.prose_rules("en")
+        for words in ec.PROSE_REFUSED["en"].values():  # the digest lists every refused word, folded by stem
+            self.assertTrue(all(any(w.startswith(x.rstrip("*")) for x in ec.compact_words(words).split(", "))
+                                for w in words))
+            self.assertIn(ec.compact_words(words), rules)
+
+    def test_code_names_must_exist(self):
+        ctx = {**self.CTX, "symbols": [{"name": "refund_order"}],
+               "files": [{**self.CTX["files"][0], "hunks": [{**self.CTX["files"][0]["hunks"][0],
+                                                            "lines": [["+", "  Order.place(total)"]]}]}]}
+        ok = self.valid(tldr="refund_order calls Order.place and Order.total on GitHub.")
+        self.assertEqual(ec.validate_insight(ok, ctx), [])
+        bad = self.valid(tldr="refund_order calls ghost_method and RefundService.",
+                         decisions=[{"title": "t", "why": "w", "alternative": "a SidekiqJob with retries"}],
+                         flows=[{"id": "f", "title": "t", "steps": [{"from": "a", "to": "b", "msg": "m",
+                                                                      "status": "new", "data": {"type": "RefundParams"}}]}])
+        errs = ec.validate_insight(bad, ctx)
+        self.assertEqual(errs, ["tldr: ghost_method, RefundService not found in the change; write code names exactly "
+                                "as in the code, or in plain words"])  # alternative and data.type are not checked
 
 
 class OpenSpecParserTests(unittest.TestCase):

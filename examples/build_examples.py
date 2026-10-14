@@ -241,7 +241,7 @@ end
         "tldr": "Añade reembolsos parciales de pedidos vía POST /refunds, idempotentes por cabecera Idempotency-Key, con aviso por email al cliente.",
         "intent": "Permitir a soporte devolver parte del importe de un pedido sin duplicar cobros.",
         "story": [
-            {"heading": "Nuevo caso de uso Refunds::Create", "body": "Soporte puede devolver parte de un pedido. Un reintento con la misma clave no cobra dos veces.", "stage": "architecture", "focus": ["refunds"], "code": "app/services/refunds/create.rb:4-11"},
+            {"heading": "Nuevo caso de uso Refunds::Create", "body": "Soporte puede devolver parte de un pedido. Un reintento con la misma clave no vuelve a cobrar.", "stage": "architecture", "focus": ["refunds"], "code": "app/services/refunds/create.rb:4-11"},
             {"heading": "Order ahora calcula lo reembolsable", "body": "La regla de importe vive en el modelo, no en el servicio.", "stage": "architecture", "focus": ["models"], "code": "app/models/order.rb:5-10"},
             {"heading": "Tabla refunds añadida", "body": "Cada reembolso guarda su importe y una clave de idempotencia única. Un pedido tiene 0 o más reembolsos.", "stage": "data", "focus": ["refund"], "code": "db/migrate/20261001100000_create_refunds.rb:3-8"},
             {"heading": "La pasarela recibe la clave de idempotencia", "body": "Gateway.refund propaga Idempotency-Key a la pasarela de pagos.", "stage": "flow:create-refund", "focus": ["#4"], "code": "app/clients/payments/gateway.rb:8-10"},
