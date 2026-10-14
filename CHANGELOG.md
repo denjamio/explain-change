@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.8] - 2026-10-14
+
+Flows are outlined from the code that starts them, and name it.
 
 ### Added
 - The digest outlines the runtime paths of the change from its entry points: a request handler, job or command whose
