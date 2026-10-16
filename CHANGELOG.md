@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-16
+
 ### Added
 - `explain-change share`: attaches the finished report to its Azure DevOps PR and comments with the link; only people
   who can open the PR can download it. It refuses a report of other commits than the PR's, and does not attach the
@@ -19,6 +21,14 @@ All notable changes to this project are documented here. The format follows
 - CI compiles the standalone binary on Linux, macOS and Windows and runs it through pipes on a temporary repository
   (`bun run smoke`), so the Windows binary runs before it ships.
 
+### Changed
+- A logo: a lit bulb. Generated pages (reports and the examples gallery) show it bare, in the accent color, as their
+  mark and favicon (`report/bulb.svg`); the README shows it on its square (`report/logo.svg`).
+- Docs and skills no longer point to npm, which is not published yet: an agent that does not find the CLI asks the
+  user to install it with `install.sh`. The README says how to release; the architecture doc describes `check`.
+- The README reads like a product page: a screenshot linking to the live examples, a 3-step quick start, the
+  pipeline as a diagram, and reference material folded.
+
 ### Removed
 - C# support: `using`, namespaces, project references, ASP.NET endpoints and the .NET test, generated and build
   patterns. The `namespaces` component key is now an unknown key (an error). `ANALYSIS_VERSION` is 4, so explanations
@@ -28,12 +38,6 @@ All notable changes to this project are documented here. The format follows
 - Folders are created one at a time: on Windows, Bun's recursive mkdir could throw EEXIST under existing parents with
   another spelling (8.3 short names such as `RUNNER~1`), not only for existing folders. Scripts set the exit code
   instead of calling `process.exit()`, as the CLI does.
-
-### Changed
-- A logo: a lit bulb. Generated pages (reports and the examples gallery) show it bare, in the accent color, as their
-  mark and favicon (`report/bulb.svg`); the README shows it on its square (`report/logo.svg`).
-- Docs and skills no longer point to npm, which is not published yet: an agent that does not find the CLI asks the
-  user to install it with `install.sh`. The README says how to release; the architecture doc describes `check`.
 
 ## [0.2.0] - 2026-10-16
 
