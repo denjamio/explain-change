@@ -71,11 +71,38 @@ function bestHunk(files: FileFacts[], ctx: HunkContext): string | null {
   return top && top.score > 0 ? hunkRef(top.f, top.h) : null;
 }
 
-/** Drawn dependencies the change creates or grows, strongest first: the candidates for keyDependencies. */
-export function keyDependencyCandidates(facts: Pick<FactsCore, "dependencies">) {
+/**
+ * Drawn dependencies the change creates or grows, the candidates for keyDependencies: new ones first, then the
+ * ones that grow, strongest first. A grown dependency into the bottom lane (the shared kernel or the platform,
+ * which every change touches) is no candidate: it says nothing about this change.
+ */
+export function keyDependencyCandidates(facts: Pick<FactsCore, "dependencies" | "config">) {
+  const bottom = facts.config.layers.at(-1)?.id;
+  const layerOf = new Map(facts.config.components.map((c) => [c.id, c.layer]));
   return facts.dependencies
-    .filter((e) => e.delta === "added" || (e.delta === "changed" && e.headCount > e.baseCount))
-    .sort(byKeys((e) => [-(e.headCount - e.baseCount), e.from, e.to]));
+    .filter(
+      (e) =>
+        e.delta === "added" ||
+        (e.delta === "changed" && e.headCount > e.baseCount && (!bottom || layerOf.get(e.to) !== bottom)),
+    )
+    .sort(byKeys((e) => [e.delta === "added" ? 0 : 1, -(e.headCount - e.baseCount), e.from, e.to]));
+}
+
+/**
+ * How much a changed component matters to the story: the public symbols it changes, the dependencies it gains or
+ * loses, then its lines of code. Config and generated lines do not count: an OpenAPI spec or a generated client is
+ * big, and rarely the point.
+ */
+function storyWeight(facts: FactsCore, id: string): [number, number] {
+  const fileComponent = new Map(facts.files.map((f) => [f.path, f.component]));
+  const symbols = facts.symbols.filter((s) => fileComponent.get(s.file) === id).length;
+  const deps = facts.dependencies.filter(
+    (e) => (e.from === id || e.to === id) && (e.delta === "added" || e.delta === "removed"),
+  ).length;
+  const code = facts.files
+    .filter((f) => f.component === id && f.category === "code")
+    .reduce((n, f) => n + f.additions + f.deletions, 0);
+  return [symbols * 3 + deps * 2, code];
 }
 
 /** Where a runtime path starts: a request handler, a background job or a command. First match wins. */
@@ -228,25 +255,17 @@ export function outline(facts: FactsCore): Outline {
       ),
     });
   }
-  for (const [delta, n] of [
-    ["added", 2],
-    ["removed", 1],
-  ] as const) {
-    for (const c of touched.filter((c) => c.delta === delta).slice(0, n)) {
-      story.push({
-        about: `${c.id} ${delta}`,
-        view: "architecture",
-        focus: [c.id],
-        code: bestHunk(filesOf.get(c.id) ?? [], ctx),
-      });
-    }
-  }
-  const changed = touched
-    .filter((c) => c.delta === "changed")
-    .sort(byKeys((c) => [-(c.additions + c.deletions), c.id]));
-  for (const c of changed.slice(0, Math.max(0, 4 - story.length))) {
+  // 1 ranking for added, removed and changed components: being new is worth something, not everything (a new
+  // folder of locales is no headline).
+  const ranked = touched
+    .map((c) => {
+      const [weight, code] = storyWeight(facts, c.id);
+      return { c, weight: weight + (c.delta === "changed" ? 0 : 2), code };
+    })
+    .sort(byKeys((x) => [-x.weight, -x.code, x.c.id]));
+  for (const { c } of ranked.slice(0, Math.max(0, 4 - story.length))) {
     story.push({
-      about: `${c.id} changed`,
+      about: `${c.id} ${c.delta}`,
       view: "architecture",
       focus: [c.id],
       code: bestHunk(filesOf.get(c.id) ?? [], ctx),

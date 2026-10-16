@@ -315,6 +315,37 @@ describe("generated files", () => {
   });
 });
 
+describe("outline", () => {
+  test("the story starts at what the change is about; grown links into the bottom lane are no key dependency", () => {
+    const config =
+      '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n[[layers]]\nid = "shared"\n' +
+      '[[components]]\nid = "controllers"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
+      '[[components]]\nid = "settings"\nlayer = "web"\npaths = ["config/**"]\n' +
+      '[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n' +
+      '[[components]]\nid = "money"\nlayer = "shared"\npaths = ["lib/**"]\n';
+    const r = repo(config);
+    r.git("checkout", "-q", "main");
+    r.write({
+      "lib/money.rb": "class Money\nend\n",
+      "app/controllers/orders_controller.rb": "class OrdersController\n  def show\n    Money.new\n  end\nend\n",
+    });
+    r.commit("money");
+    r.git("checkout", "-q", "feature");
+    r.git("merge", "-q", "main");
+    r.write({
+      "config/locales.yml": `en:\n${"  key: value\n".repeat(200)}`,
+      "app/models/order.rb": "class Order\n  has_many :line_items\n  def refundable_total\n  end\nend\n",
+      "app/controllers/orders_controller.rb":
+        "class OrdersController\n  def show\n    Money.new\n    Money.zero\n    Order.new.refundable_total\n  end\nend\n",
+    });
+    r.commit("refundable total");
+    const { outline } = r.collect();
+    const first = outline.story.find((s) => s.view === "architecture" && s.focus.length);
+    expect(first?.focus).toEqual(["models"]); // its new public method, not 200 lines of locales
+    expect(outline.keyDependencyCandidates).toEqual([{ from: "controllers", to: "models" }]);
+  });
+});
+
 describe("unresolved references", () => {
   test("only the changed files count", () => {
     const r = repo();

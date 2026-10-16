@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Fixed
+- The draft's story starts at what the change is about: components rank by the public symbols they change and the
+  dependencies they gain or lose, then by lines of code, with no config or generated lines. Before, the biggest
+  component led, often a client, a schema or an OpenAPI spec. Key dependency candidates put new dependencies first
+  and leave out grown links into the bottom lane, which every change touches.
 - "References not resolved" counts the changed files only, and says so. It counted the whole repository, so every
   pull request of Immich showed the same 70.
 - Generated files are recognized by the first lines of the file, not of the first hunk, so a change in the middle
