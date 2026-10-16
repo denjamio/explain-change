@@ -18,6 +18,7 @@ function makeFacts(over: Partial<Facts> = {}, lang: "en" | "es" = "en"): Facts {
     key: "k1",
     source: {
       kind: "local",
+      host: null,
       title: "t",
       description: "",
       branch: "b",

@@ -10,6 +10,10 @@ import { BUDGET_RANGE, DEFAULT_BUDGET } from "../core/constants.ts";
 export const LANGS = ["en", "es"] as const;
 export type ReportLang = (typeof LANGS)[number];
 
+/** Where pull requests live: the hosts `pr` and `share` work with. */
+export const HOST_IDS = ["azure-devops"] as const;
+export type HostId = (typeof HOST_IDS)[number];
+
 const ID_RE = /^[\w.-]+$/;
 const RULE_RE = /^\s*[\w.-]+\s*->\s*[\w.-]+\s*$/;
 const FLOW_STEP_RE = /^\s*[\w.-]+\s*->\s*[\w.-]+\s*(?::[\s\S]*)?$/;

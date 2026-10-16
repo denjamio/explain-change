@@ -15,6 +15,7 @@ import type {
   Scenario,
   SpecChange,
 } from "../src/contract/facts.ts";
+import { prFileUrl as fileUrlOnPr } from "../src/hosts/links.ts";
 import type { ReportData } from "../src/report/data.ts";
 import BULB from "./bulb.svg" with { type: "text" };
 
@@ -530,7 +531,7 @@ const rsLabel = (v: ReqStatus) => (v === "pending" ? T.notMapped : v === "none" 
 
 // A file reference links to the file in the PR when the source has one; otherwise it is plain text.
 function prFileUrl(path: string): string | null {
-  return src.kind === "pr" && src.url ? `${src.url}?_a=files&path=${encodeURIComponent(`/${path}`)}` : null;
+  return src.kind === "pr" && src.url && src.host ? fileUrlOnPr(src.host, src.url, path) : null;
 }
 function onOpen<E extends Element>(el: E, path: string): E {
   const url = prFileUrl(path);

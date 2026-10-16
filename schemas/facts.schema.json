@@ -28,7 +28,21 @@
             "local",
             "pr"
           ],
-          "description": "local: a branch or working tree; pr: an Azure DevOps pull request."
+          "description": "local: a branch or working tree; pr: a pull request."
+        },
+        "host": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "azure-devops"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Where the PR lives; for a branch, where its PR would be. null: no remote of a known host."
         },
         "title": {
           "type": "string"
@@ -78,6 +92,7 @@
       },
       "required": [
         "kind",
+        "host",
         "title",
         "description",
         "branch",

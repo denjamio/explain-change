@@ -3,11 +3,12 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { GIT_ENV } from "../scripts/build-examples.ts";
-import { Az, type AzResult } from "../src/ado/az.ts";
 import { collect } from "../src/analysis/collect.ts";
 import { inferConfig } from "../src/config/infer.ts";
 import { loadConfig, normalizeConfig } from "../src/config/load.ts";
 import type { Facts } from "../src/contract/facts.ts";
+import { Az, type AzResult } from "../src/hosts/azure-devops/az.ts";
+import { changeHost, createHosts, type HostDeps, type Hosts } from "../src/hosts/index.ts";
 
 export const ROOT = join(import.meta.dir, "..");
 export const CLI = join(ROOT, "src/cli/bin.ts");
@@ -76,12 +77,15 @@ export class Repo {
   collect(opts: { base?: string; uncommitted?: boolean; pr?: string; az?: Az } = {}): Facts {
     const { config, errors } = loadConfig(this.path, () => inferConfig(this.path));
     if (errors.length) throw new Error(errors.join("\n"));
-    return collect(
-      this.path,
-      config,
-      { base: opts.base ?? "main", includeUncommitted: opts.uncommitted ?? false, pr: opts.pr ?? null, specs: [] },
-      opts.az ?? new FakeAz([]),
-    );
+    const pr = opts.pr ?? null;
+    const hosts = fakeHosts({ az: opts.az });
+    return collect(this.path, config, {
+      base: opts.base ?? "main",
+      includeUncommitted: opts.uncommitted ?? false,
+      pr,
+      host: changeHost(this.path, pr, hosts),
+      specs: [],
+    });
   }
 
   close(): void {
@@ -110,6 +114,14 @@ export class FakeAz extends Az {
     this.logins++;
     return this.loginOk;
   }
+}
+
+/** The hosts with their CLIs and HTTP replaced: nothing runs outside the test. */
+export function fakeHosts(deps: Partial<HostDeps> = {}): Hosts {
+  return createHosts({
+    az: deps.az ?? new FakeAz([]),
+    fetch: deps.fetch ?? (async () => new Response("{}", { status: 500 })),
+  });
 }
 
 export const ok = (stdout: unknown): AzResult => ({ status: 0, stdout: JSON.stringify(stdout), stderr: "" });

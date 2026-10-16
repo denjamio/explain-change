@@ -37,7 +37,7 @@ Each folder depends only on the ones above it:
 | `src/core` | Paths (POSIX, as git prints them), globs, git, processes, text (code-point aware), constants, `UserError`. |
 | `src/contract` | The schemas: config, facts, explanation. |
 | `src/config` | Load and validate `.explain-change.toml`, infer one from the folder layout, map paths to components. |
-| `src/ado` | Azure DevOps PRs: `az` (injectable, so tests replace it), git fetches that never prompt, and `share` (the report as a PR attachment, through the REST API with the `az` token; HTTP injectable). |
+| `src/hosts` | Where PRs live. `host.ts` is the port every host implements (ids, metadata, refs, token, `share`); `source.ts` turns a PR into a change source the same way for every host (merge ref, else its own commits, git fetches that never prompt); `index.ts` picks the host; `links.ts` builds links into a PR page (the report bundles it). One folder per adapter: `azure-devops/` wraps `az` (injectable, so tests replace it) and shares the report as a PR attachment through the REST API with the `az` token (HTTP injectable). |
 | `src/analysis` | The facts: diff parsing, references per language, resolution, the dependency graph, rules, symbols, OpenSpec, the outline. |
 | `src/explanation` | Prose rules (data in `prose/*.json`), the draft, the validator, normalization, the per-change store. |
 | `src/digest` | `digest.md` from the facts and the contract. |

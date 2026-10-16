@@ -1,9 +1,10 @@
-import type { Facts } from "../contract/facts.ts";
-import { VERSION } from "../core/constants.ts";
-import { UserError } from "../core/errors.ts";
-import { git } from "../core/git.ts";
+import type { Facts } from "../../contract/facts.ts";
+import { VERSION } from "../../core/constants.ts";
+import { UserError } from "../../core/errors.ts";
+import { git } from "../../core/git.ts";
+import type { ShareResult } from "../host.ts";
 import { AZ_SETUP, type Az, azHint } from "./az.ts";
-import { azToken, branchPr, isAdoHttps, isAdoRepoUrl, type PrMetadata } from "./pr.ts";
+import { azToken, branchPr, type PrMetadata } from "./pr.ts";
 
 /*
  * Sharing a report on its Azure DevOps PR: the page goes up as a PR attachment, and a comment links to it. Only
@@ -14,22 +15,6 @@ const API = "api-version=7.1";
 const ATTACHMENTS_API = "api-version=7.1";
 
 export type HttpFetch = (url: string, init: RequestInit) => Promise<Response>;
-
-export interface ShareResult {
-  state: "shared" | "already-shared";
-  prId: string;
-  /** The PR page, the comment thread when the URL is known. */
-  pr: string | null;
-  attachment: string;
-}
-
-/** Whether `share` can work for these facts without asking az: an Azure DevOps PR, or a committed branch of one. */
-export function shareable(facts: Facts, root: string): boolean {
-  if (facts.source.kind === "pr") return true;
-  if (facts.source.includeUncommitted) return false;
-  const urls = git(["remote", "-v"], root, { check: false }).toLowerCase();
-  return urls.split(/\s+/).some((u) => isAdoHttps(u) || isAdoRepoUrl(u));
-}
 
 /** The attachment's name: one per change, so sharing the same change twice is noticed. */
 export const attachmentName = (facts: Facts) => `explain-change-${facts.key}.html`;
@@ -59,7 +44,7 @@ export async function shareReport(
         `The report explains '${src.branch}', but '${current || "a detached HEAD"}' is checked out: switch back to it.`,
       );
     }
-    prId = branchPr(root, deps.az);
+    prId = branchPr(root, current, deps.az);
   }
   const meta = prShow(root, prId, deps.az);
   if (!meta.url) throw new UserError(`az repos pr show returned no API URL for PR ${prId}.`);
