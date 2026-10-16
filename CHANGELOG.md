@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-17
+
 ### Changed
 - The examples show what this version produces: their explanations are rewritten for the 0.5 outline, in 4-5
   steps that each say something new, and each story ends with its overview (3 had none). They are also the
