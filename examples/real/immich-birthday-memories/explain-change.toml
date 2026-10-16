@@ -159,7 +159,7 @@ desc = "Decides which user may read or change which resource; every service chec
 id = "database"
 name = "Database"
 layer = "adapters"
-paths = ["server/src/repositories/**", "server/src/schema/**", "server/src/queries/**"]
+paths = ["server/src/repositories/**", "server/src/schema/**", "server/src/queries/**", "server/src/utils/database.ts"]
 desc = "Owns the Postgres schema, its migrations and the Kysely repositories that read and write it."
 
 [[components]]

@@ -30,9 +30,10 @@ name = "Platform"
 
 [rules]
 # The open-source code never depends on the enterprise overlay, and the domain never reaches back into the web layer.
-# Enterprise sits in the top lane because it overlays every layer; Bootstrap is the composition root.
-allow = ["web -> domain", "web -> async", "web -> adapters", "web -> platform", "domain -> async", "domain -> adapters", "domain -> platform", "async -> domain", "async -> adapters", "async -> platform", "adapters -> domain", "adapters -> async", "adapters -> platform", "enterprise -> web"]
-forbid = ["domain -> web", "conversations -> enterprise", "contacts -> enterprise", "inboxes -> enterprise", "accounts -> enterprise"]
+# enterprise/ mirrors app/: its controllers sit with the web, Captain and the overlays with the domain, its jobs with the
+# async work and Voice with the channels. Bootstrap is the composition root.
+allow = ["web -> domain", "web -> async", "web -> adapters", "web -> platform", "domain -> async", "domain -> adapters", "domain -> platform", "async -> domain", "async -> adapters", "async -> platform", "adapters -> domain", "adapters -> async", "adapters -> platform"]
+forbid = ["domain -> web", "conversations -> enterprise", "contacts -> enterprise", "inboxes -> enterprise", "accounts -> enterprise", "conversations -> captain", "contacts -> captain", "inboxes -> captain", "accounts -> captain"]
 same_layer = true
 
 # ── Web ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ same_layer = true
 id = "dashboard"
 name = "Agent dashboard"
 layer = "web"
-paths = ["app/javascript/dashboard/**", "app/javascript/v3/**", "app/javascript/design-system/**", "app/javascript/shared/**", "app/javascript/superadmin_pages/**", "app/javascript/entrypoints/**", "app/javascript/histoire.setup.ts"]
+paths = ["app/javascript/dashboard/**", "app/javascript/v3/**", "app/javascript/design-system/**", "app/javascript/shared/**", "app/javascript/superadmin_pages/**", "app/javascript/superadmin/**", "app/javascript/entrypoints/**", "app/javascript/histoire.setup.ts"]
 desc = "Owns the Vue app agents and admins work in: conversations, contacts, inbox and account settings."
 
 [[components]]
@@ -59,11 +60,18 @@ paths = ["app/controllers/**", "app/views/api/**", "app/views/**", "app/policies
 desc = "Owns the HTTP endpoints, their JSON views, the Pundit policies that decide who may call them and the super admin."
 
 [[components]]
-id = "enterprise"
-name = "Enterprise edition"
+id = "captain-api"
+name = "Captain API"
 layer = "web"
-paths = ["enterprise/**"]
-desc = "Owns the enterprise overlay, from controllers to models: Captain AI, SLAs, billing and custom roles."
+paths = ["enterprise/app/controllers/api/v1/accounts/captain/**", "enterprise/app/views/api/v1/accounts/captain/**", "enterprise/app/policies/captain/**"]
+desc = "Owns the endpoints agents and admins use to set up Captain: assistants, documents, scenarios, custom tools and copilot."
+
+[[components]]
+id = "enterprise-api"
+name = "Enterprise API"
+layer = "web"
+paths = ["enterprise/app/controllers/**", "enterprise/app/views/**", "enterprise/app/policies/**", "enterprise/app/presenters/**", "enterprise/app/fields/**"]
+desc = "Owns the enterprise endpoints and their overlays on the open-source ones: SLAs, custom roles, billing and super admin limits."
 
 [[components]]
 id = "bootstrap"
@@ -137,6 +145,19 @@ layer = "domain"
 paths = ["app/models/notification*.rb", "app/services/notification/**", "app/builders/notification*.rb"]
 desc = "Owns agent notifications, their settings and push subscriptions."
 
+[[components]]
+id = "captain"
+name = "Captain"
+layer = "domain"
+paths = ["enterprise/app/models/captain/**", "enterprise/app/services/captain/**", "enterprise/app/builders/captain/**", "enterprise/app/finders/captain/**", "enterprise/app/helpers/captain/**", "enterprise/app/models/concerns/captain_*.rb", "enterprise/app/models/concerns/toolable.rb", "enterprise/app/models/concerns/agentable.rb", "enterprise/lib/captain/**", "enterprise/lib/enterprise/captain/**", "lib/captain/**", "lib/captain_*.rb", "lib/integrations/captain/**"]
+desc = "Owns Captain, the AI agent: assistants, their documents and FAQs, scenarios, tools, and the replies it drafts or sends."
+
+[[components]]
+id = "enterprise"
+name = "Enterprise edition"
+layer = "domain"
+paths = ["enterprise/**"]
+desc = "Owns the enterprise overlays on the open-source models and services: SLAs, conversation monitors, custom roles and billing."
 
 [[components]]
 id = "shared-kernel"
@@ -151,14 +172,14 @@ desc = "Owns ApplicationRecord, shared model concerns and the helpers every cont
 id = "background-jobs"
 name = "Background jobs"
 layer = "async"
-paths = ["app/jobs/**"]
-desc = "Owns the Sidekiq jobs: scheduled work, imports, webhooks and channel syncs."
+paths = ["app/jobs/**", "enterprise/app/jobs/**"]
+desc = "Owns the Sidekiq jobs of both editions: scheduled work, imports, webhooks, channel syncs and Captain's replies."
 
 [[components]]
 id = "event-listeners"
 name = "Event listeners"
 layer = "async"
-paths = ["app/listeners/**", "app/dispatchers/**", "lib/events/**", "app/channels/**"]
+paths = ["app/listeners/**", "app/dispatchers/**", "lib/events/**", "app/channels/**", "enterprise/app/listeners/**"]
 desc = "Owns the event dispatcher, its listeners and the ActionCable channels: real-time pushes, webhooks, automation and reporting."
 
 # ── Adapters: the messaging providers and e-mail ─────────────────────────────────────────────────────────
@@ -171,6 +192,13 @@ paths = ["app/models/channel/whatsapp.rb", "app/services/whatsapp/**", "app/jobs
 desc = "Owns the WhatsApp channel: Cloud API and 360dialog providers, templates and phone number health."
 
 [[components]]
+id = "voice"
+name = "Voice"
+layer = "adapters"
+paths = ["enterprise/app/services/voice/**", "enterprise/app/services/twilio/**", "enterprise/app/jobs/voice/**", "enterprise/app/controllers/twilio/**", "enterprise/app/controllers/concerns/twilio_voice_credentials.rb", "enterprise/app/models/concerns/call_recording_settings.rb", "enterprise/lib/voice/**"]
+desc = "Owns the Voice channel on Twilio: inbound and outbound calls, ringing agents, recordings and transcriptions."
+
+[[components]]
 id = "other-channels"
 name = "Other channels"
 layer = "adapters"
@@ -181,14 +209,14 @@ desc = "Owns the other channels: web widget, e-mail (IMAP, Microsoft, Google), F
 id = "email-delivery"
 name = "E-mail delivery"
 layer = "adapters"
-paths = ["app/mailers/**", "app/drops/**", "app/views/mailers/**", "app/services/email_templates/**", "app/services/email/**", "app/services/liquid/**"]
+paths = ["app/mailers/**", "enterprise/app/mailers/**", "app/drops/**", "enterprise/app/drops/**", "app/views/mailers/**", "app/services/email_templates/**", "app/services/email/**", "app/services/liquid/**"]
 desc = "Owns outgoing e-mail: mailers, the Liquid drops that templates read, and the template resolver."
 
 [[components]]
 id = "integrations"
 name = "Integrations"
 layer = "adapters"
-paths = ["app/models/integrations/**", "app/models/webhook.rb", "app/models/dashboard_app.rb", "lib/integrations/**", "lib/linear/**", "lib/linear.rb", "app/services/linear/**", "app/services/llm_formatter/**", "lib/webhooks/**", "lib/captain/**", "lib/llm/**", "lib/llm_constants.rb"]
+paths = ["app/models/integrations/**", "app/models/webhook.rb", "app/models/dashboard_app.rb", "lib/integrations/**", "lib/linear/**", "lib/linear.rb", "app/services/linear/**", "app/services/llm_formatter/**", "lib/webhooks/**", "lib/llm/**", "lib/llm_constants.rb"]
 desc = "Owns the integrations: Slack, Linear, Dialogflow, the LLM providers, dashboard apps and outgoing webhooks."
 
 # ── Platform ─────────────────────────────────────────────────────────────────────────────────────────────

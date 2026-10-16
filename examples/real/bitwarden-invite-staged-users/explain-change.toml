@@ -28,7 +28,8 @@ name = "Database"
 # Core.csproj references no infrastructure project: the adapters depend on Core, never the reverse.
 # Shared web is the composition root of every host: it registers the Dapper or EF implementations.
 # The migration tools build on the EF DbContext and Core settings, and the admin portal runs them.
-allow = ["hosts -> core", "adapters -> core", "shared-web -> adapters", "database -> core", "database -> adapters", "admin-portal -> database"]
+# Dapper runs the stored procedures the SQL Server schema creates.
+allow = ["hosts -> core", "adapters -> core", "shared-web -> adapters", "database -> core", "database -> adapters", "admin-portal -> database", "dapper -> sql-server-schema"]
 forbid = ["core -> adapters", "core -> hosts"]
 same_layer = true
 
@@ -68,6 +69,13 @@ name = "SCIM and SSO"
 layer = "hosts"
 paths = ["bitwarden_license/src/Scim/**", "bitwarden_license/src/Sso/**"]
 desc = "Owns the licensed hosts: SCIM provisioning from identity providers, and SSO login."
+
+[[components]]
+id = "pam-service"
+name = "PAM service"
+layer = "hosts"
+paths = ["bitwarden_license/src/Services/Pam/**"]
+desc = "Owns the licensed PAM module the API hosts: its endpoints, access requests, connectors and credential rotation."
 
 [[components]]
 id = "shared-web"

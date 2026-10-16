@@ -69,11 +69,18 @@ paths = ["saleor/graphql/payment/**"]
 desc = "Owns payment and transaction queries and mutations, and the payment gateway list."
 
 [[components]]
+id = "accounts-api"
+name = "Accounts API"
+layer = "api"
+paths = ["saleor/graphql/account/**"]
+desc = "Owns the GraphQL types and mutations for customers, staff, addresses, permission groups and sign-in."
+
+[[components]]
 id = "graphql-api"
 name = "GraphQL API"
 layer = "api"
 paths = ["saleor/graphql/**"]
-desc = "Owns the schema, the base mutation and types, and the API of accounts, channels, apps, webhooks and content."
+desc = "Owns the schema, the base mutation and types, and the API of channels, apps, webhooks, shipping and content."
 
 # ── Commerce: one Django app or a group of them per context ──────────────────────────────────────────────
 
@@ -212,5 +219,5 @@ webhook = "An event delivery from Saleor to an app, sync or async."
 plugin = "A Python extension that the PluginsManager calls on domain events."
 
 [ignore]
-paths = ["**/*.lock", "**/package-lock.json", "saleor/graphql/schema.graphql", "**/__snapshots__/**", "saleor/static/**", "templates/**", "docs/agents/**", "CHANGELOG.md", ".semgrep/**", ".claude/**"]
+paths = ["**/*.lock", "**/package-lock.json", "saleor/graphql/schema.graphql", "saleor/core/development/**", "**/__snapshots__/**", "saleor/static/**", "templates/**", "docs/agents/**", "CHANGELOG.md", ".semgrep/**", ".claude/**"]
 tests = ["**/tests/**", "**/test_*.py", "**/conftest.py", "**/*_test.py"]

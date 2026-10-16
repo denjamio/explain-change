@@ -11,6 +11,10 @@ All notable changes to this project are documented here. The format follows
   first (the inner lanes, then the entry lane, then the bottom one), then by weight. A migration is weight: a new
   model field is no public symbol. In 5 of 40 real PRs the story opened on a GraphQL mutation or a UI component
   while the model changed; now it opens on the model. The analysis is version 8.
+- Examples: the real projects' configs follow their code more closely. Chatwoot's enterprise edition, 1 box in
+  the web lane, is now Captain, its API, the Voice channel and the overlays, each in its lane; Bitwarden's licensed
+  PAM service had no owner (155 files) and Dapper's calls to the stored procedures broke no agreed rule; Saleor's
+  account API has its box, and its development seed data is ignored, as Chatwoot's and Bitwarden's already were.
 
 ### Fixed
 - `check` no longer warns that `[ignore]` hides migrations when they are generated files (Entity Framework's
