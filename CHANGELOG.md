@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `explain-change share`: attaches the finished report to its Azure DevOps PR and comments with the link; only people
+  who can open the PR can download it. It refuses a report of other commits than the PR's, and does not attach the
+  same change twice (`--force` does). `local`, `pr` and `render` say when a report can be shared (`share` in
+  `--json`); the skill mentions it and runs it only when asked.
 - The examples are published at https://denjamio.github.io/explain-change/; each card links to its inputs (and, for
   real pull requests, the upstream commit).
 - CI compiles the standalone binary on Linux, macOS and Windows and runs it through pipes on a temporary repository

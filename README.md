@@ -93,6 +93,7 @@ explain-change local [--base REF] [--include-uncommitted]   # the current branch
 explain-change pr [ID|URL]                                  # an Azure DevOps PR (without an id: the branch's)
 explain-change render                                       # validate explanation.json and write the page
 explain-change status                                       # the explanation's state and the next step
+explain-change share [--force]                              # attach the finished report to its Azure DevOps PR
 explain-change init | check                                 # draft and verify .explain-change.toml
 explain-change schema config|facts|explanation              # the JSON Schemas
 explain-change install | update | --version
@@ -127,6 +128,10 @@ the repository's remotes. Without an id, it finds the active PR from the current
   remote, run `az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>`. Without
   `az`, the page still renders from git alone, and the CLI says what is missing.
 - Fetched refs live under `refs/explain-change/`, away from your branches. Every call has a timeout.
+- **Sharing** is never automatic. `explain-change share` attaches the finished report to the PR and comments with its
+  link, so only people who can open the PR can download it. A local branch is shared on its active PR, and only when
+  the PR is at the commit the report explains (push first). Sharing the same change twice is a no-op unless
+  `--force`. When a report can be shared, `local`, `pr` and `render` end with a line pointing to the command.
 
 ## Configure
 

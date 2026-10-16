@@ -57,6 +57,8 @@ export interface ChangeResult {
   paths: { facts: string; digest: string; explanation: string; report: string | null };
   digestTokens?: number;
   opened: boolean;
+  /** The command that shares the finished report on its Azure DevOps PR; null when there is no PR to share it on. */
+  share: string | null;
   next: Next;
   notes: string[];
 }
@@ -117,6 +119,7 @@ export function printChange(r: ChangeResult): void {
     );
   }
   if (r.opened) lines.push("  opened in the browser");
+  if (r.share) lines.push(`  share:        \`${r.share}\` attaches it to the PR, for whoever can open the PR`);
   for (const n of r.notes) lines.push(`  note:         ${n}`);
   lines.push(`  next:         ${r.next.message}`);
   console.log(lines.join("\n"));

@@ -2,13 +2,15 @@ import { writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Az } from "../../ado/az.ts";
 import { branchPr, requireAdo } from "../../ado/pr.ts";
+import { shareable } from "../../ado/share.ts";
 import { collect, repoRoot } from "../../analysis/collect.ts";
 import { inferConfig } from "../../config/infer.ts";
 import { loadConfig } from "../../config/load.ts";
+import type { Facts } from "../../contract/facts.ts";
 import { BUDGET_RANGE, CONFIG_NAME, WORK_DIR } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
 import { buildDigest } from "../../digest/digest.ts";
-import { loadExplanation, prepareExplanation } from "../../explanation/store.ts";
+import { type ExplanationState, loadExplanation, prepareExplanation } from "../../explanation/store.ts";
 import { defaultReportPath, writeReport } from "../../report/render.ts";
 import { openReport, shouldOpen } from "../open.ts";
 import { type ChangeResult, changeSummary, explanationSummary, nextStep, printChange, printJson } from "../output.ts";
@@ -70,6 +72,7 @@ export function explain(opts: ExplainOptions, az = new Az()): number {
     paths: { ...paths, report },
     digestTokens: Math.round(digest.length / 4),
     opened,
+    share: shareCommand(status.state, facts, root),
     next: nextStep(status.state, report),
     notes: facts.notes,
   };
@@ -104,6 +107,7 @@ export function render(opts: RenderOptions): number {
     explanation: explanationSummary(status),
     paths: { ...workPaths(work), report: opts.dryRun ? null : report },
     opened,
+    share: shareCommand(status.state, facts, root),
     next: nextStep(status.state, opts.dryRun ? null : report),
     notes: facts.notes,
   };
@@ -111,3 +115,6 @@ export function render(opts: RenderOptions): number {
   else printChange(result);
   return status.state === "valid" ? 0 : 1;
 }
+
+const shareCommand = (state: ExplanationState, facts: Facts, root: string) =>
+  state === "valid" && shareable(facts, root) ? "explain-change share" : null;
