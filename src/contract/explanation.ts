@@ -228,7 +228,13 @@ export interface NormalizedExplanation extends Omit<Explanation, "flows" | "stor
   keyDependencies: NonNullable<Explanation["keyDependencies"]>;
   decisions: NonNullable<Explanation["decisions"]>;
   flows: (Omit<ExplainedFlow, "steps"> & {
-    steps: (ExplainedFlow["steps"][number] & { verified: boolean; via: string | null })[];
+    steps: (ExplainedFlow["steps"][number] & {
+      verified: boolean;
+      /** Verified through a port: 1 side implements an interface the other declares. */
+      port: boolean;
+      /** The port's interface, when the call names it or the pair has only 1. */
+      via: string | null;
+    })[];
   })[];
   dataModel: DataModel;
   requirements: NonNullable<Explanation["requirements"]>;

@@ -110,6 +110,7 @@ const I18N = {
     alternative: "Alternative",
     unverified: "The code has no dependency between these components",
     viaPort: "Through the port {x}: 1 side implements it",
+    viaSomePort: "Through a port: 1 side implements an interface the other declares",
     unverifiedNote: "No dependency in the code:",
     prev: "Previous",
     next: "Next",
@@ -272,6 +273,7 @@ const I18N = {
     alternative: "Alternativa",
     unverified: "El código no tiene dependencia entre estos componentes",
     viaPort: "A través del puerto {x}: un lado lo implementa",
+    viaSomePort: "A través de un puerto: un lado implementa una interfaz que el otro declara",
     unverifiedNote: "Sin dependencia en el código:",
     prev: "Anterior",
     next: "Siguiente",
@@ -1154,6 +1156,7 @@ function buildFlow(fl: NFlow): View {
     });
     if (!stp.verified) g.appendChild(s("title", { text: T.unverified }));
     else if (stp.via) g.appendChild(s("title", { text: tf("viaPort", { x: stp.via }) }));
+    else if (stp.port) g.appendChild(s("title", { text: T.viaSomePort }));
     const marker = `url(#sq-${fl.id}-${stp.delta})`;
     const pid = `fm-${fl.id}-${i}`;
     g.appendChild(

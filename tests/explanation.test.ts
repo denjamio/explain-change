@@ -433,13 +433,21 @@ describe("normalization", () => {
       dependencyGraph: [],
       ports: [{ from: "a", to: "b", interfaces: ["IAuditLog", "IThing"] }],
     });
-    expect(normalizeExplanation(e, viaPort).flows[0]?.steps[0]).toMatchObject({ verified: true, via: "IAuditLog" });
+    // 2 interfaces and the call names neither: through a port, without guessing which
+    expect(normalizeExplanation(e, viaPort).flows[0]?.steps[0]).toMatchObject({
+      verified: true,
+      port: true,
+      via: null,
+    });
     // the port the call names, when the pair has several
     const named = {
       ...e,
       flows: [{ id: "f", title: "Run it", steps: [{ from: "a", to: "b", call: "IThing.Save", delta: "unchanged" }] }],
     };
-    expect(normalizeExplanation(named as Explanation, viaPort).flows[0]?.steps[0]).toMatchObject({ via: "IThing" });
+    expect(normalizeExplanation(named as Explanation, viaPort).flows[0]?.steps[0]).toMatchObject({
+      port: true,
+      via: "IThing",
+    });
     // a third component both use is no evidence
     const shared = makeFacts({
       dependencyGraph: [

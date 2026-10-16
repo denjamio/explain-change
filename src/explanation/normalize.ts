@@ -22,14 +22,16 @@ export function normalizeExplanation(e: Explanation, facts: Facts): NormalizedEx
       [`${p.to}\0${p.from}`, p.interfaces] as const,
     ]),
   );
-  // The port a step goes through: the interface its call names (IFolderRepository.DeleteManyAsync), else the first.
+  // The port a step goes through: the interface its call names (IFolderRepository.DeleteManyAsync), or the only
+  // 1. With several and none named, the step is verified through a port without naming 1: a wrong name is worse.
   const verify = (from: string, to: string, call: string) => {
-    if (from === to) return { verified: true, via: null };
+    if (from === to) return { verified: true, port: false, via: null };
     const interfaces = ports.get(`${from}\0${to}`);
     if (interfaces?.length) {
-      return { verified: true, via: interfaces.find((i) => call.includes(i)) ?? (interfaces[0] as string) };
+      const named = interfaces.find((i) => call.includes(i)) ?? (interfaces.length === 1 ? interfaces[0] : undefined);
+      return { verified: true, port: true, via: named ?? null };
     }
-    return { verified: linked.has(`${from}\0${to}`), via: null };
+    return { verified: linked.has(`${from}\0${to}`), port: false, via: null };
   };
   const requirementOrder = new Map(specRequirements(facts).map((r, i) => [r.id, i]));
   const normalized: NormalizedExplanation = {
