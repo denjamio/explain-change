@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildScenario, scenarioNames } from "../scripts/build-examples.ts";
 import type { Facts } from "../src/contract/facts.ts";
+import { removeTree } from "../src/core/fs.ts";
 import { smoke } from "./dom.ts";
 import { tempDir } from "./helpers.ts";
 
@@ -18,7 +19,7 @@ beforeAll(() => {
   }
 }, 180_000); // 6 repositories built and explained: slow on Windows runners
 afterAll(() => {
-  for (const r of runs) rmSync(r.dir, { recursive: true, force: true });
+  for (const r of runs) removeTree(r.dir);
 });
 
 const facts = (name: string) => runs[0]?.facts[name] as Facts;

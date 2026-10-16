@@ -1,6 +1,6 @@
 import { expect } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { GIT_ENV } from "../scripts/build-examples.ts";
@@ -9,6 +9,7 @@ import { inferConfig } from "../src/config/infer.ts";
 import { loadConfig, normalizeConfig } from "../src/config/load.ts";
 import type { Facts } from "../src/contract/facts.ts";
 import { UserError } from "../src/core/errors.ts";
+import { removeTree } from "../src/core/fs.ts";
 import { Az, type AzResult } from "../src/hosts/azure-devops/az.ts";
 import { Gh, type GhResult } from "../src/hosts/github/gh.ts";
 import { changeHost, createHosts, type HostDeps, type Hosts } from "../src/hosts/index.ts";
@@ -92,7 +93,7 @@ export class Repo {
   }
 
   close(): void {
-    rmSync(this.path, { recursive: true, force: true });
+    removeTree(this.path);
   }
 }
 

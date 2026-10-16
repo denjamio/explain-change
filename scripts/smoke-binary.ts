@@ -6,11 +6,11 @@
  *   bun scripts/smoke-binary.ts
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { VERSION } from "../src/core/constants.ts";
-import { ensureDir } from "../src/core/fs.ts";
+import { ensureDir, removeTree } from "../src/core/fs.ts";
 import { buildAssets, compileBinary } from "./build.ts";
 import { GIT_ENV } from "./build-examples.ts";
 
@@ -80,5 +80,5 @@ try {
   const bad = run(bin, ["schema", "nope"]);
   expect(bad.status === 2 && bad.stderr.endsWith("\n"), "a usage error exits 2 with its whole message", bad);
 } finally {
-  rmSync(tmp, { recursive: true, force: true });
+  removeTree(tmp);
 }
