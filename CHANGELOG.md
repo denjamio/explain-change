@@ -6,6 +6,32 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Each design decision states its `basis`: where its why comes from (`pr`, `spec`, `code` or `inferred`). The
+  validator accepts `pr` only with a PR description, `spec` only with an OpenSpec proposal or design, and `code`
+  only with evidence; the draft lists only the bases the change has. The report labels each decision, so a guess
+  never passes as a fact. The examples' 51 decisions are labelled from their evidence: 16 `code`, 6 `spec`, 29
+  `inferred`. The contract is version 5.
+- The validator refuses the passive with its agent (*is sent by the job*); *by* for a manner (*sorted by date*,
+  *off by default*) passes.
+- `project.names`: product names written like code (`FastAPI`) that the prose may use. Glossary terms count as known
+  names too.
+- `bun run eval -- --runs N` repeats each example and reports mean ± standard deviation; `--judge <model>` asks a
+  second agent whether each decision's source states its why (`grounded`) and reports the share labelled
+  `inferred`.
+
+### Changed
+- Fidelity in the eval is an F1 (precision and recall), not a recall: an explanation that names everything no
+  longer scores high.
+- ARCHITECTURE.md describes the hosts in their own section.
+
+### Fixed
+- Code names are exempt from the refused words, as `prose/en.json` says: `ensure_admin`, `EnsureTenant` or
+  `robust_retry` no longer count as *ensure* or *robust*.
+- An abbreviation (*e.g.*, *i.e.*, *etc.*, *vs.*) no longer ends a sentence for the 25-word rule.
+- Code names are read at the head of the change, not in the checkout: explaining a PR from another branch no
+  longer accepts a name that exists only in that branch, or refuses one that exists only in the PR.
+
 ## [0.6.0] - 2026-10-17
 
 ### Changed

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { mappableRequirements, specRequirements } from "../analysis/openspec.ts";
-import { ENUMS, EXPLANATION_FIELDS, KEBAB_RE, LIMITS, STORY_MIN } from "../contract/explanation.ts";
+import { DECISION_BASES, ENUMS, EXPLANATION_FIELDS, KEBAB_RE, LIMITS, STORY_MIN } from "../contract/explanation.ts";
 import type { Facts, FileFacts } from "../contract/facts.ts";
 import { LOCATION_RE } from "../contract/facts.ts";
 import { CONTRACT_VERSION } from "../core/constants.ts";
@@ -24,8 +24,10 @@ export type IssueCode =
   | "duplicate"
   | "missing"
   | "location"
+  | "basis"
   | "sentence-too-long"
   | "refused-word"
+  | "passive"
   | "unknown-code-name"
   | "title";
 
@@ -42,6 +44,15 @@ export const formatIssue = (i: Issue) => `${i.path}: ${i.message}`;
 export function explainableComponents(facts: Pick<Facts, "components" | "config">): string[] {
   const shown = facts.components.map((c) => c.id);
   return [...shown, ...facts.config.components.map((c) => c.id).filter((id) => !shown.includes(id))];
+}
+
+/** The decision bases this change has a source for: pr and spec only when it has a PR description or a spec. */
+export function decisionBases(facts: Pick<Facts, "source" | "openspec">): string[] {
+  return DECISION_BASES.filter(
+    (b) =>
+      (b !== "pr" || Boolean(facts.source.description.trim())) &&
+      (b !== "spec" || Boolean(facts.openspec?.changes.some((c) => c.why || c.decisions.length || c.artifacts.length))),
+  );
 }
 
 export const changedComponents = (facts: Pick<Facts, "components">) =>
@@ -246,12 +257,30 @@ class Validator {
     for (const [i, d] of this.objects("decisions", value, LIMITS.decisions)) {
       this.text(`decisions[${i}].title`, d.title, LIMITS["decisions.title"]);
       this.text(`decisions[${i}].why`, d.why, LIMITS["decisions.why"]);
+      this.basis(`decisions[${i}]`, d);
       // The alternative is what was not built: it may name code that is not in the change.
       this.text(`decisions[${i}].alternative`, d.alternative, LIMITS["decisions.alternative"], {
         required: false,
         names: false,
       });
       this.location(`decisions[${i}].evidence`, d.evidence, false);
+    }
+  }
+
+  /** The why's source must exist in this change: a PR description, an OpenSpec change, or the code at the evidence. */
+  private basis(path: string, d: Obj) {
+    const at = `${path}.basis`;
+    if (d.basis === undefined || d.basis === null) {
+      return this.add(at, "required", `required: ${ENUMS["decisions.basis"].join(" | ")}`);
+    }
+    this.enumValue(at, d.basis, "decisions.basis");
+    const bases = decisionBases(this.facts);
+    if (d.basis === "pr" && !bases.includes("pr")) {
+      this.add(at, "basis", "this change has no PR description; use code (with evidence) or inferred");
+    } else if (d.basis === "spec" && !bases.includes("spec")) {
+      this.add(at, "basis", "this change has no OpenSpec proposal or design; use code (with evidence) or inferred");
+    } else if (d.basis === "code" && (d.evidence === undefined || d.evidence === null || d.evidence === "")) {
+      this.add(at, "basis", "code needs evidence: the file:line that shows the why");
     }
   }
 

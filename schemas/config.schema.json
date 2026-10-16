@@ -33,6 +33,14 @@
           ],
           "description": "Where the PRs live, for `pr <id>` and `share`. Default: the host of the git remotes, else azure-devops. A PR URL always names its own host."
         },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Product and library names written like code (FastAPI, NestJS) that the prose may use: the validator does not look for them in the change."
+        },
         "budget": {
           "type": "integer",
           "minimum": 2000,

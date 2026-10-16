@@ -45,6 +45,7 @@ function makeFacts(over: Partial<Facts> = {}): Facts {
       rules: { allow: [], forbid: [] },
       referenceFlows: [],
       glossary: [],
+      names: [],
     },
     files: [
       {
@@ -296,6 +297,73 @@ describe("validation", () => {
     expect(messages(valid({ tldr: "It adjusts the ensemble.", goal: "Justify the willow." }))).toEqual([]);
   });
 
+  test("prose: code names are exempt from the word rules; an abbreviation does not end a sentence", () => {
+    const facts = makeFacts({
+      symbols: [
+        { file: "f.rb", line: 11, kind: "def", name: "ensure_admin", delta: "added" },
+        { file: "f.rb", line: 12, kind: "class", name: "EnsureTenant", delta: "added" },
+        { file: "f.rb", line: 13, kind: "def", name: "robust_retry", delta: "added" },
+      ],
+    });
+    expect(
+      messages(valid({ tldr: "`ensure_admin` runs first. EnsureTenant reads robust_retry.", goal: "g" }), facts),
+    ).toEqual([]);
+    // the prose around a code name is still checked
+    expect(joined(valid({ tldr: "ensure_admin ensures the role." }), facts)).toContain("tldr: ensures: marketing");
+    const long = `It adds a hook, e.g. ${Array(22).fill("word").join(" ")}.`;
+    expect(joined(valid({ tldr: long }))).toContain("tldr: a sentence has 28 words, max 25");
+  });
+
+  test("prose: the passive with its agent is refused; 'by' for a manner passes", () => {
+    let errs = joined(valid({ tldr: "The export is built by the job.", goal: "Rows are written by `Exporter`." }));
+    expect(errs).toContain("tldr: 'is built by …': passive voice");
+    expect(errs).toContain("goal: 'are written by …': passive voice");
+    errs = joined(
+      valid({ tldr: "The rows are sorted by date. The flag is off by default.", goal: "It is disabled by default." }),
+    );
+    expect(errs).not.toContain("passive");
+  });
+
+  test("project.names are product names the prose may use", () => {
+    const base = makeFacts();
+    const facts = makeFacts({ config: { ...base.config, names: ["FastAPI"] } });
+    expect(joined(valid({ tldr: "It mounts FastAPI and NestJs." }), facts)).toContain("tldr: NestJs not found");
+    expect(joined(valid({ tldr: "It mounts FastAPI and NestJs." }), facts)).not.toContain("FastAPI");
+  });
+
+  test("decisions: basis is required and must have a source in the change", () => {
+    let errs = joined(valid({ decisions: [{ title: "t", why: "w" }] }));
+    expect(errs).toContain("decisions[0].basis: required: pr | spec | code | inferred");
+    errs = joined(
+      valid({
+        decisions: [
+          { title: "t", why: "w", basis: "pr" },
+          { title: "t", why: "w", basis: "spec" },
+          { title: "t", why: "w", basis: "code" },
+          { title: "t", why: "w", basis: "guess" },
+        ],
+      }),
+    );
+    expect(errs).toContain("decisions[0].basis: this change has no PR description");
+    expect(errs).toContain("decisions[1].basis: this change has no OpenSpec proposal or design");
+    expect(errs).toContain("decisions[2].basis: code needs evidence");
+    expect(errs).toContain("decisions[3].basis: 'guess' must be one of pr | spec | code | inferred");
+    const base = makeFacts();
+    const facts = makeFacts({ source: { ...base.source, description: "Jobs keep the request fast." } });
+    expect(
+      messages(
+        valid({
+          decisions: [
+            { title: "t", why: "w", basis: "pr" },
+            { title: "t", why: "w", basis: "code", evidence: "f.rb:11" },
+            { title: "t", why: "w", basis: "inferred" },
+          ],
+        }),
+        facts,
+      ),
+    ).toEqual([]);
+  });
+
   test("code names must exist in the change", () => {
     const facts = makeFacts({
       symbols: [{ file: "f.rb", line: 11, kind: "def", name: "refund_order", delta: "added" }],
@@ -319,7 +387,7 @@ describe("validation", () => {
     const errs = messages(
       valid({
         tldr: "refund_order calls ghost_method and RefundService.",
-        decisions: [{ title: "t", why: "w", alternative: "a SidekiqJob with retries" }],
+        decisions: [{ title: "t", why: "w", basis: "inferred", alternative: "a SidekiqJob with retries" }],
         flows: [
           {
             id: "f",

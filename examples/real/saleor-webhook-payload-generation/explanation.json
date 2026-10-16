@@ -64,24 +64,28 @@
     {
       "title": "Deferred stays the default; IMMEDIATE is a per-webhook opt-out",
       "why": "Deferral keeps heavy mutations fast. An integration that applies each ORDER_METADATA_UPDATED in sequence breaks when all deliveries carry the final state.",
+      "basis": "code",
       "alternative": "Store a snapshot of every payload in the request.",
       "evidence": "docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:41-47"
     },
     {
       "title": "The setting is read once, when the delivery is created",
       "why": "Deliveries and queued tasks finish the way they started. A later change of the setting affects only new deliveries.",
+      "basis": "code",
       "alternative": "Read the setting again when the task runs.",
       "evidence": "saleor/webhook/models.py:55-62"
     },
     {
       "title": "An IMMEDIATE payload reads from the writer",
       "why": "A task can fire the event right after its own write. The replica can lag, so dataloaders read the writer for this path.",
+      "basis": "code",
       "alternative": "Read the replica, as the deferred task does.",
       "evidence": "saleor/webhook/transport/asynchronous/transport.py:445-460"
     },
     {
       "title": "Group the webhooks, not the event",
       "why": "An event reaches many apps. Each app chooses for its own webhook, and only that webhook pays the cost.",
+      "basis": "code",
       "alternative": "A setting per event type for all apps.",
       "evidence": "saleor/webhook/transport/asynchronous/transport.py:305-326"
     }

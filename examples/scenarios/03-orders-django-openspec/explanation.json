@@ -90,30 +90,35 @@
     {
       "title": "Send when the order is paid, not when it is placed",
       "why": "A placed order can still fail to pay. The confirmation tells the customer that the payment went through.",
+      "basis": "spec",
       "alternative": "Send when the order is placed.",
       "evidence": "openspec/changes/add-order-confirmation/proposal.md:7-9"
     },
     {
       "title": "Queue after commit, send from a Celery task",
       "why": "The payment webhook does not wait for Postmark, and a rolled-back payment sends nothing.",
+      "basis": "spec",
       "alternative": "Send inside the webhook request.",
       "evidence": "orders/services.py:36-37"
     },
     {
       "title": "A SentEmail row with a unique constraint",
       "why": "A repeated task stops at the constraint. The next emails, such as shipped or refunded, add a kind, not a field on Order.",
+      "basis": "spec",
       "alternative": "A confirmation_sent_at field on Order.",
       "evidence": "openspec/changes/add-order-confirmation/design.md:16-21"
     },
     {
       "title": "An EmailGateway port with a Postmark adapter",
       "why": "Postmark's message id answers support questions, and tests use a fake gateway.",
+      "basis": "spec",
       "alternative": "Django send_mail with an SMTP backend.",
       "evidence": "notifications/gateway.py:19-21"
     },
     {
       "title": "Keep a contact email on the order",
       "why": "A later change of the customer's email does not move the confirmation of an old order.",
+      "basis": "spec",
       "alternative": "Read customer.email when the email goes out.",
       "evidence": "orders/services.py:20-24"
     }

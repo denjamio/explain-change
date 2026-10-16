@@ -5,7 +5,7 @@
   "properties": {
     "version": {
       "type": "number",
-      "const": 4
+      "const": 5
     },
     "key": {
       "type": "string",
@@ -142,6 +142,16 @@
             "maxLength": 200,
             "description": "Why this choice."
           },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "pr",
+              "spec",
+              "code",
+              "inferred"
+            ],
+            "description": "Where the why comes from: pr (the PR description says it), spec (the OpenSpec proposal or design), code (the code at the evidence shows it), inferred (your reading of the change)."
+          },
           "alternative": {
             "type": "string",
             "maxLength": 140,
@@ -155,7 +165,8 @@
         },
         "required": [
           "title",
-          "why"
+          "why",
+          "basis"
         ],
         "additionalProperties": false
       }

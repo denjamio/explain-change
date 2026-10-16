@@ -44,6 +44,13 @@ export const RawConfigSchema = z
               "A PR URL always names its own host.",
           )
           .optional(),
+        names: z
+          .array(z.string().min(1))
+          .describe(
+            "Product and library names written like code (FastAPI, NestJS) that the prose may use: the validator " +
+              "does not look for them in the change.",
+          )
+          .optional(),
         budget: z
           .int({ error: `must be an integer between ${BUDGET_RANGE[0]} and ${BUDGET_RANGE[1]} (digest characters)` })
           .min(BUDGET_RANGE[0], {
@@ -177,6 +184,8 @@ export interface Config {
   /** Where the PRs live; null: the host of the git remotes. */
   host: HostId | null;
   budget: number;
+  /** Product names written like code that the prose may use (`project.names`). */
+  names: string[];
   layers: Layer[];
   components: ComponentConfig[];
   rules: { allow: [string, string][]; forbid: [string, string][]; sameLayer: boolean };

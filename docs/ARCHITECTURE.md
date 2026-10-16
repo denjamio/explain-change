@@ -37,7 +37,7 @@ Each folder depends only on the ones above it:
 | `src/core` | Paths (POSIX, as git prints them), globs, git, processes, text (code-point aware), constants, `UserError`. |
 | `src/contract` | The schemas: config, facts, explanation. |
 | `src/config` | Load and validate `.explain-change.toml`, infer one from the folder layout, map paths to components. |
-| `src/hosts` | Where PRs live, as ports and adapters. `host.ts` is the port: a host's identity (which URLs and remotes are its own) and its two sides, `api` (parse a PR once into a `PrRef`, the open PR of a branch, metadata, an optional `share`) and `git` (the remote, the merge ref and the PR's own ref, the token for HTTPS). `source.ts` turns a PR into a change source the same way for every host (merge ref, else its own commits, git fetches that never prompt); `index.ts` registers the adapters and picks the host (PR URL, `--host`, `project.host`, remotes, Azure DevOps); `links.ts` builds links into a PR page (the report bundles it). One folder per adapter, each wrapping its CLI (injectable, so tests replace it) and translating its JSON into `PrMeta` at the edge: `azure-devops/` (`az`; shares reports as PR attachments through the REST API with the `az` token, HTTP injectable) and `github/` (`gh`; no `share`, since GitHub attaches only images and videos). A new host is one adapter folder, registered in `index.ts` and `links.ts`. |
+| `src/hosts` | Where PRs live, as ports and adapters. `host.ts` is the port: a host's identity (which URLs and remotes are its own) and its two sides, `api` (parse a PR once into a `PrRef`, the open PR of a branch, metadata, an optional `share`) and `git` (the remote, the merge ref and the PR's own ref, the token for HTTPS). `source.ts` turns a PR into a change source the same way for every host (merge ref, else its own commits, git fetches that never prompt); `index.ts` registers the adapters and picks the host (PR URL, `--host`, `project.host`, remotes, Azure DevOps); `links.ts` builds links into a PR page (the report bundles it). Adapters: `azure-devops/` (`az`; shares reports as PR attachments) and `github/` (`gh`; no `share`). See [Hosts](#hosts). |
 | `src/analysis` | The facts: diff parsing, references per language, resolution, the dependency graph, rules, symbols, OpenSpec, the outline. |
 | `src/explanation` | Prose rules (`prose.ts`, the refused words in `prose/en.json`), the draft, the validator, normalization, the per-change store. |
 | `src/digest` | `digest.md` from the facts and the contract. |
@@ -46,12 +46,30 @@ Each folder depends only on the ones above it:
 | `report/` | The report script, typed against the contract: `app.ts` (the header, the map's views and story, the sections below it), `camera.ts` (pan, zoom and flights), `inspector.ts` (what a component or an entity shows), `code.ts` (code excerpts), `sdd.ts` (the OpenSpec section), `model.ts` (the embedded data and its lookups), `ui.ts`, `dom.ts` and `words.ts` (shared pieces and the page's words); its styles and its HTML shell. |
 | `skills/` | The agent skills the CLI installs and the Claude Code plugin ships. |
 
+## Hosts
+
+Where PRs live, as ports and adapters:
+
+- `host.ts` is the port: a host's identity (which URLs and remotes are its own) and its two sides. `api` parses a
+  PR once into a `PrRef`, finds the open PR of a branch, reads its metadata and, optionally, shares a report. `git`
+  names the remote, the merge ref and the PR's own ref, and the token for HTTPS.
+- `source.ts` turns a PR into a change source the same way for every host: the merge ref, else its own commits,
+  with git fetches that never prompt.
+- `index.ts` registers the adapters and picks the host: the PR URL, `--host`, `project.host`, the remotes, then
+  Azure DevOps. `links.ts` builds links into a PR page (the report bundles it).
+- Each adapter folder wraps its CLI (injectable, so tests replace it) and translates its JSON into `PrMeta` at the
+  edge. `azure-devops/` (`az`) shares reports as PR attachments through the REST API with the `az` token (HTTP
+  injectable). `github/` (`gh`) has no `share`: GitHub attaches only images and videos.
+- A new host is one adapter folder, registered in `index.ts` and `links.ts`.
+
 ## Determinism
 
 - The diff runs with pinned flags (`DIFF_FLAGS`): no user git config changes it.
 - Every list is sorted by an explicit key, compared by code unit, never by locale.
 - Lengths and cuts count code points; text is decoded as UTF-8 with a BOM dropped.
 - The report script is bundled without minification by a pinned Bun, so a release renders the same bytes everywhere.
+- The validator reads code names at the head of the change (`git grep` and `git cat-file` at its commit), never the
+  checkout, which may be another branch than the PR; only `--include-uncommitted` reads the working tree.
 - Tests build every scenario twice from scratch and require byte-identical pages; the real examples rebuild from
   their upstream commit with `bun run examples -- --real`.
 

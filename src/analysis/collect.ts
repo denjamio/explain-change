@@ -470,5 +470,6 @@ function publicConfig(config: Config, root: string): PublicConfig {
     },
     referenceFlows: config.flows,
     glossary: config.glossary,
+    names: config.names,
   };
 }

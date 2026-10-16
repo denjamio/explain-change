@@ -81,30 +81,35 @@
     {
       "title": "A flag on the listing, not a deleted listing",
       "why": "Staff hide a variant in a channel and keep its price, cost and prior price for when they show it again.",
+      "basis": "inferred",
       "alternative": "Delete the variant channel listing.",
       "evidence": "saleor/product/models.py:552-555"
     },
     {
       "title": "A single definition of a sellable listing, in 2 forms",
       "why": "Queries use sellable_listing_q and loaded objects use is_sellable. Checkout, promotions and price ranges read the same rule.",
+      "basis": "code",
       "alternative": "Add the flag check to each query that reads price_amount.",
       "evidence": "saleor/product/models.py:563-572"
     },
     {
       "title": "An omitted flag keeps the stored value",
       "why": "New listings default to available, so clients before the flag keep creating sellable listings. Updates change the flag only when it is in the input.",
+      "basis": "code",
       "alternative": "Treat an omitted flag as false.",
       "evidence": "saleor/graphql/product/mutations/channels.py:391-405"
     },
     {
       "title": "Lock the listings, at most 100 per call",
       "why": "select_for_update orders concurrent changes of the same listings. The limit of 100 follows the API rule for input lists.",
+      "basis": "inferred",
       "alternative": "Update without locks and without a limit.",
       "evidence": "saleor/product/lock_objects.py:10-19"
     },
     {
       "title": "Mark the products dirty in the changed channels",
       "why": "The discounted prices of a product depend on its sellable variants. A background task recalculates them.",
+      "basis": "inferred",
       "alternative": "Recalculate the prices inside the mutation.",
       "evidence": "saleor/graphql/product/mutations/channels.py:760-772"
     }

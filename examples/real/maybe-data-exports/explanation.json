@@ -83,24 +83,28 @@
     {
       "title": "Build the archive in a background job",
       "why": "A full export reads every account and transaction. The request returns at once and the UI polls for the result.",
+      "basis": "inferred",
       "alternative": "Build and stream the ZIP inside the request.",
       "evidence": "app/controllers/family_exports_controller.rb:13"
     },
     {
       "title": "Exporter in the Family:: namespace",
       "why": "The app keeps domain logic in model namespaces. Family::DataExporter follows that convention.",
+      "basis": "inferred",
       "alternative": "A service object in app/services.",
       "evidence": "app/models/family/data_exporter.rb:4"
     },
     {
       "title": "A FamilyExport record holds the state",
       "why": "The list, the polling and the download read a single status. The file is an Active Storage attachment on the record.",
+      "basis": "inferred",
       "alternative": "Keep the state only in the job queue.",
       "evidence": "app/models/family_export.rb:6-11"
     },
     {
       "title": "CSV per entity plus an NDJSON dump",
       "why": "CSV opens in a spreadsheet. NDJSON keeps each record with its nested data, such as the accountable of an account.",
+      "basis": "inferred",
       "alternative": "A single JSON document for everything.",
       "evidence": "app/models/family/data_exporter.rb:27-29"
     }

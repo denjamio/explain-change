@@ -5,7 +5,7 @@
   "properties": {
     "version": {
       "type": "number",
-      "const": 4
+      "const": 5
     },
     "tool": {
       "type": "string"
@@ -215,6 +215,13 @@
           },
           "description": "The team's ubiquitous language, from the config."
         },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Product names written like code that the prose may use (project.names)."
+        },
         "referenceFlows": {
           "type": "array",
           "items": {
@@ -268,6 +275,7 @@
         "components",
         "rules",
         "glossary",
+        "names",
         "referenceFlows"
       ],
       "additionalProperties": false

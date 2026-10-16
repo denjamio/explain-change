@@ -4,7 +4,7 @@ import { LIMITS, REQUIREMENT_STATUSES } from "../contract/explanation.ts";
 import type { Facts } from "../contract/facts.ts";
 import { DELTAS } from "../contract/facts.ts";
 import { CONTRACT_VERSION } from "../core/constants.ts";
-import { changedComponents } from "./validate.ts";
+import { changedComponents, decisionBases } from "./validate.ts";
 
 const L = LIMITS;
 const DELTA_CHOICE = `<${DELTAS.join("|")}>`;
@@ -67,6 +67,7 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
     {
       title: `<≤${L["decisions.title"]}: the choice>`,
       why: `<≤${L["decisions.why"]}: why>`,
+      basis: `<${decisionBases(facts).join("|")}>`,
       alternative: `<≤${L["decisions.alternative"]}: the main alternative, optional>`,
       evidence: "<file:line inside a hunk, optional>",
     },

@@ -1657,6 +1657,7 @@ function renderDecisions(): HTMLElement | null {
             "div",
             { class: "card decision" },
             h("h3", { text: d.title }),
+            h("span", { class: `badge basis basis-${d.basis}`, title: T.basisHint, text: T[`basis_${d.basis}`] }),
             h("p", { text: d.why }),
             d.alternative ? h("p", { class: "alt" }, h("b", { text: `${T.alternative}: ` }), d.alternative) : null,
             d.evidence ? fileLink(d.evidence) : null,
