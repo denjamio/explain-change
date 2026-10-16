@@ -1,0 +1,14 @@
+{
+  "name": "explain-change",
+  "description": "explain-change: architecture-first, visual explanations of code changes for coding agents.",
+  "owner": {
+    "name": "denjamio"
+  },
+  "plugins": [
+    {
+      "name": "explain-change",
+      "source": "./",
+      "description": "Architecture-first, visual explanation of a code change as one HTML page."
+    }
+  ]
+}
