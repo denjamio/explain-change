@@ -42,7 +42,12 @@ describe("end to end", () => {
 
   test("Rails: new dependencies through the layers, no violation", () => {
     const e = edges("01-marketplace-rails-refunds");
-    for (const pair of ["controllers->refunds", "refunds->models", "refunds->payments", "refunds->mailers"]) {
+    for (const pair of [
+      "orders-api->refunds",
+      "refunds->orders",
+      "refunds->payment-gateway",
+      "refunds->email-delivery",
+    ]) {
       expect(e[pair]).toEqual(["added", false, false]);
     }
     expect(facts("01-marketplace-rails-refunds").stats.newViolations).toBe(0);

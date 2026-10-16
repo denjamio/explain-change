@@ -6,7 +6,6 @@
 [project]
 name = "Saleor"
 direction = "Layered by context: GraphQL mutations in saleor/graphql call the commerce apps; the apps hold the models and rules and never import the API. Side effects to apps and plugins go through the PluginsManager, not Django signals."
-lang = "en"
 
 [[layers]]
 id = "api"

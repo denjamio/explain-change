@@ -7,7 +7,8 @@ import { BUDGET_RANGE, DEFAULT_BUDGET } from "../core/constants.ts";
  * this schema cannot express: layers of components, ids in rules and flows.
  */
 
-export const LANGS = ["en", "es"] as const;
+/** Report languages: English only for now (the prose rules exist for it alone). */
+export const LANGS = ["en"] as const;
 export type ReportLang = (typeof LANGS)[number];
 
 /** Where pull requests live: the hosts `pr` and `share` work with. */
@@ -28,7 +29,10 @@ export const RawConfigSchema = z
           .string()
           .describe("One or two sentences on the intended architecture: context for the story and the decisions.")
           .optional(),
-        lang: z.enum(LANGS, { error: "must be 'en' or 'es'" }).describe("Report language (default en).").optional(),
+        lang: z
+          .enum(LANGS, { error: "must be 'en': reports are written in English" })
+          .describe("Report language: en (the default and only one).")
+          .optional(),
         base: z
           .string()
           .describe("Default base ref for `local` (else origin/HEAD, origin/main, origin/master, main, master…).")

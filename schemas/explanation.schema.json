@@ -14,8 +14,7 @@
     "lang": {
       "type": "string",
       "enum": [
-        "en",
-        "es"
+        "en"
       ],
       "description": "The report language: write all prose in it."
     },

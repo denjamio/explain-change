@@ -4,7 +4,6 @@
 [project]
 name = "Larder"
 direction = "Layered Django apps: views and webhooks call services; services own the rules and the transactions; models hold the state. Each external system (payments, email) sits behind 1 adapter module. Background work is a Celery task, queued after commit."
-lang = "en"
 
 [[layers]]
 id = "web"

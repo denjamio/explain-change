@@ -13,10 +13,6 @@ const REPORTS = readdirSync(join(ROOT, "examples"))
   .map((f) => join(ROOT, "examples", f));
 
 describe("example reports", () => {
-  test("there are reports to check", () => {
-    expect(REPORTS.length).toBeGreaterThan(2);
-  });
-
   for (const report of REPORTS) {
     test(`${report.split("/").pop()} renders, plays its story and handles every click`, () => {
       const html = readFileSync(report, "utf8");

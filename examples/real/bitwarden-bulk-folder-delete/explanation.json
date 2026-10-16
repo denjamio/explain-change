@@ -1,5 +1,5 @@
 {
-  "tldr": "Users can now delete many folders in 1 request. The items in those folders stay in the vault with no folder, on SQL Server and on the EF databases.",
+  "tldr": "Users can now delete many folders in a single request. The items in those folders stay in the vault with no folder, on SQL Server and on the EF databases.",
   "goal": "Let a client clean up many folders at once, in place of 1 delete request per folder.",
   "story": [
     {
@@ -24,7 +24,7 @@
     },
     {
       "heading": "DeleteManyFoldersCommand added to Vault",
-      "body": "It keeps only the folders the user owns, deletes them and pushes 1 vault sync to the user's clients.",
+      "body": "It keeps only the folders the user owns, deletes them and pushes a single vault sync to the user's clients.",
       "view": "flow:delete-folders",
       "focus": [
         "#2",
@@ -34,7 +34,7 @@
     },
     {
       "heading": "SQL Server runs Folder_DeleteByIds",
-      "body": "Dapper calls 1 stored procedure in a transaction. It clears the folder of each item with JSON_MODIFY, then deletes the folders.",
+      "body": "Dapper calls a stored procedure in a transaction. It clears the folder of each item with JSON_MODIFY, then deletes the folders.",
       "view": "architecture",
       "focus": [
         "dapper",
@@ -96,25 +96,25 @@
     },
     {
       "title": "SQL Server does the work in a stored procedure",
-      "why": "1 round trip updates the items and deletes the folders in 1 transaction, as the other SQL Server repositories do.",
+      "why": "A single round trip updates the items and deletes the folders in a single transaction, as the other SQL Server repositories do.",
       "alternative": "Load the items in C# and update them, as EF does.",
       "evidence": "src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:50-72"
     },
     {
       "title": "Ids the user does not own are ignored",
       "why": "The command filters the user's own folders. A request with other ids deletes nothing else and does not fail.",
-      "alternative": "Refuse the whole request when 1 id is not the user's.",
+      "alternative": "Refuse the whole request when an id is not the user's.",
       "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:19-25"
     },
     {
-      "title": "1 vault sync in place of 1 notification per folder",
+      "title": "A single vault sync in place of 1 notification per folder",
       "why": "A delete also moves the items out of the folders. The clients need the whole vault again, not only the folder ids.",
       "alternative": "Push 1 folder delete notification per folder.",
       "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:27-30"
     },
     {
       "title": "A limit of 500 ids, on cloud only",
-      "why": "The cloud API caps the cost of 1 request. A self-hosted server has no limit.",
+      "why": "The cloud API caps the cost of a request. A self-hosted server has no limit.",
       "alternative": "The same limit for every server.",
       "evidence": "src/Api/Vault/Controllers/FoldersController.cs:119-122"
     }

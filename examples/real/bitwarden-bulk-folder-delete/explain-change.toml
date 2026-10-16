@@ -6,7 +6,6 @@
 [project]
 name = "Bitwarden"
 direction = "Ports and adapters: Core defines entities, commands, queries and repository interfaces and references no infrastructure; Dapper and Entity Framework each implement every repository. Code is split by team folder (Vault, AdminConsole, Auth…) in every project."
-lang = "en"
 
 [[layers]]
 id = "hosts"

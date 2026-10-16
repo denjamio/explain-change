@@ -52,7 +52,7 @@ When two words could name the same thing, this page says which one is used.
 | **Data model** | The entities and relations the change touches, with changed fields (`+` added, `-` removed, `~` changed). |
 | **Decision** | A design choice: what was chosen, why, the main alternative, and its evidence (`file:line`). |
 | **Requirement status** | How the code meets an OpenSpec requirement: `implemented`, `partial`, `missing`, `not-applicable`. |
-| **Prose rules** | The parts of ASD-STE100 (Simplified Technical English) the validator enforces: sentences of at most 25 words, refused words by language (future and modal, judgements, marketing, filler, numbers in words), and code names that exist in the change. The rest (active voice, simple verbs) is guidance in the digest. |
+| **Prose rules** | The parts of ASD-STE100 (Simplified Technical English) the validator enforces: sentences of at most 25 words, refused words (future and modal, judgements, marketing, filler, numbers in words; `prose/en.json`, where `word*` refuses every form), and code names that exist in the change. The rest (active voice, simple verbs) is guidance in the digest. |
 
 **Explanation state**: `missing` (no file), `stale` (written for another key), `draft` (placeholders left),
 `invalid` (issues to fix), `valid`. The CLI's `--json` output turns it into the agent's **next action**:

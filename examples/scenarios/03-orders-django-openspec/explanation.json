@@ -53,7 +53,7 @@
     },
     {
       "heading": "4 requirements, all implemented",
-      "body": "The change modifies 2 requirements of orders and adds 2 to notifications. 1 task stays open: an admin action to resend.",
+      "body": "The change modifies 2 requirements of orders and adds 2 to notifications. A task stays open: an admin action to resend.",
       "view": "requirements",
       "focus": [
         "notifications/order-confirmation-email",
@@ -125,7 +125,7 @@
       "evidence": "openspec/changes/add-order-confirmation/design.md:16-21"
     },
     {
-      "title": "An EmailGateway port with 1 Postmark adapter",
+      "title": "An EmailGateway port with a Postmark adapter",
       "why": "Postmark's message id answers support questions, and tests use a fake gateway.",
       "alternative": "Django send_mail with an SMTP backend.",
       "evidence": "notifications/gateway.py:19-21"

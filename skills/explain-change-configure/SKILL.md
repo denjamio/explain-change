@@ -80,7 +80,7 @@ what a change touches, so a quiet box costs nothing on the page; what a box cost
   - Past 20 boxes, every box must be a context or a team the code names.
 - **Fields.**
   - `id`: kebab-case of the name (`orders-api`), stable: rules, flows and explanations reference it.
-  - `name`: the domain noun, ≤ 20 characters, in the team's language (`project.lang`), singular or plural as the
+  - `name`: the domain noun, ≤ 20 characters, in English, singular or plural as the
     team says it, the same style for every box.
   - `desc`: one sentence, "Owns <aggregates or data>; <what it guarantees or decides>": *Owns Order and LineItem; an
     order's total and what can still be refunded.*
@@ -115,7 +115,6 @@ what a change touches, so a quiet box costs nothing on the page; what a box cost
 - `[[flows]]`: 1–3 use cases the business runs on, titled as a command on a domain object (**Place an order**,
   **Refund an order**), with their steps as `"component -> component : call"`. A change that touches one is
   compared with it.
-- `project.lang`: the language the team writes PRs in (`en` or `es`).
 - `project.host`: only when the remotes do not tell where the PRs live (a mirror on both hosts, or none): `azure-devops`
   or `github`. Leave it out otherwise; the remotes decide.
 

@@ -16,7 +16,7 @@
       "body": "The amount rule lives in the model, not in the service.",
       "view": "architecture",
       "focus": [
-        "models"
+        "orders"
       ],
       "code": "app/models/order.rb:5-10"
     },
@@ -55,13 +55,13 @@
   "keyDependencies": [
     {
       "from": "refunds",
-      "to": "payments",
+      "to": "payment-gateway",
       "label": "refund + idempotency"
     }
   ],
   "components": [
     {
-      "id": "controllers",
+      "id": "orders-api",
       "summary": "New route POST /refunds; the controller requires Idempotency-Key and delegates."
     },
     {
@@ -69,15 +69,15 @@
       "summary": "New use case: deduplicates by key, records the refund, calls the gateway and notifies."
     },
     {
-      "id": "models",
+      "id": "orders",
       "summary": "New Refund model; Order computes the refundable amount and creates refunds."
     },
     {
-      "id": "payments",
+      "id": "payment-gateway",
       "summary": "The gateway exposes refund(), passing the idempotency key on."
     },
     {
-      "id": "mailers",
+      "id": "email-delivery",
       "summary": "New refund confirmation email."
     }
   ],
@@ -106,7 +106,7 @@
       "trigger": "RefundsController#create",
       "steps": [
         {
-          "from": "controllers",
+          "from": "orders-api",
           "to": "refunds",
           "call": "Refunds::Create.call",
           "delta": "added",
@@ -121,13 +121,13 @@
         },
         {
           "from": "refunds",
-          "to": "models",
+          "to": "orders",
           "call": "Refund.find_by(key)",
           "delta": "added"
         },
         {
           "from": "refunds",
-          "to": "models",
+          "to": "orders",
           "call": "order.refund!(amount)",
           "delta": "added",
           "data": {
@@ -140,7 +140,7 @@
         },
         {
           "from": "refunds",
-          "to": "payments",
+          "to": "payment-gateway",
           "call": "Gateway.refund",
           "delta": "added",
           "data": {
@@ -154,7 +154,7 @@
         },
         {
           "from": "refunds",
-          "to": "mailers",
+          "to": "email-delivery",
           "call": "RefundMailer.confirmation",
           "delta": "added"
         }
@@ -166,7 +166,7 @@
       {
         "id": "refund",
         "name": "Refund",
-        "component": "models",
+        "component": "orders",
         "evidence": "db/migrate/20261001100000_create_refunds.rb:1-10",
         "fields": [
           "+order_id: references",
@@ -179,7 +179,7 @@
       {
         "id": "order",
         "name": "Order",
-        "component": "models",
+        "component": "orders",
         "evidence": "app/models/order.rb:1-11",
         "fields": [
           "id",

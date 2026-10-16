@@ -1,10 +1,10 @@
 {
-  "tldr": "Admins can now export all family data as 1 ZIP file. A background job writes 4 CSV files and 1 NDJSON file and attaches the ZIP to a FamilyExport record.",
+  "tldr": "Admins can now export all family data as a ZIP file. A background job writes 4 CSV files and an NDJSON file and attaches the ZIP to a FamilyExport record.",
   "goal": "Let a family take a full copy of its data out of Maybe.",
   "story": [
     {
       "heading": "Family::DataExporter added",
-      "body": "It writes accounts, transactions, trades and categories as CSV, plus all.ndjson, into 1 ZIP.",
+      "body": "It writes accounts, transactions, trades and categories as CSV, plus all.ndjson, into a ZIP.",
       "view": "architecture",
       "focus": [
         "family",
@@ -79,7 +79,7 @@
     },
     {
       "id": "family",
-      "summary": "New FamilyExport with a status and a file; new Family::DataExporter writes 4 CSV files and all.ndjson into 1 ZIP."
+      "summary": "New FamilyExport with a status and a file; new Family::DataExporter writes 4 CSV files and all.ndjson into a ZIP."
     },
     {
       "id": "background-jobs",
@@ -105,14 +105,14 @@
     },
     {
       "title": "A FamilyExport record holds the state",
-      "why": "The list, the polling and the download read 1 status. The file is an Active Storage attachment on the record.",
+      "why": "The list, the polling and the download read a single status. The file is an Active Storage attachment on the record.",
       "alternative": "Keep the state only in the job queue.",
       "evidence": "app/models/family_export.rb:6-11"
     },
     {
-      "title": "CSV per entity plus 1 NDJSON dump",
+      "title": "CSV per entity plus an NDJSON dump",
       "why": "CSV opens in a spreadsheet. NDJSON keeps each record with its nested data, such as the accountable of an account.",
-      "alternative": "1 JSON document for everything.",
+      "alternative": "A single JSON document for everything.",
       "evidence": "app/models/family/data_exporter.rb:27-29"
     }
   ],

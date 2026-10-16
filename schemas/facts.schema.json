@@ -124,8 +124,7 @@
         "lang": {
           "type": "string",
           "enum": [
-            "en",
-            "es"
+            "en"
           ]
         },
         "layers": {

@@ -116,18 +116,12 @@ function prShow(root: string, prId: string, az: Az): PrDetails {
   }
 }
 
-const COMMENT = {
-  en: (title: string, url: string, sha: string) =>
-    `**explain-change**: [${title}](${url}), an architecture-first explanation of this PR at \`${sha}\`. ` +
-    "Download it and open it in your browser; it works offline.",
-  es: (title: string, url: string, sha: string) =>
-    `**explain-change**: [${title}](${url}), explicación por arquitectura de este PR en \`${sha}\`. ` +
-    "Descárgalo y ábrelo en el navegador; funciona sin conexión.",
-};
-
 function comment(facts: Facts, url: string): string {
   const title = facts.source.title.replace(/[[\]]/g, "");
-  return COMMENT[facts.config.lang](title, url, facts.source.headSha.slice(0, 8));
+  return (
+    `**explain-change**: [${title}](${url}), an architecture-first explanation of this PR at \`${facts.source.headSha.slice(0, 8)}\`. ` +
+    "Download it and open it in your browser; it works offline."
+  );
 }
 
 /** The Azure DevOps REST API with an az token; errors become UserErrors with the status and Azure's message. */

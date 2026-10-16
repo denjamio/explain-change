@@ -1,20 +1,12 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { mappableRequirements, specRequirements } from "../analysis/openspec.ts";
 import { ENUMS, EXPLANATION_FIELDS, KEBAB_RE, LIMITS, STORY_MIN } from "../contract/explanation.ts";
 import type { Facts, FileFacts } from "../contract/facts.ts";
 import { LOCATION_RE } from "../contract/facts.ts";
 import { CONTRACT_VERSION } from "../core/constants.ts";
-import { git } from "../core/git.ts";
 import { cpLength } from "../core/text.ts";
-import {
-  CODE_NAME_RE,
-  MAX_SENTENCE_WORDS,
-  PRODUCT_NAMES,
-  refusedPatterns,
-  SENTENCE_SPLIT_RE,
-  WORD_RE,
-} from "./prose.ts";
+import { ProseChecker } from "./prose.ts";
 
 /** Why a field is rejected. Stable: agents and tools may branch on it. */
 export type IssueCode =
@@ -105,9 +97,7 @@ class Validator {
   private readonly componentIds: Set<string>;
   private readonly files: Map<string, FileFacts>;
   private readonly requirementIds: string[];
-  private readonly refused: [string, RegExp][];
-  private corpus: string | null = null;
-  private readonly grepCache = new Map<string, boolean>();
+  private readonly prose: ProseChecker;
 
   constructor(
     private readonly facts: Facts,
@@ -116,7 +106,7 @@ class Validator {
     this.componentIds = new Set(explainableComponents(facts));
     this.files = new Map(facts.files.map((f) => [f.path, f]));
     this.requirementIds = specRequirements(facts).map((r) => r.id);
-    this.refused = refusedPatterns(facts.config.lang);
+    this.prose = new ProseChecker(facts, root);
   }
 
   run(e: Obj): Issue[] {
@@ -137,44 +127,6 @@ class Validator {
     this.issues.push({ path, code, message });
   }
 
-  // ── what code names may refer to ──
-
-  /** Everything a code name in the prose may come from, built on first use. */
-  private names(): string {
-    if (this.corpus === null) {
-      const f = this.facts;
-      const parts: string[] = [];
-      for (const file of f.files) {
-        parts.push(file.path, file.previousPath ?? "", ...file.hunks.flatMap((h) => h.lines.map(([, l]) => l)));
-        if (this.root && file.delta !== "removed") {
-          try {
-            parts.push(readFileSync(join(this.root, file.path), "utf8").slice(0, 200_000));
-          } catch {
-            // unreadable: the hunks are still there
-          }
-        }
-      }
-      parts.push(...f.symbols.map((s) => s.name));
-      parts.push(...f.config.components.flatMap((c) => [c.id, c.name, c.desc]));
-      parts.push(...f.config.layers.flatMap((l) => [l.id, l.name]));
-      parts.push(...specRequirements(f).flatMap((r) => [r.id, r.name, r.text]));
-      parts.push(f.source.title, f.source.description);
-      this.corpus = parts.join("\n");
-    }
-    return this.corpus;
-  }
-
-  /** A code name is known when the change mentions it, or failing that, when the repository has it. */
-  private known(name: string): boolean {
-    if (this.names().includes(name)) return true;
-    let hit = this.grepCache.get(name);
-    if (hit === undefined) {
-      hit = Boolean(this.root && git(["grep", "-l", "-F", "-e", name], this.root, { check: false }).trim());
-      this.grepCache.set(name, hit);
-    }
-    return hit;
-  }
-
   // ── field helpers ──
 
   private text(path: string, value: Json, limit: number, opts: { required?: boolean; names?: boolean } = {}) {
@@ -184,40 +136,7 @@ class Validator {
       if (required) this.add(path, "required", "required");
     } else if (typeof value !== "string" || !value.trim()) this.add(path, "type", "must be a non-empty string");
     else if (cpLength(value) > limit) this.add(path, "too-long", `${cpLength(value)} chars, max ${limit}`);
-    else this.prose(path, value, names);
-  }
-
-  private prose(path: string, value: string, names: boolean) {
-    for (const sentence of value.split(SENTENCE_SPLIT_RE)) {
-      const n = sentence.match(WORD_RE)?.length ?? 0;
-      if (n > MAX_SENTENCE_WORDS) {
-        this.add(path, "sentence-too-long", `a sentence has ${n} words, max ${MAX_SENTENCE_WORDS}; split it`);
-        break;
-      }
-    }
-    const low = value.toLowerCase();
-    for (const [why, rx] of this.refused) {
-      const found = [...new Set([...low.matchAll(rx)].map((m) => m[0]))].sort();
-      if (found.length) this.add(path, "refused-word", `${found.join(", ")}: ${why}`);
-    }
-    if (!names) return;
-    const unknown: string[] = [];
-    for (const m of value.matchAll(CODE_NAME_RE)) {
-      const name = (m[1] ?? m[2] ?? "").trim();
-      const bare = name.endsWith("()") ? name.slice(0, -2) : name;
-      // Check.desc or Form.is_valid: each part must exist, not the whole (it is rarely written that way).
-      const parts = /^[\w.:]+$/.test(bare) ? bare.split(/::|\./).filter(Boolean) : [bare];
-      if (bare && !PRODUCT_NAMES.has(bare) && !unknown.includes(bare) && !parts.every((p) => this.known(p))) {
-        unknown.push(bare);
-      }
-    }
-    if (unknown.length) {
-      this.add(
-        path,
-        "unknown-code-name",
-        `${unknown.join(", ")} not found in the change; write code names exactly as in the code, or in plain words`,
-      );
-    }
+    else for (const i of this.prose.check(value, names)) this.add(path, i.code, i.message);
   }
 
   private fields(path: string, value: Json, maxItems: number, limit: number) {
@@ -405,7 +324,7 @@ class Validator {
     }
     const verbs = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
     const unknown = (value.match(/[A-Za-z_][\w?!]*/g) ?? []).filter(
-      (w) => !verbs.has(w) && w.length > 2 && !this.known(w),
+      (w) => !verbs.has(w) && w.length > 2 && !this.prose.known(w),
     );
     if (unknown.length)
       this.add(

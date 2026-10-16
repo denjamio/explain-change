@@ -23,7 +23,7 @@ name = "Infrastructure"
 allow = ["web -> application", "application -> domain", "application -> infra", "infra -> domain"]
 
 [[components]]
-id = "controllers"
+id = "orders-api"
 name = "Orders API"
 layer = "web"
 paths = ["app/controllers/**", "config/routes.rb"]
@@ -40,18 +40,18 @@ layer = "application"
 paths = ["app/services/refunds/**"]
 desc = "Refund use cases"
 [[components]]
-id = "models"
+id = "orders"
 name = "Orders"
 layer = "domain"
 paths = ["app/models/**"]
 desc = "Order and Refund: the order total and what can still be refunded"
 [[components]]
-id = "payments"
+id = "payment-gateway"
 name = "Payment gateway"
 layer = "infra"
 paths = ["app/clients/payments/**"]
 [[components]]
-id = "mailers"
+id = "email-delivery"
 name = "Email delivery"
 layer = "infra"
 paths = ["app/mailers/**"]

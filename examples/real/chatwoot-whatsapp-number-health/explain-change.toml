@@ -6,7 +6,6 @@
 [project]
 name = "Chatwoot"
 direction = "Rails conventions by context: controllers stay thin; each context keeps its rules in models and app/services; jobs and event listeners run the async work; channel code talks to the messaging providers. Enterprise code extends the open-source code from enterprise/, never the reverse."
-lang = "en"
 
 [[layers]]
 id = "web"

@@ -4,7 +4,7 @@
   "story": [
     {
       "heading": "POST send-invite added for staged members",
-      "body": "The members grid row action sends a list of member ids. The response gives 1 result per id, so 1 bad id does not fail the request.",
+      "body": "The members grid row action sends a list of member ids. The response gives 1 result per id, so a bad id does not fail the request.",
       "view": "flow:invite-staged-members",
       "focus": [
         "#1"
@@ -54,7 +54,7 @@
     },
     {
       "heading": "The whole change",
-      "body": "The API calls 1 Admin Console command. Admin Console asks Billing about the Secrets Manager discount, and both adapters implement the new read.",
+      "body": "The API calls a single Admin Console command. Admin Console asks Billing about the Secrets Manager discount, and both adapters implement the new read.",
       "view": "architecture",
       "focus": []
     }
@@ -90,14 +90,14 @@
   ],
   "decisions": [
     {
-      "title": "Skip bad ids, report them 1 by 1",
+      "title": "Skip bad ids, report them one at a time",
       "why": "A member that is missing, in another organization or no longer staged gets its own error. The other members still get their invitation.",
       "alternative": "Fail the whole request on the first bad id.",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:105-125"
     },
     {
       "title": "Reserve seats once for the whole set",
-      "why": "Seat expansion is all or nothing. 1 reservation covers every eligible member, and a failure leaves no seat paid for.",
+      "why": "Seat expansion is all or nothing. A single reservation covers every eligible member, and a failure leaves no seat paid for.",
       "alternative": "Reserve 1 seat per member as each invitation goes out.",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:82-92"
     },

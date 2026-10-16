@@ -17,10 +17,9 @@
         "lang": {
           "type": "string",
           "enum": [
-            "en",
-            "es"
+            "en"
           ],
-          "description": "Report language (default en)."
+          "description": "Report language: en (the default and only one)."
         },
         "base": {
           "type": "string",

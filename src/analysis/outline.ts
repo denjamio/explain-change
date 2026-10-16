@@ -261,11 +261,14 @@ export function outline(facts: FactsCore): Outline {
     }
   }
   const touched = facts.components.filter((c) => c.delta !== "unchanged");
+  // Steps name components as the team does: the draft's headings start from these words.
+  const names = new Map(facts.config.components.map((c) => [c.id, c.name]));
+  const name = (id: string) => names.get(id) ?? id;
   const story: Outline["story"] = [];
   for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
     const file = locationFile(e.examples[0] ?? "");
     story.push({
-      about: `${e.from} now depends on ${e.to} (${e.violation?.rule})`,
+      about: `${name(e.from)} now depends on ${name(e.to)} (${e.violation?.rule})`,
       view: "architecture",
       focus: [e.from, e.to],
       code: bestHunk(
@@ -277,7 +280,8 @@ export function outline(facts: FactsCore): Outline {
   // 1 ranking for added, removed and changed components: being new is worth something, not everything (a new
   // folder of locales is no headline). The lane decides first, so every change reads the same way: the story
   // opens where the behavior is decided (the inner lanes), then its entry points, then the bottom lane. Weight only
-  // orders a lane; a component with none (no public symbol, dependency gained or lost, or migration) waits.
+  // orders a lane. A component with no weight (no public symbol, dependency gained or lost, or migration) gets no
+  // step of its own unless nothing else does: its summary and the overview say it, so the story stays short.
   const lane = laneOf(facts);
   const ranked = touched
     .map((c) => {
@@ -285,9 +289,10 @@ export function outline(facts: FactsCore): Outline {
       return { c, weight: weight + (c.delta === "changed" ? 0 : 2), code };
     })
     .sort(byKeys((x) => [x.weight > 0 ? lane(x.c.id) : 3, -x.weight, -x.code, x.c.id]));
-  for (const { c } of ranked.slice(0, Math.max(0, 4 - story.length))) {
+  const weighted = ranked.filter((x) => x.weight > 0);
+  for (const { c } of (weighted.length ? weighted : ranked.slice(0, 1)).slice(0, Math.max(0, 4 - story.length))) {
     story.push({
-      about: `${c.id} ${c.delta}`,
+      about: `${name(c.id)} ${c.delta}`,
       view: "architecture",
       focus: [c.id],
       code: bestHunk(filesOf.get(c.id) ?? [], ctx),

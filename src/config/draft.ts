@@ -26,7 +26,6 @@ export function draftConfig(name: string, structure: Structure): string {
     "[project]",
     `name = ${tomlString(name)}`,
     'direction = ""  # one or two sentences: the architecture you want changes to follow',
-    'lang = "en"     # report language: en | es',
     "",
   ];
   for (const [id, layerName] of layers)

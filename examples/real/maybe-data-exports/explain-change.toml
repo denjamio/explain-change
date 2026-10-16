@@ -7,7 +7,6 @@
 [project]
 name = "Maybe"
 direction = "Skinny controllers, fat models: each context keeps its rules in app/models (models, concerns, POROs). Slow work runs in jobs. External data comes only through Provider::Registry and its concepts, never from a provider class directly."
-lang = "en"
 
 [[layers]]
 id = "web"
