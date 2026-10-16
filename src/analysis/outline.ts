@@ -91,8 +91,9 @@ export function keyDependencyCandidates(facts: Pick<FactsCore, "dependencies" | 
 
 /**
  * How much a changed component matters to the story: the public symbols it changes, the dependencies it gains or
- * loses, then its lines of code. Config and generated lines do not count: an OpenAPI spec or a generated client is
- * big, and rarely the point.
+ * loses, whether it migrates its data model (a new field is no symbol, but it is what the change is about), then
+ * its lines of code. Config and generated lines do not count: an OpenAPI spec or a generated client is big, and
+ * rarely the point.
  */
 function storyWeight(facts: FactsCore, id: string): [number, number] {
   const fileComponent = new Map(facts.files.map((f) => [f.path, f.component]));
@@ -100,10 +101,27 @@ function storyWeight(facts: FactsCore, id: string): [number, number] {
   const deps = facts.dependencies.filter(
     (e) => (e.from === id || e.to === id) && (e.delta === "added" || e.delta === "removed"),
   ).length;
+  // Migrations only: a models/ folder is no proof (a mobile client keeps its view models in one).
+  const model = facts.files.some((f) => f.component === id && f.category === "migration" && f.hunks.length) ? 2 : 0;
   const code = facts.files
     .filter((f) => f.component === id && f.category === "code")
     .reduce((n, f) => n + f.additions + f.deletions, 0);
-  return [symbols * 3 + deps * 2, code];
+  return [symbols * 3 + deps * 2 + model, code];
+}
+
+/**
+ * Where a component's lane puts it in the story: 0 for the inner lanes, 1 for the entry lane (the top one), 2 for
+ * the bottom one with 3 lanes or more (the shared kernel or the platform; with 2, the bottom lane is the domain).
+ */
+function laneOf(facts: Pick<FactsCore, "config">): (id: string) => number {
+  const ids = facts.config.layers.map((l) => l.id);
+  const index = new Map(facts.config.components.map((c) => [c.id, ids.indexOf(c.layer)]));
+  return (id) => {
+    const i = index.get(id) ?? -1;
+    if (ids.length < 2 || i < 0) return 0;
+    if (i === 0) return 1;
+    return ids.length >= 3 && i === ids.length - 1 ? 2 : 0;
+  };
 }
 
 /** Where a runtime path starts: a request handler, a background job or a command. First match wins. */
@@ -257,13 +275,16 @@ export function outline(facts: FactsCore): Outline {
     });
   }
   // 1 ranking for added, removed and changed components: being new is worth something, not everything (a new
-  // folder of locales is no headline).
+  // folder of locales is no headline). The lane decides first, so every change reads the same way: the story
+  // opens where the behavior is decided (the inner lanes), then its entry points, then the bottom lane. Weight only
+  // orders a lane; a component with none (no public symbol, dependency gained or lost, or migration) waits.
+  const lane = laneOf(facts);
   const ranked = touched
     .map((c) => {
       const [weight, code] = storyWeight(facts, c.id);
       return { c, weight: weight + (c.delta === "changed" ? 0 : 2), code };
     })
-    .sort(byKeys((x) => [-x.weight, -x.code, x.c.id]));
+    .sort(byKeys((x) => [x.weight > 0 ? lane(x.c.id) : 3, -x.weight, -x.code, x.c.id]));
   for (const { c } of ranked.slice(0, Math.max(0, 4 - story.length))) {
     story.push({
       about: `${c.id} ${c.delta}`,

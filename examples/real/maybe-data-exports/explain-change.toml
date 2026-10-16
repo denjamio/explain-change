@@ -49,7 +49,7 @@ desc = "Owns the Hotwire UI: views, view components, Stimulus controllers, the d
 id = "web-endpoints"
 name = "Web endpoints"
 layer = "web"
-paths = ["app/controllers/**", "config/routes.rb"]
+paths = ["app/controllers/**", "config/routes.rb", "app/services/*api_rate_limiter.rb"]
 desc = "Owns the routes and the thin controllers of the app, its settings and its public API."
 
 # ── Domain: each context in app/models ───────────────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ desc = "Owns Family, its users, sessions, invitations, subscription and data exp
 id = "accounts"
 name = "Accounts"
 layer = "domain"
-paths = ["app/models/account.rb", "app/models/account/**", "app/models/balance.rb", "app/models/balance/**", "app/models/valuation.rb", "app/models/depository.rb", "app/models/credit_card.rb", "app/models/loan.rb", "app/models/property.rb", "app/models/vehicle.rb", "app/models/crypto.rb", "app/models/other_asset.rb", "app/models/other_liability.rb", "app/models/investment.rb"]
+paths = ["app/models/account.rb", "app/models/account/**", "app/models/balance.rb", "app/models/balance/**", "app/models/valuation.rb", "app/models/depository.rb", "app/models/credit_card.rb", "app/models/loan.rb", "app/models/property.rb", "app/models/vehicle.rb", "app/models/crypto.rb", "app/models/other_asset.rb", "app/models/other_liability.rb", "app/models/investment.rb", "app/data_migrations/balance_*.rb"]
 desc = "Owns Account and its types (depository, investment, loan…), balances and valuations; what a family has and owes."
 
 [[components]]

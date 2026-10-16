@@ -40,16 +40,6 @@
       "code": "server/src/dtos/memory.dto.ts:21-35"
     },
     {
-      "heading": "February 29 birthdays move to February 28",
-      "body": "In a year without February 29, isLeapDayObserved makes February 28 the birthday of people born on February 29.",
-      "view": "architecture",
-      "focus": [
-        "shared-kernel",
-        "database"
-      ],
-      "code": "server/src/utils/date.ts:18-24"
-    },
-    {
       "heading": "Clients show the birthday title",
       "body": "The web app titles the memory with the name of the person. The mobile app knows the birthday type.",
       "view": "architecture",
@@ -59,6 +49,16 @@
         "sdk"
       ],
       "code": "web/src/lib/utils.ts:400-403"
+    },
+    {
+      "heading": "February 29 birthdays move to February 28",
+      "body": "In a year without February 29, isLeapDayObserved makes February 28 the birthday of people born on February 29.",
+      "view": "architecture",
+      "focus": [
+        "shared-kernel",
+        "database"
+      ],
+      "code": "server/src/utils/date.ts:18-24"
     }
   ],
   "keyDependencies": [

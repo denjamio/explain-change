@@ -243,8 +243,9 @@ export function task(f: Facts): string {
       "this way. It is not a review: do not judge readiness or report bugs, gaps, error handling, security or style.",
     `- Component ids (only these): on the map ${shown.join(", ") || "none"}${elsewhere.length ? `; elsewhere ${elsewhere.join(", ")}` : ""}.`,
     `- tldr: what changes and its effect. goal: the need behind it, not a repeat of tldr.`,
-    `- story (${STORY_MIN}-${LIMITS.story} steps): the guided tour over the map, outlined from the facts. Keep its order unless ` +
-      "the hunks show another headline; you may drop or merge steps. heading: the thing + what happened to it (added, " +
+    `- story (${STORY_MIN}-${LIMITS.story} steps): the guided tour over the map, outlined from the facts: it opens where the ` +
+      "behavior is decided (the inner lanes), then the entry points, then the bottom lane. Keep that order unless the " +
+      "hunks show another headline; you may drop or merge steps. heading: the thing + what happened to it (added, " +
       "removed, now, moved, replaced). body: what behaves differently now (numbers when they matter), not a description " +
       `of the code. view = ${views}; focus = 1-3 ids on that view (${focusIds}), none for the overview.`,
     "- components: one line per changed component: what it now does differently (behavior, not file names).",
