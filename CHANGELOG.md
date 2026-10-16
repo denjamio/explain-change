@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-17
+
 ### Added
 - Each design decision states its `basis`: where its why comes from (`pr`, `spec`, `code` or `inferred`). The
   validator accepts `pr` only with a PR description, `spec` only with an OpenSpec proposal or design, and `code`
