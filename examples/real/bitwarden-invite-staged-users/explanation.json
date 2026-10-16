@@ -172,7 +172,7 @@
         {
           "from": "admin-console",
           "to": "dapper",
-          "call": "GetManyByOrganizationEmailsAsync",
+          "call": "IOrganizationUserRepository.GetManyByOrganizationEmailsAsync",
           "delta": "added"
         },
         {
