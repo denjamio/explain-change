@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-16
+
 ### Added
 - `check` shows how many commits change each component, lists the components that rarely change (1% of the history
   or less) and the ones that list single files. The configure skill turns them into 1 set of rules: a context or a
