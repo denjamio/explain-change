@@ -11,7 +11,7 @@ import { azToken, branchPr, isAdoHttps, isAdoRepoUrl, type PrMetadata } from "./
  */
 
 const API = "api-version=7.1";
-const ATTACHMENTS_API = "api-version=7.1-preview.1";
+const ATTACHMENTS_API = "api-version=7.1";
 
 export type HttpFetch = (url: string, init: RequestInit) => Promise<Response>;
 
