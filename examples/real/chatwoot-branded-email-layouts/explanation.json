@@ -1,6 +1,6 @@
 {
   "tldr": "An e-mail inbox can now send replies in its own HTML layout, written in Liquid. The account can set a fallback layout. The branded_email_templates feature flag turns it on per account.",
-  "goal": "Let a company that runs several brands from 1 account send each brand's replies in that brand's e-mail design.",
+  "goal": "Let a company that runs several brands from a single account send each brand's replies in that brand's e-mail design.",
   "story": [
     {
       "heading": "E-mail templates now belong to an inbox too",
@@ -85,13 +85,13 @@
   "decisions": [
     {
       "title": "3 scopes with a fixed order: inbox, account, installation",
-      "why": "1 brand per inbox overrides the account layout, and the installation layout stays the last fallback.",
-      "alternative": "1 layout per account only.",
+      "why": "A brand per inbox overrides the account layout, and the installation layout stays the last fallback.",
+      "alternative": "A single layout per account.",
       "evidence": "app/services/email_templates/db_resolver_service.rb:59-65"
     },
     {
       "title": "Partial unique indexes, 1 per scope",
-      "why": "A plain unique index cannot treat NULL account or inbox ids as a scope. Each partial index guards 1 scope.",
+      "why": "A plain unique index cannot treat NULL account or inbox ids as a scope. Each partial index guards a single scope.",
       "alternative": "Validate uniqueness only in the model.",
       "evidence": "db/migrate/20260706000000_add_inbox_scope_to_email_templates.rb:8-22"
     },

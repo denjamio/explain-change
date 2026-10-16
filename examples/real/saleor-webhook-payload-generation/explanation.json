@@ -99,8 +99,8 @@
     },
     {
       "title": "Group the webhooks, not the event",
-      "why": "1 event reaches many apps. Each app chooses for its own webhook, and only that webhook pays the cost.",
-      "alternative": "1 setting per event type for all apps.",
+      "why": "An event reaches many apps. Each app chooses for its own webhook, and only that webhook pays the cost.",
+      "alternative": "A setting per event type for all apps.",
       "evidence": "saleor/webhook/transport/asynchronous/transport.py:305-326"
     }
   ],

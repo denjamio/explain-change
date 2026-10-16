@@ -89,8 +89,8 @@
     },
     {
       "title": "A scheduler job and 1 job per channel",
-      "why": "The scheduler picks the channels with the oldest check, at most 25 per hour. 1 failing number does not stop the others.",
-      "alternative": "1 job that checks every channel in a loop.",
+      "why": "The scheduler picks the channels with the oldest check, at most 25 per hour. A failing number does not stop the others.",
+      "alternative": "A single job that checks every channel in a loop.",
       "evidence": "app/jobs/channels/whatsapp/health_sync_scheduler_job.rb:4-12"
     },
     {

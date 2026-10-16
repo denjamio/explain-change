@@ -6,7 +6,6 @@
 [project]
 name = "Immich"
 direction = "Hexagonal, loosely: services in server/src/services own the business logic per context; controllers and DTOs only map HTTP; repositories are the only code that touches Postgres, Redis, the machine-learning service or the file system."
-lang = "en"
 
 [[layers]]
 id = "clients"

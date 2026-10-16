@@ -597,8 +597,105 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 <body>
 <div id="app" class="app"></div>
 <noscript><p style="padding:24px">This report uses JavaScript to draw its diagrams. Open it in a browser with scripts enabled.</p></noscript>
-<script type="application/json" id="ec-data">{"tool":"0.4.1","facts":{"version":4,"tool":"0.4.1","analysis":8,"key":"7c7df9fbd540adad","source":{"kind":"local","title":"Add per-webhook payloadGeneration to opt out of deferred payloads (#19916) (#19920)","description":"","branch":"3dd4bf79","baseRef":"HEAD~1","headRef":"HEAD","headSha":"3dd4bf79a46132ed2f8e6225a9863f5ef8dc243b","mergeBase":"dfa97c976418c4760ffd63d34b5e13698dfd85e8","host":"github","prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-16T12:34:17+02:00","commits":1},"config":{"inferred":false,"name":"Saleor","direction":"Layered by context: GraphQL mutations in saleor/graphql call the commerce apps; the apps hold the models and rules and never import the API. Side effects to apps and plugins go through the PluginsManager, not Django signals.","lang":"en","layers":[{"id":"api","name":"API"},{"id":"domain","name":"Commerce"},{"id":"integrations","name":"Integrations"},{"id":"platform","name":"Platform"}],"components":[{"id":"catalog-api","name":"Catalog API","layer":"api","desc":"Owns the GraphQL types, queries and mutations for products, variants, categories, collections and attributes."},{"id":"checkout-api","name":"Checkout API","layer":"api","desc":"Owns the checkout mutations: create, add lines, set delivery, apply a voucher, complete."},{"id":"orders-api","name":"Orders API","layer":"api","desc":"Owns order queries and the staff mutations: drafts, fulfilments, refunds, invoices."},{"id":"discounts-api","name":"Discounts API","layer":"api","desc":"Owns the GraphQL types and mutations for vouchers, promotions and gift cards."},{"id":"payments-api","name":"Payments API","layer":"api","desc":"Owns payment and transaction queries and mutations, and the payment gateway list."},{"id":"accounts-api","name":"Accounts API","layer":"api","desc":"Owns the GraphQL types and mutations for customers, staff, addresses, permission groups and sign-in."},{"id":"graphql-api","name":"GraphQL API","layer":"api","desc":"Owns the schema, the base mutation and types, and the API of channels, apps, webhooks, shipping and content."},{"id":"catalog","name":"Catalog","layer":"domain","desc":"Owns Product, ProductVariant, Category, Collection and attributes; what is sold and in which channels."},{"id":"checkout","name":"Checkout","layer":"domain","desc":"Owns Checkout and its lines; prices a cart and turns it into an order."},{"id":"orders","name":"Orders","layer":"domain","desc":"Owns Order, its lines, fulfilments, events and invoices; the order life cycle after checkout."},{"id":"discounts","name":"Discounts","layer":"domain","desc":"Owns vouchers, promotions and gift cards; which discount applies to which line."},{"id":"payments","name":"Payments","layer":"domain","desc":"Owns Payment, TransactionItem and their events; what was authorized, charged and refunded."},{"id":"stock-shipping","name":"Stock and shipping","layer":"domain","desc":"Owns warehouses, stock, allocations, shipping zones and methods."},{"id":"channels","name":"Channels and taxes","layer":"domain","desc":"Owns channels (currency, country, settings) and tax configuration; each sales context of a shop."},{"id":"accounts","name":"Accounts","layer":"domain","desc":"Owns users, customers, staff, addresses and permissions."},{"id":"content","name":"Content","layer":"domain","desc":"Owns pages, menus, SEO fields and translations."},{"id":"apps","name":"Apps","layer":"integrations","desc":"Owns installed apps, their tokens, permissions and manifests."},{"id":"webhooks","name":"Webhooks","layer":"integrations","desc":"Owns webhooks and their events; builds each payload from a GraphQL subscription and delivers it, sync or async."},{"id":"plugins","name":"Plugins","layer":"integrations","desc":"Owns the PluginsManager, the event bus that calls plugins and webhooks, and the built-in plugins."},{"id":"payment-gateways","name":"Payment gateways","layer":"integrations","desc":"Owns the built-in payment gateway plugins and their provider clients."},{"id":"platform","name":"Platform","layer":"platform","desc":"Owns settings, Celery, ASGI, money and taxed-money helpers, and the base models every app uses."}],"rules":{"allow":["api -> domain","api -> integrations","api -> platform","domain -> integrations","domain -> platform","integrations -> domain","integrations -> platform","webhooks -> api"],"forbid":["domain -> api","platform -> api"]},"referenceFlows":[{"id":"complete-checkout","title":"Complete a checkout","steps":[{"from":"checkout-api","to":"checkout","message":"complete_checkout"},{"from":"checkout","to":"discounts","message":"apply voucher and promotions"},{"from":"checkout","to":"orders","message":"create order from checkout"},{"from":"checkout","to":"plugins","message":"manager.checkout_fully_paid"}]},{"id":"notify-apps","title":"Notify apps of an event","steps":[{"from":"orders","to":"plugins","message":"manager.order_created"},{"from":"plugins","to":"webhooks","message":"trigger_webhooks_async"}]}],"glossary":[{"term":"product","definition":"An item for sale; its variants are what a customer buys."},{"term":"variant","definition":"A sellable version of a product, with its own SKU, price and stock."},{"term":"channel","definition":"A sales context: its currency, countries and which products it sells."},{"term":"checkout","definition":"A customer's cart before it becomes an order."},{"term":"order","definition":"What a customer bought, from payment to fulfilment."},{"term":"voucher","definition":"A code that gives a discount when the customer enters it."},{"term":"promotion","definition":"A discount that applies on its own when its rules match."},{"term":"gift card","definition":"A prepaid balance a customer spends at checkout."},{"term":"warehouse","definition":"A place that holds stock and ships orders."},{"term":"app","definition":"An external service with a token and webhooks, which extends Saleor through the API."},{"term":"webhook","definition":"An event delivery from Saleor to an app, sync or async."},{"term":"plugin","definition":"A Python extension that the PluginsManager calls on domain events."}]},"files":[{"path":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md","previousPath":null,"delta":"added","binary":false,"additions":78,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":36,"newLines":22,"header":"","lines":[["+","writer would move the full payload-generation load onto the primary, which is the database that"],["+","every pod shares and the scaling bottleneck."],["+",""],["+","## Per-webhook opt-out"],["+",""],["+","Deferral is right by default but not for every consumer. An integration that applies each"],["+","`ORDER_METADATA_UPDATED` in sequence, expecting the metadata as written by each request, breaks"],["+","when several pending deliveries all carry the final state. Each webhook therefore carries a"],["+","`payloadGeneration` choice, `DEFERRED` by default or `IMMEDIATE`, set by the app that registers it"],["+","through the mutations or the manifest. An `IMMEDIATE` subscription webhook on a deferred event has"],["+","its payload built by whatever triggered the event, as every webhook did before deferral, and only"],["+","that webhook pays the cost. For events fired from a request that is the mutation's latency. For"],["+","events fired from a background task, such as the variant price and stock events, it is that task's"],["+","run time, which is why those events were deferred from the start. An app that sets `IMMEDIATE` on"],["+","such an event takes that cost knowingly. Because such a task may fire the event with a replica-allowed"],["+","manager right after its own write, an `IMMEDIATE` payload on a deferrable event is resolved against the"],["+","writer, so the dataloader-resolved fields cannot predate the write. Fields read from the subscribable"],["+","object itself still reflect where the caller loaded it from. The choice is ignored where it cannot apply: legacy"],["+","webhooks without a subscription query, sync events, and events that are not deferred."],["+",""],["+","## When each event became deferred"],["+",""]]}]},{"path":"saleor/app/installation_utils.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[]},{"path":"saleor/app/manifest_schema.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[]},{"path":"saleor/app/manifest_validations.py","previousPath":null,"delta":"changed","binary":false,"additions":27,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[{"oldStart":292,"oldLines":6,"newStart":293,"newLines":31,"header":"def _clean_webhook_identifier(webhook, seen_identifiers, errors):","lines":[[" ","    seen_identifiers.add(identifier)"],[" ",""],[" ",""],["+","def _clean_webhook_payload_generation(webhook, errors):"],["+","    \"\"\"Map the manifest's `payloadGeneration` enum name to its stored value."],["+",""],["+","    Accepts the GraphQL enum names (`DEFERRED`, `IMMEDIATE`), like event names"],["+","    do. A missing value means `DEFERRED`."],["+","    \"\"\""],["+","    payload_generation_values = {"],["+","        str_to_enum(value): value for value, _ in WebhookPayloadGeneration.CHOICES"],["+","    }"],["+","    raw_value = webhook.get(\"payloadGeneration\")"],["+","    if raw_value is None:"],["+","        webhook[\"payloadGeneration\"] = WebhookPayloadGeneration.DEFERRED"],["+","        return"],["+","    try:"],["+","        webhook[\"payloadGeneration\"] = payload_generation_values[raw_value]"],["+","    except KeyError:"],["+","        allowed = \", \".join(payload_generation_values)"],["+","        errors[\"webhooks\"].append("],["+","            ValidationError("],["+","                f\"Invalid payload generation: {raw_value}. Allowed values: {allowed}.\","],["+","                code=AppErrorCode.INVALID.value,"],["+","            )"],["+","        )"],["+",""],["+",""],[" ","def _clean_webhooks(manifest_data, errors):"],[" ","    webhooks = manifest_data.get(\"webhooks\", [])"],[" ",""]]}]},{"path":"saleor/app/tests/test_installation_utils.py","previousPath":null,"delta":"changed","binary":false,"additions":41,"deletions":0,"component":"apps","category":"test","truncated":false,"hunks":[]},{"path":"saleor/app/tests/test_manifest_validations.py","previousPath":null,"delta":"changed","binary":false,"additions":61,"deletions":1,"component":"apps","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/meta/tests/mutations/test_order.py","previousPath":null,"delta":"changed","binary":false,"additions":115,"deletions":0,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/schema.graphql","previousPath":null,"delta":"changed","binary":false,"additions":35,"deletions":0,"component":"graphql-api","category":"ignored","truncated":true,"hunks":[]},{"path":"saleor/graphql/webhook/enums.py","previousPath":null,"delta":"changed","binary":false,"additions":19,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_create.py","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_trigger.py","previousPath":null,"delta":"changed","binary":false,"additions":12,"deletions":3,"component":"graphql-api","category":"code","truncated":false,"hunks":[{"oldStart":168,"oldLines":7,"newStart":168,"newLines":12,"header":"class WebhookTrigger(BaseMutation):","lines":[[" ","            ]:"],[" ","                object = [object]"],[" ",""],["-","            is_deferred_payload = get_is_deferred_payload(event_type)"],["+","            # The webhook's `payload_generation` is read here, once, when the"],["+","            # delivery is created. See `Webhook.payload_generation`."],["+","            is_deferred_payload = ("],["+","                get_is_deferred_payload(event_type)"],["+","                and webhook.payload_generation == WebhookPayloadGeneration.DEFERRED"],["+","            )"],[" ","            if is_deferred_payload:"],[" ","                delivery = core_models.EventDelivery("],[" ","                    status=EventDeliveryStatus.PENDING,"]]}]},{"path":"saleor/graphql/webhook/mutations/webhook_update.py","previousPath":null,"delta":"changed","binary":false,"additions":13,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_create.py","previousPath":null,"delta":"changed","binary":false,"additions":74,"deletions":2,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_trigger.py","previousPath":null,"delta":"changed","binary":false,"additions":68,"deletions":1,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_update.py","previousPath":null,"delta":"changed","binary":false,"additions":55,"deletions":2,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/types.py","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/webhook/migrations/0015_webhook_payload_generation.py","previousPath":null,"delta":"added","binary":false,"additions":22,"deletions":0,"component":"webhooks","category":"migration","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":22,"header":"","lines":[["+","# Generated by Django 5.2.18 on 2026-10-14 14:12"],["+",""],["+","from django.db import migrations, models"],["+",""],["+",""],["+","class Migration(migrations.Migration):"],["+","    dependencies = ["],["+","        (\"webhook\", \"0014_webhook_identifier_unique_constraint\"),"],["+","    ]"],["+",""],["+","    operations = ["],["+","        migrations.AddField("],["+","            model_name=\"webhook\","],["+","            name=\"payload_generation\","],["+","            field=models.CharField("],["+","                choices=[(\"deferred\", \"Deferred\"), (\"immediate\", \"Immediate\")],"],["+","                db_default=\"deferred\","],["+","                default=\"deferred\","],["+","                max_length=32,"],["+","            ),"],["+","        ),"],["+","    ]"]]}]},{"path":"saleor/webhook/migrations/0016_merge_20261016_0603.py","previousPath":null,"delta":"added","binary":false,"additions":12,"deletions":0,"component":"webhooks","category":"migration","truncated":false,"hunks":[]},{"path":"saleor/webhook/models.py","previousPath":null,"delta":"changed","binary":false,"additions":23,"deletions":0,"component":"webhooks","category":"code","truncated":false,"hunks":[{"oldStart":41,"oldLines":6,"newStart":51,"newLines":19,"header":"class Webhook(models.Model):","lines":[[" ","    # that doesn't set an identifier. Empty string stays blocked by the"],[" ","    # identifier_not_blank CheckConstraint below."],[" ","    identifier = models.CharField(max_length=256, null=True, blank=True)"],["+","    # How the subscription payload is built for async events that defer payload"],["+","    # generation (`is_deferred_payload` in the event map). The value is read once,"],["+","    # when a delivery is created by whatever triggered the event, a request or a"],["+","    # background task. Changing it never affects deliveries already created or"],["+","    # tasks already queued: those finish the way they started. It is ignored for"],["+","    # webhooks without a subscription query, for sync events and for events that"],["+","    # do not defer payload generation."],["+","    payload_generation = models.CharField("],["+","        max_length=32,"],["+","        choices=WebhookPayloadGeneration.CHOICES,"],["+","        default=WebhookPayloadGeneration.DEFERRED,"],["+","        db_default=WebhookPayloadGeneration.DEFERRED,"],["+","    )"],[" ",""],[" ","    class Meta:"],[" ","        ordering = (\"pk\",)"]]}]},{"path":"saleor/webhook/tests/test_models.py","previousPath":null,"delta":"changed","binary":false,"additions":10,"deletions":1,"component":"webhooks","category":"test","truncated":false,"hunks":[]},{"path":"saleor/webhook/transport/asynchronous/tests/test_deferred_payload.py","previousPath":null,"delta":"changed","binary":false,"additions":356,"deletions":0,"component":"webhooks","category":"test","truncated":false,"hunks":[]},{"path":"saleor/webhook/transport/asynchronous/transport.py","previousPath":null,"delta":"changed","binary":false,"additions":51,"deletions":8,"component":"webhooks","category":"code","truncated":false,"hunks":[{"oldStart":299,"oldLines":6,"newStart":301,"newLines":27,"header":"def group_webhooks_by_subscription(","lines":[[" ","    return legacy, subscription"],[" ",""],[" ",""],["+","def group_subscription_webhooks_by_payload_generation("],["+","    webhooks: Sequence[\"Webhook\"],"],["+",") -> tuple[list[\"Webhook\"], list[\"Webhook\"]]:"],["+","    \"\"\"Group subscription webhooks by their `payload_generation` setting."],["+",""],["+","    Returns a tuple of two lists: webhooks whose payload is built in the deferred"],["+","    task and webhooks whose payload is built immediately, in the request."],["+","    \"\"\""],["+","    deferred = ["],["+","        webhook"],["+","        for webhook in webhooks"],["+","        if webhook.payload_generation == WebhookPayloadGeneration.DEFERRED"],["+","    ]"],["+","    immediate = ["],["+","        webhook"],["+","        for webhook in webhooks"],["+","        if webhook.payload_generation != WebhookPayloadGeneration.DEFERRED"],["+","    ]"],["+","    return deferred, immediate"],["+",""],["+",""],[" ","@allow_writer()"],[" ","def create_event_delivery_list_for_webhooks("],[" ","    webhooks: Sequence[\"Webhook\"],"]]},{"oldStart":401,"oldLines":24,"newStart":422,"newLines":40,"header":"def trigger_webhooks_async_for_multiple_objects(","lines":[[" ","            webhook_payload_data.subscribable_object"],[" ","            for webhook_payload_data in webhook_payloads_data"],[" ","        ]"],["-","        if is_deferred_payload:"],["+","        # A webhook's `payload_generation` is read here, once, when its deliveries"],["+","        # are created. Deliveries and tasks created earlier are not affected by a"],["+","        # later change of the setting."],["+","        deferred_webhooks: list[Webhook] = []"],["+","        immediate_webhooks = subscription_webhooks"],["+","        if is_deferrable_event:"],["+","            deferred_webhooks, immediate_webhooks = ("],["+","                group_subscription_webhooks_by_payload_generation(subscription_webhooks)"],["+","            )"],["+","        if deferred_webhooks:"],[" ","            deferred_deliveries_per_object = ("],[" ","                create_deliveries_for_deferred_payload_subscriptions("],[" ","                    event_type=event_type,"],[" ","                    subscribable_objects=subscribable_objects,"],["-","                    webhooks=subscription_webhooks,"],["+","                    webhooks=deferred_webhooks,"],[" ","                    requestor=requestor,"],[" ","                    allow_replica=allow_replica,"],[" ","                    request_time=request_time,"],[" ","                )"],[" ","            )"],["-","        else:"],["+","        if immediate_webhooks:"],["+","            # A deferrable event can be fired by a task right after it wrote the"],["+","            # object on the writer, with a manager that allows the replica. The"],["+","            # deferred task waits for the replica to catch up before it resolves"],["+","            # the payload, but this path resolves it now, so the fields it loads"],["+","            # through dataloaders are read from the writer instead. Fields taken"],["+","            # from the subscribable object itself still reflect wherever the"],["+","            # caller loaded that object from."],[" ","            delivery_promise = create_deliveries_for_multiple_subscription_objects("],[" ","                event_type=event_type,"],[" ","                subscribable_objects=subscribable_objects,"],["-","                webhooks=subscription_webhooks,"],["+","                webhooks=immediate_webhooks,"],[" ","                requestor=requestor,"],["-","                allow_replica=allow_replica,"],["+","                allow_replica=allow_replica and not is_deferrable_event,"],[" ","                pre_save_payloads=pre_save_payloads,"],[" ","                request_time=request_time,"],[" ","            )"]]}]}],"components":[{"id":"graphql-api","delta":"changed","files":5,"additions":62,"deletions":3},{"id":"catalog","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"discounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"accounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"apps","delta":"changed","files":3,"additions":29,"deletions":0},{"id":"webhooks","delta":"changed","files":4,"additions":108,"deletions":8},{"id":"plugins","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"platform","delta":"unchanged","files":0,"additions":0,"deletions":0}],"dependencies":[{"from":"apps","to":"accounts","delta":"unchanged","baseCount":7,"headCount":7,"examples":["saleor/app/installation_utils.py:22","saleor/app/manifest_validations.py:17","saleor/app/management/commands/utils.py:3"],"violation":null},{"from":"apps","to":"catalog","delta":"unchanged","baseCount":4,"headCount":4,"examples":["saleor/app/installation_utils.py:24","saleor/app/manifest_schema.py:8"],"violation":null},{"from":"apps","to":"discounts","delta":"unchanged","baseCount":1,"headCount":1,"examples":["saleor/app/manifest_validations.py:13"],"violation":null},{"from":"apps","to":"graphql-api","delta":"unchanged","baseCount":3,"headCount":3,"examples":["saleor/app/manifest_validations.py:14"],"violation":{"rule":"not allowed: integrations -> api","preexisting":true}},{"from":"apps","to":"platform","delta":"unchanged","baseCount":19,"headCount":19,"examples":["saleor/app/installation_utils.py:16","saleor/app/manifest_validations.py:12","saleor/app/actions.py:5"],"violation":null},{"from":"apps","to":"plugins","delta":"unchanged","baseCount":3,"headCount":3,"examples":["saleor/app/installation_utils.py:23","saleor/app/actions.py:7","saleor/app/management/commands/app_delete_all.py:6"],"violation":null},{"from":"apps","to":"webhooks","delta":"changed","baseCount":11,"headCount":12,"examples":["saleor/app/installation_utils.py:27","saleor/app/manifest_schema.py:9","saleor/app/manifest_validations.py:24"],"violation":null},{"from":"graphql-api","to":"accounts","delta":"unchanged","baseCount":171,"headCount":171,"examples":["saleor/graphql/webhook/mutations/webhook_create.py:4","saleor/graphql/webhook/mutations/webhook_trigger.py:16","saleor/graphql/webhook/mutations/webhook_update.py:5"],"violation":null},{"from":"graphql-api","to":"apps","delta":"unchanged","baseCount":67,"headCount":67,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:8","saleor/graphql/webhook/mutations/webhook_update.py:4","saleor/graphql/app/dataloaders/app.py:8"],"violation":null},{"from":"graphql-api","to":"discounts","delta":"unchanged","baseCount":24,"headCount":24,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:14","saleor/graphql/channel/mutations/channel_update.py:11","saleor/graphql/core/enums.py:21"],"violation":null},{"from":"graphql-api","to":"platform","delta":"unchanged","baseCount":115,"headCount":115,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:9","saleor/graphql/webhook/types.py:3","saleor/graphql/api.py:20"],"violation":null},{"from":"graphql-api","to":"webhooks","delta":"changed","baseCount":77,"headCount":78,"examples":["saleor/graphql/webhook/enums.py:3","saleor/graphql/webhook/mutations/webhook_create.py:6","saleor/graphql/webhook/mutations/webhook_trigger.py:17"],"violation":null},{"from":"webhooks","to":"apps","delta":"unchanged","baseCount":14,"headCount":14,"examples":["saleor/webhook/models.py:5","saleor/webhook/circuit_breaker/breaker_board.py:21","saleor/webhook/observability/sensitive_data.py:12"],"violation":null},{"from":"webhooks","to":"graphql-api","delta":"unchanged","baseCount":17,"headCount":17,"examples":["saleor/webhook/transport/asynchronous/transport.py:32","saleor/webhook/circuit_breaker/breaker_board.py:17","saleor/webhook/circuit_breaker/storage.py:8"],"violation":null},{"from":"webhooks","to":"platform","delta":"changed","baseCount":45,"headCount":46,"examples":["saleor/webhook/models.py:7","saleor/webhook/transport/asynchronous/transport.py:19","saleor/webhook/__init__.py:1"],"violation":null}],"dependencyGraph":[["accounts","accounts-api"],["accounts","apps"],["accounts","channels"],["accounts","checkout"],["accounts","graphql-api"],["accounts","orders"],["accounts","platform"],["accounts","plugins"],["accounts-api","accounts"],["accounts-api","apps"],["accounts-api","catalog"],["accounts-api","catalog-api"],["accounts-api","channels"],["accounts-api","checkout"],["accounts-api","checkout-api"],["accounts-api","discounts"],["accounts-api","discounts-api"],["accounts-api","graphql-api"],["accounts-api","orders"],["accounts-api","orders-api"],["accounts-api","payments"],["accounts-api","payments-api"],["accounts-api","platform"],["accounts-api","plugins"],["accounts-api","webhooks"],["apps","accounts"],["apps","catalog"],["apps","discounts"],["apps","graphql-api"],["apps","platform"],["apps","plugins"],["apps","webhooks"],["catalog","accounts"],["catalog","apps"],["catalog","catalog-api"],["catalog","channels"],["catalog","content"],["catalog","discounts"],["catalog","discounts-api"],["catalog","graphql-api"],["catalog","orders"],["catalog","platform"],["catalog","plugins"],["catalog","stock-shipping"],["catalog","webhooks"],["catalog-api","accounts"],["catalog-api","accounts-api"],["catalog-api","catalog"],["catalog-api","channels"],["catalog-api","content"],["catalog-api","discounts"],["catalog-api","graphql-api"],["catalog-api","orders"],["catalog-api","orders-api"],["catalog-api","platform"],["catalog-api","stock-shipping"],["catalog-api","webhooks"],["channels","accounts"],["channels","apps"],["channels","checkout"],["channels","graphql-api"],["channels","orders"],["channels","platform"],["channels","webhooks"],["checkout","accounts"],["checkout","accounts-api"],["checkout","apps"],["checkout","catalog"],["checkout","catalog-api"],["checkout","channels"],["checkout","checkout-api"],["checkout","discounts"],["checkout","graphql-api"],["checkout","orders"],["checkout","payments"],["checkout","payments-api"],["checkout","platform"],["checkout","plugins"],["checkout","stock-shipping"],["checkout","webhooks"],["checkout-api","accounts"],["checkout-api","accounts-api"],["checkout-api","apps"],["checkout-api","catalog"],["checkout-api","catalog-api"],["checkout-api","channels"],["checkout-api","checkout"],["checkout-api","discounts"],["checkout-api","discounts-api"],["checkout-api","graphql-api"],["checkout-api","orders"],["checkout-api","orders-api"],["checkout-api","payments"],["checkout-api","payments-api"],["checkout-api","platform"],["checkout-api","plugins"],["checkout-api","stock-shipping"],["checkout-api","webhooks"],["content","accounts"],["content","apps"],["content","catalog"],["content","catalog-api"],["content","graphql-api"],["content","platform"],["discounts","accounts"],["discounts","apps"],["discounts","catalog"],["discounts","channels"],["discounts","checkout"],["discounts","discounts-api"],["discounts","graphql-api"],["discounts","orders"],["discounts","payments"],["discounts","payments-api"],["discounts","platform"],["discounts","plugins"],["discounts","stock-shipping"],["discounts","webhooks"],["discounts-api","accounts"],["discounts-api","accounts-api"],["discounts-api","catalog"],["discounts-api","catalog-api"],["discounts-api","channels"],["discounts-api","checkout"],["discounts-api","checkout-api"],["discounts-api","discounts"],["discounts-api","graphql-api"],["discounts-api","orders"],["discounts-api","orders-api"],["discounts-api","platform"],["discounts-api","plugins"],["discounts-api","webhooks"],["graphql-api","accounts"],["graphql-api","accounts-api"],["graphql-api","apps"],["graphql-api","catalog"],["graphql-api","catalog-api"],["graphql-api","channels"],["graphql-api","checkout"],["graphql-api","checkout-api"],["graphql-api","content"],["graphql-api","discounts"],["graphql-api","discounts-api"],["graphql-api","orders"],["graphql-api","orders-api"],["graphql-api","payments"],["graphql-api","payments-api"],["graphql-api","platform"],["graphql-api","plugins"],["graphql-api","stock-shipping"],["graphql-api","webhooks"],["orders","accounts"],["orders","apps"],["orders","catalog"],["orders","channels"],["orders","checkout"],["orders","content"],["orders","discounts"],["orders","graphql-api"],["orders","orders-api"],["orders","payments"],["orders","platform"],["orders","plugins"],["orders","stock-shipping"],["orders","webhooks"],["orders-api","accounts"],["orders-api","accounts-api"],["orders-api","apps"],["orders-api","catalog"],["orders-api","catalog-api"],["orders-api","channels"],["orders-api","checkout"],["orders-api","checkout-api"],["orders-api","content"],["orders-api","discounts"],["orders-api","discounts-api"],["orders-api","graphql-api"],["orders-api","orders"],["orders-api","payments"],["orders-api","payments-api"],["orders-api","platform"],["orders-api","plugins"],["orders-api","stock-shipping"],["orders-api","webhooks"],["payment-gateways","checkout"],["payment-gateways","graphql-api"],["payment-gateways","orders"],["payment-gateways","payments"],["payment-gateways","platform"],["payment-gateways","plugins"],["payments","accounts"],["payments","apps"],["payments","channels"],["payments","checkout"],["payments","discounts"],["payments","graphql-api"],["payments","orders"],["payments","platform"],["payments","plugins"],["payments","webhooks"],["payments-api","accounts"],["payments-api","accounts-api"],["payments-api","apps"],["payments-api","channels"],["payments-api","checkout"],["payments-api","checkout-api"],["payments-api","content"],["payments-api","discounts"],["payments-api","graphql-api"],["payments-api","orders"],["payments-api","orders-api"],["payments-api","payments"],["payments-api","platform"],["payments-api","plugins"],["payments-api","webhooks"],["platform","accounts"],["platform","accounts-api"],["platform","apps"],["platform","catalog"],["platform","channels"],["platform","checkout"],["platform","content"],["platform","discounts"],["platform","graphql-api"],["platform","orders"],["platform","payments"],["platform","plugins"],["platform","stock-shipping"],["platform","webhooks"],["plugins","accounts"],["plugins","accounts-api"],["plugins","apps"],["plugins","catalog"],["plugins","channels"],["plugins","checkout"],["plugins","content"],["plugins","discounts"],["plugins","graphql-api"],["plugins","orders"],["plugins","payments"],["plugins","platform"],["plugins","stock-shipping"],["plugins","webhooks"],["stock-shipping","accounts"],["stock-shipping","apps"],["stock-shipping","catalog"],["stock-shipping","channels"],["stock-shipping","checkout"],["stock-shipping","graphql-api"],["stock-shipping","orders"],["stock-shipping","platform"],["stock-shipping","plugins"],["stock-shipping","webhooks"],["webhooks","accounts"],["webhooks","apps"],["webhooks","catalog"],["webhooks","channels"],["webhooks","checkout"],["webhooks","content"],["webhooks","discounts"],["webhooks","graphql-api"],["webhooks","orders"],["webhooks","payments"],["webhooks","platform"],["webhooks","plugins"],["webhooks","stock-shipping"]],"ports":[],"symbols":[{"file":"saleor/graphql/webhook/enums.py","line":362,"kind":"class","name":"WebhookPayloadGenerationEnum","delta":"added"},{"file":"saleor/webhook/models.py","line":18,"kind":"class","name":"WebhookPayloadGeneration","delta":"added"},{"file":"saleor/webhook/transport/asynchronous/transport.py","line":304,"kind":"def","name":"group_subscription_webhooks_by_payload_generation","delta":"added"}],"stats":{"files":22,"additions":1057,"deletions":18,"testAdditions":780,"testDeletions":7,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":210,"mappedLines":210},"notes":[],"openspec":null,"outline":{"story":[{"about":"webhooks changed","view":"architecture","focus":["webhooks"],"code":"saleor/webhook/models.py:15-30"},{"about":"graphql-api changed","view":"architecture","focus":["graphql-api"],"code":"saleor/graphql/webhook/enums.py:357-377"},{"about":"apps changed","view":"architecture","focus":["apps"],"code":"saleor/app/installation_utils.py:316-322"},{"about":"the data model","view":"data","focus":[],"code":"saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"apps","to":"webhooks"},{"from":"graphql-api","to":"webhooks"}],"dataFiles":["saleor/webhook/migrations/0015_webhook_payload_generation.py","saleor/webhook/migrations/0016_merge_20261016_0603.py","saleor/webhook/models.py"]}},"explanation":{"version":4,"key":"7c7df9fbd540adad","lang":"en","tldr":"Each webhook now has payloadGeneration: DEFERRED, the default, or IMMEDIATE. An IMMEDIATE webhook gets its payload built when the event fires, with the state of that moment.","goal":"Let an app that applies each event in sequence get the state at trigger time, while other webhooks keep deferred payloads.","story":[{"heading":"Webhook gets a payload_generation field","body":"The new column is deferred by default. Existing webhooks keep deferred payloads, so they behave as before.","view":"data","focus":["webhook"],"code":"saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"},{"heading":"Async triggers now split the webhooks of an event","body":"For a deferrable event, DEFERRED webhooks go to the background task. IMMEDIATE webhooks get their payload built at once.","view":"flow:trigger-async-webhooks","focus":["#1","#2"],"code":"saleor/webhook/transport/asynchronous/transport.py:422-461"},{"heading":"Only the IMMEDIATE webhook pays the cost","body":"The other webhooks of the same event stay deferred. The request or task that fires the event slows down only for IMMEDIATE ones.","view":"architecture","focus":["webhooks"],"code":"saleor/webhook/transport/asynchronous/transport.py:301-327"},{"heading":"Apps set it in the manifest or the API","body":"The manifest accepts DEFERRED or IMMEDIATE and stores deferred when the value is missing. webhookCreate and webhookUpdate take the same enum.","view":"flow:register-webhook","focus":["#1","#2"],"code":"saleor/app/manifest_validations.py:293-323"},{"heading":"webhookTrigger respects the setting","body":"A manual trigger defers the payload only when the event defers and the webhook is DEFERRED.","view":"architecture","focus":["graphql-api"],"code":"saleor/graphql/webhook/mutations/webhook_trigger.py:168-179"},{"heading":"ADR 0011 records the trade-off","body":"Deferred payloads carry the state when the task runs, not when the event happened. The opt-out is for consumers that need each step.","view":"architecture","focus":[],"code":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:39-54"}],"keyDependencies":[{"from":"graphql-api","to":"webhooks","label":"sets payloadGeneration"}],"components":[{"id":"graphql-api","summary":"New WebhookPayloadGenerationEnum; webhookCreate and webhookUpdate set it, and webhookTrigger reads it."},{"id":"apps","summary":"The app manifest takes payloadGeneration per webhook and stores deferred when it is missing."},{"id":"webhooks","summary":"Webhook stores payload_generation. Async triggers build IMMEDIATE payloads at once and defer the rest."}],"decisions":[{"title":"Deferred stays the default; IMMEDIATE is a per-webhook opt-out","why":"Deferral keeps heavy mutations fast. An integration that applies each ORDER_METADATA_UPDATED in sequence breaks when all deliveries carry the final state.","alternative":"Store a snapshot of every payload in the request.","evidence":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:41-47"},{"title":"The setting is read once, when the delivery is created","why":"Deliveries and queued tasks finish the way they started. A later change of the setting affects only new deliveries.","alternative":"Read the setting again when the task runs.","evidence":"saleor/webhook/models.py:55-62"},{"title":"An IMMEDIATE payload reads from the writer","why":"A task can fire the event right after its own write. The replica can lag, so dataloaders read the writer for this path.","alternative":"Read the replica, as the deferred task does.","evidence":"saleor/webhook/transport/asynchronous/transport.py:445-460"},{"title":"Group the webhooks, not the event","why":"1 event reaches many apps. Each app chooses for its own webhook, and only that webhook pays the cost.","alternative":"1 setting per event type for all apps.","evidence":"saleor/webhook/transport/asynchronous/transport.py:305-326"}],"flows":[{"id":"trigger-async-webhooks","title":"Trigger async webhooks for an event","trigger":"trigger_webhooks_async_for_multiple_objects","steps":[{"from":"webhooks","to":"webhooks","call":"group_subscription_webhooks_by_payload_generation","delta":"added","verified":true,"port":false,"via":null},{"from":"webhooks","to":"graphql-api","call":"build the IMMEDIATE payloads now","delta":"changed","data":{"type":"Webhook","fields":["+payload_generation: immediate"]},"verified":true,"port":false,"via":null}]},{"id":"register-webhook","title":"Register a webhook with its payload generation","trigger":"webhookCreate","steps":[{"from":"graphql-api","to":"webhooks","call":"Webhook.payload_generation","delta":"added","verified":true,"port":false,"via":null},{"from":"apps","to":"webhooks","call":"_clean_webhook_payload_generation","delta":"added","verified":true,"port":false,"via":null}]}],"dataModel":{"entities":[{"id":"webhook","name":"Webhook","component":"webhooks","delta":"changed","evidence":"saleor/webhook/models.py:51-69","fields":["+payload_generation: deferred|immediate = deferred"]},{"id":"app","name":"App","component":"apps","delta":"unchanged","fields":[]},{"id":"event-delivery","name":"EventDelivery","component":"webhooks","delta":"unchanged","fields":[]}],"relations":[{"from":"app","to":"webhook","label":"1..n","delta":"unchanged"},{"from":"webhook","to":"event-delivery","label":"1..n","delta":"unchanged"}]},"requirements":[]},"state":"valid","issues":[]}</script>
+<script type="application/json" id="ec-data">{"tool":"0.4.1","facts":{"version":4,"tool":"0.4.1","analysis":9,"key":"140ce2794794c1bf","source":{"kind":"local","title":"Add per-webhook payloadGeneration to opt out of deferred payloads (#19916) (#19920)","description":"","branch":"3dd4bf79","baseRef":"HEAD~1","headRef":"HEAD","headSha":"3dd4bf79a46132ed2f8e6225a9863f5ef8dc243b","mergeBase":"dfa97c976418c4760ffd63d34b5e13698dfd85e8","host":"github","prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-16T12:34:17+02:00","commits":1},"config":{"inferred":false,"name":"Saleor","direction":"Layered by context: GraphQL mutations in saleor/graphql call the commerce apps; the apps hold the models and rules and never import the API. Side effects to apps and plugins go through the PluginsManager, not Django signals.","lang":"en","layers":[{"id":"api","name":"API"},{"id":"domain","name":"Commerce"},{"id":"integrations","name":"Integrations"},{"id":"platform","name":"Platform"}],"components":[{"id":"catalog-api","name":"Catalog API","layer":"api","desc":"Owns the GraphQL types, queries and mutations for products, variants, categories, collections and attributes."},{"id":"checkout-api","name":"Checkout API","layer":"api","desc":"Owns the checkout mutations: create, add lines, set delivery, apply a voucher, complete."},{"id":"orders-api","name":"Orders API","layer":"api","desc":"Owns order queries and the staff mutations: drafts, fulfilments, refunds, invoices."},{"id":"discounts-api","name":"Discounts API","layer":"api","desc":"Owns the GraphQL types and mutations for vouchers, promotions and gift cards."},{"id":"payments-api","name":"Payments API","layer":"api","desc":"Owns payment and transaction queries and mutations, and the payment gateway list."},{"id":"accounts-api","name":"Accounts API","layer":"api","desc":"Owns the GraphQL types and mutations for customers, staff, addresses, permission groups and sign-in."},{"id":"graphql-api","name":"GraphQL API","layer":"api","desc":"Owns the schema, the base mutation and types, and the API of channels, apps, webhooks, shipping and content."},{"id":"catalog","name":"Catalog","layer":"domain","desc":"Owns Product, ProductVariant, Category, Collection and attributes; what is sold and in which channels."},{"id":"checkout","name":"Checkout","layer":"domain","desc":"Owns Checkout and its lines; prices a cart and turns it into an order."},{"id":"orders","name":"Orders","layer":"domain","desc":"Owns Order, its lines, fulfilments, events and invoices; the order life cycle after checkout."},{"id":"discounts","name":"Discounts","layer":"domain","desc":"Owns vouchers, promotions and gift cards; which discount applies to which line."},{"id":"payments","name":"Payments","layer":"domain","desc":"Owns Payment, TransactionItem and their events; what was authorized, charged and refunded."},{"id":"stock-shipping","name":"Stock and shipping","layer":"domain","desc":"Owns warehouses, stock, allocations, shipping zones and methods."},{"id":"channels","name":"Channels and taxes","layer":"domain","desc":"Owns channels (currency, country, settings) and tax configuration; each sales context of a shop."},{"id":"accounts","name":"Accounts","layer":"domain","desc":"Owns users, customers, staff, addresses and permissions."},{"id":"content","name":"Content","layer":"domain","desc":"Owns pages, menus, SEO fields and translations."},{"id":"apps","name":"Apps","layer":"integrations","desc":"Owns installed apps, their tokens, permissions and manifests."},{"id":"webhooks","name":"Webhooks","layer":"integrations","desc":"Owns webhooks and their events; builds each payload from a GraphQL subscription and delivers it, sync or async."},{"id":"plugins","name":"Plugins","layer":"integrations","desc":"Owns the PluginsManager, the event bus that calls plugins and webhooks, and the built-in plugins."},{"id":"payment-gateways","name":"Payment gateways","layer":"integrations","desc":"Owns the built-in payment gateway plugins and their provider clients."},{"id":"platform","name":"Platform","layer":"platform","desc":"Owns settings, Celery, ASGI, money and taxed-money helpers, and the base models every app uses."}],"rules":{"allow":["api -> domain","api -> integrations","api -> platform","domain -> integrations","domain -> platform","integrations -> domain","integrations -> platform","webhooks -> api"],"forbid":["domain -> api","platform -> api"]},"referenceFlows":[{"id":"complete-checkout","title":"Complete a checkout","steps":[{"from":"checkout-api","to":"checkout","message":"complete_checkout"},{"from":"checkout","to":"discounts","message":"apply voucher and promotions"},{"from":"checkout","to":"orders","message":"create order from checkout"},{"from":"checkout","to":"plugins","message":"manager.checkout_fully_paid"}]},{"id":"notify-apps","title":"Notify apps of an event","steps":[{"from":"orders","to":"plugins","message":"manager.order_created"},{"from":"plugins","to":"webhooks","message":"trigger_webhooks_async"}]}],"glossary":[{"term":"product","definition":"An item for sale; its variants are what a customer buys."},{"term":"variant","definition":"A sellable version of a product, with its own SKU, price and stock."},{"term":"channel","definition":"A sales context: its currency, countries and which products it sells."},{"term":"checkout","definition":"A customer's cart before it becomes an order."},{"term":"order","definition":"What a customer bought, from payment to fulfilment."},{"term":"voucher","definition":"A code that gives a discount when the customer enters it."},{"term":"promotion","definition":"A discount that applies on its own when its rules match."},{"term":"gift card","definition":"A prepaid balance a customer spends at checkout."},{"term":"warehouse","definition":"A place that holds stock and ships orders."},{"term":"app","definition":"An external service with a token and webhooks, which extends Saleor through the API."},{"term":"webhook","definition":"An event delivery from Saleor to an app, sync or async."},{"term":"plugin","definition":"A Python extension that the PluginsManager calls on domain events."}]},"files":[{"path":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md","previousPath":null,"delta":"added","binary":false,"additions":78,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":36,"newLines":22,"header":"","lines":[["+","writer would move the full payload-generation load onto the primary, which is the database that"],["+","every pod shares and the scaling bottleneck."],["+",""],["+","## Per-webhook opt-out"],["+",""],["+","Deferral is right by default but not for every consumer. An integration that applies each"],["+","`ORDER_METADATA_UPDATED` in sequence, expecting the metadata as written by each request, breaks"],["+","when several pending deliveries all carry the final state. Each webhook therefore carries a"],["+","`payloadGeneration` choice, `DEFERRED` by default or `IMMEDIATE`, set by the app that registers it"],["+","through the mutations or the manifest. An `IMMEDIATE` subscription webhook on a deferred event has"],["+","its payload built by whatever triggered the event, as every webhook did before deferral, and only"],["+","that webhook pays the cost. For events fired from a request that is the mutation's latency. For"],["+","events fired from a background task, such as the variant price and stock events, it is that task's"],["+","run time, which is why those events were deferred from the start. An app that sets `IMMEDIATE` on"],["+","such an event takes that cost knowingly. Because such a task may fire the event with a replica-allowed"],["+","manager right after its own write, an `IMMEDIATE` payload on a deferrable event is resolved against the"],["+","writer, so the dataloader-resolved fields cannot predate the write. Fields read from the subscribable"],["+","object itself still reflect where the caller loaded it from. The choice is ignored where it cannot apply: legacy"],["+","webhooks without a subscription query, sync events, and events that are not deferred."],["+",""],["+","## When each event became deferred"],["+",""]]}]},{"path":"saleor/app/installation_utils.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[]},{"path":"saleor/app/manifest_schema.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[]},{"path":"saleor/app/manifest_validations.py","previousPath":null,"delta":"changed","binary":false,"additions":27,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[{"oldStart":292,"oldLines":6,"newStart":293,"newLines":31,"header":"def _clean_webhook_identifier(webhook, seen_identifiers, errors):","lines":[[" ","    seen_identifiers.add(identifier)"],[" ",""],[" ",""],["+","def _clean_webhook_payload_generation(webhook, errors):"],["+","    \"\"\"Map the manifest's `payloadGeneration` enum name to its stored value."],["+",""],["+","    Accepts the GraphQL enum names (`DEFERRED`, `IMMEDIATE`), like event names"],["+","    do. A missing value means `DEFERRED`."],["+","    \"\"\""],["+","    payload_generation_values = {"],["+","        str_to_enum(value): value for value, _ in WebhookPayloadGeneration.CHOICES"],["+","    }"],["+","    raw_value = webhook.get(\"payloadGeneration\")"],["+","    if raw_value is None:"],["+","        webhook[\"payloadGeneration\"] = WebhookPayloadGeneration.DEFERRED"],["+","        return"],["+","    try:"],["+","        webhook[\"payloadGeneration\"] = payload_generation_values[raw_value]"],["+","    except KeyError:"],["+","        allowed = \", \".join(payload_generation_values)"],["+","        errors[\"webhooks\"].append("],["+","            ValidationError("],["+","                f\"Invalid payload generation: {raw_value}. Allowed values: {allowed}.\","],["+","                code=AppErrorCode.INVALID.value,"],["+","            )"],["+","        )"],["+",""],["+",""],[" ","def _clean_webhooks(manifest_data, errors):"],[" ","    webhooks = manifest_data.get(\"webhooks\", [])"],[" ",""]]}]},{"path":"saleor/app/tests/test_installation_utils.py","previousPath":null,"delta":"changed","binary":false,"additions":41,"deletions":0,"component":"apps","category":"test","truncated":false,"hunks":[]},{"path":"saleor/app/tests/test_manifest_validations.py","previousPath":null,"delta":"changed","binary":false,"additions":61,"deletions":1,"component":"apps","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/meta/tests/mutations/test_order.py","previousPath":null,"delta":"changed","binary":false,"additions":115,"deletions":0,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/schema.graphql","previousPath":null,"delta":"changed","binary":false,"additions":35,"deletions":0,"component":"graphql-api","category":"ignored","truncated":true,"hunks":[]},{"path":"saleor/graphql/webhook/enums.py","previousPath":null,"delta":"changed","binary":false,"additions":19,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_create.py","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_trigger.py","previousPath":null,"delta":"changed","binary":false,"additions":12,"deletions":3,"component":"graphql-api","category":"code","truncated":false,"hunks":[{"oldStart":168,"oldLines":7,"newStart":168,"newLines":12,"header":"class WebhookTrigger(BaseMutation):","lines":[[" ","            ]:"],[" ","                object = [object]"],[" ",""],["-","            is_deferred_payload = get_is_deferred_payload(event_type)"],["+","            # The webhook's `payload_generation` is read here, once, when the"],["+","            # delivery is created. See `Webhook.payload_generation`."],["+","            is_deferred_payload = ("],["+","                get_is_deferred_payload(event_type)"],["+","                and webhook.payload_generation == WebhookPayloadGeneration.DEFERRED"],["+","            )"],[" ","            if is_deferred_payload:"],[" ","                delivery = core_models.EventDelivery("],[" ","                    status=EventDeliveryStatus.PENDING,"]]}]},{"path":"saleor/graphql/webhook/mutations/webhook_update.py","previousPath":null,"delta":"changed","binary":false,"additions":13,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_create.py","previousPath":null,"delta":"changed","binary":false,"additions":74,"deletions":2,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_trigger.py","previousPath":null,"delta":"changed","binary":false,"additions":68,"deletions":1,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_update.py","previousPath":null,"delta":"changed","binary":false,"additions":55,"deletions":2,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/types.py","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/webhook/migrations/0015_webhook_payload_generation.py","previousPath":null,"delta":"added","binary":false,"additions":22,"deletions":0,"component":"webhooks","category":"migration","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":22,"header":"","lines":[["+","# Generated by Django 5.2.18 on 2026-10-14 14:12"],["+",""],["+","from django.db import migrations, models"],["+",""],["+",""],["+","class Migration(migrations.Migration):"],["+","    dependencies = ["],["+","        (\"webhook\", \"0014_webhook_identifier_unique_constraint\"),"],["+","    ]"],["+",""],["+","    operations = ["],["+","        migrations.AddField("],["+","            model_name=\"webhook\","],["+","            name=\"payload_generation\","],["+","            field=models.CharField("],["+","                choices=[(\"deferred\", \"Deferred\"), (\"immediate\", \"Immediate\")],"],["+","                db_default=\"deferred\","],["+","                default=\"deferred\","],["+","                max_length=32,"],["+","            ),"],["+","        ),"],["+","    ]"]]}]},{"path":"saleor/webhook/migrations/0016_merge_20261016_0603.py","previousPath":null,"delta":"added","binary":false,"additions":12,"deletions":0,"component":"webhooks","category":"migration","truncated":false,"hunks":[]},{"path":"saleor/webhook/models.py","previousPath":null,"delta":"changed","binary":false,"additions":23,"deletions":0,"component":"webhooks","category":"code","truncated":false,"hunks":[{"oldStart":41,"oldLines":6,"newStart":51,"newLines":19,"header":"class Webhook(models.Model):","lines":[[" ","    # that doesn't set an identifier. Empty string stays blocked by the"],[" ","    # identifier_not_blank CheckConstraint below."],[" ","    identifier = models.CharField(max_length=256, null=True, blank=True)"],["+","    # How the subscription payload is built for async events that defer payload"],["+","    # generation (`is_deferred_payload` in the event map). The value is read once,"],["+","    # when a delivery is created by whatever triggered the event, a request or a"],["+","    # background task. Changing it never affects deliveries already created or"],["+","    # tasks already queued: those finish the way they started. It is ignored for"],["+","    # webhooks without a subscription query, for sync events and for events that"],["+","    # do not defer payload generation."],["+","    payload_generation = models.CharField("],["+","        max_length=32,"],["+","        choices=WebhookPayloadGeneration.CHOICES,"],["+","        default=WebhookPayloadGeneration.DEFERRED,"],["+","        db_default=WebhookPayloadGeneration.DEFERRED,"],["+","    )"],[" ",""],[" ","    class Meta:"],[" ","        ordering = (\"pk\",)"]]}]},{"path":"saleor/webhook/tests/test_models.py","previousPath":null,"delta":"changed","binary":false,"additions":10,"deletions":1,"component":"webhooks","category":"test","truncated":false,"hunks":[]},{"path":"saleor/webhook/transport/asynchronous/tests/test_deferred_payload.py","previousPath":null,"delta":"changed","binary":false,"additions":356,"deletions":0,"component":"webhooks","category":"test","truncated":false,"hunks":[]},{"path":"saleor/webhook/transport/asynchronous/transport.py","previousPath":null,"delta":"changed","binary":false,"additions":51,"deletions":8,"component":"webhooks","category":"code","truncated":false,"hunks":[{"oldStart":299,"oldLines":6,"newStart":301,"newLines":27,"header":"def group_webhooks_by_subscription(","lines":[[" ","    return legacy, subscription"],[" ",""],[" ",""],["+","def group_subscription_webhooks_by_payload_generation("],["+","    webhooks: Sequence[\"Webhook\"],"],["+",") -> tuple[list[\"Webhook\"], list[\"Webhook\"]]:"],["+","    \"\"\"Group subscription webhooks by their `payload_generation` setting."],["+",""],["+","    Returns a tuple of two lists: webhooks whose payload is built in the deferred"],["+","    task and webhooks whose payload is built immediately, in the request."],["+","    \"\"\""],["+","    deferred = ["],["+","        webhook"],["+","        for webhook in webhooks"],["+","        if webhook.payload_generation == WebhookPayloadGeneration.DEFERRED"],["+","    ]"],["+","    immediate = ["],["+","        webhook"],["+","        for webhook in webhooks"],["+","        if webhook.payload_generation != WebhookPayloadGeneration.DEFERRED"],["+","    ]"],["+","    return deferred, immediate"],["+",""],["+",""],[" ","@allow_writer()"],[" ","def create_event_delivery_list_for_webhooks("],[" ","    webhooks: Sequence[\"Webhook\"],"]]},{"oldStart":401,"oldLines":24,"newStart":422,"newLines":40,"header":"def trigger_webhooks_async_for_multiple_objects(","lines":[[" ","            webhook_payload_data.subscribable_object"],[" ","            for webhook_payload_data in webhook_payloads_data"],[" ","        ]"],["-","        if is_deferred_payload:"],["+","        # A webhook's `payload_generation` is read here, once, when its deliveries"],["+","        # are created. Deliveries and tasks created earlier are not affected by a"],["+","        # later change of the setting."],["+","        deferred_webhooks: list[Webhook] = []"],["+","        immediate_webhooks = subscription_webhooks"],["+","        if is_deferrable_event:"],["+","            deferred_webhooks, immediate_webhooks = ("],["+","                group_subscription_webhooks_by_payload_generation(subscription_webhooks)"],["+","            )"],["+","        if deferred_webhooks:"],[" ","            deferred_deliveries_per_object = ("],[" ","                create_deliveries_for_deferred_payload_subscriptions("],[" ","                    event_type=event_type,"],[" ","                    subscribable_objects=subscribable_objects,"],["-","                    webhooks=subscription_webhooks,"],["+","                    webhooks=deferred_webhooks,"],[" ","                    requestor=requestor,"],[" ","                    allow_replica=allow_replica,"],[" ","                    request_time=request_time,"],[" ","                )"],[" ","            )"],["-","        else:"],["+","        if immediate_webhooks:"],["+","            # A deferrable event can be fired by a task right after it wrote the"],["+","            # object on the writer, with a manager that allows the replica. The"],["+","            # deferred task waits for the replica to catch up before it resolves"],["+","            # the payload, but this path resolves it now, so the fields it loads"],["+","            # through dataloaders are read from the writer instead. Fields taken"],["+","            # from the subscribable object itself still reflect wherever the"],["+","            # caller loaded that object from."],[" ","            delivery_promise = create_deliveries_for_multiple_subscription_objects("],[" ","                event_type=event_type,"],[" ","                subscribable_objects=subscribable_objects,"],["-","                webhooks=subscription_webhooks,"],["+","                webhooks=immediate_webhooks,"],[" ","                requestor=requestor,"],["-","                allow_replica=allow_replica,"],["+","                allow_replica=allow_replica and not is_deferrable_event,"],[" ","                pre_save_payloads=pre_save_payloads,"],[" ","                request_time=request_time,"],[" ","            )"]]}]}],"components":[{"id":"graphql-api","delta":"changed","files":5,"additions":62,"deletions":3},{"id":"catalog","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"discounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"accounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"apps","delta":"changed","files":3,"additions":29,"deletions":0},{"id":"webhooks","delta":"changed","files":4,"additions":108,"deletions":8},{"id":"plugins","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"platform","delta":"unchanged","files":0,"additions":0,"deletions":0}],"dependencies":[{"from":"apps","to":"accounts","delta":"unchanged","baseCount":7,"headCount":7,"examples":["saleor/app/installation_utils.py:22","saleor/app/manifest_validations.py:17","saleor/app/management/commands/utils.py:3"],"violation":null},{"from":"apps","to":"catalog","delta":"unchanged","baseCount":4,"headCount":4,"examples":["saleor/app/installation_utils.py:24","saleor/app/manifest_schema.py:8"],"violation":null},{"from":"apps","to":"discounts","delta":"unchanged","baseCount":1,"headCount":1,"examples":["saleor/app/manifest_validations.py:13"],"violation":null},{"from":"apps","to":"graphql-api","delta":"unchanged","baseCount":3,"headCount":3,"examples":["saleor/app/manifest_validations.py:14"],"violation":{"rule":"not allowed: integrations -> api","preexisting":true}},{"from":"apps","to":"platform","delta":"unchanged","baseCount":19,"headCount":19,"examples":["saleor/app/installation_utils.py:16","saleor/app/manifest_validations.py:12","saleor/app/actions.py:5"],"violation":null},{"from":"apps","to":"plugins","delta":"unchanged","baseCount":3,"headCount":3,"examples":["saleor/app/installation_utils.py:23","saleor/app/actions.py:7","saleor/app/management/commands/app_delete_all.py:6"],"violation":null},{"from":"apps","to":"webhooks","delta":"changed","baseCount":11,"headCount":12,"examples":["saleor/app/installation_utils.py:27","saleor/app/manifest_schema.py:9","saleor/app/manifest_validations.py:24"],"violation":null},{"from":"graphql-api","to":"accounts","delta":"unchanged","baseCount":171,"headCount":171,"examples":["saleor/graphql/webhook/mutations/webhook_create.py:4","saleor/graphql/webhook/mutations/webhook_trigger.py:16","saleor/graphql/webhook/mutations/webhook_update.py:5"],"violation":null},{"from":"graphql-api","to":"apps","delta":"unchanged","baseCount":67,"headCount":67,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:8","saleor/graphql/webhook/mutations/webhook_update.py:4","saleor/graphql/app/dataloaders/app.py:8"],"violation":null},{"from":"graphql-api","to":"discounts","delta":"unchanged","baseCount":24,"headCount":24,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:14","saleor/graphql/channel/mutations/channel_update.py:11","saleor/graphql/core/enums.py:21"],"violation":null},{"from":"graphql-api","to":"platform","delta":"unchanged","baseCount":115,"headCount":115,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:9","saleor/graphql/webhook/types.py:3","saleor/graphql/api.py:20"],"violation":null},{"from":"graphql-api","to":"webhooks","delta":"changed","baseCount":77,"headCount":78,"examples":["saleor/graphql/webhook/enums.py:3","saleor/graphql/webhook/mutations/webhook_create.py:6","saleor/graphql/webhook/mutations/webhook_trigger.py:17"],"violation":null},{"from":"webhooks","to":"apps","delta":"unchanged","baseCount":14,"headCount":14,"examples":["saleor/webhook/models.py:5","saleor/webhook/circuit_breaker/breaker_board.py:21","saleor/webhook/observability/sensitive_data.py:12"],"violation":null},{"from":"webhooks","to":"graphql-api","delta":"unchanged","baseCount":17,"headCount":17,"examples":["saleor/webhook/transport/asynchronous/transport.py:32","saleor/webhook/circuit_breaker/breaker_board.py:17","saleor/webhook/circuit_breaker/storage.py:8"],"violation":null},{"from":"webhooks","to":"platform","delta":"changed","baseCount":45,"headCount":46,"examples":["saleor/webhook/models.py:7","saleor/webhook/transport/asynchronous/transport.py:19","saleor/webhook/__init__.py:1"],"violation":null}],"dependencyGraph":[["accounts","accounts-api"],["accounts","apps"],["accounts","channels"],["accounts","checkout"],["accounts","graphql-api"],["accounts","orders"],["accounts","platform"],["accounts","plugins"],["accounts-api","accounts"],["accounts-api","apps"],["accounts-api","catalog"],["accounts-api","catalog-api"],["accounts-api","channels"],["accounts-api","checkout"],["accounts-api","checkout-api"],["accounts-api","discounts"],["accounts-api","discounts-api"],["accounts-api","graphql-api"],["accounts-api","orders"],["accounts-api","orders-api"],["accounts-api","payments"],["accounts-api","payments-api"],["accounts-api","platform"],["accounts-api","plugins"],["accounts-api","webhooks"],["apps","accounts"],["apps","catalog"],["apps","discounts"],["apps","graphql-api"],["apps","platform"],["apps","plugins"],["apps","webhooks"],["catalog","accounts"],["catalog","apps"],["catalog","catalog-api"],["catalog","channels"],["catalog","content"],["catalog","discounts"],["catalog","discounts-api"],["catalog","graphql-api"],["catalog","orders"],["catalog","platform"],["catalog","plugins"],["catalog","stock-shipping"],["catalog","webhooks"],["catalog-api","accounts"],["catalog-api","accounts-api"],["catalog-api","catalog"],["catalog-api","channels"],["catalog-api","content"],["catalog-api","discounts"],["catalog-api","graphql-api"],["catalog-api","orders"],["catalog-api","orders-api"],["catalog-api","platform"],["catalog-api","stock-shipping"],["catalog-api","webhooks"],["channels","accounts"],["channels","apps"],["channels","checkout"],["channels","graphql-api"],["channels","orders"],["channels","platform"],["channels","webhooks"],["checkout","accounts"],["checkout","accounts-api"],["checkout","apps"],["checkout","catalog"],["checkout","catalog-api"],["checkout","channels"],["checkout","checkout-api"],["checkout","discounts"],["checkout","graphql-api"],["checkout","orders"],["checkout","payments"],["checkout","payments-api"],["checkout","platform"],["checkout","plugins"],["checkout","stock-shipping"],["checkout","webhooks"],["checkout-api","accounts"],["checkout-api","accounts-api"],["checkout-api","apps"],["checkout-api","catalog"],["checkout-api","catalog-api"],["checkout-api","channels"],["checkout-api","checkout"],["checkout-api","discounts"],["checkout-api","discounts-api"],["checkout-api","graphql-api"],["checkout-api","orders"],["checkout-api","orders-api"],["checkout-api","payments"],["checkout-api","payments-api"],["checkout-api","platform"],["checkout-api","plugins"],["checkout-api","stock-shipping"],["checkout-api","webhooks"],["content","accounts"],["content","apps"],["content","catalog"],["content","catalog-api"],["content","graphql-api"],["content","platform"],["discounts","accounts"],["discounts","apps"],["discounts","catalog"],["discounts","channels"],["discounts","checkout"],["discounts","discounts-api"],["discounts","graphql-api"],["discounts","orders"],["discounts","payments"],["discounts","payments-api"],["discounts","platform"],["discounts","plugins"],["discounts","stock-shipping"],["discounts","webhooks"],["discounts-api","accounts"],["discounts-api","accounts-api"],["discounts-api","catalog"],["discounts-api","catalog-api"],["discounts-api","channels"],["discounts-api","checkout"],["discounts-api","checkout-api"],["discounts-api","discounts"],["discounts-api","graphql-api"],["discounts-api","orders"],["discounts-api","orders-api"],["discounts-api","platform"],["discounts-api","plugins"],["discounts-api","webhooks"],["graphql-api","accounts"],["graphql-api","accounts-api"],["graphql-api","apps"],["graphql-api","catalog"],["graphql-api","catalog-api"],["graphql-api","channels"],["graphql-api","checkout"],["graphql-api","checkout-api"],["graphql-api","content"],["graphql-api","discounts"],["graphql-api","discounts-api"],["graphql-api","orders"],["graphql-api","orders-api"],["graphql-api","payments"],["graphql-api","payments-api"],["graphql-api","platform"],["graphql-api","plugins"],["graphql-api","stock-shipping"],["graphql-api","webhooks"],["orders","accounts"],["orders","apps"],["orders","catalog"],["orders","channels"],["orders","checkout"],["orders","content"],["orders","discounts"],["orders","graphql-api"],["orders","orders-api"],["orders","payments"],["orders","platform"],["orders","plugins"],["orders","stock-shipping"],["orders","webhooks"],["orders-api","accounts"],["orders-api","accounts-api"],["orders-api","apps"],["orders-api","catalog"],["orders-api","catalog-api"],["orders-api","channels"],["orders-api","checkout"],["orders-api","checkout-api"],["orders-api","content"],["orders-api","discounts"],["orders-api","discounts-api"],["orders-api","graphql-api"],["orders-api","orders"],["orders-api","payments"],["orders-api","payments-api"],["orders-api","platform"],["orders-api","plugins"],["orders-api","stock-shipping"],["orders-api","webhooks"],["payment-gateways","checkout"],["payment-gateways","graphql-api"],["payment-gateways","orders"],["payment-gateways","payments"],["payment-gateways","platform"],["payment-gateways","plugins"],["payments","accounts"],["payments","apps"],["payments","channels"],["payments","checkout"],["payments","discounts"],["payments","graphql-api"],["payments","orders"],["payments","platform"],["payments","plugins"],["payments","webhooks"],["payments-api","accounts"],["payments-api","accounts-api"],["payments-api","apps"],["payments-api","channels"],["payments-api","checkout"],["payments-api","checkout-api"],["payments-api","content"],["payments-api","discounts"],["payments-api","graphql-api"],["payments-api","orders"],["payments-api","orders-api"],["payments-api","payments"],["payments-api","platform"],["payments-api","plugins"],["payments-api","webhooks"],["platform","accounts"],["platform","accounts-api"],["platform","apps"],["platform","catalog"],["platform","channels"],["platform","checkout"],["platform","content"],["platform","discounts"],["platform","graphql-api"],["platform","orders"],["platform","payments"],["platform","plugins"],["platform","stock-shipping"],["platform","webhooks"],["plugins","accounts"],["plugins","accounts-api"],["plugins","apps"],["plugins","catalog"],["plugins","channels"],["plugins","checkout"],["plugins","content"],["plugins","discounts"],["plugins","graphql-api"],["plugins","orders"],["plugins","payments"],["plugins","platform"],["plugins","stock-shipping"],["plugins","webhooks"],["stock-shipping","accounts"],["stock-shipping","apps"],["stock-shipping","catalog"],["stock-shipping","channels"],["stock-shipping","checkout"],["stock-shipping","graphql-api"],["stock-shipping","orders"],["stock-shipping","platform"],["stock-shipping","plugins"],["stock-shipping","webhooks"],["webhooks","accounts"],["webhooks","apps"],["webhooks","catalog"],["webhooks","channels"],["webhooks","checkout"],["webhooks","content"],["webhooks","discounts"],["webhooks","graphql-api"],["webhooks","orders"],["webhooks","payments"],["webhooks","platform"],["webhooks","plugins"],["webhooks","stock-shipping"]],"ports":[],"symbols":[{"file":"saleor/graphql/webhook/enums.py","line":362,"kind":"class","name":"WebhookPayloadGenerationEnum","delta":"added"},{"file":"saleor/webhook/models.py","line":18,"kind":"class","name":"WebhookPayloadGeneration","delta":"added"},{"file":"saleor/webhook/transport/asynchronous/transport.py","line":304,"kind":"def","name":"group_subscription_webhooks_by_payload_generation","delta":"added"}],"stats":{"files":22,"additions":1057,"deletions":18,"testAdditions":780,"testDeletions":7,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":210,"mappedLines":210},"notes":[],"openspec":null,"outline":{"story":[{"about":"Webhooks changed","view":"architecture","focus":["webhooks"],"code":"saleor/webhook/models.py:15-30"},{"about":"GraphQL API changed","view":"architecture","focus":["graphql-api"],"code":"saleor/graphql/webhook/enums.py:357-377"},{"about":"the data model","view":"data","focus":[],"code":"saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"apps","to":"webhooks"},{"from":"graphql-api","to":"webhooks"}],"dataFiles":["saleor/webhook/migrations/0015_webhook_payload_generation.py","saleor/webhook/migrations/0016_merge_20261016_0603.py","saleor/webhook/models.py"]}},"explanation":{"version":4,"key":"140ce2794794c1bf","lang":"en","tldr":"Each webhook now has payloadGeneration: DEFERRED, the default, or IMMEDIATE. An IMMEDIATE webhook gets its payload built when the event fires, with the state of that moment.","goal":"Let an app that applies each event in sequence get the state at trigger time, while other webhooks keep deferred payloads.","story":[{"heading":"Webhook gets a payload_generation field","body":"The new column is deferred by default. Existing webhooks keep deferred payloads, so they behave as before.","view":"data","focus":["webhook"],"code":"saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"},{"heading":"Async triggers now split the webhooks of an event","body":"For a deferrable event, DEFERRED webhooks go to the background task. IMMEDIATE webhooks get their payload built at once.","view":"flow:trigger-async-webhooks","focus":["#1","#2"],"code":"saleor/webhook/transport/asynchronous/transport.py:422-461"},{"heading":"Only the IMMEDIATE webhook pays the cost","body":"The other webhooks of the same event stay deferred. The request or task that fires the event slows down only for IMMEDIATE ones.","view":"architecture","focus":["webhooks"],"code":"saleor/webhook/transport/asynchronous/transport.py:301-327"},{"heading":"Apps set it in the manifest or the API","body":"The manifest accepts DEFERRED or IMMEDIATE and stores deferred when the value is missing. webhookCreate and webhookUpdate take the same enum.","view":"flow:register-webhook","focus":["#1","#2"],"code":"saleor/app/manifest_validations.py:293-323"},{"heading":"webhookTrigger respects the setting","body":"A manual trigger defers the payload only when the event defers and the webhook is DEFERRED.","view":"architecture","focus":["graphql-api"],"code":"saleor/graphql/webhook/mutations/webhook_trigger.py:168-179"},{"heading":"ADR 0011 records the trade-off","body":"Deferred payloads carry the state when the task runs, not when the event happened. The opt-out is for consumers that need each step.","view":"architecture","focus":[],"code":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:39-54"}],"keyDependencies":[{"from":"graphql-api","to":"webhooks","label":"sets payloadGeneration"}],"components":[{"id":"graphql-api","summary":"New WebhookPayloadGenerationEnum; webhookCreate and webhookUpdate set it, and webhookTrigger reads it."},{"id":"apps","summary":"The app manifest takes payloadGeneration per webhook and stores deferred when it is missing."},{"id":"webhooks","summary":"Webhook stores payload_generation. Async triggers build IMMEDIATE payloads at once and defer the rest."}],"decisions":[{"title":"Deferred stays the default; IMMEDIATE is a per-webhook opt-out","why":"Deferral keeps heavy mutations fast. An integration that applies each ORDER_METADATA_UPDATED in sequence breaks when all deliveries carry the final state.","alternative":"Store a snapshot of every payload in the request.","evidence":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:41-47"},{"title":"The setting is read once, when the delivery is created","why":"Deliveries and queued tasks finish the way they started. A later change of the setting affects only new deliveries.","alternative":"Read the setting again when the task runs.","evidence":"saleor/webhook/models.py:55-62"},{"title":"An IMMEDIATE payload reads from the writer","why":"A task can fire the event right after its own write. The replica can lag, so dataloaders read the writer for this path.","alternative":"Read the replica, as the deferred task does.","evidence":"saleor/webhook/transport/asynchronous/transport.py:445-460"},{"title":"Group the webhooks, not the event","why":"An event reaches many apps. Each app chooses for its own webhook, and only that webhook pays the cost.","alternative":"A setting per event type for all apps.","evidence":"saleor/webhook/transport/asynchronous/transport.py:305-326"}],"flows":[{"id":"trigger-async-webhooks","title":"Trigger async webhooks for an event","trigger":"trigger_webhooks_async_for_multiple_objects","steps":[{"from":"webhooks","to":"webhooks","call":"group_subscription_webhooks_by_payload_generation","delta":"added","verified":true,"port":false,"via":null},{"from":"webhooks","to":"graphql-api","call":"build the IMMEDIATE payloads now","delta":"changed","data":{"type":"Webhook","fields":["+payload_generation: immediate"]},"verified":true,"port":false,"via":null}]},{"id":"register-webhook","title":"Register a webhook with its payload generation","trigger":"webhookCreate","steps":[{"from":"graphql-api","to":"webhooks","call":"Webhook.payload_generation","delta":"added","verified":true,"port":false,"via":null},{"from":"apps","to":"webhooks","call":"_clean_webhook_payload_generation","delta":"added","verified":true,"port":false,"via":null}]}],"dataModel":{"entities":[{"id":"webhook","name":"Webhook","component":"webhooks","delta":"changed","evidence":"saleor/webhook/models.py:51-69","fields":["+payload_generation: deferred|immediate = deferred"]},{"id":"app","name":"App","component":"apps","delta":"unchanged","fields":[]},{"id":"event-delivery","name":"EventDelivery","component":"webhooks","delta":"unchanged","fields":[]}],"relations":[{"from":"app","to":"webhook","label":"1..n","delta":"unchanged"},{"from":"webhook","to":"event-delivery","label":"1..n","delta":"unchanged"}]},"requirements":[]},"state":"valid","issues":[]}</script>
 <script>(() => {
+  // report/bulb.svg
+  var bulb_default = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="explain-change">
+  <path class="bulb-line" d="M16 1.6v2.6M5.6 6l1.8 1.8M26.4 6l-1.8 1.8M1.8 15.2h2.6M27.6 15.2h2.6" fill="none" stroke="#4b4fd6" stroke-width="2.2" stroke-linecap="round"/>
+  <path class="bulb-line" d="M16 7.2a8 8 0 0 0-4.8 14.4c.9.7 1.4 1.6 1.4 2.7v.4h6.8v-.4c0-1.1.5-2 1.4-2.7A8 8 0 0 0 16 7.2z" fill="#ffd65a" stroke="#4b4fd6" stroke-width="2.2" stroke-linejoin="round"/>
+  <path class="bulb-line" d="M13.4 19.6q2.6-3.6 5.2 0" fill="none" stroke="#4b4fd6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="bulb-line" d="M12.8 27.6h6.4M14.2 30.2h3.6" fill="none" stroke="#4b4fd6" stroke-width="2.2" stroke-linecap="round"/>
+</svg>
+`;
+
+  // report/dom.ts
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function h(tag, attrs, ...children) {
+    const el = document.createElement(tag);
+    setAttrs(el, attrs);
+    for (const c of children)
+      append(el, c);
+    return el;
+  }
+  function s(tag, attrs, ...children) {
+    const el = document.createElementNS(SVGNS, tag);
+    setAttrs(el, attrs);
+    for (const c of children)
+      append(el, c);
+    return el;
+  }
+  function setAttrs(el, attrs) {
+    if (!attrs)
+      return;
+    for (const k of Object.keys(attrs)) {
+      const v = attrs[k];
+      if (v === null || v === undefined || v === false)
+        continue;
+      if (k === "class")
+        el.setAttribute("class", String(v));
+      else if (k === "text")
+        el.textContent = String(v);
+      else if (k.slice(0, 2) === "on")
+        el.addEventListener(k.slice(2), v);
+      else
+        el.setAttribute(k, v === true ? "" : String(v));
+    }
+  }
+  function append(el, child) {
+    if (child === null || child === undefined || child === false)
+      return;
+    if (Array.isArray(child)) {
+      for (const c of child)
+        append(el, c);
+      return;
+    }
+    el.appendChild(typeof child === "string" || typeof child === "number" ? document.createTextNode(String(child)) : child);
+  }
+  function store(key, value) {
+    try {
+      if (value === undefined)
+        return JSON.parse(localStorage.getItem(key) ?? "null");
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      return null;
+    }
+    return null;
+  }
+  var fmt = (n) => Number(n).toLocaleString("en-US");
+  function trunc(text, n) {
+    const v = String(text ?? "");
+    return v.length > n ? `${v.slice(0, n - 1)}…` : v;
+  }
+  var measure = document.createElement("canvas").getContext("2d");
+  function fit(text, font, maxW) {
+    let v = String(text || "");
+    if (!measure)
+      return v;
+    measure.font = `${font} ${getComputedStyle(document.body).fontFamily}`;
+    if (measure.measureText(v).width <= maxW)
+      return v;
+    while (v.length > 1 && measure.measureText(`${v}…`).width > maxW)
+      v = v.slice(0, -1);
+    return `${v.trimEnd()}…`;
+  }
+  function listAt(o, key) {
+    let list = o[key];
+    if (!list) {
+      list = [];
+      o[key] = list;
+    }
+    return list;
+  }
+  var MONO = 'ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace';
+  function textWidth(text, font, family) {
+    if (!measure)
+      return text.length * 7;
+    measure.font = `${font} ${family ?? getComputedStyle(document.body).fontFamily}`;
+    return measure.measureText(text).width;
+  }
+  var cap = (v) => v.charAt(0).toUpperCase() + v.slice(1);
+  var r1 = (n) => Math.round(n * 10) / 10;
+
   // src/core/sha256.ts
   var K = new Uint32Array([
     1116352408,
@@ -716,16 +813,174 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   };
   var prFileUrl = (host, prUrl, path) => FILE_URL[host](prUrl, path);
 
-  // report/bulb.svg
-  var bulb_default = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="explain-change">
-  <path class="bulb-line" d="M16 1.6v2.6M5.6 6l1.8 1.8M26.4 6l-1.8 1.8M1.8 15.2h2.6M27.6 15.2h2.6" fill="none" stroke="#4b4fd6" stroke-width="2.2" stroke-linecap="round"/>
-  <path class="bulb-line" d="M16 7.2a8 8 0 0 0-4.8 14.4c.9.7 1.4 1.6 1.4 2.7v.4h6.8v-.4c0-1.1.5-2 1.4-2.7A8 8 0 0 0 16 7.2z" fill="#ffd65a" stroke="#4b4fd6" stroke-width="2.2" stroke-linejoin="round"/>
-  <path class="bulb-line" d="M13.4 19.6q2.6-3.6 5.2 0" fill="none" stroke="#4b4fd6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <path class="bulb-line" d="M12.8 27.6h6.4M14.2 30.2h3.6" fill="none" stroke="#4b4fd6" stroke-width="2.2" stroke-linecap="round"/>
-</svg>
-`;
+  // report/words.ts
+  var T = {
+    story: "Story",
+    canvas: "Map",
+    architecture: "Architecture",
+    spec: "SDD",
+    openspec: "OpenSpec",
+    local: "Local branch",
+    pr: "Azure DevOps PR",
+    commit: "commit",
+    commits: "commits",
+    noExplanation: "No story yet",
+    noExplanationText: "Ask your agent to explain this change with explain-change.",
+    draftExplanation: "Story in progress",
+    draftExplanationText: "The explanation still has parts to write. Ask your agent to finish it and run explain-change render.",
+    staleExplanation: "Story out of date",
+    staleText: "The code changed after the story was written. Ask your agent to explain the change again.",
+    invalidExplanation: "Story rejected",
+    invalidText: "explanation.json has errors:",
+    goal: "Goal",
+    file: "file",
+    kFiles: "files",
+    kLines: "lines",
+    kComponents: "components",
+    component: "component",
+    kTasks: "tasks",
+    kReqs: "requirements",
+    delta: "Changes",
+    after: "After",
+    before: "Before",
+    decisions: "Design decisions",
+    brokenRule: "broken rule",
+    brokenRules: "broken rules",
+    lAdded: "new",
+    nAdded: "new",
+    nChanged: "changed",
+    nRemoved: "removed",
+    lChanged: "changed",
+    lRemoved: "removed",
+    lNeighbor: "untouched",
+    lUnchanged: "unchanged",
+    lMoreRefs: "references changed",
+    lViolation: "breaks a rule",
+    lKey: "key dependency",
+    refs: "refs",
+    unresolved: "references in the changed files not resolved",
+    unresolved1: "reference in the changed files not resolved",
+    unmapped: "changed files outside the map",
+    unmapped1: "changed file outside the map",
+    context: "Context",
+    contextHint: "Untouched components the changed code uses or is used by, through dependencies the change keeps as they were",
+    lgComponents: "Components",
+    lgDependencies: "Dependencies",
+    lgSteps: "Steps",
+    lgEntities: "Entities",
+    nextStep: "Next",
+    restart: "Back to the start",
+    modeDelta: "Base and head together: what was added, changed and removed",
+    modeAfter: "Only the result, as the code is now",
+    modeBefore: "Only the starting point, as the code was",
+    archEmpty: "No configured component is touched by this change.",
+    startsAt: "Starts at",
+    vsReference: "Compared with the reference flow",
+    extraSteps: "new steps",
+    missingSteps: "steps missing",
+    matchesReference: "matches the reference flow",
+    tests: "Tests",
+    theme: "Theme",
+    themeAuto: "auto",
+    themeLight: "light",
+    themeDark: "dark",
+    alternative: "Alternative",
+    unverified: "The code has no dependency between these components",
+    viaPort: "Through the port {x}: 1 side implements it",
+    viaSomePort: "Through a port: 1 side implements an interface the other declares",
+    unverifiedNote: "No dependency in the code:",
+    prev: "Previous",
+    next: "Next",
+    fit: "Fit",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    motion: "Animation",
+    resize: "Drag to resize · double-click to reset",
+    canvasHint: "Drag to pan · Ctrl/⌘ + wheel to zoom · click a component for details · ← → to step",
+    back: "Story",
+    files: "Files",
+    dependsOn: "Depends on",
+    usedBy: "Used by",
+    reqs: "Requirements",
+    symbols: "Public API",
+    storyAuto: "Automatic summary.",
+    autoOverviewH: "{n} components touched in {m} layers",
+    autoOverviewB: "{f} files, +{a} −{d} lines.",
+    autoNewH: "{x} added",
+    autoRemovedH: "{x} removed",
+    autoViolH: "{a} now depends on {b}",
+    autoChangedH: "{x} changed",
+    autoChangedB: "{n} file(s), +{a} −{d}.",
+    autoNewB: "New component in {l}.",
+    autoRemovedB: "All its files were deleted.",
+    autoSpecH: "{n} requirements in {id}",
+    autoSpecB: "Spec changes included.",
+    phaseActive: "active",
+    phaseArchived: "archived",
+    phaseArchiving: "archived by this change",
+    proposal: "Proposal",
+    specs: "Specs",
+    designDoc: "Design",
+    tasks: "Tasks",
+    code: "Code",
+    archive: "Archive",
+    sAdded: "added",
+    sModified: "edited",
+    sUnchanged: "unchanged",
+    sAbsent: "none",
+    sDeleted: "deleted",
+    pending: "pending",
+    implemented: "implemented",
+    partial: "partial",
+    missing: "missing",
+    "not-applicable": "n/a",
+    notMapped: "not mapped",
+    opADDED: "added",
+    opMODIFIED: "modified",
+    opREMOVED: "removed",
+    opRENAMED: "renamed",
+    opSPEC: "spec",
+    scenarios: "Scenarios",
+    why: "Why",
+    whatChanges: "What changes",
+    impact: "Impact",
+    scenario: "Scenario",
+    showFlow: "Show flow",
+    kGIVEN: "Given",
+    kWHEN: "When",
+    kTHEN: "Then",
+    but: "but",
+    status: "Status",
+    seeReqs: "See the requirements",
+    showOnMap: "Show on the map",
+    pendingMap: "Requirements not linked to code yet.",
+    mainSpec: "main spec",
+    merged: "merged",
+    dataView: "Data model",
+    migrations: "Migrations",
+    fields: "Fields",
+    relations: "Relations",
+    evidence: "Evidence",
+    coverageHint: "Share of the changed code that sits in a component on the map.",
+    onMap: "of the code on the map",
+    noConfig: "No architecture configured",
+    noConfigText: "Layers and components are guessed from folder names. Run explain-change init to define them.",
+    decisionsDoc: "Decisions",
+    openTasksN: "{n} open",
+    changesTitle: "Changes by component",
+    outsideMap: "Outside the map",
+    testFiles: "Tests",
+    leadChanges: "{c} components · {f} files",
+    leadDecisions: "{n} decisions: why it is built this way",
+    leadDecision1: "1 decision: why it is built this way",
+    leadSpec: "{n} requirements · {i} implemented"
+  };
+  var t = (key) => T[key] ?? key;
+  function tf(key, o) {
+    return T[key].replace(/\{(\w+)\}/g, (_, k) => o[k] !== undefined ? String(o[k]) : "");
+  }
 
-  // report/app.ts
+  // report/model.ts
   var DATA = JSON.parse(document.getElementById("ec-data").textContent ?? "{}");
   var facts = DATA.facts;
   var ex = DATA.explanation;
@@ -734,421 +989,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   var st = facts.stats;
   var OS = facts.openspec;
   var REDUCED = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
-  var I18N = {
-    en: {
-      story: "Story",
-      canvas: "Map",
-      architecture: "Architecture",
-      spec: "SDD",
-      openspec: "OpenSpec",
-      local: "Local branch",
-      pr: "Azure DevOps PR",
-      commit: "commit",
-      commits: "commits",
-      noExplanation: "No story yet",
-      noExplanationText: "Ask your agent to explain this change with explain-change.",
-      draftExplanation: "Story in progress",
-      draftExplanationText: "The explanation still has parts to write. Ask your agent to finish it and run explain-change render.",
-      staleExplanation: "Story out of date",
-      staleText: "The code changed after the story was written. Ask your agent to explain the change again.",
-      invalidExplanation: "Story rejected",
-      invalidText: "explanation.json has errors:",
-      goal: "Goal",
-      file: "file",
-      kFiles: "files",
-      kLines: "lines",
-      kComponents: "components",
-      component: "component",
-      kTasks: "tasks",
-      kReqs: "requirements",
-      delta: "Changes",
-      after: "After",
-      before: "Before",
-      decisions: "Design decisions",
-      brokenRule: "broken rule",
-      brokenRules: "broken rules",
-      lAdded: "new",
-      nAdded: "new",
-      nChanged: "changed",
-      nRemoved: "removed",
-      lChanged: "changed",
-      lRemoved: "removed",
-      lNeighbor: "untouched",
-      lUnchanged: "unchanged",
-      lMoreRefs: "references changed",
-      lViolation: "breaks a rule",
-      lKey: "key dependency",
-      refs: "refs",
-      unresolved: "references in the changed files not resolved",
-      unresolved1: "reference in the changed files not resolved",
-      unmapped: "changed files outside the map",
-      unmapped1: "changed file outside the map",
-      context: "Context",
-      contextHint: "Untouched components the changed code uses or is used by, through dependencies the change keeps as they were",
-      lgComponents: "Components",
-      lgDependencies: "Dependencies",
-      lgSteps: "Steps",
-      lgEntities: "Entities",
-      nextStep: "Next",
-      restart: "Back to the start",
-      modeDelta: "Base and head together: what was added, changed and removed",
-      modeAfter: "Only the result, as the code is now",
-      modeBefore: "Only the starting point, as the code was",
-      archEmpty: "No configured component is touched by this change.",
-      startsAt: "Starts at",
-      vsReference: "Compared with the reference flow",
-      extraSteps: "new steps",
-      missingSteps: "steps missing",
-      matchesReference: "matches the reference flow",
-      tests: "Tests",
-      theme: "Theme",
-      themeAuto: "auto",
-      themeLight: "light",
-      themeDark: "dark",
-      alternative: "Alternative",
-      unverified: "The code has no dependency between these components",
-      viaPort: "Through the port {x}: 1 side implements it",
-      viaSomePort: "Through a port: 1 side implements an interface the other declares",
-      unverifiedNote: "No dependency in the code:",
-      prev: "Previous",
-      next: "Next",
-      fit: "Fit",
-      zoomIn: "Zoom in",
-      zoomOut: "Zoom out",
-      motion: "Animation",
-      resize: "Drag to resize · double-click to reset",
-      canvasHint: "Drag to pan · Ctrl/⌘ + wheel to zoom · click a component for details · ← → to step",
-      back: "Story",
-      files: "Files",
-      dependsOn: "Depends on",
-      usedBy: "Used by",
-      reqs: "Requirements",
-      symbols: "Public API",
-      storyAuto: "Automatic summary.",
-      autoOverviewH: "{n} components touched in {m} layers",
-      autoOverviewB: "{f} files, +{a} −{d} lines.",
-      autoNewH: "{x} added",
-      autoRemovedH: "{x} removed",
-      autoViolH: "{a} now depends on {b}",
-      autoChangedH: "{x} changed",
-      autoChangedB: "{n} file(s), +{a} −{d}.",
-      autoNewB: "New component in {l}.",
-      autoRemovedB: "All its files were deleted.",
-      autoSpecH: "{n} requirements in {id}",
-      autoSpecB: "Spec changes included.",
-      phaseActive: "active",
-      phaseArchived: "archived",
-      phaseArchiving: "archived by this change",
-      proposal: "Proposal",
-      specs: "Specs",
-      designDoc: "Design",
-      tasks: "Tasks",
-      code: "Code",
-      archive: "Archive",
-      sAdded: "added",
-      sModified: "edited",
-      sUnchanged: "unchanged",
-      sAbsent: "none",
-      sDeleted: "deleted",
-      pending: "pending",
-      implemented: "implemented",
-      partial: "partial",
-      missing: "missing",
-      "not-applicable": "n/a",
-      notMapped: "not mapped",
-      opADDED: "added",
-      opMODIFIED: "modified",
-      opREMOVED: "removed",
-      opRENAMED: "renamed",
-      opSPEC: "spec",
-      scenarios: "Scenarios",
-      why: "Why",
-      whatChanges: "What changes",
-      impact: "Impact",
-      scenario: "Scenario",
-      showFlow: "Show flow",
-      kGIVEN: "Given",
-      kWHEN: "When",
-      kTHEN: "Then",
-      but: "but",
-      status: "Status",
-      seeReqs: "See the requirements",
-      showOnMap: "Show on the map",
-      pendingMap: "Requirements not linked to code yet.",
-      mainSpec: "main spec",
-      merged: "merged",
-      dataView: "Data model",
-      migrations: "Migrations",
-      fields: "Fields",
-      relations: "Relations",
-      evidence: "Evidence",
-      coverageHint: "Share of the changed code that sits in a component on the map.",
-      onMap: "of the code on the map",
-      noConfig: "No architecture configured",
-      noConfigText: "Layers and components are guessed from folder names. Run explain-change init to define them.",
-      decisionsDoc: "Decisions",
-      openTasksN: "{n} open",
-      changesTitle: "Changes by component",
-      outsideMap: "Outside the map",
-      testFiles: "Tests",
-      leadChanges: "{c} components · {f} files",
-      leadDecisions: "{n} decisions: why it is built this way",
-      leadDecision1: "1 decision: why it is built this way",
-      leadSpec: "{n} requirements · {i} implemented"
-    },
-    es: {
-      story: "Historia",
-      canvas: "Mapa",
-      architecture: "Arquitectura",
-      spec: "SDD",
-      openspec: "OpenSpec",
-      local: "Rama local",
-      pr: "PR de Azure DevOps",
-      commit: "commit",
-      commits: "commits",
-      noExplanation: "Sin historia todavía",
-      noExplanationText: "Pide a tu agente que explique este cambio con explain-change.",
-      draftExplanation: "Historia en curso",
-      draftExplanationText: "A la explicación le faltan partes por escribir. Pide a tu agente que la termine y ejecute explain-change render.",
-      staleExplanation: "Historia desactualizada",
-      staleText: "El código cambió después de escribir la historia. Pide a tu agente que vuelva a explicar el cambio.",
-      invalidExplanation: "Historia rechazada",
-      invalidText: "explanation.json tiene errores:",
-      goal: "Objetivo",
-      file: "archivo",
-      kFiles: "archivos",
-      kLines: "líneas",
-      kComponents: "componentes",
-      component: "componente",
-      kTasks: "tareas",
-      kReqs: "requisitos",
-      delta: "Cambios",
-      after: "Después",
-      before: "Antes",
-      decisions: "Decisiones de diseño",
-      brokenRule: "regla rota",
-      brokenRules: "reglas rotas",
-      lAdded: "nuevo",
-      nAdded: "nuevos",
-      nChanged: "cambiados",
-      nRemoved: "eliminados",
-      lChanged: "cambiado",
-      lRemoved: "eliminado",
-      lNeighbor: "sin tocar",
-      lUnchanged: "sin cambios",
-      lMoreRefs: "referencias cambiadas",
-      lViolation: "rompe una regla",
-      lKey: "dependencia clave",
-      refs: "refs",
-      unresolved: "referencias sin resolver en los ficheros cambiados",
-      unresolved1: "referencia sin resolver en los ficheros cambiados",
-      unmapped: "archivos cambiados fuera del mapa",
-      unmapped1: "archivo cambiado fuera del mapa",
-      context: "Contexto",
-      contextHint: "Componentes sin tocar que el código cambiado usa o que lo usan, por dependencias que el cambio deja como estaban",
-      lgComponents: "Componentes",
-      lgDependencies: "Dependencias",
-      lgSteps: "Pasos",
-      lgEntities: "Entidades",
-      nextStep: "Siguiente",
-      restart: "Volver al principio",
-      modeDelta: "Base y head a la vez: qué se añadió, cambió y eliminó",
-      modeAfter: "Solo el resultado, como queda el código",
-      modeBefore: "Solo el punto de partida, como estaba el código",
-      archEmpty: "Este cambio no toca ningún componente configurado.",
-      startsAt: "Empieza en",
-      vsReference: "Frente al flujo de referencia",
-      extraSteps: "pasos nuevos",
-      missingSteps: "pasos que faltan",
-      matchesReference: "coincide con el flujo de referencia",
-      tests: "Tests",
-      theme: "Tema",
-      themeAuto: "auto",
-      themeLight: "claro",
-      themeDark: "oscuro",
-      alternative: "Alternativa",
-      unverified: "El código no tiene dependencia entre estos componentes",
-      viaPort: "A través del puerto {x}: un lado lo implementa",
-      viaSomePort: "A través de un puerto: un lado implementa una interfaz que el otro declara",
-      unverifiedNote: "Sin dependencia en el código:",
-      prev: "Anterior",
-      next: "Siguiente",
-      fit: "Ajustar",
-      zoomIn: "Acercar",
-      zoomOut: "Alejar",
-      motion: "Animación",
-      resize: "Arrastra para cambiar el alto · doble clic para restaurar",
-      canvasHint: "Arrastra para mover · Ctrl/⌘ + rueda para zoom · clic en un componente para ver detalle · ← → para avanzar",
-      back: "Historia",
-      files: "Archivos",
-      dependsOn: "Depende de",
-      usedBy: "Usado por",
-      reqs: "Requisitos",
-      symbols: "API pública",
-      storyAuto: "Resumen automático.",
-      autoOverviewH: "{n} componentes tocados en {m} capas",
-      autoOverviewB: "{f} archivos, +{a} −{d} líneas.",
-      autoNewH: "{x} añadido",
-      autoRemovedH: "{x} eliminado",
-      autoViolH: "{a} ahora depende de {b}",
-      autoChangedH: "{x} cambia",
-      autoChangedB: "{n} archivo(s), +{a} −{d}.",
-      autoNewB: "Componente nuevo en {l}.",
-      autoRemovedB: "Se borraron todos sus archivos.",
-      autoSpecH: "{n} requisitos en {id}",
-      autoSpecB: "Cambios de spec incluidos.",
-      phaseActive: "activo",
-      phaseArchived: "archivado",
-      phaseArchiving: "archivado en este cambio",
-      proposal: "Propuesta",
-      specs: "Specs",
-      designDoc: "Diseño",
-      tasks: "Tareas",
-      code: "Código",
-      archive: "Archivo",
-      sAdded: "añadido",
-      sModified: "editado",
-      sUnchanged: "sin cambios",
-      sAbsent: "no hay",
-      sDeleted: "eliminado",
-      pending: "pendiente",
-      implemented: "implementado",
-      partial: "parcial",
-      missing: "falta",
-      "not-applicable": "n/a",
-      notMapped: "sin mapear",
-      opADDED: "añadido",
-      opMODIFIED: "modificado",
-      opREMOVED: "eliminado",
-      opRENAMED: "renombrado",
-      opSPEC: "spec",
-      scenarios: "Escenarios",
-      why: "Por qué",
-      whatChanges: "Qué cambia",
-      impact: "Impacto",
-      scenario: "Escenario",
-      showFlow: "Ver flujo",
-      kGIVEN: "Dado",
-      kWHEN: "Cuando",
-      kTHEN: "Entonces",
-      but: "pero",
-      status: "Estado",
-      seeReqs: "Ver los requisitos",
-      showOnMap: "Ver en el mapa",
-      pendingMap: "Requisitos aún sin enlazar al código.",
-      mainSpec: "spec principal",
-      merged: "fusionado",
-      dataView: "Modelo de datos",
-      migrations: "Migraciones",
-      fields: "Campos",
-      relations: "Relaciones",
-      evidence: "Evidencia",
-      coverageHint: "Parte del código cambiado que está en un componente del mapa.",
-      onMap: "del código en el mapa",
-      noConfig: "Sin arquitectura configurada",
-      noConfigText: "Capas y componentes deducidos de los nombres de carpetas. Ejecuta explain-change init para definirlos.",
-      decisionsDoc: "Decisiones",
-      openTasksN: "{n} abiertas",
-      changesTitle: "Cambios por componente",
-      outsideMap: "Fuera del mapa",
-      testFiles: "Tests",
-      leadChanges: "{c} componentes · {f} archivos",
-      leadDecisions: "{n} decisiones: por qué está construido así",
-      leadDecision1: "1 decisión: por qué está construido así",
-      leadSpec: "{n} requisitos · {i} implementados"
-    }
-  };
-  var T = I18N[cfg.lang] ?? I18N.en;
-  var t = (key) => T[key] ?? key;
-  function tf(key, o) {
-    return T[key].replace(/\{(\w+)\}/g, (_, k) => o[k] !== undefined ? String(o[k]) : "");
-  }
-  var SVGNS = "http://www.w3.org/2000/svg";
-  function h(tag, attrs, ...children) {
-    const el = document.createElement(tag);
-    setAttrs(el, attrs);
-    for (const c of children)
-      append(el, c);
-    return el;
-  }
-  function s(tag, attrs, ...children) {
-    const el = document.createElementNS(SVGNS, tag);
-    setAttrs(el, attrs);
-    for (const c of children)
-      append(el, c);
-    return el;
-  }
-  function setAttrs(el, attrs) {
-    if (!attrs)
-      return;
-    for (const k of Object.keys(attrs)) {
-      const v = attrs[k];
-      if (v === null || v === undefined || v === false)
-        continue;
-      if (k === "class")
-        el.setAttribute("class", String(v));
-      else if (k === "text")
-        el.textContent = String(v);
-      else if (k.slice(0, 2) === "on")
-        el.addEventListener(k.slice(2), v);
-      else
-        el.setAttribute(k, v === true ? "" : String(v));
-    }
-  }
-  function append(el, child) {
-    if (child === null || child === undefined || child === false)
-      return;
-    if (Array.isArray(child)) {
-      for (const c of child)
-        append(el, c);
-      return;
-    }
-    el.appendChild(typeof child === "string" || typeof child === "number" ? document.createTextNode(String(child)) : child);
-  }
-  function store(key, value) {
-    try {
-      if (value === undefined)
-        return JSON.parse(localStorage.getItem(key) ?? "null");
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      return null;
-    }
-    return null;
-  }
-  var fmt = (n) => Number(n).toLocaleString(cfg.lang === "es" ? "es-ES" : "en-US");
-  function trunc(text, n) {
-    const v = String(text ?? "");
-    return v.length > n ? `${v.slice(0, n - 1)}…` : v;
-  }
-  var measure = document.createElement("canvas").getContext("2d");
-  function fit(text, font, maxW) {
-    let v = String(text || "");
-    if (!measure)
-      return v;
-    measure.font = `${font} ${getComputedStyle(document.body).fontFamily}`;
-    if (measure.measureText(v).width <= maxW)
-      return v;
-    while (v.length > 1 && measure.measureText(`${v}…`).width > maxW)
-      v = v.slice(0, -1);
-    return `${v.trimEnd()}…`;
-  }
-  function listAt(o, key) {
-    let list = o[key];
-    if (!list) {
-      list = [];
-      o[key] = list;
-    }
-    return list;
-  }
-  var MONO = 'ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace';
-  function textWidth(text, font, family) {
-    if (!measure)
-      return text.length * 7;
-    measure.font = `${font} ${family ?? getComputedStyle(document.body).fontFamily}`;
-    return measure.measureText(text).width;
-  }
-  var cap = (v) => v.charAt(0).toUpperCase() + v.slice(1);
-  var r1 = (n) => Math.round(n * 10) / 10;
   var gitLetter = (f) => f.delta === "added" ? "A" : f.delta === "removed" ? "D" : f.previousPath ? "R" : "M";
   var compById = {};
   var layerRank = {};
@@ -1232,6 +1072,8 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   function prFileUrl2(path) {
     return src.kind === "pr" && src.url && src.host ? prFileUrl(src.host, src.url, path) : null;
   }
+
+  // report/ui.ts
   function onOpen(el, path) {
     const url = prFileUrl2(path);
     if (url) {
@@ -1256,6 +1098,308 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`
     }), label);
   }
+  function chip(v, label, cls) {
+    return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
+  }
+  var mapApi = {};
+
+  // report/sdd.ts
+  function artifactState(c, kind) {
+    const list = c.artifacts.filter((a) => a.kind === kind);
+    if (!list.length)
+      return { cls: "absent", text: T.sAbsent };
+    const changed = list.filter((a) => a.delta !== "unchanged" || a.moved);
+    if (!changed.length)
+      return { cls: "present", text: T.sUnchanged };
+    if (c.deleted)
+      return { cls: "removed", text: T.sDeleted };
+    return { cls: "changed", text: changed.some((a) => a.delta === "added" || a.moved) ? T.sAdded : T.sModified };
+  }
+  function pipelineSteps(c) {
+    const touched = facts.components.filter((x) => x.delta !== "unchanged");
+    const tk = c.tasks;
+    const add = touched.reduce((a, x) => a + x.additions, 0);
+    const del = touched.reduce((a, x) => a + x.deletions, 0);
+    return [
+      { id: "proposal", title: T.proposal, state: artifactState(c, "proposal") },
+      { id: "spec", title: T.specs, state: artifactState(c, "spec") },
+      { id: "design", title: T.designDoc, state: artifactState(c, "design") },
+      { id: "tasks", title: T.tasks, state: artifactState(c, "tasks"), progress: tk ? [tk.done, tk.total] : null },
+      {
+        id: "code",
+        title: T.code,
+        state: touched.length ? { cls: "changed", text: `+${add} −${del}` } : { cls: "absent", text: "—" }
+      },
+      {
+        id: "archive",
+        title: T.archive,
+        state: c.archived ? { cls: c.movedToArchive ? "changed" : "present", text: c.movedToArchive ? T.phaseArchiving : T.phaseArchived } : { cls: "absent", text: tk && tk.done < tk.total ? tf("openTasksN", { n: tk.total - tk.done }) : T.pending }
+      }
+    ];
+  }
+  var GWT = ["GIVEN", "WHEN", "THEN"];
+  function gwtGroups(sc) {
+    const g = { GIVEN: [], WHEN: [], THEN: [] };
+    let cur = "GIVEN";
+    for (const x of sc.steps) {
+      const k = String(x.keyword).toUpperCase();
+      if (GWT.includes(k))
+        cur = k;
+      g[cur].push({ but: k === "BUT", t: x.text });
+    }
+    return g;
+  }
+  function flowButtons(r, sc) {
+    return (ex?.flows ?? []).filter((f) => f.scenario === `${r.id}#${sc.id}`).map((f) => h("button", {
+      class: "chip flow-chip",
+      title: f.title,
+      text: `▶ ${T.showFlow}`,
+      onclick: () => mapApi.showFlow?.(f.id)
+    }));
+  }
+  var GWT_ICON = { GIVEN: "●", WHEN: "▶", THEN: "✓" };
+  var GWT_FR = { GIVEN: "1fr", WHEN: ".85fr", THEN: "1.15fr" };
+  function gwtFlow(g, keys, opts) {
+    const cells = [];
+    keys.forEach((k, i) => {
+      if (i)
+        cells.push(h("span", { class: "gf-arrow", "aria-hidden": "true" }));
+      const lines = g[k];
+      cells.push(h("div", {
+        class: `gf-col k-${k.toLowerCase()}${opts.same?.[k] ? " same" : ""}${lines.length ? "" : " empty"}`,
+        role: "group",
+        "aria-label": t(`k${k}`)
+      }, h("span", { class: "gf-k" }, h("i", { class: "gf-ico", text: GWT_ICON[k] }), t(`k${k}`)), h("div", { class: `gf-nodes${lines.length > 1 ? " multi" : ""}` }, lines.length ? lines.map((l) => h("div", { class: "gf-node" }, l.but ? h("b", { class: "gwt-but", text: `${T.but} ` }) : null, l.t)) : h("div", { class: "gf-node empty", text: "—" }))));
+    });
+    return h("div", {
+      class: `gwt-flow${opts.labels ? "" : " no-labels"}${opts.compact ? " compact" : ""}`,
+      style: `grid-template-columns:${keys.map((k) => `minmax(0,${GWT_FR[k]})`).join(" 34px ")}`
+    }, cells);
+  }
+  var gwtKeys = (gs) => GWT.filter((k) => gs.some((g) => g[k].length));
+  function scenarioStrip(r, sc, compact = false) {
+    const g = gwtGroups(sc);
+    return h("div", { class: `scn-card${compact ? " compact" : ""}` }, h("div", { class: "scn-head" }, h("b", { text: (compact ? `${T.scenario}: ` : "") + sc.name }), compact ? h("span", { class: "faint", text: `· ${r.name}` }) : flowButtons(r, sc)), gwtFlow(g, gwtKeys([g]), { labels: true, compact }));
+  }
+  function scenarioTable(r) {
+    const gs = r.scenarios.map(gwtGroups);
+    const keys = gwtKeys(gs);
+    return h("div", { class: "scn-list" }, r.scenarios.map((sc, i) => {
+      const same = {};
+      for (const k of keys) {
+        const cur = gs[i][k];
+        same[k] = i > 0 && cur.length > 0 && JSON.stringify(cur) === JSON.stringify(gs[i - 1][k]);
+      }
+      return h("div", { class: "scn-card" }, h("div", { class: "scn-head" }, h("b", { text: sc.name }), flowButtons(r, sc)), gwtFlow(gs[i], keys, { labels: i === 0, same }));
+    }));
+  }
+  var scenarioView = (r) => r.scenarios.length > 1 ? scenarioTable(r) : scenarioStrip(r, r.scenarios[0]);
+  function reqRow(r) {
+    const v = reqStatus(r);
+    return h("div", { class: "insp-row" }, h("span", { class: `rs-dot rs-${v}` }), h("a", {
+      href: "#sdd",
+      text: trunc(r.name, 48),
+      onclick: (ev) => {
+        ev.preventDefault();
+        sddApi.open([r.id]);
+      }
+    }));
+  }
+  var sddApi = { open: () => {} };
+  function inspList(title, rows) {
+    return h("div", { class: "insp-list" }, h("h4", { text: title }), rows);
+  }
+  function artifactBody(c, kind) {
+    const body = [];
+    if (kind === "proposal") {
+      if (c.why)
+        body.push(inspList(T.why, [h("p", { class: "insp-summary", text: c.why })]));
+      if (c.what.length)
+        body.push(inspList(T.whatChanges, [
+          h("ul", { class: "tight" }, c.what.map((x) => h("li", { text: x })))
+        ]));
+      if (c.impact.length)
+        body.push(inspList(T.impact, [
+          h("ul", { class: "tight" }, c.impact.map((x) => h("li", { text: x })))
+        ]));
+    } else if (kind === "design") {
+      if (c.decisions.length)
+        body.push(inspList(T.decisionsDoc, [
+          h("ul", { class: "tight" }, c.decisions.map((x) => h("li", { text: x })))
+        ]));
+    } else if (kind === "tasks" && c.tasks) {
+      const tasks = c.tasks;
+      tasks.groups.forEach((g, gi) => {
+        body.push(inspList(`${g.title} · ${g.done}/${g.total}`, tasks.items.filter((x) => x.group === gi).map((x) => h("div", { class: `insp-row task${x.done ? " done" : ""}` }, h("span", { class: "task-box", text: x.done ? "✓" : "" }), h("span", { text: x.text })))));
+      });
+    } else if (kind === "spec") {
+      if (c.requirements.length)
+        body.push(inspList(T.reqs, c.requirements.map(reqRow)));
+    } else if (kind === "code") {
+      const touched = facts.components.filter((x) => x.delta !== "unchanged");
+      if (touched.length) {
+        body.push(inspList(T.kComponents, touched.map((x) => h("div", { class: "insp-row" }, h("span", { class: `badge ${x.delta}`, text: deltaLabel(x.delta, true) }), h("a", {
+          href: "#map",
+          text: compName(x.id),
+          onclick: (ev) => {
+            ev.preventDefault();
+            mapApi.inspect?.(x.id);
+          }
+        })))));
+      }
+    }
+    const art = c.artifacts.filter((a) => a.kind === kind);
+    if (art.length) {
+      body.push(h("div", { class: "insp-list" }, art.map((a) => h("div", { class: "insp-row" }, fileLink(a.path, a.path.split("/").slice(-3).join("/"))))));
+    }
+    return body.length ? body : null;
+  }
+  function sddPipeline(c) {
+    const panel = h("div", { class: "sdd-doc", hidden: true });
+    let open = null;
+    const list = h("ol", { class: "sdd-pipe" }, pipelineSteps(c).map((stp, i) => {
+      const body = artifactBody(c, stp.id);
+      const p = stp.progress;
+      const btn = h("button", {
+        class: `pstep ps-${stp.state.cls}`,
+        disabled: !body,
+        "aria-expanded": body ? "false" : null,
+        title: `${stp.title} · ${stp.state.text}`
+      }, h("span", {
+        class: "pdot",
+        text: { present: "✓", removed: "✗" }[stp.state.cls] ?? String(i + 1)
+      }), h("span", { class: "pname", text: stp.title }), h("span", { class: "pstate", text: p ? `${p[0]}/${p[1]}` : stp.state.text }), p ? h("span", { class: "pbar" }, h("i", {
+        class: p[0] === p[1] ? "full" : "",
+        style: `width:${p[1] ? Math.round(100 * p[0] / p[1]) : 0}%`
+      })) : null);
+      if (body) {
+        btn.addEventListener("click", () => {
+          const again = open === btn;
+          if (open) {
+            open.classList.remove("on");
+            open.setAttribute("aria-expanded", "false");
+          }
+          panel.textContent = "";
+          panel.hidden = true;
+          open = null;
+          if (again)
+            return;
+          open = btn;
+          btn.classList.add("on");
+          btn.setAttribute("aria-expanded", "true");
+          append(panel, body);
+          panel.hidden = false;
+        });
+      }
+      return h("li", null, btn);
+    }));
+    return [h("div", { class: "sdd-pipe-wrap" }, list), panel];
+  }
+  function sddCoverage() {
+    const n = {};
+    for (const r of REQS) {
+      const k = reqStatus(r);
+      n[k] = (n[k] ?? 0) + 1;
+    }
+    const shown = ["implemented", "partial", "missing", "not-applicable", "pending"].filter((k) => n[k]);
+    if (!shown.length)
+      return null;
+    return h("div", { class: "sdd-cov" }, h("div", { class: "cov-bar", role: "img", "aria-label": shown.map((k) => `${n[k]} ${rsLabel(k)}`).join(", ") }, shown.map((k) => h("span", { class: `rs-${k}`, style: `flex:${n[k]}`, title: `${n[k]} ${rsLabel(k)}` }))), h("div", { class: "cov-legend" }, shown.map((k) => h("span", null, h("i", { class: `rs-dot rs-${k}` }), h("b", { text: String(n[k]) }), rsLabel(k)))));
+  }
+  function sddMatrix() {
+    const comps = [];
+    for (const r of REQS)
+      for (const c of specMap[r.id]?.components ?? [])
+        if (!comps.includes(c))
+          comps.push(c);
+    comps.sort(byCompRank);
+    const heads = {};
+    const reqs = [];
+    const lightRow = (det, on) => {
+      for (const c of det.comps)
+        heads[c]?.classList.toggle("lit", on);
+    };
+    const lightCol = (c, on) => {
+      heads[c]?.classList.toggle("lit", on);
+      for (const det of reqs)
+        if (det.comps.includes(c))
+          det.classList.toggle("lit", on);
+    };
+    const grid = h("div", {
+      class: "sdd-grid",
+      style: `--cols:minmax(240px, 520px) 136px 56px${comps.length ? ` repeat(${comps.length}, 46px)` : ""}`
+    }, h("div", { class: "sdd-row sdd-head" }, h("span", { text: T.reqs }), h("span", { text: T.status }), h("span", { class: "num", text: T.tests }), comps.map((c) => {
+      const delta = changeComp[c]?.delta ?? "unchanged";
+      const btn = h("button", {
+        class: `sdd-comp st-${delta}`,
+        title: `${compName(c)} · ${layerName(c)} · ${deltaLabel(delta, true)}`,
+        onclick: () => mapApi.inspect?.(c),
+        onmouseenter: () => lightCol(c, true),
+        onmouseleave: () => lightCol(c, false)
+      }, h("span", { class: "vtext", text: trunc(compName(c), 28) }));
+      heads[c] = btn;
+      return btn;
+    })));
+    let lastCap = null;
+    for (const r of REQS) {
+      const capKey = r.capability + (r.change ? "" : ` · ${T.mainSpec}`);
+      if (capKey !== lastCap) {
+        grid.appendChild(h("div", { class: "sdd-cap", text: capKey }));
+        lastCap = capKey;
+      }
+      const m = specMap[r.id];
+      const v = reqStatus(r);
+      const tests = m ? (m.tests ?? []).filter((x, i, a) => a.indexOf(x) === i) : [];
+      const mComps = m?.components ?? [];
+      const det = h("details", { class: `sdd-req op-${r.op} rs-${v}`, open: v === "partial" || v === "missing" || REQS.length <= 3 }, h("summary", { class: "sdd-row" }, h("span", { class: "sdd-name" }, h("span", { class: `op-tag op-${r.op}`, text: t(`op${r.op}`) + (r.merged ? ` · ${T.merged}` : "") }), h("b", { text: r.name }), r.scenarios.length ? h("span", {
+        class: "faint scn-count",
+        text: `${r.scenarios.length} ${(r.scenarios.length === 1 ? T.scenario : T.scenarios).toLowerCase()}`
+      }) : null), h("span", { class: `rs-pill rs-${v}`, text: `${RS_ICON[v]} ${rsLabel(v)}` }), h("span", {
+        class: `sdd-cell num${tests.length ? "" : " faint"}`,
+        title: tests.join(`
+`) || null,
+        text: tests.length ? `⚗ ${tests.length}` : "—"
+      }), comps.map((c) => {
+        const on = mComps.includes(c);
+        return h("span", { class: "sdd-cell", title: on ? compName(c) : null }, on ? h("i", { class: `cell-dot rs-${v}` }) : null);
+      })), h("div", { class: "sdd-detail" }, r.text ? h("p", { class: "sdd-text", text: r.text }) : null, m?.note ? h("div", { class: `sdd-note rs-${v}` }, h("b", { text: `${RS_ICON[v]} ${cap(rsLabel(v))}` }), ` ${m.note}`) : null, mComps.length ? h("div", { class: "sdd-comps-m" }, mComps.map((c) => h("span", { class: `badge ${changeComp[c]?.delta ?? "unchanged"}`, text: compName(c) }))) : null, r.scenarios.length ? scenarioView(r) : null, h("div", { class: "sdd-foot" }, tests.map((x) => h("span", { class: "test-ref" }, "⚗ ", fileLink(x, x.split("/").pop()))), h("span", { class: "faint" }, "spec ", fileLink(`${r.file}:${r.line}`, r.file.split("/").slice(-3).join("/"))), mComps.length ? h("button", {
+        class: "chip",
+        text: `◇ ${T.showOnMap}`,
+        onclick: () => mapApi.focus?.("architecture", mComps)
+      }) : null)));
+      det.comps = mComps;
+      det.rid = r.id;
+      det.addEventListener("mouseenter", () => lightRow(det, true));
+      det.addEventListener("mouseleave", () => lightRow(det, false));
+      reqs.push(det);
+      grid.appendChild(det);
+    }
+    sddApi.open = (ids) => {
+      const hit = reqs.filter((d) => ids.includes(d.rid));
+      for (const d of hit) {
+        d.open = true;
+        d.classList.remove("flash");
+        d.offsetWidth;
+        d.classList.add("flash");
+      }
+      const target = hit[0] ?? document.getElementById("sdd");
+      target?.scrollIntoView({ block: hit[0] ? "center" : "start", behavior: REDUCED ? "auto" : "smooth" });
+    };
+    return h("div", { class: "sdd-matrix" }, grid, !ex?.requirements.length ? h("p", { class: "empty sdd-pending", text: T.pendingMap }) : null);
+  }
+  function renderSpec() {
+    if (!OS || !REQS.length)
+      return null;
+    return sectionShell("sdd", `${T.spec} · ${T.openspec}`, [
+      OS.changes.map((c) => {
+        const phase = c.movedToArchive ? T.phaseArchiving : c.archived ? T.phaseArchived : T.phaseActive;
+        return h("div", { class: "card sdd-change" }, h("div", { class: "sdd-change-head" }, h("code", { class: "sdd-id", text: `openspec/${c.id}` }), h("span", { class: `badge ${c.archived || c.movedToArchive ? "unchanged" : "changed"}`, text: phase })), c.why ? h("p", { class: "sdd-why", text: c.why }) : null, sddPipeline(c));
+      }),
+      h("div", { class: "card sdd-reqs" }, h("h3", { text: T.reqs }), sddCoverage(), sddMatrix())
+    ], tf("leadSpec", { n: REQS.length, i: REQS.filter((r) => reqStatus(r) === "implemented").length }));
+  }
+
+  // report/app.ts
   function renderHeader() {
     const states = {
       stale: [T.staleExplanation, T.staleText],
@@ -1320,9 +1464,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       class: "faint",
       text: `${src.commits} ${src.commits === 1 ? T.commit : T.commits}${src.headDate ? ` · ${src.headDate.slice(0, 10)}` : ""}`
     })), h("h1", { class: "title", text: src.title }), ex ? h("p", { class: "goal" }, h("b", { text: T.goal }), ex.goal) : null, ex ? h("p", { class: "tldr", text: ex.tldr }) : null, notice, h("div", { class: "chips" }, chips), facts.notes.map((n) => h("p", { class: "note faint", text: n })));
-  }
-  function chip(v, label, cls) {
-    return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
   }
   function newView(id, W, H) {
     const svg = s("svg", {
@@ -1897,39 +2038,6 @@ ${fields.join(`
     };
     return V;
   }
-  function artifactState(c, kind) {
-    const list = c.artifacts.filter((a) => a.kind === kind);
-    if (!list.length)
-      return { cls: "absent", text: T.sAbsent };
-    const changed = list.filter((a) => a.delta !== "unchanged" || a.moved);
-    if (!changed.length)
-      return { cls: "present", text: T.sUnchanged };
-    if (c.deleted)
-      return { cls: "removed", text: T.sDeleted };
-    return { cls: "changed", text: changed.some((a) => a.delta === "added" || a.moved) ? T.sAdded : T.sModified };
-  }
-  function pipelineSteps(c) {
-    const touched = facts.components.filter((x) => x.delta !== "unchanged");
-    const tk = c.tasks;
-    const add = touched.reduce((a, x) => a + x.additions, 0);
-    const del = touched.reduce((a, x) => a + x.deletions, 0);
-    return [
-      { id: "proposal", title: T.proposal, state: artifactState(c, "proposal") },
-      { id: "spec", title: T.specs, state: artifactState(c, "spec") },
-      { id: "design", title: T.designDoc, state: artifactState(c, "design") },
-      { id: "tasks", title: T.tasks, state: artifactState(c, "tasks"), progress: tk ? [tk.done, tk.total] : null },
-      {
-        id: "code",
-        title: T.code,
-        state: touched.length ? { cls: "changed", text: `+${add} −${del}` } : { cls: "absent", text: "—" }
-      },
-      {
-        id: "archive",
-        title: T.archive,
-        state: c.archived ? { cls: c.movedToArchive ? "changed" : "present", text: c.movedToArchive ? T.phaseArchiving : T.phaseArchived } : { cls: "absent", text: tk && tk.done < tk.total ? tf("openTasksN", { n: tk.total - tk.done }) : T.pending }
-      }
-    ];
-  }
   var VIEWS = [{ id: "architecture", title: T.architecture }];
   for (const fl of ex?.flows ?? [])
     VIEWS.push({ id: `flow:${fl.id}`, title: fl.title, flow: fl });
@@ -2019,7 +2127,6 @@ ${fields.join(`
       MEANINGFUL.add(id);
   var isContext = (c) => c.delta === "unchanged" && !MEANINGFUL.has(c.id);
   var CONTEXT_COUNT = facts.components.filter(isContext).length;
-  var mapApi = {};
   function renderMap() {
     const compactQ = window.matchMedia ? window.matchMedia("(max-width: 720px)") : { matches: false };
     let archMode = store("ec:arch-mode") ?? "delta";
@@ -2719,267 +2826,6 @@ ${fields.join(`
       out.push(h("span", { class: "warn-text" }, `? ${T.unverifiedNote} ${unverified.map((x) => `${compName(x.from)} → ${compName(x.to)}`).join(", ")}`));
     }
     return out;
-  }
-  var GWT = ["GIVEN", "WHEN", "THEN"];
-  function gwtGroups(sc) {
-    const g = { GIVEN: [], WHEN: [], THEN: [] };
-    let cur = "GIVEN";
-    for (const x of sc.steps) {
-      const k = String(x.keyword).toUpperCase();
-      if (GWT.includes(k))
-        cur = k;
-      g[cur].push({ but: k === "BUT", t: x.text });
-    }
-    return g;
-  }
-  function flowButtons(r, sc) {
-    return (ex?.flows ?? []).filter((f) => f.scenario === `${r.id}#${sc.id}`).map((f) => h("button", {
-      class: "chip flow-chip",
-      title: f.title,
-      text: `▶ ${T.showFlow}`,
-      onclick: () => mapApi.showFlow?.(f.id)
-    }));
-  }
-  var GWT_ICON = { GIVEN: "●", WHEN: "▶", THEN: "✓" };
-  var GWT_FR = { GIVEN: "1fr", WHEN: ".85fr", THEN: "1.15fr" };
-  function gwtFlow(g, keys, opts) {
-    const cells = [];
-    keys.forEach((k, i) => {
-      if (i)
-        cells.push(h("span", { class: "gf-arrow", "aria-hidden": "true" }));
-      const lines = g[k];
-      cells.push(h("div", {
-        class: `gf-col k-${k.toLowerCase()}${opts.same?.[k] ? " same" : ""}${lines.length ? "" : " empty"}`,
-        role: "group",
-        "aria-label": t(`k${k}`)
-      }, h("span", { class: "gf-k" }, h("i", { class: "gf-ico", text: GWT_ICON[k] }), t(`k${k}`)), h("div", { class: `gf-nodes${lines.length > 1 ? " multi" : ""}` }, lines.length ? lines.map((l) => h("div", { class: "gf-node" }, l.but ? h("b", { class: "gwt-but", text: `${T.but} ` }) : null, l.t)) : h("div", { class: "gf-node empty", text: "—" }))));
-    });
-    return h("div", {
-      class: `gwt-flow${opts.labels ? "" : " no-labels"}${opts.compact ? " compact" : ""}`,
-      style: `grid-template-columns:${keys.map((k) => `minmax(0,${GWT_FR[k]})`).join(" 34px ")}`
-    }, cells);
-  }
-  var gwtKeys = (gs) => GWT.filter((k) => gs.some((g) => g[k].length));
-  function scenarioStrip(r, sc, compact = false) {
-    const g = gwtGroups(sc);
-    return h("div", { class: `scn-card${compact ? " compact" : ""}` }, h("div", { class: "scn-head" }, h("b", { text: (compact ? `${T.scenario}: ` : "") + sc.name }), compact ? h("span", { class: "faint", text: `· ${r.name}` }) : flowButtons(r, sc)), gwtFlow(g, gwtKeys([g]), { labels: true, compact }));
-  }
-  function scenarioTable(r) {
-    const gs = r.scenarios.map(gwtGroups);
-    const keys = gwtKeys(gs);
-    return h("div", { class: "scn-list" }, r.scenarios.map((sc, i) => {
-      const same = {};
-      for (const k of keys) {
-        const cur = gs[i][k];
-        same[k] = i > 0 && cur.length > 0 && JSON.stringify(cur) === JSON.stringify(gs[i - 1][k]);
-      }
-      return h("div", { class: "scn-card" }, h("div", { class: "scn-head" }, h("b", { text: sc.name }), flowButtons(r, sc)), gwtFlow(gs[i], keys, { labels: i === 0, same }));
-    }));
-  }
-  var scenarioView = (r) => r.scenarios.length > 1 ? scenarioTable(r) : scenarioStrip(r, r.scenarios[0]);
-  function reqRow(r) {
-    const v = reqStatus(r);
-    return h("div", { class: "insp-row" }, h("span", { class: `rs-dot rs-${v}` }), h("a", {
-      href: "#sdd",
-      text: trunc(r.name, 48),
-      onclick: (ev) => {
-        ev.preventDefault();
-        sddApi.open([r.id]);
-      }
-    }));
-  }
-  var sddApi = { open: () => {} };
-  function inspList(title, rows) {
-    return h("div", { class: "insp-list" }, h("h4", { text: title }), rows);
-  }
-  function artifactBody(c, kind) {
-    const body = [];
-    if (kind === "proposal") {
-      if (c.why)
-        body.push(inspList(T.why, [h("p", { class: "insp-summary", text: c.why })]));
-      if (c.what.length)
-        body.push(inspList(T.whatChanges, [
-          h("ul", { class: "tight" }, c.what.map((x) => h("li", { text: x })))
-        ]));
-      if (c.impact.length)
-        body.push(inspList(T.impact, [
-          h("ul", { class: "tight" }, c.impact.map((x) => h("li", { text: x })))
-        ]));
-    } else if (kind === "design") {
-      if (c.decisions.length)
-        body.push(inspList(T.decisionsDoc, [
-          h("ul", { class: "tight" }, c.decisions.map((x) => h("li", { text: x })))
-        ]));
-    } else if (kind === "tasks" && c.tasks) {
-      const tasks = c.tasks;
-      tasks.groups.forEach((g, gi) => {
-        body.push(inspList(`${g.title} · ${g.done}/${g.total}`, tasks.items.filter((x) => x.group === gi).map((x) => h("div", { class: `insp-row task${x.done ? " done" : ""}` }, h("span", { class: "task-box", text: x.done ? "✓" : "" }), h("span", { text: x.text })))));
-      });
-    } else if (kind === "spec") {
-      if (c.requirements.length)
-        body.push(inspList(T.reqs, c.requirements.map(reqRow)));
-    } else if (kind === "code") {
-      const touched = facts.components.filter((x) => x.delta !== "unchanged");
-      if (touched.length) {
-        body.push(inspList(T.kComponents, touched.map((x) => h("div", { class: "insp-row" }, h("span", { class: `badge ${x.delta}`, text: deltaLabel(x.delta, true) }), h("a", {
-          href: "#map",
-          text: compName(x.id),
-          onclick: (ev) => {
-            ev.preventDefault();
-            mapApi.inspect?.(x.id);
-          }
-        })))));
-      }
-    }
-    const art = c.artifacts.filter((a) => a.kind === kind);
-    if (art.length) {
-      body.push(h("div", { class: "insp-list" }, art.map((a) => h("div", { class: "insp-row" }, fileLink(a.path, a.path.split("/").slice(-3).join("/"))))));
-    }
-    return body.length ? body : null;
-  }
-  function sddPipeline(c) {
-    const panel = h("div", { class: "sdd-doc", hidden: true });
-    let open = null;
-    const list = h("ol", { class: "sdd-pipe" }, pipelineSteps(c).map((stp, i) => {
-      const body = artifactBody(c, stp.id);
-      const p = stp.progress;
-      const btn = h("button", {
-        class: `pstep ps-${stp.state.cls}`,
-        disabled: !body,
-        "aria-expanded": body ? "false" : null,
-        title: `${stp.title} · ${stp.state.text}`
-      }, h("span", {
-        class: "pdot",
-        text: { present: "✓", removed: "✗" }[stp.state.cls] ?? String(i + 1)
-      }), h("span", { class: "pname", text: stp.title }), h("span", { class: "pstate", text: p ? `${p[0]}/${p[1]}` : stp.state.text }), p ? h("span", { class: "pbar" }, h("i", {
-        class: p[0] === p[1] ? "full" : "",
-        style: `width:${p[1] ? Math.round(100 * p[0] / p[1]) : 0}%`
-      })) : null);
-      if (body) {
-        btn.addEventListener("click", () => {
-          const again = open === btn;
-          if (open) {
-            open.classList.remove("on");
-            open.setAttribute("aria-expanded", "false");
-          }
-          panel.textContent = "";
-          panel.hidden = true;
-          open = null;
-          if (again)
-            return;
-          open = btn;
-          btn.classList.add("on");
-          btn.setAttribute("aria-expanded", "true");
-          append(panel, body);
-          panel.hidden = false;
-        });
-      }
-      return h("li", null, btn);
-    }));
-    return [h("div", { class: "sdd-pipe-wrap" }, list), panel];
-  }
-  function sddCoverage() {
-    const n = {};
-    for (const r of REQS) {
-      const k = reqStatus(r);
-      n[k] = (n[k] ?? 0) + 1;
-    }
-    const shown = ["implemented", "partial", "missing", "not-applicable", "pending"].filter((k) => n[k]);
-    if (!shown.length)
-      return null;
-    return h("div", { class: "sdd-cov" }, h("div", { class: "cov-bar", role: "img", "aria-label": shown.map((k) => `${n[k]} ${rsLabel(k)}`).join(", ") }, shown.map((k) => h("span", { class: `rs-${k}`, style: `flex:${n[k]}`, title: `${n[k]} ${rsLabel(k)}` }))), h("div", { class: "cov-legend" }, shown.map((k) => h("span", null, h("i", { class: `rs-dot rs-${k}` }), h("b", { text: String(n[k]) }), rsLabel(k)))));
-  }
-  function sddMatrix() {
-    const comps = [];
-    for (const r of REQS)
-      for (const c of specMap[r.id]?.components ?? [])
-        if (!comps.includes(c))
-          comps.push(c);
-    comps.sort(byCompRank);
-    const heads = {};
-    const reqs = [];
-    const lightRow = (det, on) => {
-      for (const c of det.comps)
-        heads[c]?.classList.toggle("lit", on);
-    };
-    const lightCol = (c, on) => {
-      heads[c]?.classList.toggle("lit", on);
-      for (const det of reqs)
-        if (det.comps.includes(c))
-          det.classList.toggle("lit", on);
-    };
-    const grid = h("div", {
-      class: "sdd-grid",
-      style: `--cols:minmax(240px, 520px) 136px 56px${comps.length ? ` repeat(${comps.length}, 46px)` : ""}`
-    }, h("div", { class: "sdd-row sdd-head" }, h("span", { text: T.reqs }), h("span", { text: T.status }), h("span", { class: "num", text: T.tests }), comps.map((c) => {
-      const delta = changeComp[c]?.delta ?? "unchanged";
-      const btn = h("button", {
-        class: `sdd-comp st-${delta}`,
-        title: `${compName(c)} · ${layerName(c)} · ${deltaLabel(delta, true)}`,
-        onclick: () => mapApi.inspect?.(c),
-        onmouseenter: () => lightCol(c, true),
-        onmouseleave: () => lightCol(c, false)
-      }, h("span", { class: "vtext", text: trunc(compName(c), 28) }));
-      heads[c] = btn;
-      return btn;
-    })));
-    let lastCap = null;
-    for (const r of REQS) {
-      const capKey = r.capability + (r.change ? "" : ` · ${T.mainSpec}`);
-      if (capKey !== lastCap) {
-        grid.appendChild(h("div", { class: "sdd-cap", text: capKey }));
-        lastCap = capKey;
-      }
-      const m = specMap[r.id];
-      const v = reqStatus(r);
-      const tests = m ? (m.tests ?? []).filter((x, i, a) => a.indexOf(x) === i) : [];
-      const mComps = m?.components ?? [];
-      const det = h("details", { class: `sdd-req op-${r.op} rs-${v}`, open: v === "partial" || v === "missing" || REQS.length <= 3 }, h("summary", { class: "sdd-row" }, h("span", { class: "sdd-name" }, h("span", { class: `op-tag op-${r.op}`, text: t(`op${r.op}`) + (r.merged ? ` · ${T.merged}` : "") }), h("b", { text: r.name }), r.scenarios.length ? h("span", {
-        class: "faint scn-count",
-        text: `${r.scenarios.length} ${(r.scenarios.length === 1 ? T.scenario : T.scenarios).toLowerCase()}`
-      }) : null), h("span", { class: `rs-pill rs-${v}`, text: `${RS_ICON[v]} ${rsLabel(v)}` }), h("span", {
-        class: `sdd-cell num${tests.length ? "" : " faint"}`,
-        title: tests.join(`
-`) || null,
-        text: tests.length ? `⚗ ${tests.length}` : "—"
-      }), comps.map((c) => {
-        const on = mComps.includes(c);
-        return h("span", { class: "sdd-cell", title: on ? compName(c) : null }, on ? h("i", { class: `cell-dot rs-${v}` }) : null);
-      })), h("div", { class: "sdd-detail" }, r.text ? h("p", { class: "sdd-text", text: r.text }) : null, m?.note ? h("div", { class: `sdd-note rs-${v}` }, h("b", { text: `${RS_ICON[v]} ${cap(rsLabel(v))}` }), ` ${m.note}`) : null, mComps.length ? h("div", { class: "sdd-comps-m" }, mComps.map((c) => h("span", { class: `badge ${changeComp[c]?.delta ?? "unchanged"}`, text: compName(c) }))) : null, r.scenarios.length ? scenarioView(r) : null, h("div", { class: "sdd-foot" }, tests.map((x) => h("span", { class: "test-ref" }, "⚗ ", fileLink(x, x.split("/").pop()))), h("span", { class: "faint" }, "spec ", fileLink(`${r.file}:${r.line}`, r.file.split("/").slice(-3).join("/"))), mComps.length ? h("button", {
-        class: "chip",
-        text: `◇ ${T.showOnMap}`,
-        onclick: () => mapApi.focus?.("architecture", mComps)
-      }) : null)));
-      det.comps = mComps;
-      det.rid = r.id;
-      det.addEventListener("mouseenter", () => lightRow(det, true));
-      det.addEventListener("mouseleave", () => lightRow(det, false));
-      reqs.push(det);
-      grid.appendChild(det);
-    }
-    sddApi.open = (ids) => {
-      const hit = reqs.filter((d) => ids.includes(d.rid));
-      for (const d of hit) {
-        d.open = true;
-        d.classList.remove("flash");
-        d.offsetWidth;
-        d.classList.add("flash");
-      }
-      const target = hit[0] ?? document.getElementById("sdd");
-      target?.scrollIntoView({ block: hit[0] ? "center" : "start", behavior: REDUCED ? "auto" : "smooth" });
-    };
-    return h("div", { class: "sdd-matrix" }, grid, !ex?.requirements.length ? h("p", { class: "empty sdd-pending", text: T.pendingMap }) : null);
-  }
-  function renderSpec() {
-    if (!OS || !REQS.length)
-      return null;
-    return sectionShell("sdd", `${T.spec} · ${T.openspec}`, [
-      OS.changes.map((c) => {
-        const phase = c.movedToArchive ? T.phaseArchiving : c.archived ? T.phaseArchived : T.phaseActive;
-        return h("div", { class: "card sdd-change" }, h("div", { class: "sdd-change-head" }, h("code", { class: "sdd-id", text: `openspec/${c.id}` }), h("span", { class: `badge ${c.archived || c.movedToArchive ? "unchanged" : "changed"}`, text: phase })), c.why ? h("p", { class: "sdd-why", text: c.why }) : null, sddPipeline(c));
-      }),
-      h("div", { class: "card sdd-reqs" }, h("h3", { text: T.reqs }), sddCoverage(), sddMatrix())
-    ], tf("leadSpec", { n: REQS.length, i: REQS.filter((r) => reqStatus(r) === "implemented").length }));
   }
   function renderDecisions() {
     if (!ex?.decisions.length)

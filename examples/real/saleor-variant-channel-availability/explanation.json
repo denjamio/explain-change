@@ -1,6 +1,6 @@
 {
-  "tldr": "Staff can now hide a variant in 1 channel and keep its listing and prices. A listing with is_available_for_purchase false acts as if it does not exist for customers.",
-  "goal": "Stop selling a variant in 1 channel for a time, without deleting its prices there.",
+  "tldr": "Staff can now hide a variant in a channel and keep its listing and prices. A listing with is_available_for_purchase false acts as if it does not exist for customers.",
+  "goal": "Stop selling a variant in a channel for a time, without deleting its prices there.",
   "story": [
     {
       "heading": "Variant channel listing gets is_available_for_purchase",
@@ -22,7 +22,7 @@
     },
     {
       "heading": "A new mutation sets the flag in bulk",
-      "body": "productVariantChannelListingAvailabilityUpdate takes up to 100 channels for 1 variant. It locks the listings, updates them and sends product_variant_updated.",
+      "body": "productVariantChannelListingAvailabilityUpdate takes up to 100 channels for a variant. It locks the listings, updates them and sends product_variant_updated.",
       "view": "flow:hide-variant-in-channel",
       "focus": [
         "#1",
@@ -90,12 +90,12 @@
   "decisions": [
     {
       "title": "A flag on the listing, not a deleted listing",
-      "why": "Staff hide a variant in 1 channel and keep its price, cost and prior price for when they show it again.",
+      "why": "Staff hide a variant in a channel and keep its price, cost and prior price for when they show it again.",
       "alternative": "Delete the variant channel listing.",
       "evidence": "saleor/product/models.py:552-555"
     },
     {
-      "title": "1 definition of a sellable listing, in 2 forms",
+      "title": "A single definition of a sellable listing, in 2 forms",
       "why": "Queries use sellable_listing_q and loaded objects use is_sellable. Checkout, promotions and price ranges read the same rule.",
       "alternative": "Add the flag check to each query that reads price_amount.",
       "evidence": "saleor/product/models.py:563-572"

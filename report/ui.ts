@@ -1,0 +1,55 @@
+/** Pieces every section draws with: file links, section shells, legend items, figures, and the map's handle. */
+import { type Child, h } from "./dom.ts";
+import { prFileUrl } from "./model.ts";
+export function onOpen<E extends Element>(el: E, path: string): E {
+  const url = prFileUrl(path);
+  if (url) {
+    el.classList.add("linked");
+    el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
+  }
+  return el;
+}
+export function fileLink(ref: string, label?: string): HTMLElement {
+  const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
+  const url = prFileUrl(path);
+  return url
+    ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref })
+    : h("code", { class: "ref", text: label || ref });
+}
+/** A section: its title, one line with its figures, then the body. */
+export function sectionShell(id: string, title: string, body: Child, lead?: string): HTMLElement {
+  return h(
+    "section",
+    { class: "section", id },
+    h(
+      "div",
+      { class: "section-head" },
+      h("h2", { text: title }),
+      lead ? h("span", { class: "section-lead", text: lead }) : null,
+    ),
+    body,
+  );
+}
+export function legendItem(kind: string, color: string, label: string): HTMLElement {
+  if (kind === "swatch") return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
+  return h(
+    "span",
+    null,
+    h("i", {
+      class: `legend-line${kind.includes("anim") ? " anim" : ""}`,
+      style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`,
+    }),
+    label,
+  );
+}
+
+export function chip(v: number, label: string, cls?: string): HTMLElement {
+  return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
+}
+
+/** Filled by the map once it is drawn: the other sections move it through these. */
+export const mapApi: {
+  inspect?: (id: string) => void;
+  focus?: (view: string, ids: string[]) => void;
+  showFlow?: (fid: string) => void;
+} = {};

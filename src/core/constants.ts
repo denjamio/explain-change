@@ -11,7 +11,7 @@ export const CONTRACT_VERSION = 4;
  * Part of the change key. Bump it when a change to the analysis (parsers, mapping, dependencies, symbols, outline)
  * can change facts.json for the same diff, so explanations written against the old analysis turn stale, not valid.
  */
-export const ANALYSIS_VERSION = 8;
+export const ANALYSIS_VERSION = 9;
 
 /** The GitHub repository: releases, issues, the published schemas and the examples site. */
 export const REPOSITORY = "denjamio/explain-change";

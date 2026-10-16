@@ -33,7 +33,7 @@
     },
     {
       "heading": "BalanceSheet splits into small objects",
-      "body": "AccountTotals, ClassificationGroup, AccountGroup, NetWorthSeriesBuilder and SyncStatusMonitor replace 1 large query and its Structs.",
+      "body": "AccountTotals, ClassificationGroup, AccountGroup, NetWorthSeriesBuilder and SyncStatusMonitor replace a single large query and its Structs.",
       "view": "flow:show-balance-sheet",
       "focus": [
         "#1",
@@ -116,13 +116,13 @@
     {
       "title": "Activity and completion are separate timestamps",
       "why": "Sync status changes when a sync starts or ends. Totals change only when a sync completes, so they keep their cache during a sync.",
-      "alternative": "1 timestamp for every sync change.",
+      "alternative": "A single timestamp for every sync change.",
       "evidence": "app/models/sync.rb:170-176"
     },
     {
       "title": "Small POROs in the BalanceSheet namespace",
-      "why": "The app keeps logic in models and POROs. Each object answers 1 question: totals, groups, the net worth series or sync status.",
-      "alternative": "1 BalanceSheet class with 1 large query.",
+      "why": "The app keeps logic in models and POROs. Each object answers a single question: totals, groups, the net worth series or sync status.",
+      "alternative": "A single BalanceSheet class with a single large query.",
       "evidence": "app/models/balance_sheet.rb:53-62"
     },
     {

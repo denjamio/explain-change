@@ -5,13 +5,12 @@ import type { Explanation } from "../src/contract/explanation.ts";
 import type { Facts } from "../src/contract/facts.ts";
 import { CONTRACT_VERSION } from "../src/core/constants.ts";
 import { normalizeExplanation } from "../src/explanation/normalize.ts";
-import { compactWords, proseRules, REFUSED } from "../src/explanation/prose.ts";
 import { loadExplanation, prepareExplanation } from "../src/explanation/store.ts";
 import { formatIssue, validateExplanation } from "../src/explanation/validate.ts";
 import { tempDir } from "./helpers.ts";
 
 /** A change with two components: `a` changed (file f.rb, hunk at lines 10-14) and `b` drawn as a neighbor. */
-function makeFacts(over: Partial<Facts> = {}, lang: "en" | "es" = "en"): Facts {
+function makeFacts(over: Partial<Facts> = {}): Facts {
   return {
     version: CONTRACT_VERSION,
     tool: "test",
@@ -37,7 +36,7 @@ function makeFacts(over: Partial<Facts> = {}, lang: "en" | "es" = "en"): Facts {
       inferred: false,
       name: "x",
       direction: "",
-      lang,
+      lang: "en",
       layers: [{ id: "x", name: "X" }],
       components: [
         { id: "a", name: "A", layer: "x", desc: "" },
@@ -90,11 +89,11 @@ function makeFacts(over: Partial<Facts> = {}, lang: "en" | "es" = "en"): Facts {
   };
 }
 
-function valid(over: Record<string, unknown> = {}, lang = "en") {
+function valid(over: Record<string, unknown> = {}) {
   return {
     version: CONTRACT_VERSION,
     key: "k1",
-    lang,
+    lang: "en",
     tldr: "t",
     goal: "g",
     components: [{ id: "a", summary: "s" }],
@@ -115,11 +114,9 @@ describe("validation", () => {
   });
 
   test("version, key and language", () => {
-    const es = makeFacts({}, "es");
-    expect(messages(valid({}, "es"), es)).toEqual([]);
-    const errs = joined(valid({ version: 7, lang: "en", key: "k0" }), es);
+    const errs = joined(valid({ version: 7, lang: "es", key: "k0" }));
     expect(errs).toContain(`version: '7' must be ${CONTRACT_VERSION}`);
-    expect(errs).toContain("lang: 'en' must be 'es'");
+    expect(errs).toContain("lang: 'es' must be 'en'");
     expect(errs).toContain("key: 'k0' is not this change's key 'k1'");
   });
 
@@ -282,7 +279,7 @@ describe("validation", () => {
     expect(errs).toContain("dataModel.relations[0].from: 'x' is not an entity");
   });
 
-  test("prose: sentence length and refused words, by language", () => {
+  test("prose: sentence length and refused words, with every form of a starred word", () => {
     let errs = joined(valid({ tldr: `${Array(30).fill("word").join(" ")}.`, goal: "We leverage the queue." }));
     expect(errs).toContain("tldr: a sentence has 30 words, max 25");
     expect(errs).toContain("goal: leverage: marketing words");
@@ -292,21 +289,11 @@ describe("validation", () => {
     expect(errs).toContain("tldr: will: future or modal");
     expect(errs).toContain("goal: just: filler");
     expect(errs).toContain("goal: better: a judgement");
-    const es = makeFacts({}, "es");
-    errs = joined(valid({ tldr: "Podría reintentar tres veces." }, "es"), es);
-    expect(errs).toContain("tldr: podría: futuro o condicional");
-    expect(errs).toContain("tldr: tres: un número en letras");
-    expect(messages(valid({ tldr: "Will reintenta 3 veces." }, "es"), es)).toEqual([]); // English words pass
-  });
-
-  test("the digest lists every refused word, folded by stem", () => {
-    const rules = proseRules("en");
-    for (const group of REFUSED.en) {
-      const folded = compactWords(group.words);
-      expect(rules).toContain(folded);
-      for (const w of group.words)
-        expect(folded.split(", ").some((x) => w.startsWith(x.replace(/\*$/, "")))).toBe(true);
-    }
+    errs = joined(valid({ tldr: "It leveraged a queue and utilized a cache.", goal: "It won't ensure order." }));
+    expect(errs).toContain("tldr: leveraged, utilized: marketing words");
+    expect(errs).toContain("goal: ensure: marketing words");
+    expect(errs).toContain("goal: won't: future or modal");
+    expect(messages(valid({ tldr: "It adjusts the ensemble.", goal: "Justify the willow." }))).toEqual([]);
   });
 
   test("code names must exist in the change", () => {

@@ -4,7 +4,6 @@
 [project]
 name = "marketplace"
 direction = "Layered: controllers only translate HTTP; use cases in app/services own each business flow; models hold the rules; integrations live in adapters. Nothing in the domain calls an adapter."
-lang = "en"
 
 [glossary]
 order = "A customer's purchase: its line items, total and payment"

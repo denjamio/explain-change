@@ -6,6 +6,32 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Reports are written in English only: 1 list of refused words to keep, not 1 per language. `project.lang`
+  accepts only `en`; the Spanish words, page labels and PR comment are gone.
+- The refused words are 1 list, `src/explanation/prose/en.json`, and a trailing `*` refuses every form of a word.
+  The validator now refuses what the digest already announced (`leveraged`, `utilizing`, `enhanced`,
+  `streamlined`, `delves`), plus `ensure` in every form, the negative modals (`won't`, `wouldn't`…), `obviously`,
+  `simpler`, `eleven` and `twelve`. The digest prints the list exactly as the validator reads it.
+- Prose guidance: a single thing takes `a` (`a ZIP file`, not `1 ZIP file`); counts stay digits. The examples
+  follow it.
+- The draft names components as the team does: its headings start from the component's name (`Orders changed`),
+  not its id (`models changed`).
+- The story outline gives a step only to components with weight (a public symbol, a dependency gained or lost, a
+  migration, or being new); the others are in their summary and the overview. The task asks to drop a step that
+  says nothing new: a small change reads best in 3-4. The analysis is version 9.
+- `SKILL.md` is the only copy of the workflow: `PROMPT.md` points agents without skill support to it, and the
+  skill's rules no longer repeat the digest's task.
+- `bun run eval` gives the agent `SKILL.md` (the skill Claude Code runs) and scores its fidelity to each scenario's
+  reference explanation: key dependencies, flow edges, the components the story lights and the files the decisions
+  cite.
+- The report script is split into modules: `app.ts` (header, map, sections), `sdd.ts` (the OpenSpec section),
+  `model.ts` (the data and its lookups), `ui.ts`, `dom.ts` and `words.ts`. The page renders the same.
+- The prose checks live in `prose.ts` (`ProseChecker`); `validate.ts` checks the structure.
+- Example scenario 01 names its components by domain (`orders-api`, `orders`, `payment-gateway`,
+  `email-delivery`), as the configure skill asks.
+- Docs: the digest is 2–4k tokens, not ~3k; the budget is passed when the overview and the task need the room.
+
 ## [0.4.1] - 2026-10-16
 
 ### Added

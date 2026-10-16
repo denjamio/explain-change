@@ -16,7 +16,7 @@ import { type Az, azHint, needsLogin } from "../src/hosts/azure-devops/az.ts";
 import { adoPrId, adoRemote, branchPr, toPrMeta } from "../src/hosts/azure-devops/pr.ts";
 import { prHost } from "../src/hosts/index.ts";
 import { fetchRefs, prSource } from "../src/hosts/source.ts";
-import { FakeAz, fail, fakeHosts, ok, Repo, tempDir, throwsUser } from "./helpers.ts";
+import { FakeAz, fail, fakeHosts, ok, Repo, throwsUser } from "./helpers.ts";
 
 const repos: Repo[] = [];
 const repo = (config?: string, opts?: { empty?: boolean }) => {
@@ -332,7 +332,7 @@ describe("outline", () => {
       '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n[[layers]]\nid = "shared"\n' +
       '[[components]]\nid = "controllers"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
       '[[components]]\nid = "settings"\nlayer = "web"\npaths = ["config/**"]\n' +
-      '[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n' +
+      '[[components]]\nid = "models"\nname = "Orders"\nlayer = "domain"\npaths = ["app/models/**"]\n' +
       '[[components]]\nid = "money"\nlayer = "shared"\npaths = ["lib/**"]\n';
     const r = repo(config);
     r.git("checkout", "-q", "main");
@@ -353,6 +353,7 @@ describe("outline", () => {
     const { outline } = r.collect();
     const first = outline.story.find((s) => s.view === "architecture" && s.focus.length);
     expect(first?.focus).toEqual(["models"]); // its new public method, not 200 lines of locales
+    expect(first?.about).toBe("Orders changed"); // the draft's heading starts from the component's name
     expect(outline.keyDependencyCandidates).toEqual([{ from: "controllers", to: "models" }]);
   });
 
@@ -379,6 +380,27 @@ describe("outline", () => {
     r.commit("note");
     const next = r.collect({ base: "HEAD~1" }).outline.story.find((s) => s.view === "architecture" && s.focus.length);
     expect(next?.focus).toEqual(["orders"]); // its migration, not the new endpoint
+  });
+
+  test("a component with no weight gets no step of its own, unless nothing else does", () => {
+    const config =
+      '[[layers]]\nid = "domain"\n[[layers]]\nid = "shared"\n' +
+      '[[components]]\nid = "orders"\nlayer = "domain"\npaths = ["app/models/**"]\n' +
+      '[[components]]\nid = "money"\nlayer = "shared"\npaths = ["lib/**"]\n';
+    const r = repo(config);
+    r.git("checkout", "-q", "main");
+    r.write({ "lib/money.rb": "class Money\n  # cents\nend\n" });
+    r.commit("money");
+    r.git("checkout", "-q", "feature");
+    r.git("merge", "-q", "main");
+    r.write({ "lib/money.rb": "class Money\n  # cents, rounded half up\nend\n" });
+    r.commit("comment");
+    const focus = (base?: string) =>
+      r.collect(base ? { base } : {}).outline.story.flatMap((s) => (s.view === "architecture" ? s.focus : []));
+    expect(focus("HEAD~1")).toEqual(["money"]); // the only change: it keeps its step
+    r.write({ "app/models/order.rb": "class Order\n  has_many :line_items\n  def refundable_total\n  end\nend\n" });
+    r.commit("refundable total");
+    expect(focus()).not.toContain("money"); // next to Order's new method, the overview covers it
   });
 });
 
@@ -765,5 +787,3 @@ describe("work folder", () => {
     expect(readFileSync(join(r.path, ".git/info/exclude"), "utf8")).toBe(exclude);
   });
 });
-
-void tempDir;

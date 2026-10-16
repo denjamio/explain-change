@@ -1,10 +1,10 @@
 {
-  "tldr": "Workflow owners can turn on logging. Each run then stores 1 log entry with its result and the step where it stopped. The web app shows the entries in a new logs modal.",
+  "tldr": "Workflow owners can turn on logging. Each run then stores a log entry with its result and the step where it stopped. The web app shows the entries in a new logs modal.",
   "goal": "Let an owner see whether a workflow ran, and why a run stopped or failed.",
   "story": [
     {
       "heading": "Workflow runs now write a log entry",
-      "body": "When logging is on, each run stores 1 entry: completed, halted or error. A halted or failed run also stores the step where it stopped.",
+      "body": "When logging is on, each run stores an entry: completed, halted or error. A halted or failed run also stores the step where it stopped.",
       "view": "architecture",
       "focus": [
         "workflows",
@@ -106,14 +106,14 @@
     },
     {
       "title": "1 entry per run, with the step where it stopped",
-      "why": "The owner sees the result of a run and the step that halted it or failed. A runId groups what belongs to 1 run.",
+      "why": "The owner sees the result of a run and the step that halted it or failed. A runId groups what belongs to a run.",
       "alternative": "1 entry per step of each run.",
       "evidence": "server/src/services/workflow-execution.service.ts:474-481"
     },
     {
       "title": "Each step runs in its own try block",
-      "why": "An error now records the step that failed. Before, 1 try block around all steps lost the step.",
-      "alternative": "Keep 1 try block for the whole run.",
+      "why": "An error now records the step that failed. Before, a single try block around all steps lost the step.",
+      "alternative": "Keep a single try block for the whole run.",
       "evidence": "server/src/services/workflow-execution.service.ts:420-424"
     },
     {

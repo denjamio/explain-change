@@ -39,7 +39,7 @@ makes sense.
 | 🎬 **A guided story** | 2–8 steps walk through the change: each moves the map to what changed and shows the code. |
 | 📖 **Explains, never reviews** | Short, present-tense sentences in the style of [Simplified Technical English](#plain-prose-you-can-check-asd-ste100), checked before the page renders. No bug hunting or style opinions: that is your reviewer's job. |
 | 📦 **One offline file** | A single HTML page, light and dark mode, carrying only the code it shows. |
-| 🎯 **Deterministic and cheap** | The CLI computes every fact: the same change gives a byte-identical page. The agent reads a ~3k-token digest, never the full diff. |
+| 🎯 **Deterministic and cheap** | The CLI computes every fact: the same change gives a byte-identical page. The agent reads a 2–4k-token digest, never the full diff. |
 
 ## Quick start
 
@@ -122,15 +122,16 @@ misread. Its restricted dictionary is left out on purpose: in a code change, the
 | Rule | How it is applied |
 |---|---|
 | One idea per sentence, at most 25 words | **Enforced**: `render` rejects longer sentences and asks to split them. |
-| Present tense: what the code does now | **Enforced**: *will, would, could, might, should* are refused. |
+| Present tense: what the code does now | **Enforced**: *will, would, could, might, should* (and *won't*…) are refused. |
 | The effect, not a judgement | **Enforced**: *better, cleaner, elegant…* are refused; say what changes instead. |
-| No marketing words, no filler | **Enforced**: *leverage, utilize, seamless…* and *basically, simply, just…* are refused. |
-| Numbers as digits | **Enforced**: *two, three…* are refused; write *2, 3*. |
+| No marketing words, no filler | **Enforced**: *leverage, utilize, seamless…* in every form (*leveraged, utilizing*) and *basically, simply, just…* are refused. |
+| Numbers as digits | **Enforced**: *two, three…* are refused; write *2, 3*. A single thing takes *a* (*a ZIP file*, not *1 ZIP file*): guidance. |
 | Code names exactly as in the code | **Enforced**: a `snake_case`, `CamelCase`, `Module::Name` or `obj.method()` that does not exist in the change is rejected. |
 | Active voice, simple verbs (*adds, sends, stores, calls, checks*), one word per thing, no idioms | **Guidance**: written in the digest the agent reads. |
 
 Each rejection names the field, the words and what to write instead, so the agent fixes only that field. The refused
-words exist for each report language, English and Spanish (`src/explanation/prose/`).
+words live in one list, [`src/explanation/prose/en.json`](src/explanation/prose/en.json): a trailing `*` refuses every
+form of a word, and the digest prints the list exactly as the validator applies it. Reports are written in English.
 
 ## Share with your team
 
@@ -180,9 +181,9 @@ silently.
 |---|---|
 | `project.name` | Shown in the report. Default: the repository folder name. |
 | `project.direction` | One or two sentences on the intended architecture: context for the story and the decisions. |
-| `project.lang` | Report language: `en` (default) or `es`. |
+| `project.lang` | Report language: `en`, the default and, for now, the only one. |
 | `project.base` | Default base for `local`. |
-| `project.budget` | Digest size in characters (2000–100000, default 12000 ≈ 3k tokens). `--budget` overrides it. |
+| `project.budget` | Digest size in characters (2000–100000, default 12000 ≈ 3k tokens). The overview and the task always fit, so a large change can go past it. `--budget` overrides it. |
 | `project.host` | Where the PRs live: `azure-devops` or `github` (default: the host of the remotes, else Azure DevOps). `--host` overrides it; a PR URL names its own. |
 | `[[layers]]` | Map lanes, top to bottom in the listed order (entry points first, core last). The order does not decide what may depend on what: `[rules]` does. |
 | `[rules] allow` | Allowed dependency directions (`"a -> b"`, layer or component ids). When present, any other edge between layers is a violation. |
