@@ -43,11 +43,13 @@ jobs:
         with:
           node-version: "20"
       - run: bun install --frozen-lockfile
+      - run: bun --version && git --version
+      - name: Rebuild the examples
+        run: bun run examples
+      - name: Rebuild the schemas
+        run: bun run schemas
       - name: Examples and schemas are up to date
         run: |
-          bun --version && git --version
-          bun run examples
-          bun run schemas
           if ! git diff --quiet -- examples schemas; then
             # Annotations are readable without signing in: say what differs.
             echo "::error title=Stale examples or schemas::$(git diff --stat -- examples schemas | tail -n 8 | tr '\n' '|')"

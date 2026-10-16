@@ -41,7 +41,7 @@ describe("skill install", () => {
       for (const [file, text] of Object.entries(skill))
         expect(text).toBe(readFileSync(join(ROOT, "skills", name, file), "utf8"));
     }
-    expect(skillRoots("/h")).toEqual(["/h/.agents/skills", "/h/.claude/skills"]);
+    expect(skillRoots("h")).toEqual([join("h", ".agents", "skills"), join("h", ".claude", "skills")]);
   });
 });
 
