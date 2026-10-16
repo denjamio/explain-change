@@ -5,5 +5,5 @@
   "project": "maybe",
   "title": "Data exports (#2517)",
   "stack": "Ruby on Rails",
-  "shows": "Controller, background job, the Family domain and a new FamilyExport table."
+  "shows": "A family data export: a thin controller, a background job, a PORO in the Family namespace and a new FamilyExport table."
 }

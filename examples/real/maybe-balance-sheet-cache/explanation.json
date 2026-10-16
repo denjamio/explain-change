@@ -1,0 +1,242 @@
+{
+  "tldr": "The balance sheet now caches its account totals and sync status, keyed by 2 new family timestamps that each sync updates. Pages load without waiting for syncs, and sparklines answer 304 when nothing changed.",
+  "goal": "Keep the dashboard fast while accounts sync, without stale totals after a sync completes.",
+  "story": [
+    {
+      "heading": "Family gets 2 sync timestamps",
+      "body": "latest_sync_activity_at changes on each sync transition. latest_sync_completed_at changes when a sync completes.",
+      "view": "data",
+      "focus": [
+        "family"
+      ],
+      "code": "db/migrate/20250610181219_add_sync_timestamps_to_family.rb:1-6"
+    },
+    {
+      "heading": "Each sync transition now touches the family",
+      "body": "Sync touches latest_sync_activity_at on every transition and latest_sync_completed_at on completion, for family, account and Plaid item syncs.",
+      "view": "flow:complete-sync",
+      "focus": [
+        "#2",
+        "#3"
+      ],
+      "code": "app/models/sync.rb:166-191"
+    },
+    {
+      "heading": "Cache keys now expire on data updates",
+      "body": "build_cache_key adds latest_sync_completed_at when asked. It replaces a query for the newest entry on each key.",
+      "view": "architecture",
+      "focus": [
+        "family",
+        "insights"
+      ],
+      "code": "app/models/family.rb:94-102"
+    },
+    {
+      "heading": "BalanceSheet splits into small objects",
+      "body": "AccountTotals, ClassificationGroup, AccountGroup, NetWorthSeriesBuilder and SyncStatusMonitor replace 1 large query and its Structs.",
+      "view": "flow:show-balance-sheet",
+      "focus": [
+        "#1",
+        "#2"
+      ],
+      "code": "app/models/balance_sheet.rb:12-62"
+    },
+    {
+      "heading": "Sync status is cached until the next sync activity",
+      "body": "SyncStatusMonitor reads the syncing account ids once per latest_sync_activity_at. Idle pages make no sync query.",
+      "view": "flow:show-balance-sheet",
+      "focus": [
+        "#3"
+      ],
+      "code": "app/models/balance_sheet/sync_status_monitor.rb:1-35"
+    },
+    {
+      "heading": "Sparklines use HTTP conditional GET",
+      "body": "The controller sends an ETag and Last-Modified, so the browser gets 304 Not Modified until the next completed sync.",
+      "view": "architecture",
+      "focus": [
+        "web-endpoints",
+        "web-ui"
+      ],
+      "code": "app/controllers/accountable_sparklines_controller.rb:5-16"
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "sync",
+      "to": "family",
+      "label": "touches the cache timestamps"
+    }
+  ],
+  "components": [
+    {
+      "id": "web-ui",
+      "summary": "The dashboard, sidebar and charts read the new balance sheet groups and show a small sync indicator in place of blocking loaders."
+    },
+    {
+      "id": "web-endpoints",
+      "summary": "Sparklines answer with ETag and Last-Modified and cache the series for 24 hours."
+    },
+    {
+      "id": "family",
+      "summary": "build_cache_key can expire on data updates; syncing? moves to Syncable."
+    },
+    {
+      "id": "accounts",
+      "summary": "Sync complete events update the desktop and mobile sidebars; chart caching moves to the family timestamps."
+    },
+    {
+      "id": "insights",
+      "summary": "BalanceSheet is built from AccountTotals, groups, NetWorthSeriesBuilder and SyncStatusMonitor, with cached totals."
+    },
+    {
+      "id": "assistant",
+      "summary": "The balance sheet function reads the new assets and liabilities groups."
+    },
+    {
+      "id": "sync",
+      "summary": "Sync transitions touch the family timestamps; Syncable answers syncing? from its visible syncs."
+    },
+    {
+      "id": "plaid",
+      "summary": "PlaidItem drops its own syncing? and uses the one from Syncable."
+    },
+    {
+      "id": "platform",
+      "summary": "New latest_sync_activity_at and latest_sync_completed_at columns on families."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "2 timestamps on Family as cache keys",
+      "why": "1 touch per sync transition expires every family cache. A key no longer needs a query for the newest entry.",
+      "alternative": "entries.maximum(:updated_at) in each cache key, as before.",
+      "evidence": "db/migrate/20250610181219_add_sync_timestamps_to_family.rb:3-4"
+    },
+    {
+      "title": "Activity and completion are separate timestamps",
+      "why": "Sync status changes when a sync starts or ends. Totals change only when a sync completes, so they keep their cache during a sync.",
+      "alternative": "1 timestamp for every sync change.",
+      "evidence": "app/models/sync.rb:170-176"
+    },
+    {
+      "title": "Small POROs in the BalanceSheet namespace",
+      "why": "The app keeps logic in models and POROs. Each object answers 1 question: totals, groups, the net worth series or sync status.",
+      "alternative": "1 BalanceSheet class with 1 large query.",
+      "evidence": "app/models/balance_sheet.rb:53-62"
+    },
+    {
+      "title": "HTTP caching for sparklines",
+      "why": "stale? with the last completed sync lets the browser reuse its copy. The server then renders nothing.",
+      "alternative": "Server-side cache only, with a full render on each request.",
+      "evidence": "app/controllers/accountable_sparklines_controller.rb:7-8"
+    }
+  ],
+  "flows": [
+    {
+      "id": "complete-sync",
+      "title": "Complete a sync",
+      "trigger": "Sync#complete",
+      "steps": [
+        {
+          "from": "background-jobs",
+          "to": "sync",
+          "call": "Sync#perform",
+          "delta": "unchanged"
+        },
+        {
+          "from": "sync",
+          "to": "family",
+          "call": "family.touch(:latest_sync_activity_at)",
+          "delta": "added"
+        },
+        {
+          "from": "sync",
+          "to": "family",
+          "call": "family.touch(:latest_sync_completed_at)",
+          "delta": "added",
+          "data": {
+            "type": "Family",
+            "fields": [
+              "+latest_sync_completed_at"
+            ]
+          }
+        },
+        {
+          "from": "accounts",
+          "to": "insights",
+          "call": "Account::SyncCompleteEvent broadcasts groups",
+          "delta": "changed"
+        }
+      ]
+    },
+    {
+      "id": "show-balance-sheet",
+      "title": "Show the balance sheet",
+      "trigger": "pages/dashboard/_balance_sheet",
+      "steps": [
+        {
+          "from": "insights",
+          "to": "family",
+          "call": "build_cache_key(invalidate_on_data_updates: true)",
+          "delta": "changed"
+        },
+        {
+          "from": "insights",
+          "to": "accounts",
+          "call": "AccountTotals: converted balances",
+          "delta": "changed"
+        },
+        {
+          "from": "insights",
+          "to": "sync",
+          "call": "SyncStatusMonitor: Sync.visible",
+          "delta": "added"
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "family",
+        "name": "Family",
+        "component": "family",
+        "delta": "changed",
+        "evidence": "db/migrate/20250610181219_add_sync_timestamps_to_family.rb:1-6",
+        "fields": [
+          "+latest_sync_activity_at: datetime",
+          "+latest_sync_completed_at: datetime"
+        ]
+      },
+      {
+        "id": "sync",
+        "name": "Sync",
+        "component": "sync",
+        "delta": "unchanged",
+        "fields": []
+      },
+      {
+        "id": "account",
+        "name": "Account",
+        "component": "accounts",
+        "delta": "unchanged",
+        "fields": []
+      }
+    ],
+    "relations": [
+      {
+        "from": "family",
+        "to": "account",
+        "label": "1..n",
+        "delta": "unchanged"
+      },
+      {
+        "from": "sync",
+        "to": "family",
+        "label": "touches",
+        "delta": "added"
+      }
+    ]
+  }
+}

@@ -1,0 +1,213 @@
+{
+  "tldr": "Admins can now send invitations to staged members, from a row action or the invite dialog. A staged member becomes invited and keeps the role, collections and groups it was provisioned with.",
+  "goal": "Let an organization create members ahead of time, then invite them when it is ready, without setting their access again.",
+  "story": [
+    {
+      "heading": "POST send-invite added for staged members",
+      "body": "The members grid row action sends a list of member ids. The response gives 1 result per id, so 1 bad id does not fail the request.",
+      "view": "flow:invite-staged-members",
+      "focus": [
+        "#1"
+      ],
+      "code": "src/Api/AdminConsole/Controllers/OrganizationUsersController.cs:349-377"
+    },
+    {
+      "heading": "InviteStagedOrganizationUsersCommand added",
+      "body": "It keeps only staged members of the organization, reserves seats once for all of them, moves them to invited and emails them.",
+      "view": "flow:invite-staged-members",
+      "focus": [
+        "#1",
+        "#3",
+        "#5"
+      ],
+      "code": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:1-394"
+    },
+    {
+      "heading": "Seats are reserved first and released on failure",
+      "body": "Password Manager seats come before Secrets Manager seats. When an email fails, the members go back to staged and the command releases both reservations.",
+      "view": "architecture",
+      "focus": [
+        "admin-console",
+        "billing"
+      ],
+      "code": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:1-394"
+    },
+    {
+      "heading": "The invite dialog now promotes staged members",
+      "body": "An invite by email that matches a staged member updates that member. It keeps its Id and ExternalId, which SCIM and Directory Connector use.",
+      "view": "architecture",
+      "focus": [
+        "admin-console"
+      ],
+      "code": "src/Core/AdminConsole/Services/Implementations/OrganizationService.cs:637-666"
+    },
+    {
+      "heading": "Members can now be read by email in bulk",
+      "body": "IOrganizationUserRepository gets GetManyByOrganizationEmailsAsync. Dapper calls a new stored procedure and Entity Framework runs the same query in LINQ.",
+      "view": "architecture",
+      "focus": [
+        "dapper",
+        "entity-framework",
+        "sql-server-schema"
+      ],
+      "code": "src/Core/AdminConsole/Repositories/IOrganizationUserRepository.cs:66-70"
+    },
+    {
+      "heading": "The whole change",
+      "body": "The API calls 1 Admin Console command. Admin Console asks Billing about the Secrets Manager discount, and both adapters implement the new read.",
+      "view": "architecture",
+      "focus": []
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "api",
+      "to": "admin-console",
+      "label": "InviteStagedOrganizationUsersCommand"
+    }
+  ],
+  "components": [
+    {
+      "id": "api",
+      "summary": "New POST send-invite endpoint returns 1 result per member id."
+    },
+    {
+      "id": "admin-console",
+      "summary": "New command invites staged members with their provisioned access; the invite dialog promotes a staged match by email."
+    },
+    {
+      "id": "dapper",
+      "summary": "New GetManyByOrganizationEmailsAsync calls OrganizationUser_ReadManyByOrganizationIdEmails."
+    },
+    {
+      "id": "entity-framework",
+      "summary": "New GetManyByOrganizationEmailsAsync reads the members of an organization by email."
+    },
+    {
+      "id": "sql-server-schema",
+      "summary": "New OrganizationUser_ReadManyByOrganizationIdEmails stored procedure and its migration script."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "Skip bad ids, report them 1 by 1",
+      "why": "A member that is missing, in another organization or no longer staged gets its own error. The other members still get their invitation.",
+      "alternative": "Fail the whole request on the first bad id.",
+      "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:105-125"
+    },
+    {
+      "title": "Reserve seats once for the whole set",
+      "why": "Seat expansion is all or nothing. 1 reservation covers every eligible member, and a failure leaves no seat paid for.",
+      "alternative": "Reserve 1 seat per member as each invitation goes out.",
+      "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:82-92"
+    },
+    {
+      "title": "Undo the status when an email fails",
+      "why": "The command moves the members back to staged and the caller releases both seat reservations. No member stays invited without an email.",
+      "alternative": "Send the emails first and change the status afterwards.",
+      "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:139-190"
+    },
+    {
+      "title": "Promote the staged row, do not create a new one",
+      "why": "SCIM and Directory Connector find members by Id and ExternalId. The invite dialog keeps both and overwrites only the fields the invite sets.",
+      "alternative": "Delete the staged row and insert an invited member.",
+      "evidence": "src/Core/AdminConsole/Services/Implementations/OrganizationService.cs:637-666"
+    },
+    {
+      "title": "A new bulk read on the repository port",
+      "why": "The invite dialog matches many emails at once. Both adapters implement it, so SQL Server and the EF databases behave the same.",
+      "alternative": "Call GetByOrganizationEmailAsync once per email.",
+      "evidence": "src/Core/AdminConsole/Repositories/IOrganizationUserRepository.cs:66-70"
+    }
+  ],
+  "flows": [
+    {
+      "id": "invite-staged-members",
+      "title": "Invite staged members",
+      "trigger": "POST /organizations/{orgId}/users/send-invite",
+      "steps": [
+        {
+          "from": "api",
+          "to": "admin-console",
+          "call": "IInviteStagedOrganizationUsersCommand.RunAsync",
+          "delta": "added"
+        },
+        {
+          "from": "admin-console",
+          "to": "billing",
+          "call": "stripePaymentService.HasSecretsManagerStandalone",
+          "delta": "added"
+        },
+        {
+          "from": "admin-console",
+          "to": "admin-console",
+          "call": "organizationService.AutoAddSeatsAsync",
+          "delta": "added"
+        },
+        {
+          "from": "admin-console",
+          "to": "admin-console",
+          "call": "organizationUserRepository.ReplaceManyAsync",
+          "delta": "added",
+          "data": {
+            "type": "OrganizationUser",
+            "fields": [
+              "~Status: Staged → Invited"
+            ]
+          }
+        },
+        {
+          "from": "admin-console",
+          "to": "admin-console",
+          "call": "sendOrganizationInvitesCommand.SendInvitesAsync",
+          "delta": "added"
+        }
+      ]
+    },
+    {
+      "id": "invite-by-email",
+      "title": "Invite members by email",
+      "trigger": "OrganizationService.InviteUsersAsync",
+      "steps": [
+        {
+          "from": "admin-console",
+          "to": "dapper",
+          "call": "GetManyByOrganizationEmailsAsync",
+          "delta": "added"
+        },
+        {
+          "from": "dapper",
+          "to": "sql-server-schema",
+          "call": "OrganizationUser_ReadManyByOrganizationIdEmails",
+          "delta": "added"
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "organization-user",
+        "name": "OrganizationUser",
+        "component": "admin-console",
+        "delta": "unchanged",
+        "fields": []
+      },
+      {
+        "id": "organization",
+        "name": "Organization",
+        "component": "admin-console",
+        "delta": "unchanged",
+        "fields": []
+      }
+    ],
+    "relations": [
+      {
+        "from": "organization",
+        "to": "organization-user",
+        "label": "1..n, Status: Staged → Invited",
+        "delta": "unchanged"
+      }
+    ]
+  }
+}

@@ -7,8 +7,8 @@
       "body": "It writes accounts, transactions, trades and categories as CSV, plus all.ndjson, into 1 ZIP.",
       "view": "architecture",
       "focus": [
-        "models-family",
-        "jobs"
+        "family",
+        "background-jobs"
       ],
       "code": "app/models/family/data_exporter.rb:9-36"
     },
@@ -55,39 +55,39 @@
       "body": "A Turbo frame shows the list. It refreshes every 3 seconds while an export runs.",
       "view": "architecture",
       "focus": [
-        "ui",
-        "controllers"
+        "web-ui",
+        "web-endpoints"
       ],
       "code": "app/views/family_exports/_list.html.erb:1-5"
     }
   ],
   "keyDependencies": [
     {
-      "from": "jobs",
-      "to": "models-family",
+      "from": "background-jobs",
+      "to": "family",
       "label": "builds the ZIP"
     }
   ],
   "components": [
     {
-      "id": "ui",
+      "id": "web-ui",
       "summary": "Settings shows an Export data button and a list of exports that refreshes while one runs."
     },
     {
-      "id": "controllers",
+      "id": "web-endpoints",
       "summary": "New FamilyExportsController: admins start an export, list the last 10 and download a completed one."
     },
     {
-      "id": "jobs",
+      "id": "family",
+      "summary": "New FamilyExport with a status and a file; new Family::DataExporter writes 4 CSV files and all.ndjson into 1 ZIP."
+    },
+    {
+      "id": "background-jobs",
       "summary": "New FamilyDataExportJob builds the ZIP, attaches it and sets the export status."
     },
     {
-      "id": "models-family",
-      "summary": "Family has many exports. New Family::DataExporter writes 4 CSV files and all.ndjson into 1 ZIP."
-    },
-    {
-      "id": "models",
-      "summary": "New FamilyExport model with a status and an attached file. It belongs to a Family."
+      "id": "platform",
+      "summary": "New family_exports table."
     }
   ],
   "decisions": [
@@ -122,8 +122,8 @@
       "title": "Start an export",
       "steps": [
         {
-          "from": "controllers",
-          "to": "models",
+          "from": "web-endpoints",
+          "to": "family",
           "call": "family_exports.create!",
           "delta": "added",
           "data": {
@@ -134,14 +134,14 @@
           }
         },
         {
-          "from": "controllers",
-          "to": "jobs",
+          "from": "web-endpoints",
+          "to": "background-jobs",
           "call": "FamilyDataExportJob.perform_later",
           "delta": "added"
         },
         {
-          "from": "jobs",
-          "to": "models-family",
+          "from": "background-jobs",
+          "to": "family",
           "call": "DataExporter#generate_export",
           "delta": "added",
           "data": {
@@ -162,8 +162,8 @@
       "title": "Download an export",
       "steps": [
         {
-          "from": "controllers",
-          "to": "models",
+          "from": "web-endpoints",
+          "to": "family",
           "call": "export.downloadable?",
           "delta": "added"
         }
@@ -175,7 +175,7 @@
       {
         "id": "family-export",
         "name": "FamilyExport",
-        "component": "models",
+        "component": "family",
         "evidence": "db/migrate/20250724115507_create_family_exports.rb:3-7",
         "fields": [
           "+id: uuid",
@@ -188,7 +188,7 @@
       {
         "id": "family",
         "name": "Family",
-        "component": "models-family",
+        "component": "family",
         "evidence": "app/models/family.rb:21",
         "fields": [
           "+family_exports: has_many"

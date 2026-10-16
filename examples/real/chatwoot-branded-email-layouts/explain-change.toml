@@ -1,0 +1,235 @@
+# Chatwoot: open-source customer support, with an omnichannel inbox.
+# A Rails app: the REST API and the Vue dashboard on top; each context keeps its models and services together;
+# background jobs and event listeners run the async work; channels (WhatsApp, Facebook, e-mail…) and e-mail
+# delivery are the adapters to the outside. enterprise/ overlays and extends the open-source code (AGENTS.md).
+
+[project]
+name = "Chatwoot"
+direction = "Rails conventions by context: controllers stay thin; each context keeps its rules in models and app/services; jobs and event listeners run the async work; channel code talks to the messaging providers. Enterprise code extends the open-source code from enterprise/, never the reverse."
+lang = "en"
+
+[[layers]]
+id = "web"
+name = "Web"
+
+[[layers]]
+id = "domain"
+name = "Domain"
+
+[[layers]]
+id = "async"
+name = "Async"
+
+[[layers]]
+id = "adapters"
+name = "Adapters"
+
+[[layers]]
+id = "platform"
+name = "Platform"
+
+[rules]
+# The open-source code never depends on the enterprise overlay, and the domain never reaches back into the web layer.
+# Enterprise sits in the top lane because it overlays every layer; Bootstrap is the composition root.
+allow = ["web -> domain", "web -> async", "web -> adapters", "web -> platform", "domain -> async", "domain -> adapters", "domain -> platform", "async -> domain", "async -> adapters", "async -> platform", "adapters -> domain", "adapters -> async", "adapters -> platform", "enterprise -> web"]
+forbid = ["domain -> web", "conversations -> enterprise", "contacts -> enterprise", "inboxes -> enterprise", "accounts -> enterprise"]
+same_layer = true
+
+# ── Web ──────────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "dashboard"
+name = "Agent dashboard"
+layer = "web"
+paths = ["app/javascript/dashboard/**", "app/javascript/v3/**", "app/javascript/design-system/**", "app/javascript/shared/**", "app/javascript/superadmin_pages/**", "app/javascript/entrypoints/**", "app/javascript/histoire.setup.ts"]
+desc = "Owns the Vue app agents and admins work in: conversations, contacts, inbox and account settings."
+
+[[components]]
+id = "widget-portal"
+name = "Widget and portal"
+layer = "web"
+paths = ["app/javascript/widget/**", "app/javascript/sdk/**", "app/javascript/survey/**", "app/javascript/portal/**", "app/views/public/**", "app/views/widgets/**"]
+desc = "Owns what customers see: the website chat widget and its SDK, CSAT surveys and the help center portal."
+
+[[components]]
+id = "rest-api"
+name = "REST API"
+layer = "web"
+paths = ["app/controllers/**", "app/views/api/**", "app/views/**", "app/policies/**", "app/presenters/**", "app/dashboards/**", "config/routes.rb", "swagger/**"]
+desc = "Owns the HTTP endpoints, their JSON views, the Pundit policies that decide who may call them and the super admin."
+
+[[components]]
+id = "enterprise"
+name = "Enterprise edition"
+layer = "web"
+paths = ["enterprise/**"]
+desc = "Owns the enterprise overlay, from controllers to models: Captain AI, SLAs, billing and custom roles."
+
+[[components]]
+id = "bootstrap"
+name = "Bootstrap"
+layer = "web"
+paths = ["config/initializers/**", "config/application.rb", "config/environments/**"]
+desc = "Owns the Rails composition root: initializers that wire event listeners, channels, AI agents and services."
+
+# ── Domain: each context with its models and services ───────────────────────────────────────────────────
+
+[[components]]
+id = "conversations"
+name = "Conversations"
+layer = "domain"
+paths = ["app/models/conversation.rb", "app/models/conversation_participant.rb", "app/models/message.rb", "app/models/attachment.rb", "app/models/mention.rb", "app/models/note.rb", "app/models/custom_filter.rb", "app/models/folder.rb", "app/services/conversations/**", "app/services/messages/**", "app/services/search_service.rb", "app/services/filter_service.rb", "app/services/filters/**", "app/builders/conversation_builder.rb", "app/builders/messages/**", "app/finders/**"]
+desc = "Owns Conversation, Message and Attachment; the thread between a contact and the team, its status and assignee."
+
+[[components]]
+id = "contacts"
+name = "Contacts"
+layer = "domain"
+paths = ["app/models/contact.rb", "app/models/contact_inbox.rb", "app/models/custom_attribute_definition.rb", "app/models/data_import*.rb", "app/services/contacts/**", "app/services/crm/**", "app/services/data_import/**", "app/services/data_imports/**", "app/actions/**", "app/builders/contact_inbox*.rb", "app/services/contact_inbox_source_id_resolver.rb"]
+desc = "Owns Contact and ContactInbox; who a customer is, across inboxes, and contact imports and merges."
+
+[[components]]
+id = "inboxes"
+name = "Inboxes"
+layer = "domain"
+paths = ["app/models/inbox.rb", "app/models/inbox_member.rb", "app/models/inbox_assignment_policy.rb", "app/models/assignment_policy.rb", "app/models/working_hour.rb", "app/models/email_template.rb", "app/models/concerns/inbox_*.rb", "app/models/concerns/out_of_offisable.rb", "app/models/concerns/channelable.rb"]
+desc = "Owns Inbox, its members, working hours, assignment policies and branded e-mail templates; 1 inbox per channel."
+
+[[components]]
+id = "accounts"
+name = "Accounts"
+layer = "domain"
+paths = ["app/models/account.rb", "app/models/account_user.rb", "app/models/user.rb", "app/models/user_session.rb", "app/models/team.rb", "app/models/team_member.rb", "app/models/access_token.rb", "app/models/super_admin.rb", "app/models/installation_config.rb", "app/models/platform_app*.rb", "app/models/concerns/account_*.rb", "app/services/account/**", "app/services/account_deletion_service.rb", "app/services/mfa/**", "app/services/onboarding/**", "app/services/user_session_tracking_service.rb", "app/builders/account_builder.rb", "app/builders/agent_builder.rb"]
+desc = "Owns accounts, users, teams, access tokens and sign-in; who works in which account."
+
+[[components]]
+id = "automation"
+name = "Automation"
+layer = "domain"
+paths = ["app/models/automation_rule.rb", "app/models/macro.rb", "app/models/label.rb", "app/models/canned_response.rb", "app/models/agent_bot*.rb", "app/services/automation_rules/**", "app/services/macros/**", "app/services/auto_assignment/**", "app/services/labels/**", "app/services/action_service.rb"]
+desc = "Owns automation rules, macros, labels, canned responses, agent bots and auto-assignment."
+
+[[components]]
+id = "reports"
+name = "Reports"
+layer = "domain"
+paths = ["app/models/reporting_event*.rb", "app/models/csat_survey_response.rb", "app/services/reporting_events/**", "app/services/reports/**", "app/services/csat_*.rb", "app/builders/v2/**", "app/builders/csat_surveys/**", "app/builders/year_in_review_builder.rb"]
+desc = "Owns reporting events, report builders and CSAT survey results."
+
+[[components]]
+id = "help-center"
+name = "Help center"
+layer = "domain"
+paths = ["app/models/portal.rb", "app/models/article.rb", "app/models/category.rb", "app/models/related_category.rb", "app/models/kbase/**"]
+desc = "Owns portals, articles and categories of the public help center."
+
+[[components]]
+id = "campaigns"
+name = "Campaigns"
+layer = "domain"
+paths = ["app/models/campaign.rb", "app/builders/campaigns/**"]
+desc = "Owns campaigns: proactive messages to website visitors or SMS and WhatsApp contacts."
+
+[[components]]
+id = "notifications"
+name = "Notifications"
+layer = "domain"
+paths = ["app/models/notification*.rb", "app/services/notification/**", "app/builders/notification*.rb"]
+desc = "Owns agent notifications, their settings and push subscriptions."
+
+
+[[components]]
+id = "shared-kernel"
+name = "Shared kernel"
+layer = "domain"
+paths = ["app/models/**", "app/helpers/**", "app/fields/**", "app/services/**", "app/builders/**"]
+desc = "Owns ApplicationRecord, shared model concerns and the helpers every context uses; no business rules."
+
+# ── Async ────────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "background-jobs"
+name = "Background jobs"
+layer = "async"
+paths = ["app/jobs/**"]
+desc = "Owns the Sidekiq jobs: scheduled work, imports, webhooks and channel syncs."
+
+[[components]]
+id = "event-listeners"
+name = "Event listeners"
+layer = "async"
+paths = ["app/listeners/**", "app/dispatchers/**", "lib/events/**", "app/channels/**"]
+desc = "Owns the event dispatcher, its listeners and the ActionCable channels: real-time pushes, webhooks, automation and reporting."
+
+# ── Adapters: the messaging providers and e-mail ─────────────────────────────────────────────────────────
+
+[[components]]
+id = "whatsapp"
+name = "WhatsApp"
+layer = "adapters"
+paths = ["app/models/channel/whatsapp.rb", "app/services/whatsapp/**", "app/jobs/channels/whatsapp/**", "app/controllers/api/v1/accounts/concerns/whatsapp_*.rb"]
+desc = "Owns the WhatsApp channel: Cloud API and 360dialog providers, templates and phone number health."
+
+[[components]]
+id = "other-channels"
+name = "Other channels"
+layer = "adapters"
+paths = ["app/models/channel/**", "app/services/facebook/**", "app/services/instagram/**", "app/services/twilio/**", "app/services/telegram/**", "app/services/line/**", "app/services/sms/**", "app/services/tiktok/**", "app/services/twitter/**", "app/services/imap/**", "app/services/microsoft/**", "app/services/google/**", "app/services/widget/**", "app/mailboxes/**", "app/jobs/channels/**"]
+desc = "Owns the other channels: web widget, e-mail (IMAP, Microsoft, Google), Facebook, Instagram, SMS, Telegram, LINE, TikTok and X."
+
+[[components]]
+id = "email-delivery"
+name = "E-mail delivery"
+layer = "adapters"
+paths = ["app/mailers/**", "app/drops/**", "app/views/mailers/**", "app/services/email_templates/**", "app/services/email/**", "app/services/liquid/**"]
+desc = "Owns outgoing e-mail: mailers, the Liquid drops that templates read, and the template resolver."
+
+[[components]]
+id = "integrations"
+name = "Integrations"
+layer = "adapters"
+paths = ["app/models/integrations/**", "app/models/webhook.rb", "app/models/dashboard_app.rb", "lib/integrations/**", "lib/linear/**", "lib/linear.rb", "app/services/linear/**", "app/services/llm_formatter/**", "lib/webhooks/**", "lib/captain/**", "lib/llm/**", "lib/llm_constants.rb"]
+desc = "Owns the integrations: Slack, Linear, Dialogflow, the LLM providers, dashboard apps and outgoing webhooks."
+
+# ── Platform ─────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "platform"
+name = "Platform"
+layer = "platform"
+paths = ["config/**", "lib/**", "db/**"]
+desc = "Owns configuration, feature flags, the database schema and migrations, and the shared libraries in lib/."
+
+[[flows]]
+id = "receive-message"
+title = "Receive a customer message"
+steps = [
+  "other-channels -> conversations : Messages::MessageBuilder",
+  "conversations -> event-listeners : dispatch message.created",
+  "event-listeners -> dashboard : ActionCable broadcast",
+]
+
+[[flows]]
+id = "reply-by-email"
+title = "Reply to a conversation by e-mail"
+steps = [
+  "rest-api -> conversations : create the outgoing message",
+  "background-jobs -> email-delivery : ConversationReplyMailer",
+]
+
+[glossary]
+account = "A company's workspace: its inboxes, agents, contacts and settings."
+inbox = "1 channel connected to an account, such as a WhatsApp number or a support e-mail address."
+channel = "The messaging provider behind an inbox: WhatsApp, e-mail, Facebook, the website widget…"
+conversation = "The thread between a contact and the team in 1 inbox, with a status and an assignee."
+contact = "A customer the team talks to, across 1 or more inboxes."
+agent = "A user who answers conversations."
+"canned response" = "A saved reply an agent inserts with a shortcut."
+macro = "A saved list of actions an agent runs on a conversation."
+"automation rule" = "An event, conditions and actions that run without an agent."
+portal = "A public help center with articles."
+"branded e-mail layout" = "An inbox's own HTML layout for the e-mails it sends."
+
+[ignore]
+paths = ["**/*.lock", "**/pnpm-lock.yaml", "**/package-lock.json", "db/schema.rb", "**/*.min.js", "**/*.map", "public/**", "vendor/**", "theme/**", "deployment/**", "docker/**", "clevercloud/**", "rubocop/**", "script/**", "app/javascript/**/i18n/locale/[!e]*/**", "**/__snapshots__/**", "db/seeds.rb", "lib/seeders/**", "lib/test_data/**", "lib/test_data.rb", "lib/tasks/**", "enterprise/lib/tasks/**", "__mocks__/**", ".github/**", "app/assets/**"]
+tests = ["spec/**", "tests/**", "**/specs/**", "**/*.spec.js", "**/*.spec.ts", "**/*_spec.rb", "enterprise/spec/**"]

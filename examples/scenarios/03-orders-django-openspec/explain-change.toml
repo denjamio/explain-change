@@ -1,46 +1,142 @@
+# Larder: an online grocery shop. Django apps per context; views and webhooks stay thin, rules live in each app's
+# services.py and models; external systems sit behind 1 module each; background work runs in Celery tasks.
+
 [project]
-name = "orders"
-direction = "Thin views; logic lives in services and models; external integrations live in their own app."
+name = "Larder"
+direction = "Layered Django apps: views and webhooks call services; services own the rules and the transactions; models hold the state. Each external system (payments, email) sits behind 1 adapter module. Background work is a Celery task, queued after commit."
+lang = "en"
 
 [[layers]]
 id = "web"
-name = "Web"
+name = "API"
+
 [[layers]]
 id = "application"
-name = "Application"
+name = "Services"
+
 [[layers]]
 id = "domain"
 name = "Domain"
+
 [[layers]]
-id = "infra"
-name = "Infrastructure"
+id = "adapters"
+name = "Adapters"
+
+[[layers]]
+id = "platform"
+name = "Platform"
 
 [rules]
-allow = ["web -> application", "application -> domain", "application -> infra", "infra -> domain"]
+allow = ["web -> application", "web -> domain", "application -> domain", "application -> adapters", "adapters -> domain", "platform -> application"]
+# Notifications reads orders; it never drives them.
+forbid = ["domain -> application", "notifications -> order-management"]
+same_layer = true
 
 [[components]]
 id = "orders-api"
 name = "Orders API"
 layer = "web"
-paths = ["orders/views.py", "orders/urls.py"]
+paths = ["orders/api/**", "orders/urls.py"]
+desc = "Owns the REST endpoints customers use to place and read their orders."
+
 [[components]]
-id = "orders-svc"
+id = "payment-webhooks"
+name = "Payment webhooks"
+layer = "web"
+paths = ["payments/webhooks.py", "payments/urls.py"]
+desc = "Owns the endpoint the payment provider calls with signed events."
+
+[[components]]
+id = "order-management"
 name = "Order management"
 layer = "application"
 paths = ["orders/services.py"]
+desc = "Owns placing an order and marking it paid, each in 1 transaction."
+
 [[components]]
-id = "orders-model"
-name = "Orders"
-layer = "domain"
-paths = ["orders/models.py", "orders/migrations/**"]
+id = "payment-processing"
+name = "Payment processing"
+layer = "application"
+paths = ["payments/services.py"]
+desc = "Owns applying provider events to payments, once each."
+
 [[components]]
 id = "notifications"
 name = "Notifications"
-layer = "infra"
-paths = ["notifications/**"]
+layer = "application"
+paths = ["notifications/services.py", "notifications/tasks.py", "notifications/templates/**", "notifications/apps.py", "notifications/__init__.py"]
+desc = "Owns the emails Larder sends about an order, and their retries."
 
+[[components]]
+id = "orders"
+name = "Orders"
+layer = "domain"
+paths = ["orders/models.py", "orders/migrations/**", "orders/apps.py", "orders/__init__.py"]
+desc = "Owns Order and OrderLine; an order's lines, total and status from placed to paid."
+
+[[components]]
+id = "payments"
+name = "Payments"
+layer = "domain"
+paths = ["payments/models.py", "payments/migrations/**", "payments/apps.py", "payments/__init__.py"]
+desc = "Owns Payment; the provider's reference and status of each charge."
+
+[[components]]
+id = "sent-emails"
+name = "Sent emails"
+layer = "domain"
+paths = ["notifications/models.py", "notifications/migrations/**"]
+desc = "Owns SentEmail; which email went to whom about which order."
+
+[[components]]
+id = "catalog"
+name = "Catalog"
+layer = "domain"
+paths = ["catalog/**"]
+desc = "Owns Product; what Larder sells, its price and its stock."
+
+[[components]]
+id = "customers"
+name = "Customers"
+layer = "domain"
+paths = ["customers/**"]
+desc = "Owns Customer; who buys and their email."
+
+[[components]]
+id = "payment-provider"
+name = "Payment provider"
+layer = "adapters"
+paths = ["payments/provider.py"]
+desc = "Owns the payment provider adapter: webhook signatures and events."
+
+[[components]]
+id = "email-gateway"
+name = "Email gateway"
+layer = "adapters"
+paths = ["notifications/gateway.py"]
+desc = "Owns the EmailGateway port and its Postmark adapter."
+
+[[components]]
+id = "platform"
+name = "Platform"
+layer = "platform"
+paths = ["shop/**", "manage.py"]
+desc = "Owns settings, URL routing and the Celery app."
 
 [[flows]]
-id = "create-order"
-title = "Create an order"
-steps = ["orders-api -> orders-svc : create_order", "orders-svc -> orders-model : Order.place"]
+id = "place-order"
+title = "Place an order"
+steps = ["orders-api -> order-management : place_order", "order-management -> catalog : Product.reserve", "order-management -> orders : Order.objects.create"]
+
+[[flows]]
+id = "pay-order"
+title = "Pay an order"
+steps = ["payment-webhooks -> payment-provider : parse_webhook", "payment-webhooks -> payment-processing : handle_payment_event", "payment-processing -> order-management : mark_order_paid"]
+
+[glossary]
+order = "What a customer buys in 1 checkout: its lines, total and status."
+"placed order" = "An order with reserved stock that is not paid yet."
+"paid order" = "An order whose charge the payment provider confirmed."
+"contact email" = "The email address an order was placed with; confirmations go there."
+confirmation = "The email that tells a customer their paid order is being picked."
+"payment event" = "A signed message from the payment provider: payment.succeeded or payment.failed."

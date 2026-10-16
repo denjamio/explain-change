@@ -225,6 +225,26 @@ describe("TypeScript and C#", () => {
     ]);
     expect(edges).toEqual({ "api->billing": 2 });
   });
+
+  test("C#: a using sees only its project and the projects it references", () => {
+    // Shop.Api declares a namespace of Shop.Billing, as real code does (Bitwarden's Api has a Bit.Core.Enums file).
+    // Shop.Billing does not reference Shop.Api, so its using of that namespace cannot reach Shop.Api.
+    const files = {
+      "Shop.Api/Shop.Api.csproj":
+        '<Project><ItemGroup><ProjectReference Include="..\\Shop.Billing\\Shop.Billing.csproj" /></ItemGroup></Project>',
+      "Shop.Api/OrdersController.cs":
+        "using Shop.Billing.Enums;\nnamespace Shop.Api;\npublic class OrdersController {}\n",
+      "Shop.Api/Push/PushType.cs": "namespace Shop.Billing.Enums;\npublic enum PushType {}\n",
+      "Shop.Billing/Shop.Billing.csproj": "<Project />",
+      "Shop.Billing/Enums/Status.cs": "namespace Shop.Billing.Enums;\npublic enum Status {}\n",
+      "Shop.Billing/Invoice.cs": "using Shop.Billing.Enums;\nnamespace Shop.Billing;\npublic class Invoice {}\n",
+    };
+    const { edges } = edgesFor(files, [
+      { id: "api", layer: "web", paths: ["Shop.Api/**"] },
+      { id: "billing", layer: "domain", paths: ["Shop.Billing/**"] },
+    ]);
+    expect(edges).toEqual({ "api->billing": 2 });
+  });
 });
 
 describe("structure inference", () => {

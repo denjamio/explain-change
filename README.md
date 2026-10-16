@@ -287,6 +287,7 @@ bun run check                 # typecheck, lint and the tests
 bun run dev -- local          # the CLI from source (any command)
 bun run install:dev           # this checkout as `explain-change` in ~/.local/bin, skills linked to skills/
 bun run examples              # rebuild examples/ after changing the report or the analysis (CI checks it)
+bun run examples -- --real    # also rebuild the 10 real pull requests (clones them at their commit)
 bun run smoke                 # compile the binary for this machine and run it on a temporary repository
 bun run eval -- --model haiku # a real agent explains each scenario with the skill (costs tokens)
 ```

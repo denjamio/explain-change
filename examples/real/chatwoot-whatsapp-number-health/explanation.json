@@ -1,0 +1,181 @@
+{
+  "tldr": "Chatwoot now checks the health of each WhatsApp Cloud number every 6 hours and stores the result on the channel. The Account Health page shows more details and guides admins on authorization errors.",
+  "goal": "Let admins see a WhatsApp number at risk, such as a low quality rating or a restriction, before customers stop getting replies.",
+  "story": [
+    {
+      "heading": "An hourly job now schedules health syncs",
+      "body": "Every hour, the scheduler queues 1 sync per WhatsApp Cloud channel not checked in 6 hours, at most 25 per run.",
+      "view": "flow:sync-number-health",
+      "focus": [
+        "#1",
+        "#2"
+      ],
+      "code": "app/jobs/channels/whatsapp/health_sync_scheduler_job.rb:1-15"
+    },
+    {
+      "heading": "Health is now stored on the WhatsApp channel",
+      "body": "3 new columns hold the last health, its check time and the last error. The scheduler orders the channels by the check time.",
+      "view": "data",
+      "focus": [
+        "channel-whatsapp"
+      ],
+      "code": "db/migrate/20260718000000_add_phone_number_health_to_channel_whatsapp.rb:1-8"
+    },
+    {
+      "heading": "HealthService reads 2 Graph API resources",
+      "body": "It reads the phone number and its business account, and uses Graph API version 24 or later for the health fields.",
+      "view": "flow:sync-number-health",
+      "focus": [
+        "#3"
+      ],
+      "code": "app/services/whatsapp/health_service.rb:51-68"
+    },
+    {
+      "heading": "Only the newest check is written",
+      "body": "update_all writes the result only when no later check exists. A risky quality rating or status goes to the log once per change.",
+      "view": "architecture",
+      "focus": [
+        "whatsapp"
+      ],
+      "code": "app/services/whatsapp/health_service.rb:175-224"
+    },
+    {
+      "heading": "Account Health page shows the new details",
+      "body": "It shows the phone, capacity, business account, webhook and recovery details. An authorization error leads the admin to the Configuration flow.",
+      "view": "architecture",
+      "focus": [
+        "dashboard"
+      ],
+      "code": "app/javascript/dashboard/routes/dashboard/settings/inbox/components/AccountHealth.vue:519-599"
+    },
+    {
+      "heading": "The whole change",
+      "body": "Background jobs call the WhatsApp adapter, which stores the health on the channel. The inbox health endpoint now syncs and stores it too.",
+      "view": "architecture",
+      "focus": []
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "background-jobs",
+      "to": "whatsapp",
+      "label": "queues 1 health sync per channel"
+    }
+  ],
+  "components": [
+    {
+      "id": "dashboard",
+      "summary": "Account Health shows phone, capacity, business account and webhook details, and guides admins on authorization errors."
+    },
+    {
+      "id": "background-jobs",
+      "summary": "The hourly job now queues HealthSyncSchedulerJob, which queues HealthSyncJob per channel."
+    },
+    {
+      "id": "whatsapp",
+      "summary": "HealthService syncs and stores the number's health for the jobs and the health endpoint, raises ApiError and logs risky changes."
+    },
+    {
+      "id": "platform",
+      "summary": "New phone_number_health columns and an index on the WhatsApp channel table."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "Store the health on the channel",
+      "why": "The scheduler picks channels by the last check time. The error column keeps the reason of the last failed check for the admins.",
+      "alternative": "Keep the health only in memory, for the current request.",
+      "evidence": "db/migrate/20260718000000_add_phone_number_health_to_channel_whatsapp.rb:3-6"
+    },
+    {
+      "title": "A scheduler job and 1 job per channel",
+      "why": "The scheduler picks the channels with the oldest check, at most 25 per hour. 1 failing number does not stop the others.",
+      "alternative": "1 job that checks every channel in a loop.",
+      "evidence": "app/jobs/channels/whatsapp/health_sync_scheduler_job.rb:4-12"
+    },
+    {
+      "title": "Write with update_all, not save",
+      "why": "Health polling must skip credential validation, timestamps, inbox touches and audit callbacks of the channel.",
+      "alternative": "channel.update with all callbacks.",
+      "evidence": "app/services/whatsapp/health_service.rb:176-186"
+    },
+    {
+      "title": "Write only when no newer check exists",
+      "why": "The where clause on phone_number_health_checked_at keeps an older, slower check from replacing a newer result.",
+      "alternative": "Always write the last result that arrives.",
+      "evidence": "app/services/whatsapp/health_service.rb:199-202"
+    },
+    {
+      "title": "A typed ApiError with Meta's code",
+      "why": "Code 190 marks an authorization error. The page then guides the admin to reconnect, without Meta's technical codes.",
+      "alternative": "Raise a string error with the response body.",
+      "evidence": "app/services/whatsapp/health_service.rb:2-16"
+    }
+  ],
+  "flows": [
+    {
+      "id": "sync-number-health",
+      "title": "Sync the health of WhatsApp numbers",
+      "trigger": "Internal::TriggerHourlyScheduledItemsJob",
+      "steps": [
+        {
+          "from": "background-jobs",
+          "to": "background-jobs",
+          "call": "HealthSyncSchedulerJob.perform_later",
+          "delta": "added"
+        },
+        {
+          "from": "background-jobs",
+          "to": "whatsapp",
+          "call": "HealthSyncJob.perform_later(channel)",
+          "delta": "added"
+        },
+        {
+          "from": "whatsapp",
+          "to": "whatsapp",
+          "call": "HealthService#sync_health_status!",
+          "delta": "added",
+          "data": {
+            "type": "Channel::Whatsapp",
+            "fields": [
+              "+phone_number_health",
+              "+phone_number_health_checked_at",
+              "+phone_number_health_error"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "channel-whatsapp",
+        "name": "channel_whatsapp",
+        "component": "whatsapp",
+        "delta": "changed",
+        "evidence": "db/migrate/20260718000000_add_phone_number_health_to_channel_whatsapp.rb:1-8",
+        "fields": [
+          "+phone_number_health: jsonb = {}",
+          "+phone_number_health_checked_at: datetime",
+          "+phone_number_health_error: string(500)"
+        ]
+      },
+      {
+        "id": "inbox",
+        "name": "inboxes",
+        "component": "inboxes",
+        "delta": "unchanged",
+        "fields": []
+      }
+    ],
+    "relations": [
+      {
+        "from": "inbox",
+        "to": "channel-whatsapp",
+        "label": "1..1 (channel)",
+        "delta": "unchanged"
+      }
+    ]
+  }
+}

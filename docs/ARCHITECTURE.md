@@ -52,7 +52,8 @@ Each folder depends only on the ones above it:
 - Every list is sorted by an explicit key, compared by code unit, never by locale.
 - Lengths and cuts count code points; text is decoded as UTF-8 with a BOM dropped.
 - The report script is bundled without minification by a pinned Bun, so a release renders the same bytes everywhere.
-- Tests build every example twice from scratch and require byte-identical pages.
+- Tests build every scenario twice from scratch and require byte-identical pages; the real examples rebuild from
+  their upstream commit with `bun run examples -- --real`.
 
 ## Analysis
 

@@ -1,4 +1,4 @@
-# maybe (Rails) · Data exports (#2517)
+# maybe (Ruby on Rails) · Data exports (#2517)
 
 A real pull request explained by an agent: the source of `examples/real-maybe-rails-data-exports.html`.
 

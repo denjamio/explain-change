@@ -3,6 +3,7 @@ import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { buildScenario, scenarioNames } from "../scripts/build-examples.ts";
 import type { Facts } from "../src/contract/facts.ts";
+import { smoke } from "./dom.ts";
 import { tempDir } from "./helpers.ts";
 
 /** Every scenario built twice, from scratch, in two folders: the pages must be byte-identical. */
@@ -53,14 +54,29 @@ describe("end to end", () => {
     expect(e["reports->accounts"]).toBeDefined();
   });
 
-  test("Django with OpenSpec: requirement deltas and the new app", () => {
+  test("Django with OpenSpec: deltas to 2 specs, a new app behind a port, and an open task", () => {
     const name = "03-orders-django-openspec";
-    expect(edges(name)["orders-svc->notifications"]).toEqual(["added", false, false]);
-    expect(edges(name)["notifications->orders-model"]).toEqual(["added", false, false]);
-    expect(facts(name).components.find((c) => c.id === "notifications")?.delta).toBe("added");
-    const reqs = Object.fromEntries(
-      facts(name).openspec?.changes.flatMap((c) => c.requirements.map((r) => [r.id, r.op])) ?? [],
-    );
-    expect(reqs).toEqual({ "orders/confirmation-email": "ADDED", "orders/create-order": "MODIFIED" });
+    for (const pair of ["order-management->notifications", "notifications->email-gateway", "notifications->orders"]) {
+      expect(edges(name)[pair]).toEqual(["added", false, false]);
+    }
+    for (const id of ["notifications", "sent-emails", "email-gateway"]) {
+      expect(facts(name).components.find((c) => c.id === id)?.delta).toBe("added");
+    }
+    const change = facts(name).openspec?.changes[0];
+    expect(Object.fromEntries(change?.requirements.map((r) => [r.id, r.op]) ?? [])).toEqual({
+      "notifications/order-confirmation-email": "ADDED",
+      "notifications/retry-failed-sends": "ADDED",
+      "orders/place-an-order": "MODIFIED",
+      "orders/mark-an-order-paid": "MODIFIED",
+    });
+    expect(change?.tasks).toMatchObject({ done: 7, total: 8 });
+  });
+
+  test("every scenario page renders and handles every click, published or not", () => {
+    for (const name of scenarioNames()) {
+      const out = smoke(readFileSync(join(runs[0]?.dir as string, `${name}.html`), "utf8"));
+      expect(out.elements).toBeGreaterThan(100);
+      expect(out.clicks).toBeGreaterThan(5);
+    }
   });
 });

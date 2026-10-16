@@ -1,0 +1,217 @@
+{
+  "tldr": "Immich now makes a birthday memory for each named person with a birth date. It shows photos of that person from past birthdays, from 3 days before the date until its end.",
+  "goal": "Show users photos of the people they know around each person's birthday, as Memories already does for 'on this day'.",
+  "story": [
+    {
+      "heading": "Memories now makes birthday memories",
+      "body": "The nightly MemoryGenerate job runs createBirthdayMemories next to the 'on this day' memories, for each user.",
+      "view": "architecture",
+      "focus": [
+        "memories"
+      ],
+      "code": "server/src/services/memory.service.ts:43-56"
+    },
+    {
+      "heading": "Memories reads people from the Database",
+      "body": "forBirthdayMemories returns the visible, named people of the owner born on the target day in an earlier year.",
+      "view": "flow:generate-birthday-memories",
+      "focus": [
+        "#1"
+      ],
+      "code": "server/src/repositories/person.repository.ts:221-262"
+    },
+    {
+      "heading": "Up to 25 photos per birthday memory",
+      "body": "It takes up to 5 photos per past birthday. With more than 25 birthdays, it takes 1 photo from 25 random years.",
+      "view": "flow:generate-birthday-memories",
+      "focus": [
+        "#2",
+        "#3"
+      ],
+      "code": "server/src/services/memory.service.ts:84-151"
+    },
+    {
+      "heading": "Memory data now names a person",
+      "body": "OnThisDayDto becomes MemoryDataDto with personId and personName. A birthday memory without them is refused.",
+      "view": "data",
+      "focus": [
+        "memory"
+      ],
+      "code": "server/src/dtos/memory.dto.ts:21-35"
+    },
+    {
+      "heading": "February 29 birthdays move to February 28",
+      "body": "In a year without February 29, isLeapDayObserved makes February 28 the birthday of people born on February 29.",
+      "view": "architecture",
+      "focus": [
+        "shared-kernel",
+        "database"
+      ],
+      "code": "server/src/utils/date.ts:18-24"
+    },
+    {
+      "heading": "Clients show the birthday title",
+      "body": "The web app titles the memory with the name of the person. The mobile app knows the birthday type.",
+      "view": "architecture",
+      "focus": [
+        "web",
+        "mobile",
+        "sdk"
+      ],
+      "code": "web/src/lib/utils.ts:400-403"
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "memories",
+      "to": "database",
+      "label": "reads people and their photos"
+    }
+  ],
+  "components": [
+    {
+      "id": "web",
+      "summary": "Memory titles now read \"{name}'s birthday\" for a birthday memory."
+    },
+    {
+      "id": "mobile",
+      "summary": "The memory model and the sync know the new birthday memory type."
+    },
+    {
+      "id": "sdk",
+      "summary": "OnThisDayDto becomes MemoryDataDto, with optional personId and personName."
+    },
+    {
+      "id": "memories",
+      "summary": "Makes birthday memories each night: picks the people, chooses up to 25 photos and sets when to show the memory."
+    },
+    {
+      "id": "database",
+      "summary": "New queries: people born on a day, the years with photos of a person on that day, and those photos."
+    },
+    {
+      "id": "api-contract",
+      "summary": "MemoryDataDto replaces OnThisDayDto. A birthday memory needs personId and personName."
+    },
+    {
+      "id": "shared-kernel",
+      "summary": "New birthday memory type, BirthdayData type and isLeapDayObserved for February 29 birthdays."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "The same nightly job makes both kinds of memory",
+      "why": "Birthday memories use the memory table, the cleanup and the clients that already exist. Only the generation step is new.",
+      "alternative": "A separate job and table for birthdays.",
+      "evidence": "server/src/services/memory.service.ts:46-53"
+    },
+    {
+      "title": "Show the memory 3 days before the birthday",
+      "why": "showAt and hideAt open the memory before the date and close it at the end of the day, so the user can prepare.",
+      "alternative": "Show it only on the birthday.",
+      "evidence": "server/src/services/memory.service.ts:22-24"
+    },
+    {
+      "title": "At most 25 photos, spread over the years",
+      "why": "A person with many birthdays gets 1 photo from 25 random years, not only the latest years.",
+      "alternative": "The 25 most recent photos.",
+      "evidence": "server/src/services/memory.service.ts:84-151"
+    },
+    {
+      "title": "Store the name as it was when the memory was made",
+      "why": "personName is part of the memory data. The title does not read the person when the clients show the memory.",
+      "alternative": "Read the current name of the person from personId.",
+      "evidence": "server/src/dtos/memory.dto.ts:27-28"
+    },
+    {
+      "title": "Check the person fields in the DTO",
+      "why": "A birthday memory must name its person. The schema refuses it otherwise, and replaces the old TODO in create.",
+      "alternative": "Check the type and data in MemoryService.create.",
+      "evidence": "server/src/dtos/memory.dto.ts:57-64"
+    }
+  ],
+  "flows": [
+    {
+      "id": "generate-birthday-memories",
+      "title": "Generate birthday memories",
+      "trigger": "JobName.MemoryGenerate",
+      "steps": [
+        {
+          "from": "memories",
+          "to": "database",
+          "call": "personRepository.forBirthdayMemories",
+          "delta": "added"
+        },
+        {
+          "from": "memories",
+          "to": "database",
+          "call": "memoryRepository.getPersonBirthdayYears",
+          "delta": "added"
+        },
+        {
+          "from": "memories",
+          "to": "database",
+          "call": "memoryRepository.getPersonAssetsByDate",
+          "delta": "added"
+        },
+        {
+          "from": "memories",
+          "to": "database",
+          "call": "memoryRepository.create",
+          "delta": "changed",
+          "data": {
+            "type": "MemoryDataDto",
+            "fields": [
+              "+personId",
+              "+personName"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "memory",
+        "name": "memory",
+        "component": "database",
+        "delta": "changed",
+        "evidence": "server/src/dtos/memory.dto.ts:21-35",
+        "fields": [
+          "~type: +birthday",
+          "+data.personId: uuid?",
+          "+data.personName: string?"
+        ]
+      },
+      {
+        "id": "person",
+        "name": "person",
+        "component": "database",
+        "delta": "unchanged",
+        "fields": []
+      },
+      {
+        "id": "asset",
+        "name": "asset",
+        "component": "database",
+        "delta": "unchanged",
+        "fields": []
+      }
+    ],
+    "relations": [
+      {
+        "from": "memory",
+        "to": "person",
+        "label": "data.personId",
+        "delta": "added"
+      },
+      {
+        "from": "memory",
+        "to": "asset",
+        "label": "n..n",
+        "delta": "unchanged"
+      }
+    ]
+  }
+}
