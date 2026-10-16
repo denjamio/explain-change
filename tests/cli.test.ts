@@ -315,6 +315,21 @@ describe("generated files", () => {
   });
 });
 
+describe("unresolved references", () => {
+  test("only the changed files count", () => {
+    const r = repo();
+    r.git("checkout", "-q", "main");
+    r.write({ "app/models/legacy.rb": "require_relative 'gone'\nclass Legacy\nend\n" }); // unresolved, not changed
+    r.commit("legacy");
+    r.git("checkout", "-q", "feature");
+    r.git("merge", "-q", "main");
+    expect(r.collect().stats.unresolved).toBe(0);
+    r.write({ "app/models/refund.rb": "require_relative 'missing'\nclass Refund\nend\n" });
+    r.commit("refund");
+    expect(r.collect().stats.unresolved).toBe(1);
+  });
+});
+
 describe("determinism", () => {
   test("the user's git config does not change the result", () => {
     const r = repo();

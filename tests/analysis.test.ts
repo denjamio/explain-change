@@ -17,7 +17,7 @@ function edgesFor(files: Record<string, string>, components: Comp[], tsconfigs: 
   const extracted = new Map<string, Extracted>(Object.entries(files).map(([p, t]) => [p, extractRefs(p, t)]));
   const graph = buildGraph(extracted, new SideIndex(new Set(Object.keys(files)), mapper, tsconfigs, extracted), mapper);
   const edges = Object.fromEntries([...graph.edges].map(([k, e]) => [splitEdgeKey(k).join("->"), e.count]));
-  return { edges, unresolved: graph.unresolved };
+  return { edges, unresolved: [...graph.unresolved.values()].reduce((a, b) => a + b, 0) };
 }
 
 describe("Django", () => {

@@ -136,7 +136,9 @@ export const Stats = z.object({
   testAdditions: z.int(),
   testDeletions: z.int(),
   unmapped: z.array(z.string()).describe("Changed code files no component holds."),
-  unresolved: z.int().describe("References at the head that point inside the repository but resolve to no file."),
+  unresolved: z
+    .int()
+    .describe("References in the changed files, at the head, that point inside the repository but resolve to no file."),
   newViolations: z.int(),
   codeLines: z.int().describe("Changed lines in code, config and migration files."),
   mappedLines: z.int().describe("The part of codeLines inside a component."),

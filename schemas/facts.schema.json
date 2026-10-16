@@ -635,7 +635,7 @@
           "type": "integer",
           "minimum": -9007199254740991,
           "maximum": 9007199254740991,
-          "description": "References at the head that point inside the repository but resolve to no file."
+          "description": "References in the changed files, at the head, that point inside the repository but resolve to no file."
         },
         "newViolations": {
           "type": "integer",

@@ -86,7 +86,9 @@ export function collect(root: string, config: Config, req: ChangeRequest): Facts
     .filter((f) => (f.category === "code" || f.category === "config") && f.hunks.length)
     .flatMap((f) => extractSymbols(f));
   const dependencies = relevantDependencies(config, files, symbols, scan.base, scan.head, touched);
-  const stats = changeStats(files, dependencies, scan.head.unresolved);
+  // Only the change's own files: the rest of the repository is not what the reader is looking at.
+  const unresolved = files.reduce((n, f) => n + (scan.head.unresolved.get(f.path) ?? 0), 0);
+  const stats = changeStats(files, dependencies, unresolved);
   if (!config.inferred) notes.push(...coverageNotes(files, stats));
   const core: FactsCore = {
     version: CONTRACT_VERSION,

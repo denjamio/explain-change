@@ -15,7 +15,8 @@ export interface SideEdge {
 
 export interface SideGraph {
   edges: Map<string, SideEdge>; // "from\0to"
-  unresolved: number;
+  /** References that point inside the repository but resolve to no file, per source file. */
+  unresolved: Map<string, number>;
 }
 
 export const edgeKey = (from: string, to: string) => `${from}\0${to}`;
@@ -23,7 +24,7 @@ export const splitEdgeKey = (key: string) => key.split("\0") as [string, string]
 
 export function buildGraph(extracted: ReadonlyMap<string, Extracted>, index: SideIndex, mapper: Mapper): SideGraph {
   const edges = new Map<string, SideEdge>();
-  let unresolved = 0;
+  const unresolved = new Map<string, number>();
   for (const src of [...extracted.keys()].sort(compareStrings)) {
     const from = mapper.component(src);
     if (!from) continue;
@@ -31,7 +32,7 @@ export function buildGraph(extracted: ReadonlyMap<string, Extracted>, index: Sid
     for (const ref of (extracted.get(src) as Extracted).refs) {
       const r = index.resolve(src, ref);
       if (r.kind === "unresolved") {
-        unresolved++;
+        unresolved.set(src, (unresolved.get(src) ?? 0) + 1);
         continue;
       }
       if (r.kind !== "component") continue;

@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Fixed
+- "References not resolved" counts the changed files only, and says so. It counted the whole repository, so every
+  pull request of Immich showed the same 70.
 - Generated files are recognized by the first lines of the file, not of the first hunk, so a change in the middle
   of a generated file counts too; "DO NOT MODIFY" and "this file has been generated" are markers now. Immich's
   generated SDK no longer opened the story. `ANALYSIS_VERSION` is 7.
