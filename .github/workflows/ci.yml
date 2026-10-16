@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
@@ -35,19 +35,25 @@ jobs:
     name: Examples, schemas, npm bundle and binary
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "20"
       - run: bun install --frozen-lockfile
       - name: Examples and schemas are up to date
         run: |
+          bun --version && git --version
           bun run examples
           bun run schemas
-          git diff --exit-code -- examples schemas
+          if ! git diff --quiet -- examples schemas; then
+            # Annotations are readable without signing in: say what differs.
+            echo "::error title=Stale examples or schemas::$(git diff --stat -- examples schemas | tail -n 8 | tr '\n' '|')"
+            echo "::error title=What differs::$(bun scripts/compare-reports.ts $(git diff --name-only -- 'examples/*.html') | tr '\n' '|')"
+            exit 1
+          fi
       - name: The npm bundle runs on Node 20
         run: |
           bun run build

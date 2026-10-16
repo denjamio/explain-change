@@ -66,12 +66,11 @@ state machine to follow.
 - Key-dependency labels sit beside their arrow, never over a box, and fit their text.
 
 ### Upgrading from 0.1.x
-- `explain-change update` moves a 0.1 install to the binary by itself (a small `explain_change.py` answers the old
-  updater). New installs: `install.sh`, `install.ps1` or npm.
+- Install again with `install.sh`, `install.ps1` or npm: 0.1's Python updater does not move to the binary.
 - Explanations written with 0.1 are stale: the first run on each change drafts a new one.
 
 ### Removed
-- The Python implementation, `install.py` and the root `SKILL.md`, `PROMPT.md` and
+- The Python implementation, `install.py`, `explain_change.py` and the root `SKILL.md`, `PROMPT.md` and
   `CONFIGURE.md` (now in `skills/`).
 
 ## [0.1.9] - 2026-10-14
