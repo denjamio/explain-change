@@ -77,7 +77,8 @@ function bestHunk(files: FileFacts[], ctx: HunkContext): string | null {
  * which every change touches) is no candidate: it says nothing about this change.
  */
 export function keyDependencyCandidates(facts: Pick<FactsCore, "dependencies" | "config">) {
-  const bottom = facts.config.layers.at(-1)?.id;
+  // With 3 lanes or more, the bottom one holds what every lane uses; with 2, it is the domain itself.
+  const bottom = facts.config.layers.length >= 3 ? facts.config.layers.at(-1)?.id : undefined;
   const layerOf = new Map(facts.config.components.map((c) => [c.id, c.layer]));
   return facts.dependencies
     .filter(

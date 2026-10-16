@@ -57,6 +57,9 @@ export function assessArchitecture(root: string, config: Config, mapper: Mapper,
   const log = git(["log", "-n", String(history), "--no-merges", "--name-only", "--format=format:@"], root, {
     check: false,
   });
+  // With 3 lanes or more, the bottom one holds what every lane uses; with 2, it is the domain itself.
+  const bottomLayer = config.layers.length >= 3 ? config.layers.at(-1)?.id : undefined;
+  const bottom = new Set(config.components.filter((c) => c.layer === bottomLayer).map((c) => c.id));
   const perComponent = new Map<string, number>();
   const pairs = new Map<string, number>();
   let commits = 0;
@@ -84,7 +87,9 @@ export function assessArchitecture(root: string, config: Config, mapper: Mapper,
       const coupling = n / Math.min(perComponent.get(a) ?? n, perComponent.get(b) ?? n);
       return { a, b, commits: n, coupling: Math.round(coupling * 100) / 100 };
     })
-    .filter((p) => p.commits >= 3 && p.coupling >= 0.5)
+    // At least 5 shared commits, and none with the bottom lane (the shared kernel or the platform), which changes
+    // with everything: below that, coupling 1.0 from 3 commits is chance, not a boundary.
+    .filter((p) => p.commits >= 5 && p.coupling >= 0.5 && !bottom.has(p.a) && !bottom.has(p.b))
     .sort(byKeys((p) => [-p.coupling, -p.commits, p.a, p.b]))
     .slice(0, 10);
 

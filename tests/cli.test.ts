@@ -655,7 +655,7 @@ describe("architecture check", () => {
         '[[components]]\nid = "orders-api"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
         '[[components]]\nid = "orders"\nlayer = "domain"\npaths = ["app/models/**"]\n',
     );
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       r.write({
         [`app/controllers/c${i}_controller.rb`]: `class C${i}Controller\n  def x = Order.new\nend\n`,
         [`app/models/m${i}.rb`]: `class M${i}\n  def y = C${i}Controller\nend\n`,
@@ -666,8 +666,33 @@ describe("architecture check", () => {
     expect(out.violations.map((v: { from: string; to: string }) => `${v.from}->${v.to}`)).toEqual([
       "orders->orders-api",
     ]);
-    expect(out.cycles).toEqual([{ a: "orders", b: "orders-api", refsAB: 3, refsBA: 3 }]);
-    expect(out.changeTogether.pairs[0]).toMatchObject({ a: "orders", b: "orders-api", commits: 3, coupling: 1 });
+    expect(out.cycles).toEqual([{ a: "orders", b: "orders-api", refsAB: 5, refsBA: 5 }]);
+    expect(out.changeTogether.pairs[0]).toMatchObject({ a: "orders", b: "orders-api", commits: 5, coupling: 1 });
+  });
+
+  test("3 commits together are chance, and [ignore] that hides migrations or ADRs is a warning", () => {
+    const r = repo(
+      '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n' +
+        '[[components]]\nid = "orders-api"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
+        '[[components]]\nid = "orders"\nlayer = "domain"\npaths = ["app/models/**", "db/**"]\n' +
+        '[ignore]\npaths = ["db/migrate/**", "docs/**"]\n',
+    );
+    for (let i = 0; i < 3; i++) {
+      r.write({
+        [`app/controllers/c${i}_controller.rb`]: `class C${i}Controller\nend\n`,
+        [`app/models/m${i}.rb`]: `class M${i}\nend\n`,
+      });
+      r.commit(`pair ${i}`);
+    }
+    r.write({
+      "db/migrate/001_create_orders.rb": "class CreateOrders\nend\n",
+      "docs/adr/0001-orders.md": "# Orders\n",
+    });
+    r.commit("migration and adr");
+    const out = r.json(["check"]).out;
+    expect(out.changeTogether.pairs).toEqual([]);
+    expect(out.warnings.join("\n")).toContain("hides 1 migration files");
+    expect(out.warnings.join("\n")).toContain("hides 1 architecture decision records");
   });
 
   test("the glossary reaches the digest", () => {

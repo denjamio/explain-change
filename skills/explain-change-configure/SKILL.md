@@ -122,7 +122,9 @@ explain-change check      # --history N reads more commits for "change together"
   interface, an event). Merge them, or keep them and name the cycle in `direction` as debt.
 - **Components that change together** (share of commits): above ~70% between two domain components, they are one
   context for the team; merge them. Between a context's parts across lanes (Orders API + Orders) it is expected.
-- **Unmapped folders**: give them an owner or add them to `[ignore]`.
+- **Unmapped folders**: give them an owner or add them to `[ignore]`. Never ignore migrations or architecture
+  decision records: they are the evidence for the data model and the decisions. `check` warns when `[ignore]` hides
+  them.
 
 Then explain 2–3 recent PRs:
 

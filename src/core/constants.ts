@@ -109,6 +109,8 @@ export const FRAMEWORK_CONFIG = [
   "manage.py",
 ];
 export const MIGRATION_PATTERNS = ["**/migrations/**", "**/Migrations/**", "db/migrate/**", "**/db/migrate/**"];
+/** Architecture decision records: the evidence behind a change's decisions. */
+export const ADR_PATTERNS = ["**/adr/**", "**/adrs/**", "**/decisions/**", "**/architecture/decisions/**"];
 export const CONFIG_EXT = new Set([
   ".json",
   ".yml",

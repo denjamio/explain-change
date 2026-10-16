@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
   to update the config instead of an explanation of an empty map. The skills say what to do with it.
 
 ### Fixed
+- `check`: components change together only from 5 shared commits up, and never with the bottom lane of 3 or more
+  (the shared kernel or the platform); 3 commits gave a coupling of 1.0 by chance. It warns when `[ignore]` hides
+  migrations or architecture decision records, and the configure skill says not to ignore them. With 2 lanes the
+  bottom one is the domain, so key dependency candidates keep grown links into it.
 - The map draws a neighbor only when the change adds or removes its link, breaks a rule with it, or makes it the
   key dependency. A link that only gained references drew 12 of 13 neighbors in the examples. A rule the code broke
   before the change is no longer red, and no longer pulls in neighbors: it shows with the context.
