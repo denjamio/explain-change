@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-16
+
 ### Changed
 - The gallery shows 10 real pull requests, 2 from each of 5 open-source products: Immich (TypeScript), Saleor
   (Django), Bitwarden (.NET), Chatwoot (Rails) and Maybe (Rails). Each product has a config written with the
