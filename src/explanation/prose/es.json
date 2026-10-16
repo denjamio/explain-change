@@ -1,0 +1,34 @@
+{
+  "$comment": "Palabras que el validador rechaza en prosa en español, agrupadas por motivo; cada mensaje dice qué escribir en su lugar. Los nombres de código no cuentan: se comprueban contra el cambio.",
+  "refused": [
+    {
+      "why": "palabras de marketing; di qué pasa",
+      "words": [
+        "aprovecha",
+        "aprovechar",
+        "orquesta",
+        "orquestar",
+        "robusto",
+        "robusta",
+        "de cara a",
+        "con el fin de",
+        "a nivel de",
+        "potencia",
+        "potenciar",
+        "integral",
+        "garantiza",
+        "optimiza"
+      ]
+    },
+    {
+      "why": "futuro o condicional; di qué hace el código ahora, en presente",
+      "words": ["podría", "podrían", "debería", "deberían", "va a", "van a", "será", "serán", "permitirá", "permitirán"]
+    },
+    { "why": "relleno; quítalo", "words": ["básicamente", "simplemente", "realmente"] },
+    { "why": "un juicio; di el efecto", "words": ["mejor", "más limpio", "más limpia", "elegante", "elegantemente"] },
+    {
+      "why": "un número en letras; escribe cifras",
+      "words": ["dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez"]
+    }
+  ]
+}

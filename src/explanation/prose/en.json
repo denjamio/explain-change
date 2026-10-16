@@ -1,0 +1,44 @@
+{
+  "$comment": "Words the validator refuses in English prose, grouped by why; each message says what to write instead. Code names are exempt: they are checked against the change.",
+  "refused": [
+    {
+      "why": "marketing words; say what actually happens",
+      "words": [
+        "leverage",
+        "leverages",
+        "leveraging",
+        "utilize",
+        "utilizes",
+        "orchestrate",
+        "orchestrates",
+        "seamless",
+        "seamlessly",
+        "robust",
+        "facilitate",
+        "facilitates",
+        "in order to",
+        "streamline",
+        "streamlines",
+        "enhance",
+        "enhances",
+        "comprehensive",
+        "holistic",
+        "crucial",
+        "empower",
+        "empowers",
+        "ensures",
+        "delve"
+      ]
+    },
+    {
+      "why": "future or modal; say what the code does now, in the present",
+      "words": ["will", "would", "could", "might", "should"]
+    },
+    { "why": "filler; remove it", "words": ["basically", "simply", "just", "actually", "really"] },
+    { "why": "a judgement; say the effect instead", "words": ["better", "cleaner", "nicer", "elegant", "elegantly"] },
+    {
+      "why": "a number in words; write digits",
+      "words": ["two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+    }
+  ]
+}
