@@ -1,15 +1,13 @@
-# healthchecks · Description length limit
+# healthchecks (Django) · Description length limit
 
-Config and insight for `../../real-healthchecks-django-desc-limit.html`.
+A real pull request explained by an agent: the source of `examples/real-healthchecks-django-desc-limit.html`.
 
-To regenerate it:
+- `real.json`: the repository, the commit and the gallery card.
+- `explain-change.toml`: the config the agent wrote for the repository, following the configure skill.
+- `explanation.json`: what the agent wrote about the change (without `version`, `key` and `lang`, which the build adds).
+
+Rebuild it (clones https://github.com/healthchecks/healthchecks.git at `a37fcf82131a`):
 
 ```bash
-git init healthchecks && cd healthchecks
-git remote add origin https://github.com/healthchecks/healthchecks.git
-git fetch --depth 2 origin a37fcf82131a26653d75edc18c2c0cedffc880c9 && git checkout FETCH_HEAD
-cp <this folder>/explain-change.toml .explain-change.toml
-explain-change local --base HEAD~1
-cp <this folder>/insight.json .explain-change/insight.json
-explain-change render
+bun scripts/build-examples.ts --real
 ```

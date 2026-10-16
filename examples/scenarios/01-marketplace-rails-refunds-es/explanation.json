@@ -1,0 +1,202 @@
+{
+  "tldr": "Añade reembolsos parciales de pedidos vía POST /refunds, idempotentes por cabecera Idempotency-Key, con aviso por email al cliente.",
+  "goal": "Permitir a soporte devolver parte del importe de un pedido sin duplicar cobros.",
+  "story": [
+    {
+      "heading": "Nuevo caso de uso Refunds::Create",
+      "body": "Soporte puede devolver parte de un pedido. Un reintento con la misma clave no vuelve a cobrar.",
+      "view": "architecture",
+      "focus": [
+        "refunds"
+      ],
+      "code": "app/services/refunds/create.rb:4-11"
+    },
+    {
+      "heading": "Order ahora calcula lo reembolsable",
+      "body": "La regla de importe vive en el modelo, no en el servicio.",
+      "view": "architecture",
+      "focus": [
+        "models"
+      ],
+      "code": "app/models/order.rb:5-10"
+    },
+    {
+      "heading": "Tabla refunds añadida",
+      "body": "Cada reembolso guarda su importe y una clave de idempotencia única. Un pedido tiene 0 o más reembolsos.",
+      "view": "data",
+      "focus": [
+        "refund"
+      ],
+      "code": "db/migrate/20261001100000_create_refunds.rb:3-8"
+    },
+    {
+      "heading": "La pasarela recibe la clave de idempotencia",
+      "body": "Gateway.refund propaga Idempotency-Key a la pasarela de pagos.",
+      "view": "flow:create-refund",
+      "focus": [
+        "#4"
+      ],
+      "code": "app/clients/payments/gateway.rb:8-10"
+    },
+    {
+      "heading": "El cliente recibe un email al final",
+      "body": "deliver_later: si el SMTP cae, el reembolso no falla.",
+      "view": "flow:create-refund",
+      "focus": [
+        "#5"
+      ]
+    },
+    {
+      "heading": "5 componentes, 0 violaciones",
+      "body": "Todas las dependencias nuevas van web → aplicación → dominio/infra.",
+      "view": "architecture"
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "refunds",
+      "to": "payments",
+      "label": "refund + idempotency"
+    }
+  ],
+  "components": [
+    {
+      "id": "controllers",
+      "summary": "Nueva ruta POST /refunds; el controlador exige Idempotency-Key y delega."
+    },
+    {
+      "id": "refunds",
+      "summary": "Nuevo caso de uso: deduplica por clave, registra el reembolso, llama a la pasarela y avisa."
+    },
+    {
+      "id": "models",
+      "summary": "Nuevo modelo Refund; Order calcula el importe reembolsable y crea reembolsos."
+    },
+    {
+      "id": "payments",
+      "summary": "La pasarela expone refund() propagando la clave de idempotencia."
+    },
+    {
+      "id": "mailers",
+      "summary": "Nuevo email de confirmación de reembolso."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "Idempotencia por cabecera Idempotency-Key",
+      "why": "El cliente controla los reintentos y la misma clave llega a la pasarela.",
+      "alternative": "Deduplicar por (pedido, importe) en una ventana de tiempo.",
+      "evidence": "app/controllers/refunds_controller.rb:6"
+    },
+    {
+      "title": "La regla de importe vive en Order",
+      "why": "Order conoce su total y sus reembolsos; el servicio solo coordina las llamadas.",
+      "evidence": "app/models/order.rb:6"
+    },
+    {
+      "title": "Email en segundo plano",
+      "why": "deliver_later no bloquea la respuesta ni falla el reembolso si el SMTP cae.",
+      "evidence": "app/services/refunds/create.rb:11"
+    }
+  ],
+  "flows": [
+    {
+      "id": "create-refund",
+      "title": "Crear reembolso",
+      "trigger": "RefundsController#create",
+      "steps": [
+        {
+          "from": "controllers",
+          "to": "refunds",
+          "call": "Refunds::Create.call",
+          "delta": "added",
+          "data": {
+            "type": "RefundParams",
+            "fields": [
+              "+order_id",
+              "+amount",
+              "+idempotency_key"
+            ]
+          }
+        },
+        {
+          "from": "refunds",
+          "to": "models",
+          "call": "Refund.find_by(key)",
+          "delta": "added"
+        },
+        {
+          "from": "refunds",
+          "to": "models",
+          "call": "order.refund!(amount)",
+          "delta": "added",
+          "data": {
+            "type": "Refund",
+            "fields": [
+              "+amount: decimal",
+              "+idempotency_key: string"
+            ]
+          }
+        },
+        {
+          "from": "refunds",
+          "to": "payments",
+          "call": "Gateway.refund",
+          "delta": "added",
+          "data": {
+            "type": "RefundRequest",
+            "fields": [
+              "+charge",
+              "+amount",
+              "+idempotency_key"
+            ]
+          }
+        },
+        {
+          "from": "refunds",
+          "to": "mailers",
+          "call": "RefundMailer.confirmation",
+          "delta": "added"
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "refund",
+        "name": "Refund",
+        "component": "models",
+        "evidence": "db/migrate/20261001100000_create_refunds.rb:1-10",
+        "fields": [
+          "+order_id: references",
+          "+amount: decimal(10,2)",
+          "+idempotency_key: string (único)",
+          "+created_at, updated_at"
+        ],
+        "delta": "added"
+      },
+      {
+        "id": "order",
+        "name": "Order",
+        "component": "models",
+        "evidence": "app/models/order.rb:1-11",
+        "fields": [
+          "id",
+          "total: decimal",
+          "+refunds: has_many",
+          "+refundable_total(): total − Σ refunds"
+        ],
+        "delta": "changed"
+      }
+    ],
+    "relations": [
+      {
+        "from": "order",
+        "to": "refund",
+        "label": "1 → 0..n",
+        "delta": "added"
+      }
+    ]
+  }
+}

@@ -1,15 +1,13 @@
-# maybe · Data exports (#2517)
+# maybe (Rails) · Data exports (#2517)
 
-Config and insight for `../../real-maybe-rails-data-exports.html`.
+A real pull request explained by an agent: the source of `examples/real-maybe-rails-data-exports.html`.
 
-To regenerate it:
+- `real.json`: the repository, the commit and the gallery card.
+- `explain-change.toml`: the config the agent wrote for the repository, following the configure skill.
+- `explanation.json`: what the agent wrote about the change (without `version`, `key` and `lang`, which the build adds).
+
+Rebuild it (clones https://github.com/maybe-finance/maybe.git at `0329a5f211fa`):
 
 ```bash
-git init maybe && cd maybe
-git remote add origin https://github.com/maybe-finance/maybe.git
-git fetch --depth 2 origin 0329a5f211fac5fb2b2d2383fbaa571880f5caee && git checkout FETCH_HEAD
-cp <this folder>/explain-change.toml .explain-change.toml
-explain-change local --base HEAD~1
-cp <this folder>/insight.json .explain-change/insight.json
-explain-change render
+bun scripts/build-examples.ts --real
 ```

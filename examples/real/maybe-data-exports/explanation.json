@@ -1,0 +1,208 @@
+{
+  "tldr": "Admins can now export all family data as 1 ZIP file. A background job writes 4 CSV files and 1 NDJSON file and attaches the ZIP to a FamilyExport record.",
+  "goal": "Let a family take a full copy of its data out of Maybe.",
+  "story": [
+    {
+      "heading": "Family::DataExporter added",
+      "body": "It writes accounts, transactions, trades and categories as CSV, plus all.ndjson, into 1 ZIP.",
+      "view": "architecture",
+      "focus": [
+        "models-family",
+        "jobs"
+      ],
+      "code": "app/models/family/data_exporter.rb:9-36"
+    },
+    {
+      "heading": "Settings now starts an export",
+      "body": "The controller creates a FamilyExport and queues FamilyDataExportJob. The request returns at once.",
+      "view": "flow:export-data",
+      "focus": [
+        "#1",
+        "#2"
+      ],
+      "code": "app/controllers/family_exports_controller.rb:11-21"
+    },
+    {
+      "heading": "The job builds and attaches the ZIP",
+      "body": "Status moves to processing, then completed. On an error the job sets failed.",
+      "view": "flow:export-data",
+      "focus": [
+        "#3"
+      ],
+      "code": "app/jobs/family_data_export_job.rb:4-21"
+    },
+    {
+      "heading": "FamilyExport added",
+      "body": "A new family_exports table stores the status. Family has many exports. The ZIP is an Active Storage file.",
+      "view": "data",
+      "focus": [
+        "family-export",
+        "family"
+      ],
+      "code": "db/migrate/20250724115507_create_family_exports.rb:1-10"
+    },
+    {
+      "heading": "Download goes through the controller",
+      "body": "download sends the stored file only when the export is completed and attached.",
+      "view": "flow:download-export",
+      "focus": [
+        "#1"
+      ],
+      "code": "app/controllers/family_exports_controller.rb:28-34"
+    },
+    {
+      "heading": "Settings lists the last 10 exports",
+      "body": "A Turbo frame shows the list. It refreshes every 3 seconds while an export runs.",
+      "view": "architecture",
+      "focus": [
+        "ui",
+        "controllers"
+      ],
+      "code": "app/views/family_exports/_list.html.erb:1-5"
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "jobs",
+      "to": "models-family",
+      "label": "builds the ZIP"
+    }
+  ],
+  "components": [
+    {
+      "id": "ui",
+      "summary": "Settings shows an Export data button and a list of exports that refreshes while one runs."
+    },
+    {
+      "id": "controllers",
+      "summary": "New FamilyExportsController: admins start an export, list the last 10 and download a completed one."
+    },
+    {
+      "id": "jobs",
+      "summary": "New FamilyDataExportJob builds the ZIP, attaches it and sets the export status."
+    },
+    {
+      "id": "models-family",
+      "summary": "Family has many exports. New Family::DataExporter writes 4 CSV files and all.ndjson into 1 ZIP."
+    },
+    {
+      "id": "models",
+      "summary": "New FamilyExport model with a status and an attached file. It belongs to a Family."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "Build the archive in a background job",
+      "why": "A full export reads every account and transaction. The request returns at once and the UI polls for the result.",
+      "alternative": "Build and stream the ZIP inside the request.",
+      "evidence": "app/controllers/family_exports_controller.rb:13"
+    },
+    {
+      "title": "Exporter in the Family:: namespace",
+      "why": "The app keeps domain logic in model namespaces. Family::DataExporter follows that convention.",
+      "alternative": "A service object in app/services.",
+      "evidence": "app/models/family/data_exporter.rb:4"
+    },
+    {
+      "title": "A FamilyExport record holds the state",
+      "why": "The list, the polling and the download read 1 status. The file is an Active Storage attachment on the record.",
+      "alternative": "Keep the state only in the job queue.",
+      "evidence": "app/models/family_export.rb:6-11"
+    },
+    {
+      "title": "CSV per entity plus 1 NDJSON dump",
+      "why": "CSV opens in a spreadsheet. NDJSON keeps each record with its nested data, such as the accountable of an account.",
+      "alternative": "1 JSON document for everything.",
+      "evidence": "app/models/family/data_exporter.rb:27-29"
+    }
+  ],
+  "flows": [
+    {
+      "id": "export-data",
+      "title": "Start an export",
+      "steps": [
+        {
+          "from": "controllers",
+          "to": "models",
+          "call": "family_exports.create!",
+          "delta": "added",
+          "data": {
+            "type": "FamilyExport",
+            "fields": [
+              "+status: pending"
+            ]
+          }
+        },
+        {
+          "from": "controllers",
+          "to": "jobs",
+          "call": "FamilyDataExportJob.perform_later",
+          "delta": "added"
+        },
+        {
+          "from": "jobs",
+          "to": "models-family",
+          "call": "DataExporter#generate_export",
+          "delta": "added",
+          "data": {
+            "type": "ZIP (StringIO)",
+            "fields": [
+              "+accounts.csv",
+              "+transactions.csv",
+              "+trades.csv",
+              "+categories.csv",
+              "+all.ndjson"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "download-export",
+      "title": "Download an export",
+      "steps": [
+        {
+          "from": "controllers",
+          "to": "models",
+          "call": "export.downloadable?",
+          "delta": "added"
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "family-export",
+        "name": "FamilyExport",
+        "component": "models",
+        "evidence": "db/migrate/20250724115507_create_family_exports.rb:3-7",
+        "fields": [
+          "+id: uuid",
+          "+family_id: uuid",
+          "+status: pending|processing|completed|failed",
+          "+export_file: attachment"
+        ],
+        "delta": "added"
+      },
+      {
+        "id": "family",
+        "name": "Family",
+        "component": "models-family",
+        "evidence": "app/models/family.rb:21",
+        "fields": [
+          "+family_exports: has_many"
+        ],
+        "delta": "changed"
+      }
+    ],
+    "relations": [
+      {
+        "from": "family",
+        "to": "family-export",
+        "label": "1..n",
+        "delta": "added"
+      }
+    ]
+  }
+}

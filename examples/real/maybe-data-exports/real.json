@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/maybe-finance/maybe.git",
+  "commit": "0329a5f211fac5fb2b2d2383fbaa571880f5caee",
+  "report": "real-maybe-rails-data-exports.html",
+  "project": "maybe (Rails)",
+  "title": "Data exports (#2517)",
+  "stack": "Real project · Ruby on Rails",
+  "shows": "Controller, background job, the Family domain and a new FamilyExport table."
+}

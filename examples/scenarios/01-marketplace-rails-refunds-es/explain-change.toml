@@ -1,0 +1,59 @@
+[project]
+name = "marketplace"
+direction = "Controladores finos; la lógica vive en servicios de aplicación y modelos; integraciones externas aisladas en clients/ y mailers/."
+lang = "es"
+
+[glossary]
+reembolso = "Dinero devuelto al cliente por un pedido, total o parcial; nunca más que lo reembolsable"
+"clave de idempotencia" = "Clave que elige el cliente para que un reintento actúe una sola vez"
+
+[[layers]]
+id = "web"
+name = "Web"
+[[layers]]
+id = "application"
+name = "Aplicación"
+[[layers]]
+id = "domain"
+name = "Dominio"
+[[layers]]
+id = "infra"
+name = "Infraestructura"
+
+[rules]
+allow = ["web -> application", "application -> domain", "application -> infra", "infra -> domain"]
+
+[[components]]
+id = "controllers"
+name = "API de pedidos"
+layer = "web"
+paths = ["app/controllers/**", "config/routes.rb"]
+desc = "Endpoints HTTP de pedidos y reembolsos"
+[[components]]
+id = "checkout"
+name = "Checkout"
+layer = "application"
+paths = ["app/services/checkout/**"]
+[[components]]
+id = "refunds"
+name = "Reembolsos"
+layer = "application"
+paths = ["app/services/refunds/**"]
+desc = "Casos de uso de reembolsos"
+[[components]]
+id = "models"
+name = "Pedidos"
+layer = "domain"
+paths = ["app/models/**"]
+desc = "Order y Refund: el total del pedido y lo que aún se puede reembolsar"
+[[components]]
+id = "payments"
+name = "Pasarela de pagos"
+layer = "infra"
+paths = ["app/clients/payments/**"]
+[[components]]
+id = "mailers"
+name = "Envío de emails"
+layer = "infra"
+paths = ["app/mailers/**"]
+

@@ -1,54 +1,83 @@
+# A marketplace on Rails, modeled as its team reads it: layered, with the domain named by context, not by framework
+# artifact. See the explain-change-configure skill for the method.
+
 [project]
 name = "marketplace"
-direction = "Thin controllers; logic lives in services and models; external integrations stay in clients/ and mailers/."
+direction = "Layered: controllers only translate HTTP; use cases in app/services own each business flow; models hold the rules; integrations live in adapters. Nothing in the domain calls an adapter."
 lang = "en"
 
-# Lanes, drawn top to bottom. [rules] decides what may depend on what.
+[glossary]
+order = "A customer's purchase: its line items, total and payment"
+refund = "Money returned to a customer for an order, in part or in full; at most the order's refundable total"
+"idempotency key" = "A client-chosen key that makes a retried request act once"
+
+# Lanes, entry points first. The order only draws: [rules] decides what may depend on what.
 [[layers]]
 id = "web"
 name = "Web"
 [[layers]]
 id = "application"
-name = "Application"
+name = "Use cases"
 [[layers]]
 id = "domain"
 name = "Domain"
 [[layers]]
-id = "infra"
-name = "Infrastructure"
+id = "adapters"
+name = "Adapters"
 
 [rules]
-allow = ["web -> application", "application -> domain", "application -> infra", "infra -> domain"]
+allow = ["web -> application", "application -> domain", "application -> adapters", "adapters -> domain"]
+forbid = ["domain -> adapters"]
 
 [[components]]
-id = "controllers"
-name = "Controllers"
+id = "orders-api"
+name = "Orders API"
 layer = "web"
 paths = ["app/controllers/**", "config/routes.rb"]
+desc = "Owns the HTTP endpoints for orders and refunds; translates requests into use cases."
+
+[[components]]
+id = "checkout"
+name = "Checkout"
+layer = "application"
+paths = ["app/services/checkout/**"]
+desc = "Owns placing an order: validation, payment, confirmation."
+
 [[components]]
 id = "refunds"
 name = "Refunds"
 layer = "application"
 paths = ["app/services/refunds/**"]
-desc = "Refund use cases"
+desc = "Owns refunding an order: once per idempotency key, never above the refundable total."
+
 [[components]]
-id = "models"
-name = "Models"
+id = "orders"
+name = "Orders"
 layer = "domain"
 paths = ["app/models/**"]
+desc = "Owns Order, LineItem and Refund; an order's total and what can still be refunded."
+
 [[components]]
-id = "payments"
+id = "payment-gateway"
 name = "Payment gateway"
-layer = "infra"
+layer = "adapters"
 paths = ["app/clients/payments/**"]
 constants = ["Payments::*"]
+desc = "Owns charges and refunds at the payment provider."
+
 [[components]]
-id = "mailers"
-name = "Mailers"
-layer = "infra"
+id = "email-delivery"
+name = "Email delivery"
+layer = "adapters"
 paths = ["app/mailers/**"]
+desc = "Owns the emails sent to customers."
 
 [[flows]]
-id = "refund"
+id = "refund-an-order"
 title = "Refund an order"
-steps = ["controllers -> refunds : Refunds::Create.call", "refunds -> payments : Payments::Gateway.refund", "refunds -> models : Order#refund!"]
+steps = [
+  "orders-api -> refunds : Refunds::Create.call",
+  "refunds -> orders : Order#refund!",
+  "refunds -> payment-gateway : Payments::Gateway.refund",
+  "refunds -> email-delivery : RefundMailer.confirmation",
+]

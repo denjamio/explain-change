@@ -1,0 +1,7 @@
+{
+  "title": "Django · no config, no agent",
+  "shows": "Zero setup: components inferred from folders and dependencies from imports. No narrative, only computed facts.",
+  "branch": "feature/monthly-reports",
+  "message": "Monthly statements report",
+  "dir": "ledger"
+}
