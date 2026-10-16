@@ -13,6 +13,9 @@ export const CONTRACT_VERSION = 2;
  */
 export const ANALYSIS_VERSION = 3;
 
+/** The GitHub repository: releases, issues, the published schemas and the examples site. */
+export const REPOSITORY = "denjamio/explain-change";
+
 export const CONFIG_NAME = ".explain-change.toml";
 export const WORK_DIR = ".explain-change";
 export const FILES = {

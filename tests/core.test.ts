@@ -1,8 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync, statSync, writeFileSync } from "node:fs";
+import { join as joinNative } from "node:path";
 import { diffPath, parseDiff } from "../src/analysis/diff.ts";
+import { ensureDir } from "../src/core/fs.ts";
 import { fnmatch, matchesAny } from "../src/core/glob.ts";
 import { dirname, extname, join, normpath } from "../src/core/paths.ts";
 import { camelize, kebab, singularize, slugify, splitLines, truncate } from "../src/core/text.ts";
+import { tempDir } from "./helpers.ts";
 
 describe("globs", () => {
   test("folders, ** and plain paths", () => {
@@ -120,5 +124,25 @@ deleted file mode 100644
       ["tab\tmoved.py", "tab\there.py", "R"],
       ["same name.py", null, "M"],
     ]);
+  });
+});
+
+describe("ensureDir", () => {
+  // Runs on the Windows runners too, where the temporary folder sits under an 8.3 short name (RUNNER~1).
+  test("creates missing parents, accepts existing folders and '.'", () => {
+    const deep = joinNative(tempDir(), "a", "b", "c");
+    ensureDir(deep);
+    expect(statSync(deep).isDirectory()).toBe(true);
+    ensureDir(deep);
+    ensureDir(joinNative(deep, ".."));
+    ensureDir(".");
+    expect(existsSync(deep)).toBe(true);
+  });
+
+  test("a file in the way is an error", () => {
+    const file = joinNative(tempDir(), "file");
+    writeFileSync(file, "");
+    expect(() => ensureDir(joinNative(file, "sub"))).toThrow();
+    expect(() => ensureDir(file)).toThrow();
   });
 });

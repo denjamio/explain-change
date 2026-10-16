@@ -86,4 +86,4 @@ try {
 }
 const valid = rows.filter((r) => r.state === "valid").length;
 console.log(`\n${valid}/${rows.length} valid with ${values.model}`);
-process.exit(valid === rows.length ? 0 : 1);
+process.exitCode = valid === rows.length ? 0 : 1;

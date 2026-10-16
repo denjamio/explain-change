@@ -31,6 +31,9 @@ jobs:
       - run: bun run lint
       - run: scripts/ci-run.sh "bun test" bun test
         shell: bash
+      - name: The standalone binary runs on this system
+        run: scripts/ci-run.sh "Binary smoke test" bun run smoke
+        shell: bash
 
   artifacts:
     name: Examples, schemas, npm bundle and binary
@@ -66,8 +69,3 @@ jobs:
           git checkout -qb feature && mkdir -p app/models && echo 'class Order; end' > app/models/order.rb
           git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm feature
           node "$GITHUB_WORKSPACE/dist/explain-change.js" local --base main --no-open --json
-      - name: The standalone binary runs
-        run: |
-          bun run compile bun-linux-x64
-          dist/bin/explain-change-linux-x64 --version
-          dist/bin/explain-change-linux-x64 schema explanation > /dev/null

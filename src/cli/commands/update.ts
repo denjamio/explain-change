@@ -1,10 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { VERSION } from "../../core/constants.ts";
+import { REPOSITORY, VERSION } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
 import { printJson } from "../output.ts";
-
-const REPO = "denjamio/explain-change";
 
 /** How this copy was installed: a standalone binary can replace itself; npm and source checkouts update their own way. */
 export function installKind(): "binary" | "npm" | "source" {
@@ -30,7 +28,7 @@ export async function update(opts: { version: string | null; json: boolean }): P
     throw new UserError("This copy came from npm: update it with `npm install -g explain-change@latest`.");
   if (kind === "source")
     throw new UserError("This is a source checkout: update it with `git pull`, then `bun run install:dev`.");
-  const base = process.env.EXPLAIN_CHANGE_RELEASES ?? `https://github.com/${REPO}/releases`;
+  const base = process.env.EXPLAIN_CHANGE_RELEASES ?? `https://github.com/${REPOSITORY}/releases`;
   const url = opts.version
     ? `${base}/download/${opts.version.startsWith("v") ? opts.version : `v${opts.version}`}/${assetName()}`
     : `${base}/latest/download/${assetName()}`;

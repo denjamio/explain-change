@@ -47,6 +47,7 @@
     "install:dev": "bun scripts/install-dev.ts",
     "schemas": "bun scripts/build.ts --schemas",
     "compile": "bun scripts/build.ts --compile",
+    "smoke": "bun scripts/smoke-binary.ts",
     "eval": "bun scripts/eval.ts"
   },
   "devDependencies": {

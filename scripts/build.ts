@@ -9,8 +9,9 @@
  * The report script is bundled without minification: the same source always gives the same page, and a reader can
  * open it.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { ensureDir } from "../src/core/fs.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const GENERATED = join(ROOT, "src/report/assets.gen.ts");
@@ -52,26 +53,35 @@ async function buildNode() {
     minify: false,
   });
   if (!out.success) throw new AggregateError(out.logs, "the CLI does not build");
-  mkdirSync(join(ROOT, "dist"), { recursive: true });
+  ensureDir(join(ROOT, "dist"));
   const file = join(ROOT, "dist/explain-change.js");
   writeFileSync(file, await (out.outputs[0] as Blob).text(), { mode: 0o755 });
   console.log(`built ${file}`);
 }
 
-async function compile(targets: string[]) {
-  mkdirSync(join(ROOT, "dist/bin"), { recursive: true });
+function compile(targets: string[]): void {
   for (const target of targets) {
     const name = `explain-change-${target.replace(/^bun-/, "")}${target.includes("windows") ? ".exe" : ""}`;
-    const outfile = join(ROOT, "dist/bin", name);
-    const p = Bun.spawnSync(
-      ["bun", "build", "--compile", `--target=${target}`, join(ROOT, "src/cli/bin.ts"), "--outfile", outfile],
-      {
-        stdout: "inherit",
-        stderr: "inherit",
-      },
-    );
-    if (p.exitCode !== 0) throw new Error(`compile ${target} failed`);
+    compileBinary(join(ROOT, "dist/bin", name), target);
   }
+}
+
+/** One standalone binary of the CLI, for a Bun target ("bun-linux-x64", …) or, without one, for this machine. */
+export function compileBinary(outfile: string, target?: string): void {
+  ensureDir(dirname(outfile));
+  const p = Bun.spawnSync(
+    [
+      "bun",
+      "build",
+      "--compile",
+      ...(target ? [`--target=${target}`] : []),
+      join(ROOT, "src/cli/bin.ts"),
+      "--outfile",
+      outfile,
+    ],
+    { stdout: "inherit", stderr: "inherit" },
+  );
+  if (p.exitCode !== 0) throw new Error(`compile ${target ?? "for this machine"} failed`);
 }
 
 /** The JSON Schemas of the contract, as committed in schemas/. */
@@ -88,14 +98,12 @@ export async function schemaFiles(): Promise<Record<string, string>> {
 if (import.meta.main) {
   const args = process.argv.slice(2);
   if (args[0] === "--schemas") {
-    mkdirSync(join(ROOT, "schemas"), { recursive: true });
+    ensureDir(join(ROOT, "schemas"));
     for (const [file, text] of Object.entries(await schemaFiles())) writeFileSync(join(ROOT, "schemas", file), text);
     console.log("built schemas/");
-    process.exit(0);
+  } else {
+    if (await buildAssets()) console.log("built src/report/assets.gen.ts");
+    if (args[0] === "--compile") compile(args.length > 1 ? args.slice(1) : [...TARGETS]);
+    else if (args[0] !== "--assets") await buildNode();
   }
-  const changed = await buildAssets();
-  if (changed) console.log("built src/report/assets.gen.ts");
-  if (args[0] === "--assets") process.exit(0);
-  if (args[0] === "--compile") await compile(args.length > 1 ? args.slice(1) : [...TARGETS]);
-  else await buildNode();
 }
