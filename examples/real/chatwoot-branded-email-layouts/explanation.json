@@ -77,30 +77,35 @@
     {
       "title": "3 scopes with a fixed order: inbox, account, installation",
       "why": "A brand per inbox overrides the account layout, and the installation layout stays the last fallback.",
+      "basis": "code",
       "alternative": "A single layout per account.",
       "evidence": "app/services/email_templates/db_resolver_service.rb:59-65"
     },
     {
       "title": "Partial unique indexes, 1 per scope",
       "why": "A plain unique index cannot treat NULL account or inbox ids as a scope. Each partial index guards a single scope.",
+      "basis": "inferred",
       "alternative": "Validate uniqueness only in the model.",
       "evidence": "db/migrate/20260706000000_add_inbox_scope_to_email_templates.rb:8-22"
     },
     {
       "title": "Check the Liquid and the layout slot on save",
       "why": "A layout without {{ content_for_layout }} or with bad Liquid fails at save time, not when a reply goes out.",
+      "basis": "inferred",
       "alternative": "Accept any body and fail when the mailer renders it.",
       "evidence": "app/models/email_template.rb:44-119"
     },
     {
       "title": "A feature flag, off by default",
       "why": "branded_email_templates turns the layouts on per account. The resolver and the API check it before they use a layout.",
+      "basis": "code",
       "alternative": "Always on for e-mail inboxes.",
       "evidence": "config/features.yml:123-125"
     },
     {
       "title": "Current.inbox carries the inbox to the resolver",
       "why": "Rails calls the view resolver without the mailer's objects. Current.inbox gives the resolver the inbox of the reply.",
+      "basis": "inferred",
       "alternative": "Pass the inbox through the view details.",
       "evidence": "app/mailers/conversation_reply_mailer.rb:72-73"
     }

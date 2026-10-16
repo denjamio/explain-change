@@ -99,24 +99,28 @@
     {
       "title": "2 timestamps on Family as cache keys",
       "why": "1 touch per sync transition expires every family cache. A key no longer needs a query for the newest entry.",
+      "basis": "inferred",
       "alternative": "entries.maximum(:updated_at) in each cache key, as before.",
       "evidence": "db/migrate/20250610181219_add_sync_timestamps_to_family.rb:3-4"
     },
     {
       "title": "Activity and completion are separate timestamps",
       "why": "Sync status changes when a sync starts or ends. Totals change only when a sync completes, so they keep their cache during a sync.",
+      "basis": "code",
       "alternative": "A single timestamp for every sync change.",
       "evidence": "app/models/sync.rb:170-176"
     },
     {
       "title": "Small POROs in the BalanceSheet namespace",
       "why": "The app keeps logic in models and POROs. Each object answers a single question: totals, groups, the net worth series or sync status.",
+      "basis": "inferred",
       "alternative": "A single BalanceSheet class with a single large query.",
       "evidence": "app/models/balance_sheet.rb:53-62"
     },
     {
       "title": "HTTP caching for sparklines",
       "why": "stale? with the last completed sync lets the browser reuse its copy. The server then renders nothing.",
+      "basis": "code",
       "alternative": "Server-side cache only, with a full render on each request.",
       "evidence": "app/controllers/accountable_sparklines_controller.rb:7-8"
     }

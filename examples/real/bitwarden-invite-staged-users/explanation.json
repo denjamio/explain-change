@@ -81,30 +81,35 @@
     {
       "title": "Skip bad ids, report them one at a time",
       "why": "A member that is missing, in another organization or no longer staged gets its own error. The other members still get their invitation.",
+      "basis": "code",
       "alternative": "Fail the whole request on the first bad id.",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:105-125"
     },
     {
       "title": "Reserve seats once for the whole set",
       "why": "Seat expansion is all or nothing. A single reservation covers every eligible member, and a failure leaves no seat paid for.",
+      "basis": "code",
       "alternative": "Reserve 1 seat per member as each invitation goes out.",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:82-92"
     },
     {
       "title": "Undo the status when an email fails",
       "why": "The command moves the members back to staged and the caller releases both seat reservations. No member stays invited without an email.",
+      "basis": "code",
       "alternative": "Send the emails first and change the status afterwards.",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:139-190"
     },
     {
       "title": "Promote the staged row, do not create a new one",
       "why": "SCIM and Directory Connector find members by Id and ExternalId. The invite dialog keeps both and overwrites only the fields the invite sets.",
+      "basis": "code",
       "alternative": "Delete the staged row and insert an invited member.",
       "evidence": "src/Core/AdminConsole/Services/Implementations/OrganizationService.cs:637-666"
     },
     {
       "title": "A new bulk read on the repository port",
       "why": "The invite dialog matches many emails at once. Both adapters implement it, so SQL Server and the EF databases behave the same.",
+      "basis": "inferred",
       "alternative": "Call GetByOrganizationEmailAsync once per email.",
       "evidence": "src/Core/AdminConsole/Repositories/IOrganizationUserRepository.cs:66-70"
     }

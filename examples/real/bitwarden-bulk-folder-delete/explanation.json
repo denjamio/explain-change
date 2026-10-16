@@ -83,30 +83,35 @@
     {
       "title": "1 port, 2 adapters",
       "why": "Core references no infrastructure. The port in Vault defines the behavior, and Dapper and EF give it to SQL Server and to PostgreSQL, MySQL and SQLite.",
+      "basis": "inferred",
       "alternative": "Call DeleteAsync once per folder from the command.",
       "evidence": "src/Core/Vault/Repositories/IFolderRepository.cs:12-18"
     },
     {
       "title": "SQL Server does the work in a stored procedure",
       "why": "A single round trip updates the items and deletes the folders in a single transaction, as the other SQL Server repositories do.",
+      "basis": "code",
       "alternative": "Load the items in C# and update them, as EF does.",
       "evidence": "src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:50-72"
     },
     {
       "title": "Ids the user does not own are ignored",
       "why": "The command filters the user's own folders. A request with other ids deletes nothing else and does not fail.",
+      "basis": "code",
       "alternative": "Refuse the whole request when an id is not the user's.",
       "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:19-25"
     },
     {
       "title": "A single vault sync in place of 1 notification per folder",
       "why": "A delete also moves the items out of the folders. The clients need the whole vault again, not only the folder ids.",
+      "basis": "inferred",
       "alternative": "Push 1 folder delete notification per folder.",
       "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:27-30"
     },
     {
       "title": "A limit of 500 ids, on cloud only",
       "why": "The cloud API caps the cost of a request. A self-hosted server has no limit.",
+      "basis": "inferred",
       "alternative": "The same limit for every server.",
       "evidence": "src/Api/Vault/Controllers/FoldersController.cs:119-122"
     }

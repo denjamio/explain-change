@@ -115,6 +115,8 @@ what a change touches, so a quiet box costs nothing on the page; what a box cost
 - `[[flows]]`: 1–3 use cases the business runs on, titled as a command on a domain object (**Place an order**,
   **Refund an order**), with their steps as `"component -> component : call"`. A change that touches one is
   compared with it.
+- `project.names`: only product or library names written like code (`FastAPI`, `NestJS`) that explanations name
+  and the code never spells out; the validator otherwise asks for them in the change.
 - `project.host`: only when the remotes do not tell where the PRs live (a mirror on both hosts, or none): `azure-devops`
   or `github`. Leave it out otherwise; the remotes decide.
 

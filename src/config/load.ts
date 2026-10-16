@@ -54,6 +54,7 @@ export function normalizeConfig(raw: unknown, inferred: boolean): LoadedConfig {
     base: "",
     host: null,
     budget: DEFAULT_BUDGET,
+    names: [],
     layers: [],
     components: [],
     rules: { allow: [], forbid: [], sameLayer: true },
@@ -72,6 +73,7 @@ export function normalizeConfig(raw: unknown, inferred: boolean): LoadedConfig {
     base: r.project?.base ?? "",
     host: r.project?.host ?? null,
     budget: r.project?.budget ?? DEFAULT_BUDGET,
+    names: [...new Set(r.project?.names ?? [])].sort(),
   });
   const layerIds = new Set<string>();
   (r.layers ?? []).forEach((layer, i) => {

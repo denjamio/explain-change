@@ -91,24 +91,28 @@
     {
       "title": "Logging is a per-workflow switch, off by default",
       "why": "A workflow runs on each matching event. A log entry per run grows the table, so the owner turns it on when needed.",
+      "basis": "inferred",
       "alternative": "Log every run of every workflow.",
       "evidence": "server/src/schema/tables/workflow.table.ts:44-46"
     },
     {
       "title": "1 entry per run, with the step where it stopped",
       "why": "The owner sees the result of a run and the step that halted it or failed. A runId groups what belongs to a run.",
+      "basis": "code",
       "alternative": "1 entry per step of each run.",
       "evidence": "server/src/services/workflow-execution.service.ts:474-481"
     },
     {
       "title": "Each step runs in its own try block",
       "why": "An error now records the step that failed. Before, a single try block around all steps lost the step.",
+      "basis": "code",
       "alternative": "Keep a single try block for the whole run.",
       "evidence": "server/src/services/workflow-execution.service.ts:420-424"
     },
     {
       "title": "Pages by date with before, not by offset",
       "why": "New runs add entries at the top. A before date keeps each page stable while the log grows.",
+      "basis": "inferred",
       "alternative": "Offset and page number.",
       "evidence": "server/src/repositories/workflow.repository.ts:136-137"
     }

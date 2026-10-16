@@ -51,8 +51,9 @@ When two words could name the same thing, this page says which one is used.
 | **Flow** | An explained runtime path: steps in call order, each with the **call** the code makes and its delta. A step with no dependency in the code is **unverified** (drawn with `?`). |
 | **Data model** | The entities and relations the change touches, with changed fields (`+` added, `-` removed, `~` changed). |
 | **Decision** | A design choice: what was chosen, why, the main alternative, and its evidence (`file:line`). |
+| **Basis** | Where a decision's why comes from: `pr` (the PR description), `spec` (the OpenSpec proposal or design), `code` (the code at its evidence: a comment, a name, an ADR), or `inferred` (the agent's reading). The validator accepts `pr` and `spec` only when the change has that source, and `code` only with evidence; the report labels each one. |
 | **Requirement status** | How the code meets an OpenSpec requirement: `implemented`, `partial`, `missing`, `not-applicable`. |
-| **Prose rules** | The parts of ASD-STE100 (Simplified Technical English) the validator enforces: sentences of at most 25 words, refused words (future and modal, judgements, marketing, filler, numbers in words; `prose/en.json`, where `word*` refuses every form), and code names that exist in the change. The rest (active voice, simple verbs) is guidance in the digest. |
+| **Prose rules** | The parts of ASD-STE100 (Simplified Technical English) the validator enforces: sentences of at most 25 words (an abbreviation such as *e.g.* does not end one), refused words (future and modal, judgements, marketing, filler, numbers in words; `prose/en.json`, where `word*` refuses every form), the passive with its agent (*is sent by the job*), and code names that exist at the head of the change. Code names are exempt from the word rules. The rest (simple verbs, one word per thing) is guidance in the digest. |
 
 **Explanation state**: `missing` (no file), `stale` (written for another key), `draft` (placeholders left),
 `invalid` (issues to fix), `valid`. The CLI's `--json` output turns it into the agent's **next action**:

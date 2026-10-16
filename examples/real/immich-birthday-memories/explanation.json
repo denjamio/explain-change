@@ -89,30 +89,35 @@
     {
       "title": "The same nightly job makes both kinds of memory",
       "why": "Birthday memories use the memory table, the cleanup and the clients that already exist. Only the generation step is new.",
+      "basis": "inferred",
       "alternative": "A separate job and table for birthdays.",
       "evidence": "server/src/services/memory.service.ts:46-53"
     },
     {
       "title": "Show the memory 3 days before the birthday",
       "why": "showAt and hideAt open the memory before the date and close it at the end of the day, so the user can prepare.",
+      "basis": "inferred",
       "alternative": "Show it only on the birthday.",
       "evidence": "server/src/services/memory.service.ts:22-24"
     },
     {
       "title": "At most 25 photos, spread over the years",
       "why": "A person with many birthdays gets 1 photo from 25 random years, not only the latest years.",
+      "basis": "inferred",
       "alternative": "The 25 most recent photos.",
       "evidence": "server/src/services/memory.service.ts:84-151"
     },
     {
       "title": "Store the name as it was when the memory was made",
       "why": "personName is part of the memory data. The title does not read the person when the clients show the memory.",
+      "basis": "code",
       "alternative": "Read the current name of the person from personId.",
       "evidence": "server/src/dtos/memory.dto.ts:27-28"
     },
     {
       "title": "Check the person fields in the DTO",
       "why": "A birthday memory must name its person. The schema refuses it otherwise, and replaces the old TODO in create.",
+      "basis": "code",
       "alternative": "Check the type and data in MemoryService.create.",
       "evidence": "server/src/dtos/memory.dto.ts:57-64"
     }

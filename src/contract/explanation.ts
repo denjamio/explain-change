@@ -46,7 +46,13 @@ export const LIMITS = {
 export const STORY_MIN = 2;
 
 export const REQUIREMENT_STATUSES = ["implemented", "partial", "missing", "not-applicable"] as const;
+/**
+ * Where a decision's why comes from: the PR's description, the OpenSpec change (proposal, design), the code at its
+ * evidence (a comment, a name, the shape), or the agent's reading of the change. The report labels each one.
+ */
+export const DECISION_BASES = ["pr", "spec", "code", "inferred"] as const;
 export const ENUMS = {
+  "decisions.basis": DECISION_BASES,
   "flows.steps.delta": DELTAS,
   "dataModel.entities.delta": DELTAS,
   "dataModel.relations.delta": DELTAS,
@@ -108,6 +114,12 @@ export const ExplanationSchema = z
         z.strictObject({
           title: text(LIMITS["decisions.title"], "The choice."),
           why: text(LIMITS["decisions.why"], "Why this choice."),
+          basis: z
+            .enum(DECISION_BASES)
+            .describe(
+              "Where the why comes from: pr (the PR description says it), spec (the OpenSpec proposal or design), " +
+                "code (the code at the evidence shows it), inferred (your reading of the change).",
+            ),
           alternative: z
             .string()
             .max(LIMITS["decisions.alternative"])

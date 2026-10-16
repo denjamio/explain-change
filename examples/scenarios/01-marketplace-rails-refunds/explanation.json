@@ -79,17 +79,20 @@
     {
       "title": "Idempotency through the Idempotency-Key header",
       "why": "The client controls retries, and the same key reaches the gateway.",
+      "basis": "inferred",
       "alternative": "Deduplicate by (order, amount) within a time window.",
       "evidence": "app/controllers/refunds_controller.rb:6"
     },
     {
       "title": "The amount rule lives in Order",
       "why": "Order knows its total and its refunds; the service only coordinates the calls.",
+      "basis": "inferred",
       "evidence": "app/models/order.rb:6"
     },
     {
       "title": "Email in the background",
       "why": "deliver_later neither blocks the response nor fails the refund if SMTP is down.",
+      "basis": "inferred",
       "evidence": "app/services/refunds/create.rb:11"
     }
   ],

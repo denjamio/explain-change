@@ -119,6 +119,7 @@ export const PublicConfig = z.object({
   glossary: z
     .array(z.object({ term: z.string(), definition: z.string() }))
     .describe("The team's ubiquitous language, from the config."),
+  names: z.array(z.string()).describe("Product names written like code that the prose may use (project.names)."),
   referenceFlows: z.array(
     z.object({
       id: z.string(),

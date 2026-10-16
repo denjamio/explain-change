@@ -83,7 +83,7 @@ The page reads from *what* to *where* to *why*:
 |---|---|
 | **What and why** | The title, the goal of the change and a TL;DR. |
 | **Map and story** | A map you can pan and zoom: the **architecture** as lanes, the **data flows** in call order and the **data model**. Click a component for what it now does, its files and its dependencies. |
-| **Design decisions** | What was chosen, why, and the main alternative. |
+| **Design decisions** | What was chosen, why, and the main alternative, each labelled with where its why comes from: the PR description, the spec, the code, or *inferred* from the change. |
 | **SDD · OpenSpec** | For spec-driven changes: the pipeline from proposal to archive, and each requirement traced to the code and tests that implement it. |
 | **Changes by component** | Each changed component with what it now does and its files. |
 
@@ -126,8 +126,9 @@ misread. Its restricted dictionary is left out on purpose: in a code change, the
 | The effect, not a judgement | **Enforced**: *better, cleaner, elegant…* are refused; say what changes instead. |
 | No marketing words, no filler | **Enforced**: *leverage, utilize, seamless…* in every form (*leveraged, utilizing*) and *basically, simply, just…* are refused. |
 | Numbers as digits | **Enforced**: *two, three…* are refused; write *2, 3*. A single thing takes *a* (*a ZIP file*, not *1 ZIP file*): guidance. |
-| Code names exactly as in the code | **Enforced**: a `snake_case`, `CamelCase`, `Module::Name` or `obj.method()` that does not exist in the change is rejected. |
-| Active voice, simple verbs (*adds, sends, stores, calls, checks*), one word per thing, no idioms | **Guidance**: written in the digest the agent reads. |
+| Code names exactly as in the code | **Enforced**: a `snake_case`, `CamelCase`, `Module::Name` or `obj.method()` that does not exist at the head of the change is rejected. Code names are exempt from the word rules: `ensure_admin` is not the word *ensure*. |
+| Active voice | **Enforced** for the passive with its agent: *is called by the job* is refused; write *the job calls it*. *By* for a manner (*sorted by date*, *off by default*) passes. |
+| Simple verbs (*adds, sends, stores, calls, checks*), one word per thing, no idioms | **Guidance**: written in the digest the agent reads. |
 
 Each rejection names the field, the words and what to write instead, so the agent fixes only that field. The refused
 words live in one list, [`src/explanation/prose/en.json`](src/explanation/prose/en.json): a trailing `*` refuses every
@@ -183,6 +184,7 @@ silently.
 | `project.direction` | One or two sentences on the intended architecture: context for the story and the decisions. |
 | `project.lang` | Report language: `en`, the default and, for now, the only one. |
 | `project.base` | Default base for `local`. |
+| `project.names` | Product and library names written like code (`FastAPI`, `NestJS`) that the prose may use: the validator does not look for them in the change. |
 | `project.budget` | Digest size in characters (2000–100000, default 12000 ≈ 3k tokens). The overview and the task always fit, so a large change can go past it. `--budget` overrides it. |
 | `project.host` | Where the PRs live: `azure-devops` or `github` (default: the host of the remotes, else Azure DevOps). `--host` overrides it; a PR URL names its own. |
 | `[[layers]]` | Map lanes, top to bottom in the listed order (entry points first, core last). The order does not decide what may depend on what: `[rules]` does. |
@@ -307,8 +309,10 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
   them with `bun run examples -- --real`. They are what the current version produces, and the eval's references.
 - **Evals**: after changing the skills or the digest's rules, run the eval (`--real` adds the 10 PRs). It reports,
   per example, whether the agent reached a valid explanation, with its turns, cost and time, and its fidelity to
-  the committed explanation: key dependencies, flow edges, the components the story lights and the files the
-  decisions cite.
+  the committed explanation: the F1 (precision and recall) of key dependencies, flow edges, the components the
+  story lights and the files the decisions cite. `--runs N` repeats each example and reports mean ± standard
+  deviation; `--judge haiku` asks a second agent whether each decision's source states its why (`grounded`), and
+  reports the share the agent labelled `inferred`.
 - **Versions**: bump `ANALYSIS_VERSION` (`src/core/constants.ts`) when the analysis can produce different facts for
   the same diff, and `CONTRACT_VERSION` when `facts.json` or `explanation.json` change shape. Changes go in
   [CHANGELOG.md](CHANGELOG.md).

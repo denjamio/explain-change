@@ -19,7 +19,16 @@ describe("example reports", () => {
       const out = smoke(html);
       expect(out.elements).toBeGreaterThan(100);
       expect(out.clicks).toBeGreaterThan(5);
-      for (const step of readReportData(html).explanation?.story ?? []) expect(out.text).toContain(step.heading);
+      const ex = readReportData(html).explanation;
+      for (const step of ex?.story ?? []) expect(out.text).toContain(step.heading);
+      // every decision says where its why comes from
+      const labels = {
+        pr: "From the PR description",
+        spec: "From the spec",
+        code: "Shown in the code",
+        inferred: "Inferred from the change",
+      };
+      for (const d of ex?.decisions ?? []) expect(out.text).toContain(`${d.title}${labels[d.basis]}`);
     });
   }
 });

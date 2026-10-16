@@ -75,30 +75,35 @@
     {
       "title": "Store the health on the channel",
       "why": "The scheduler picks channels by the last check time. The error column keeps the reason of the last failed check for the admins.",
+      "basis": "inferred",
       "alternative": "Keep the health only in memory, for the current request.",
       "evidence": "db/migrate/20260718000000_add_phone_number_health_to_channel_whatsapp.rb:3-6"
     },
     {
       "title": "A scheduler job and 1 job per channel",
       "why": "The scheduler picks the channels with the oldest check, at most 25 per hour. A failing number does not stop the others.",
+      "basis": "code",
       "alternative": "A single job that checks every channel in a loop.",
       "evidence": "app/jobs/channels/whatsapp/health_sync_scheduler_job.rb:4-12"
     },
     {
       "title": "Write with update_all, not save",
       "why": "Health polling must skip credential validation, timestamps, inbox touches and audit callbacks of the channel.",
+      "basis": "code",
       "alternative": "channel.update with all callbacks.",
       "evidence": "app/services/whatsapp/health_service.rb:176-186"
     },
     {
       "title": "Write only when no newer check exists",
       "why": "The where clause on phone_number_health_checked_at keeps an older, slower check from replacing a newer result.",
+      "basis": "inferred",
       "alternative": "Always write the last result that arrives.",
       "evidence": "app/services/whatsapp/health_service.rb:199-202"
     },
     {
       "title": "A typed ApiError with Meta's code",
       "why": "Code 190 marks an authorization error. The page then guides the admin to reconnect, without Meta's technical codes.",
+      "basis": "inferred",
       "alternative": "Raise a string error with the response body.",
       "evidence": "app/services/whatsapp/health_service.rb:2-16"
     }
