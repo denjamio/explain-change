@@ -110,7 +110,7 @@ flowchart LR
 3. **Render**: the CLI validates the explanation (exit 1 with precise `{path, code, message}` issues until it is
    valid) and writes the page.
 
-Every command takes `--json` and names the agent's `next` action (`write-explanation`, `fix-explanation`,
+Every command takes `--json` and names the agent's `next` action (`configure`, `write-explanation`, `fix-explanation`,
 `collect-change`, `done`). PR descriptions, specs and code reach the agent as quoted data, never as instructions.
 
 ## Plain prose you can check (ASD-STE100)

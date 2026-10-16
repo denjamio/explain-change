@@ -315,6 +315,17 @@ describe("generated files", () => {
   });
 });
 
+describe("next action", () => {
+  test("a team config that maps none of the changed code asks to configure", () => {
+    const r = repo(
+      '[[layers]]\nid = "domain"\n[[components]]\nid = "billing"\nlayer = "domain"\npaths = ["billing/**"]\n',
+    );
+    const out = r.json(["local", "--base", "main", "--no-open"]);
+    expect(out.out.next.action).toBe("configure");
+    expect(out.out.next.message).toContain("explain-change check");
+  });
+});
+
 describe("outline", () => {
   test("the story starts at what the change is about; grown links into the bottom lane are no key dependency", () => {
     const config =

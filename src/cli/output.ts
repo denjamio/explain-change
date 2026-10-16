@@ -1,5 +1,5 @@
 import type { Facts } from "../contract/facts.ts";
-import { FILES, WORK_DIR } from "../core/constants.ts";
+import { CONFIG_NAME, FILES, WORK_DIR } from "../core/constants.ts";
 import type { ExplanationState, ExplanationStatus } from "../explanation/store.ts";
 import { formatIssue, type Issue } from "../explanation/validate.ts";
 import { display } from "./workspace.ts";
@@ -8,15 +8,28 @@ import { display } from "./workspace.ts";
  * What the agent does next, by explanation state. Agents read `next.action` from `--json` output; people read the
  * same sentence in the terminal.
  */
-export type NextAction = "write-explanation" | "fix-explanation" | "collect-change" | "done";
+export type NextAction = "configure" | "write-explanation" | "fix-explanation" | "collect-change" | "done";
 
 export interface Next {
   action: NextAction;
   message: string;
 }
 
-export function nextStep(state: ExplanationState, reportPath: string | null): Next {
+export function nextStep(state: ExplanationState, reportPath: string | null, facts?: Facts): Next {
   const explanation = `${WORK_DIR}/${FILES.explanation}`;
+  // A team config that maps none of the changed code draws an empty map: fix the config, not the prose.
+  if (
+    facts &&
+    !facts.config.inferred &&
+    facts.stats.codeLines > 0 &&
+    facts.stats.mappedLines === 0 &&
+    state !== "valid"
+  ) {
+    return {
+      action: "configure",
+      message: `None of the changed code is on the map: no component holds its folders. Update ${CONFIG_NAME} (\`explain-change check\` lists the unmapped files), then run \`explain-change local\` (or \`pr\`) again.`,
+    };
+  }
   switch (state) {
     case "missing":
     case "draft":

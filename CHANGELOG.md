@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- A `configure` next action: when the team's config maps none of the changed code, `local`, `pr` and `render` ask
+  to update the config instead of an explanation of an empty map. The skills say what to do with it.
+
 ### Fixed
 - The draft's story starts at what the change is about: components rank by the public symbols they change and the
   dependencies they gain or lose, then by lines of code, with no config or generated lines. Before, the biggest

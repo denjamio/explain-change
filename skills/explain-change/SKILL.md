@@ -33,6 +33,9 @@ finds no PR, run `local`. Add `--spec <change-id>` for an OpenSpec change the co
   lists (`"<added|changed|…>"`); delete optional parts that do not apply. Keep the ids, views, focus, code
   references and evidence the draft already has. Open a source file only when a hunk is not enough to judge.
   Then run `explain-change render --json`.
+- **`configure`**: none of the changed code is on the map; the config has no component for its folders. Do not
+  write an explanation for an empty map: tell the user, and offer to update the config with the
+  `explain-change-configure` skill.
 - **`fix-explanation`**: `explanation.issues` lists each problem as `{path, code, message}`. Fix only those fields,
   then run `explain-change render --json` again.
 - **`collect-change`**: the explanation belongs to another change. Go back to step 1.
