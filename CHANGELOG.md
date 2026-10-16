@@ -11,6 +11,9 @@ All notable changes to this project are documented here. The format follows
   to update the config instead of an explanation of an empty map. The skills say what to do with it.
 
 ### Fixed
+- The map draws a neighbor only when the change adds or removes its link, breaks a rule with it, or makes it the
+  key dependency. A link that only gained references drew 12 of 13 neighbors in the examples. A rule the code broke
+  before the change is no longer red, and no longer pulls in neighbors: it shows with the context.
 - The draft's story starts at what the change is about: components rank by the public symbols they change and the
   dependencies they gain or lose, then by lines of code, with no config or generated lines. Before, the biggest
   component led, often a client, a schema or an OpenAPI spec. Key dependency candidates put new dependencies first

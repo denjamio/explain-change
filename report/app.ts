@@ -982,7 +982,8 @@ function buildArchitecture(
   };
   edgePaths(edges, L.pos, L).forEach((p, i) => {
     const e = p.e;
-    const k = e.violation ? "violation" : e.delta;
+    // A rule broken before this change is context: red only once the reader opens it.
+    const k = isNewViolation(e) || (e.violation && withContext) ? "violation" : e.delta;
     const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
     const tip =
       `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` +
@@ -998,8 +999,8 @@ function buildArchitecture(
       s("path", {
         id: pid,
         d: p.d,
-        class: `edge e-${k}${e.violation?.preexisting ? " existing" : ""}`,
-        "marker-end": `url(#ar-${isKey && !e.violation ? "key" : k})`,
+        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
+        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`,
       }),
     );
     if ((isKey || e.delta === "added") && e.delta !== "removed") {
@@ -1568,13 +1569,20 @@ const STORY: StoryStep[] = ex?.story.length ? ex.story : autoStory();
 const storyIsAuto = !ex?.story.length;
 
 /**
- * Untouched components worth drawing by default: the change alters their link to it (a dependency added, removed or
- * changed, a broken rule, the key dependency), or the story or the requirements point at them. The rest is context,
- * one click away: it would only add boxes and gray arrows that say nothing about the change.
+ * Untouched components worth drawing by default: the change adds or removes their link to it, breaks a rule with
+ * it, or makes it the key dependency; or the story or the requirements point at them. The rest is context, one
+ * click away. A link that only gains or loses references (116 → 117) is no reason: in the surveyed reports it drew
+ * 12 of 13 neighbors. Nor is a rule the code broke before this change.
  */
 const MEANINGFUL = new Set<string>();
+const isNewViolation = (e: DependencyFacts) => Boolean(e.violation && !e.violation.preexisting);
 for (const e of facts.dependencies) {
-  if (e.delta !== "unchanged" || e.violation || keyPairs[`${e.from}>${e.to}`] !== undefined) {
+  if (
+    e.delta === "added" ||
+    e.delta === "removed" ||
+    isNewViolation(e) ||
+    keyPairs[`${e.from}>${e.to}`] !== undefined
+  ) {
     MEANINGFUL.add(e.from);
     MEANINGFUL.add(e.to);
   }
@@ -2289,7 +2297,7 @@ function renderMap(): HTMLElement {
   }
   function edgeRow(other: (e: DependencyFacts) => string) {
     return (e: DependencyFacts) => {
-      const k = e.violation ? "violation" : e.delta;
+      const k = isNewViolation(e) ? "violation" : e.delta;
       const mark: Record<string, string> = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
       return h(
         "div",

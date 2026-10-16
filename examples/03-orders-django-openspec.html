@@ -1541,15 +1541,15 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     };
     edgePaths(edges, L.pos, L).forEach((p, i) => {
       const e = p.e;
-      const k = e.violation ? "violation" : e.delta;
+      const k = isNewViolation(e) || e.violation && withContext ? "violation" : e.delta;
       const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
       const tip = `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` + (e.examples[0] ? ` · ${e.examples[0]}` : "") + (e.violation ? ` · ⚠ ${e.violation.rule}` : "");
       const pid = `ep-${i}`;
       const g = s("g", { class: `edge-g${isKey ? " key" : ""}`, "data-k": `e:${e.from}>${e.to}`, "data-a": e.from, "data-b": e.to }, s("title", { text: tip }), s("path", { d: p.d, class: "edge-hit" }), isKey ? s("path", { d: p.d, class: "edge-glow" }) : null, s("path", {
         id: pid,
         d: p.d,
-        class: `edge e-${k}${e.violation?.preexisting ? " existing" : ""}`,
-        "marker-end": `url(#ar-${isKey && !e.violation ? "key" : k})`
+        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
+        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`
       }));
       if ((isKey || e.delta === "added") && e.delta !== "removed") {
         g.appendChild(s("circle", { r: isKey ? 4.5 : 3, class: `pulse${isKey ? " key" : ""}` }, s("animateMotion", { dur: isKey ? "2.2s" : "3s", repeatCount: "indefinite", begin: `-${r1(i % 5 * 0.4)}s` }, s("mpath", { href: `#${pid}` }))));
@@ -1998,8 +1998,9 @@ ${fields.join(`
   var STORY = ex?.story.length ? ex.story : autoStory();
   var storyIsAuto = !ex?.story.length;
   var MEANINGFUL = new Set;
+  var isNewViolation = (e) => Boolean(e.violation && !e.violation.preexisting);
   for (const e of facts.dependencies) {
-    if (e.delta !== "unchanged" || e.violation || keyPairs[`${e.from}>${e.to}`] !== undefined) {
+    if (e.delta === "added" || e.delta === "removed" || isNewViolation(e) || keyPairs[`${e.from}>${e.to}`] !== undefined) {
       MEANINGFUL.add(e.from);
       MEANINGFUL.add(e.to);
     }
@@ -2574,7 +2575,7 @@ ${fields.join(`
     }
     function edgeRow(other) {
       return (e) => {
-        const k = e.violation ? "violation" : e.delta;
+        const k = isNewViolation(e) ? "violation" : e.delta;
         const mark = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
         return h("div", { class: "insp-row" }, h("span", { class: `badge ${k}`, text: mark[k] }), h("a", {
           href: "#",
