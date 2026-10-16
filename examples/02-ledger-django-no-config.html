@@ -597,8 +597,125 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 <body>
 <div id="app" class="app"></div>
 <noscript><p style="padding:24px">This report uses JavaScript to draw its diagrams. Open it in a browser with scripts enabled.</p></noscript>
-<script type="application/json" id="ec-data">{"tool":"0.2.1","facts":{"version":2,"tool":"0.2.1","analysis":4,"key":"56dc896518db3393","source":{"kind":"local","title":"Monthly statements report","description":"","branch":"feature/monthly-reports","baseRef":"main","headRef":"HEAD","headSha":"c0a3ed7148fcbe7b0dc8b1a9eb02c960588d2b00","mergeBase":"32e0434f7c04218ec959f6ce7b51470d340850fc","prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-01T10:00:00+00:00","commits":1},"config":{"inferred":true,"name":"ledger","direction":"","lang":"en","layers":[{"id":"web","name":"Web"},{"id":"apps","name":"Apps"}],"components":[{"id":"project","name":"project","layer":"web","desc":"Settings, root URLs, WSGI/ASGI"},{"id":"accounts","name":"accounts","layer":"apps","desc":"Django app accounts"},{"id":"billing","name":"billing","layer":"apps","desc":"Django app billing"},{"id":"reports","name":"reports","layer":"apps","desc":"Django app reports"}],"rules":{"allow":[],"forbid":[]},"referenceFlows":[],"glossary":[]},"files":[{"path":"billing/services.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":1,"component":"billing","category":"code","truncated":false,"hunks":[]},{"path":"config/settings.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":1,"component":"project","category":"config","truncated":false,"hunks":[]},{"path":"config/urls.py","previousPath":null,"delta":"changed","binary":false,"additions":5,"deletions":1,"component":"project","category":"code","truncated":false,"hunks":[]},{"path":"reports/__init__.py","previousPath":null,"delta":"added","binary":false,"additions":0,"deletions":0,"component":"reports","category":"code","truncated":false,"hunks":[]},{"path":"reports/statements.py","previousPath":null,"delta":"added","binary":false,"additions":11,"deletions":0,"component":"reports","category":"code","truncated":false,"hunks":[]},{"path":"reports/tests/test_statements.py","previousPath":null,"delta":"added","binary":false,"additions":2,"deletions":0,"component":"reports","category":"test","truncated":false,"hunks":[]},{"path":"reports/views.py","previousPath":null,"delta":"added","binary":false,"additions":7,"deletions":0,"component":"reports","category":"code","truncated":false,"hunks":[]}],"components":[{"id":"project","delta":"changed","files":2,"additions":6,"deletions":2},{"id":"accounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"billing","delta":"changed","files":1,"additions":1,"deletions":1},{"id":"reports","delta":"added","files":3,"additions":18,"deletions":0}],"dependencies":[{"from":"project","to":"accounts","delta":"unchanged","baseCount":1,"headCount":1,"examples":["config/urls.py:2"],"violation":null},{"from":"project","to":"reports","delta":"added","baseCount":0,"headCount":1,"examples":["config/urls.py:3"],"violation":null},{"from":"reports","to":"accounts","delta":"added","baseCount":0,"headCount":2,"examples":["reports/statements.py:3","reports/views.py:1"],"violation":null},{"from":"reports","to":"billing","delta":"added","baseCount":0,"headCount":2,"examples":["reports/statements.py:4"],"violation":null}],"dependencyGraph":[["billing","accounts"],["project","accounts"],["project","reports"],["reports","accounts"],["reports","billing"]],"symbols":[{"file":"config/urls.py","line":6,"kind":"endpoint","name":"path accounts/\u003cint:pk>/","delta":"changed"},{"file":"config/urls.py","line":7,"kind":"endpoint","name":"path accounts/\u003cint:pk>/statements/\u003cint:month>/","delta":"added"},{"file":"reports/statements.py","line":8,"kind":"def","name":"monthly_statement","delta":"added"},{"file":"reports/views.py","line":6,"kind":"def","name":"statement","delta":"added"}],"stats":{"files":7,"additions":27,"deletions":3,"testAdditions":2,"testDeletions":0,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":28,"mappedLines":28},"notes":[],"openspec":null,"outline":{"story":[{"about":"reports added","view":"architecture","focus":["reports"],"code":"reports/statements.py:1-11"},{"about":"project changed","view":"architecture","focus":["project"],"code":"config/urls.py:1-8"},{"about":"billing changed","view":"architecture","focus":["billing"],"code":"billing/services.py:2-5"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"reports","to":"accounts"},{"from":"reports","to":"billing"},{"from":"project","to":"reports"}],"dataFiles":[]}},"explanation":null,"state":"draft","issues":[{"path":"tldr","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"goal","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[0].heading","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[0].body","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[1].heading","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[1].body","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[2].heading","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[2].body","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[3].heading","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[3].body","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"keyDependencies[0].label","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"components[0].summary","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"components[1].summary","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"components[2].summary","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"decisions[0].title","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"decisions[0].why","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"decisions[0].alternative","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"decisions[0].evidence","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"flows[0].id","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"flows[0].title","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"}]}</script>
+<script type="application/json" id="ec-data">{"tool":"0.3.0","facts":{"version":3,"tool":"0.3.0","analysis":5,"key":"8fabde7871e0f039","source":{"kind":"local","title":"Monthly statements report","description":"","branch":"feature/monthly-reports","baseRef":"main","headRef":"HEAD","headSha":"c0a3ed7148fcbe7b0dc8b1a9eb02c960588d2b00","mergeBase":"32e0434f7c04218ec959f6ce7b51470d340850fc","host":null,"prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-01T10:00:00+00:00","commits":1},"config":{"inferred":true,"name":"ledger","direction":"","lang":"en","layers":[{"id":"web","name":"Web"},{"id":"apps","name":"Apps"}],"components":[{"id":"project","name":"project","layer":"web","desc":"Settings, root URLs, WSGI/ASGI"},{"id":"accounts","name":"accounts","layer":"apps","desc":"Django app accounts"},{"id":"billing","name":"billing","layer":"apps","desc":"Django app billing"},{"id":"reports","name":"reports","layer":"apps","desc":"Django app reports"}],"rules":{"allow":[],"forbid":[]},"referenceFlows":[],"glossary":[]},"files":[{"path":"billing/services.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":1,"component":"billing","category":"code","truncated":false,"hunks":[]},{"path":"config/settings.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":1,"component":"project","category":"config","truncated":false,"hunks":[]},{"path":"config/urls.py","previousPath":null,"delta":"changed","binary":false,"additions":5,"deletions":1,"component":"project","category":"code","truncated":false,"hunks":[]},{"path":"reports/__init__.py","previousPath":null,"delta":"added","binary":false,"additions":0,"deletions":0,"component":"reports","category":"code","truncated":false,"hunks":[]},{"path":"reports/statements.py","previousPath":null,"delta":"added","binary":false,"additions":11,"deletions":0,"component":"reports","category":"code","truncated":false,"hunks":[]},{"path":"reports/tests/test_statements.py","previousPath":null,"delta":"added","binary":false,"additions":2,"deletions":0,"component":"reports","category":"test","truncated":false,"hunks":[]},{"path":"reports/views.py","previousPath":null,"delta":"added","binary":false,"additions":7,"deletions":0,"component":"reports","category":"code","truncated":false,"hunks":[]}],"components":[{"id":"project","delta":"changed","files":2,"additions":6,"deletions":2},{"id":"accounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"billing","delta":"changed","files":1,"additions":1,"deletions":1},{"id":"reports","delta":"added","files":3,"additions":18,"deletions":0}],"dependencies":[{"from":"project","to":"accounts","delta":"unchanged","baseCount":1,"headCount":1,"examples":["config/urls.py:2"],"violation":null},{"from":"project","to":"reports","delta":"added","baseCount":0,"headCount":1,"examples":["config/urls.py:3"],"violation":null},{"from":"reports","to":"accounts","delta":"added","baseCount":0,"headCount":2,"examples":["reports/statements.py:3","reports/views.py:1"],"violation":null},{"from":"reports","to":"billing","delta":"added","baseCount":0,"headCount":2,"examples":["reports/statements.py:4"],"violation":null}],"dependencyGraph":[["billing","accounts"],["project","accounts"],["project","reports"],["reports","accounts"],["reports","billing"]],"symbols":[{"file":"config/urls.py","line":6,"kind":"endpoint","name":"path accounts/\u003cint:pk>/","delta":"changed"},{"file":"config/urls.py","line":7,"kind":"endpoint","name":"path accounts/\u003cint:pk>/statements/\u003cint:month>/","delta":"added"},{"file":"reports/statements.py","line":8,"kind":"def","name":"monthly_statement","delta":"added"},{"file":"reports/views.py","line":6,"kind":"def","name":"statement","delta":"added"}],"stats":{"files":7,"additions":27,"deletions":3,"testAdditions":2,"testDeletions":0,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":28,"mappedLines":28},"notes":[],"openspec":null,"outline":{"story":[{"about":"reports added","view":"architecture","focus":["reports"],"code":"reports/statements.py:1-11"},{"about":"project changed","view":"architecture","focus":["project"],"code":"config/urls.py:1-8"},{"about":"billing changed","view":"architecture","focus":["billing"],"code":"billing/services.py:2-5"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"reports","to":"accounts"},{"from":"reports","to":"billing"},{"from":"project","to":"reports"}],"dataFiles":[]}},"explanation":null,"state":"draft","issues":[{"path":"tldr","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"goal","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[0].heading","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[0].body","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[1].heading","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[1].body","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[2].heading","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[2].body","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[3].heading","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"story[3].body","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"keyDependencies[0].label","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"components[0].summary","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"components[1].summary","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"components[2].summary","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"decisions[0].title","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"decisions[0].why","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"decisions[0].alternative","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"decisions[0].evidence","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"flows[0].id","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"},{"path":"flows[0].title","code":"placeholder","message":"still a placeholder: write it, or delete the field if it is optional"}]}</script>
 <script>(() => {
+  // src/core/sha256.ts
+  var K = new Uint32Array([
+    1116352408,
+    1899447441,
+    3049323471,
+    3921009573,
+    961987163,
+    1508970993,
+    2453635748,
+    2870763221,
+    3624381080,
+    310598401,
+    607225278,
+    1426881987,
+    1925078388,
+    2162078206,
+    2614888103,
+    3248222580,
+    3835390401,
+    4022224774,
+    264347078,
+    604807628,
+    770255983,
+    1249150122,
+    1555081692,
+    1996064986,
+    2554220882,
+    2821834349,
+    2952996808,
+    3210313671,
+    3336571891,
+    3584528711,
+    113926993,
+    338241895,
+    666307205,
+    773529912,
+    1294757372,
+    1396182291,
+    1695183700,
+    1986661051,
+    2177026350,
+    2456956037,
+    2730485921,
+    2820302411,
+    3259730800,
+    3345764771,
+    3516065817,
+    3600352804,
+    4094571909,
+    275423344,
+    430227734,
+    506948616,
+    659060556,
+    883997877,
+    958139571,
+    1322822218,
+    1537002063,
+    1747873779,
+    1955562222,
+    2024104815,
+    2227730452,
+    2361852424,
+    2428436474,
+    2756734187,
+    3204031479,
+    3329325298
+  ]);
+  function sha256Hex(text) {
+    const bytes = new TextEncoder().encode(text);
+    const padded = new Uint8Array(Math.ceil((bytes.length + 9) / 64) * 64);
+    padded.set(bytes);
+    padded[bytes.length] = 128;
+    const view = new DataView(padded.buffer);
+    view.setUint32(padded.length - 8, Math.floor(bytes.length * 8 / 2 ** 32));
+    view.setUint32(padded.length - 4, bytes.length * 8 >>> 0);
+    const h = new Uint32Array([
+      1779033703,
+      3144134277,
+      1013904242,
+      2773480762,
+      1359893119,
+      2600822924,
+      528734635,
+      1541459225
+    ]);
+    const w = new Uint32Array(64);
+    const rotr = (x, n) => x >>> n | x << 32 - n;
+    for (let off = 0;off < padded.length; off += 64) {
+      for (let i = 0;i < 16; i++)
+        w[i] = view.getUint32(off + i * 4);
+      for (let i = 16;i < 64; i++) {
+        const a = w[i - 15];
+        const b = w[i - 2];
+        const s0 = rotr(a, 7) ^ rotr(a, 18) ^ a >>> 3;
+        const s1 = rotr(b, 17) ^ rotr(b, 19) ^ b >>> 10;
+        w[i] = w[i - 16] + s0 + w[i - 7] + s1 >>> 0;
+      }
+      const v = Array.from(h);
+      for (let i = 0;i < 64; i++) {
+        const [a, b, c, d, e, f, g, hh] = v;
+        const t1 = hh + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + (e & f ^ ~e & g) + K[i] + w[i] >>> 0;
+        const t2 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + (a & b ^ a & c ^ b & c) >>> 0;
+        v.splice(0, 8, t1 + t2 >>> 0, a, b, c, d + t1 >>> 0, e, f, g);
+      }
+      for (let i = 0;i < 8; i++)
+        h[i] = h[i] + v[i] >>> 0;
+    }
+    return Array.from(h, (x) => x.toString(16).padStart(8, "0")).join("");
+  }
+
+  // src/hosts/links.ts
+  var FILE_URL = {
+    "azure-devops": (prUrl, path) => `${prUrl}?_a=files&path=${encodeURIComponent(`/${path}`)}`,
+    github: (prUrl, path) => `${prUrl}/files#diff-${sha256Hex(path)}`
+  };
+  var prFileUrl = (host, prUrl, path) => FILE_URL[host](prUrl, path);
+
   // report/bulb.svg
   var bulb_default = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="explain-change">
   <path class="bulb-line" d="M16 1.6v2.6M5.6 6l1.8 1.8M26.4 6l-1.8 1.8M1.8 15.2h2.6M27.6 15.2h2.6" fill="none" stroke="#4b4fd6" stroke-width="2.2" stroke-linecap="round"/>
@@ -1110,11 +1227,11 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     none: "–"
   };
   var rsLabel = (v) => v === "pending" ? T.notMapped : v === "none" ? "—" : t(v);
-  function prFileUrl(path) {
-    return src.kind === "pr" && src.url ? `${src.url}?_a=files&path=${encodeURIComponent(`/${path}`)}` : null;
+  function prFileUrl2(path) {
+    return src.kind === "pr" && src.url && src.host ? prFileUrl(src.host, src.url, path) : null;
   }
   function onOpen(el, path) {
-    const url = prFileUrl(path);
+    const url = prFileUrl2(path);
     if (url) {
       el.classList.add("linked");
       el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
@@ -1123,7 +1240,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   }
   function fileLink(ref, label) {
     const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
-    const url = prFileUrl(path);
+    const url = prFileUrl2(path);
     return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref }) : h("code", { class: "ref", text: label || ref });
   }
   function sectionShell(id, title, body, lead) {

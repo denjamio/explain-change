@@ -55,7 +55,7 @@ export function literalPrefix(pattern: string): string {
 }
 
 /**
- * Python's fnmatch.fnmatchcase, for `imports` and `constants`: `*` matches anything, `.` and `::`
+ * Python's fnmatch.fnmatchcase, for `imports`, `namespaces` and `constants`: `*` matches anything, `.` and `::`
  * included, so `billing.*` covers `billing.models.invoice`.
  */
 const fnCache = new Map<string, RegExp>();

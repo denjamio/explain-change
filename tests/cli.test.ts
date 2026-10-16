@@ -3,19 +3,20 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseToml } from "smol-toml";
-import { azHint, needsLogin } from "../src/ado/az.ts";
-import { adoFetch, adoPrId, adoRemote, adoSource, branchPr, requireAdo } from "../src/ado/pr.ts";
 import { resolveBase } from "../src/analysis/diff.ts";
 import { shouldOpen } from "../src/cli/open.ts";
 import { draftConfig } from "../src/config/draft.ts";
 import { detectStructure } from "../src/config/infer.ts";
 import { normalizeConfig } from "../src/config/load.ts";
 import { DEFAULT_BUDGET } from "../src/core/constants.ts";
-import { UserError } from "../src/core/errors.ts";
 import { buildDigest, task } from "../src/digest/digest.ts";
 import { draftExplanation } from "../src/explanation/draft.ts";
 import { validateExplanation } from "../src/explanation/validate.ts";
-import { FakeAz, fail, ok, Repo, tempDir } from "./helpers.ts";
+import { type Az, azHint, needsLogin } from "../src/hosts/azure-devops/az.ts";
+import { adoPrId, adoRemote, branchPr, toPrMeta } from "../src/hosts/azure-devops/pr.ts";
+import { prHost } from "../src/hosts/index.ts";
+import { fetchRefs, prSource } from "../src/hosts/source.ts";
+import { FakeAz, fail, fakeHosts, ok, Repo, tempDir, throwsUser } from "./helpers.ts";
 
 const repos: Repo[] = [];
 const repo = (config?: string, opts?: { empty?: boolean }) => {
@@ -29,17 +30,6 @@ afterEach(() => {
 
 const MODELS_CONFIG =
   '[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n';
-const throwsUser = (fn: () => unknown, needle: string) => {
-  try {
-    fn();
-  } catch (e) {
-    expect(e).toBeInstanceOf(UserError);
-    expect((e as Error).message).toContain(needle);
-    return;
-  }
-  throw new Error(`expected a UserError with '${needle}'`);
-};
-
 describe("base resolution", () => {
   test("--base, project.base, then remote first", () => {
     const r = repo();
@@ -73,6 +63,8 @@ describe("uncommitted work", () => {
 });
 
 describe("Azure DevOps", () => {
+  const ado = (az: Az) => fakeHosts({ az })["azure-devops"];
+  const adoSource = (path: string, pr: string, notes: string[], az: Az) => prSource(path, ado(az), pr, notes);
   /** A clone of a "server" repository that has Azure DevOps' refs/pull/<id>/merge. */
   function adoClone() {
     const server = repo();
@@ -153,11 +145,11 @@ describe("Azure DevOps", () => {
     const { server, path } = adoClone();
     spawnSync("git", ["remote", "rename", "origin", "upstream"], { cwd: path });
     spawnSync("git", ["remote", "add", "fork", "https://example.com/other.git"], { cwd: path });
-    expect(adoRemote(path, meta(server))).toBe("upstream");
+    expect(adoRemote(path, toPrMeta(meta(server), "42"))).toBe("upstream");
     throwsUser(() => adoRemote(path, {}), "Cannot tell which remote");
     spawnSync("git", ["remote", "rename", "upstream", "ado"], { cwd: path });
     spawnSync("git", ["remote", "set-url", "ado", "git@ssh.dev.azure.com:v3/org/proj/Repo"], { cwd: path });
-    expect(adoRemote(path, { repository: { name: "repo" } })).toBe("ado");
+    expect(adoRemote(path, { repo: { name: "repo", urls: [] } })).toBe("ado");
   });
 
   test("PR ids and URLs", () => {
@@ -203,19 +195,20 @@ describe("Azure DevOps", () => {
     const run2 = (url: string, results: (string | null)[], token: string | null) => {
       r.git("remote", "add", "origin", url);
       const calls: (string | null)[] = [];
-      const err = adoFetch(r.path, "origin", ["x"], {
-        fetch: (_root, _args, tok) => {
-          calls.push(tok);
+      const base = ado(new FakeAz([]));
+      const host = { ...base, git: { ...base.git, auth: () => token && `Bearer ${token}` } };
+      const err = fetchRefs(r.path, host, "origin", ["x"], {
+        fetch: (_root, _args, auth) => {
+          calls.push(auth);
           return results[calls.length - 1] ?? null;
         },
-        token: () => token,
       });
       return { err, calls };
     };
     expect(run2("https://dev.azure.com/o/p/_git/r", [null], "tok")).toEqual({ err: null, calls: [null] });
     expect(run("https://org@dev.azure.com/o/p/_git/r", ["fatal: Authentication failed", null])).toEqual({
       err: null,
-      calls: [null, "tok"],
+      calls: [null, "Bearer tok"],
     });
     const missing = run("https://dev.azure.com/o/p/_git/r", ["fatal: couldn't find remote ref x"]);
     expect(missing.err).toContain("couldn't find");
@@ -228,19 +221,25 @@ describe("Azure DevOps", () => {
     }
   });
 
-  test("`pr` takes Azure DevOps remotes and URLs, and refuses other hosts", () => {
+  test("`pr` takes Azure DevOps remotes and URLs, and refuses unknown hosts", () => {
     const r = repo();
+    const none = { flag: null, config: null };
     r.git("remote", "add", "origin", "https://org@dev.azure.com/org/proj/_git/repo");
-    requireAdo(r.path, "42");
-    requireAdo(r.path, "https://org.visualstudio.com/proj/_git/repo/pullrequest/42");
-    r.git("remote", "set-url", "origin", "git@github.com:org/repo.git");
-    for (const pr of ["42", "https://github.com/org/repo/pull/42", "https://dev.azure.com.evil.io/x/pullrequest/42"]) {
-      throwsUser(() => requireAdo(r.path, pr), "explain-change local");
+    prHost(r.path, "42", fakeHosts(), none);
+    prHost(r.path, "https://org.visualstudio.com/proj/_git/repo/pullrequest/42", fakeHosts(), none);
+    r.git("remote", "set-url", "origin", "git@gitlab.com:org/repo.git");
+    for (const pr of [
+      "42",
+      "https://gitlab.com/org/repo/-/merge_requests/42",
+      "https://dev.azure.com.evil.io/x/pullrequest/42",
+    ]) {
+      throwsUser(() => prHost(r.path, pr, fakeHosts(), none), "explain-change local");
     }
     const res = r.run(["pr", "42"]);
     expect(res.status).toBe(2);
     expect(res.stderr).toContain("Azure DevOps");
     expect(r.run(["pr", "42", "--base", "main"]).stderr).toContain("--base");
+    expect(r.run(["pr", "42", "--host", "gitlab"]).stderr).toContain("--host must be azure-devops or github");
     expect(r.run(["local", "--base", "main"]).status).toBe(0);
   });
 
@@ -248,15 +247,16 @@ describe("Azure DevOps", () => {
     const r = repo();
     r.git("remote", "add", "origin", "https://org@dev.azure.com/org/proj/_git/My%20Repo");
     const az = new FakeAz([ok([{ pullRequestId: 42, targetRefName: "refs/heads/main" }])]);
-    expect(branchPr(r.path, az)).toBe("42");
+    expect(branchPr(r.path, "feature", az)).toBe("42");
     const args = az.calls[0] as string[];
     expect(args[args.indexOf("--source-branch") + 1]).toBe("feature");
     expect(args[args.indexOf("--repository") + 1]).toBe("My Repo");
-    throwsUser(() => branchPr(r.path, new FakeAz([ok([])])), "explain-change local");
+    throwsUser(() => branchPr(r.path, "feature", new FakeAz([ok([])])), "explain-change local");
     throwsUser(
       () =>
         branchPr(
           r.path,
+          "feature",
           new FakeAz([
             ok([
               { pullRequestId: 1, targetRefName: "refs/heads/main" },

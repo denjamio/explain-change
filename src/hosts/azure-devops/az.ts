@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { AZ_TIMEOUT_MS, LOGIN_TIMEOUT_MS } from "../core/constants.ts";
-import { type RunResult, runProgram, which } from "../core/proc.ts";
+import { AZ_TIMEOUT_MS, LOGIN_TIMEOUT_MS } from "../../core/constants.ts";
+import { type RunResult, runProgram, which } from "../../core/proc.ts";
 
 export const AZ_SETUP = "install the az CLI, then `az extension add --name azure-devops` and `az login`";
 

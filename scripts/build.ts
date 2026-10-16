@@ -3,14 +3,16 @@
  *
  *   bun scripts/build.ts --assets          report/ → src/report/assets.gen.ts (what the CLI embeds)
  *   bun scripts/build.ts                   assets + dist/explain-change.js (Node ≥ 20, no dependencies)
- *   bun scripts/build.ts --compile [t…]    assets + standalone binaries in dist/bin (all targets by default)
+ *   bun scripts/build.ts --compile [t…]    assets + standalone binaries and their SHA256SUMS in dist/bin (all targets
+ *                                          by default)
  *   bun scripts/build.ts --schemas         schemas/*.schema.json from the contract (committed; a test checks them)
  *
  * The report script is bundled without minification: the same source always gives the same page, and a reader can
  * open it.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { formatSums, SUMS_FILE } from "../src/core/checksum.ts";
 import { ensureDir } from "../src/core/fs.ts";
 
 const ROOT = join(import.meta.dir, "..");
@@ -68,10 +70,18 @@ async function buildNode() {
 }
 
 function compile(targets: string[]): void {
+  const dir = join(ROOT, "dist/bin");
   for (const target of targets) {
     const name = `explain-change-${target.replace(/^bun-/, "")}${target.includes("windows") ? ".exe" : ""}`;
-    compileBinary(join(ROOT, "dist/bin", name), target);
+    compileBinary(join(dir, name), target);
   }
+  // install.sh, install.ps1 and `update` refuse a binary whose hash is not in this file.
+  const binaries = readdirSync(dir).filter((f) => f.startsWith("explain-change-"));
+  writeFileSync(
+    join(dir, SUMS_FILE),
+    formatSums(Object.fromEntries(binaries.map((f) => [f, readFileSync(join(dir, f))]))),
+  );
+  console.log(`wrote ${join(dir, SUMS_FILE)}`);
 }
 
 /** One standalone binary of the CLI, for a Bun target ("bun-linux-x64", …) or, without one, for this machine. */

@@ -76,8 +76,8 @@ A component is a unit of ownership a reviewer names in one word of the domain. A
     team says it, the same style for every box.
   - `desc`: one sentence, "Owns <aggregates or data>; <what it guarantees or decides>": *Owns Order and LineItem; an
     order's total and what can still be refunded.*
-  - `paths` decide ownership; `constants` (Ruby) and `imports` (Python, TypeScript) only for code owned outside
-    them. A component may share its id with a layer only when it lives in that layer.
+  - `paths` decide ownership; `constants` (Ruby), `imports` (Python, TypeScript) and `namespaces` (C#) only for code
+    owned outside them. A component may share its id with a layer only when it lives in that layer.
 
 ## 4. Rules: the dependency rule as an architecture decision
 
@@ -104,6 +104,8 @@ A component is a unit of ownership a reviewer names in one word of the domain. A
   **Refund an order**), with their steps as `"component -> component : call"`. A change that touches one is
   compared with it.
 - `project.lang`: the language the team writes PRs in (`en` or `es`).
+- `project.host`: only when the remotes do not tell where the PRs live (a mirror on both hosts, or none): `azure-devops`
+  or `github`. Leave it out otherwise; the remotes decide.
 
 `explain-change schema config` prints the full JSON Schema of the file.
 

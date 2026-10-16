@@ -10,6 +10,10 @@ import { BUDGET_RANGE, DEFAULT_BUDGET } from "../core/constants.ts";
 export const LANGS = ["en", "es"] as const;
 export type ReportLang = (typeof LANGS)[number];
 
+/** Where pull requests live: the hosts `pr` and `share` work with. */
+export const HOST_IDS = ["azure-devops", "github"] as const;
+export type HostId = (typeof HOST_IDS)[number];
+
 const ID_RE = /^[\w.-]+$/;
 const RULE_RE = /^\s*[\w.-]+\s*->\s*[\w.-]+\s*$/;
 const FLOW_STEP_RE = /^\s*[\w.-]+\s*->\s*[\w.-]+\s*(?::[\s\S]*)?$/;
@@ -28,6 +32,13 @@ export const RawConfigSchema = z
         base: z
           .string()
           .describe("Default base ref for `local` (else origin/HEAD, origin/main, origin/master, main, master…).")
+          .optional(),
+        host: z
+          .enum(HOST_IDS, { error: `must be ${HOST_IDS.map((h) => `'${h}'`).join(" or ")}` })
+          .describe(
+            "Where the PRs live, for `pr <id>` and `share`. Default: the host of the git remotes, else azure-devops. " +
+              "A PR URL always names its own host.",
+          )
           .optional(),
         budget: z
           .int({ error: `must be an integer between ${BUDGET_RANGE[0]} and ${BUDGET_RANGE[1]} (digest characters)` })
@@ -83,6 +94,7 @@ export const RawConfigSchema = z
             "TypeScript/Python/require specifiers owned by this component outside its paths. `*` matches anything, " +
               "`.` and `/` included: `billing.*` covers `billing.models.invoice`.",
           ).optional(),
+          namespaces: strings("C# namespaces owned by this component. `*` matches anything, `.` included.").optional(),
           constants: strings("Ruby constants owned by this component. `*` matches anything, `::` included.").optional(),
         }),
       )
@@ -135,6 +147,7 @@ export interface ComponentConfig {
   desc: string;
   paths: string[];
   imports: string[];
+  namespaces: string[];
   constants: string[];
 }
 
@@ -157,6 +170,8 @@ export interface Config {
   direction: string;
   lang: ReportLang;
   base: string;
+  /** Where the PRs live; null: the host of the git remotes. */
+  host: HostId | null;
   budget: number;
   layers: Layer[];
   components: ComponentConfig[];

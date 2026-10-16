@@ -11,7 +11,7 @@ write the prose in `.explain-change/explanation.json`, which it drafts. Do not r
 command from the repository root, with `--json`. When the command is not on PATH, ask the user to install it:
 `curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/install.sh | sh` (Windows: `install.ps1`).
 
-1. Collect the change: `explain-change pr <id|url> --json` for an Azure DevOps PR, `explain-change pr --json` for
+1. Collect the change: `explain-change pr <id|url> --json` for an Azure DevOps or GitHub PR, `explain-change pr --json` for
    "this PR" without an id, or `explain-change local --json` for the branch or "my changes" (`--base <ref>`;
    `--include-uncommitted` for work not committed yet, or when `local` finds 0 files).
 2. Do what the output's `next.action` says:

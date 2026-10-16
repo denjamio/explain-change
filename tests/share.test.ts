@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { type HttpFetch, shareable, shareReport } from "../src/ado/share.ts";
-import { FakeAz, ok, Repo } from "./helpers.ts";
+import { shareReport } from "../src/hosts/azure-devops/share.ts";
+import type { HttpFetch } from "../src/hosts/host.ts";
+import { shareable } from "../src/hosts/index.ts";
+import { FakeAz, fakeHosts, ok, Repo } from "./helpers.ts";
 
 const repos: Repo[] = [];
 afterEach(() => {
@@ -48,11 +50,11 @@ describe("share", () => {
   test("only changes an Azure DevOps PR can show", () => {
     const plain = new Repo();
     repos.push(plain);
-    expect(shareable(plain.collect(), plain.path)).toBe(false);
+    expect(shareable(plain.collect(), fakeHosts())).toBe(false);
     const r = adoRepo();
-    expect(shareable(r.collect(), r.path)).toBe(true);
+    expect(shareable(r.collect(), fakeHosts())).toBe(true);
     r.write({ "app/models/draft.rb": "class Draft\nend\n" });
-    expect(shareable(r.collect({ uncommitted: true }), r.path)).toBe(false);
+    expect(shareable(r.collect({ uncommitted: true }), fakeHosts())).toBe(false);
   });
 
   test("uploads the report to the branch's PR and comments with its link", async () => {

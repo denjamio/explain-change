@@ -26,6 +26,14 @@
           "type": "string",
           "description": "Default base ref for `local` (else origin/HEAD, origin/main, origin/master, main, master…)."
         },
+        "host": {
+          "type": "string",
+          "enum": [
+            "azure-devops",
+            "github"
+          ],
+          "description": "Where the PRs live, for `pr <id>` and `share`. Default: the host of the git remotes, else azure-devops. A PR URL always names its own host."
+        },
         "budget": {
           "type": "integer",
           "minimum": 2000,
@@ -121,6 +129,13 @@
               "type": "string"
             },
             "description": "TypeScript/Python/require specifiers owned by this component outside its paths. `*` matches anything, `.` and `/` included: `billing.*` covers `billing.models.invoice`."
+          },
+          "namespaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "C# namespaces owned by this component. `*` matches anything, `.` included."
           },
           "constants": {
             "type": "array",

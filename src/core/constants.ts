@@ -6,12 +6,12 @@ export const VERSION: string = pkg.version;
  * Version of the agent contract: the shape of facts.json and explanation.json. Explanations written for another
  * contract are stale.
  */
-export const CONTRACT_VERSION = 2;
+export const CONTRACT_VERSION = 3;
 /**
  * Part of the change key. Bump it when a change to the analysis (parsers, mapping, dependencies, symbols, outline)
  * can change facts.json for the same diff, so explanations written against the old analysis turn stale, not valid.
  */
-export const ANALYSIS_VERSION = 4;
+export const ANALYSIS_VERSION = 5;
 
 /** The GitHub repository: releases, issues, the published schemas and the examples site. */
 export const REPOSITORY = "denjamio/explain-change";
@@ -33,6 +33,7 @@ export const DEFAULT_BUDGET = 12_000; // digest characters, ~3k tokens
 export const BUDGET_RANGE = [2_000, 100_000] as const;
 
 export const AZ_TIMEOUT_MS = 60_000; // one az call
+export const GH_TIMEOUT_MS = 60_000; // one gh call
 export const LOGIN_TIMEOUT_MS = 300_000; // finishing `az login` in the browser
 export const FETCH_TIMEOUT_MS = 600_000; // one git fetch of a PR
 export const ADO_RESOURCE = "499b84ac-1321-427f-aa17-267ca6975798"; // Azure DevOps, for `az account get-access-token`
@@ -66,6 +67,10 @@ export const DEFAULT_TESTS = [
   "**/*_test.*",
   "**/*_spec.rb",
   "**/test_*.py",
+  "**/*Tests/**",
+  "**/*.Tests/**",
+  "**/*Tests.cs",
+  "**/*Test.cs",
 ];
 export const DEFAULT_IGNORE = [
   "**/*.lock",
@@ -77,9 +82,12 @@ export const DEFAULT_IGNORE = [
   "**/*.min.js",
   "**/*.map",
   "**/*.generated.*",
+  "**/*.g.cs",
+  "**/*.Designer.cs",
   "**/dist/**",
   "**/build/**",
   "**/bin/**",
+  "**/obj/**",
   "**/node_modules/**",
   "**/vendor/**",
   "db/schema.rb",
@@ -99,7 +107,7 @@ export const FRAMEWORK_CONFIG = [
   "**/asgi.py",
   "manage.py",
 ];
-export const MIGRATION_PATTERNS = ["**/migrations/**", "db/migrate/**", "**/db/migrate/**"];
+export const MIGRATION_PATTERNS = ["**/migrations/**", "**/Migrations/**", "db/migrate/**", "**/db/migrate/**"];
 export const CONFIG_EXT = new Set([
   ".json",
   ".yml",
@@ -108,6 +116,10 @@ export const CONFIG_EXT = new Set([
   ".ini",
   ".cfg",
   ".xml",
+  ".csproj",
+  ".sln",
+  ".props",
+  ".targets",
   ".config",
   ".env",
   ".gradle",

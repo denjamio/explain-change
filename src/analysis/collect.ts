@@ -1,8 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Az } from "../ado/az.ts";
-import { adoSource } from "../ado/pr.ts";
 import { Mapper } from "../config/mapper.ts";
 import type { Config } from "../contract/config.ts";
 import type {
@@ -31,6 +29,8 @@ import { decodeText, git, gitPaths, gitRaw, readBlobs } from "../core/git.ts";
 import { langOf } from "../core/lang.ts";
 import { basename } from "../core/paths.ts";
 import { byKeys, compareStrings } from "../core/text.ts";
+import type { PrHost } from "../hosts/host.ts";
+import { prSource } from "../hosts/source.ts";
 import { type DiffFile, parseDiff, resolveBase, untrackedAsDiff } from "./diff.ts";
 import { buildGraph, edgeKey, ruleViolation, type SideGraph, splitEdgeKey } from "./graph.ts";
 import { collectOpenSpec } from "./openspec.ts";
@@ -39,11 +39,14 @@ import { type Extracted, extractRefs } from "./refs.ts";
 import { loadTsConfigs, SideIndex } from "./resolve.ts";
 import { extractSymbols } from "./symbols.ts";
 
-/** What to explain: the current branch (optionally with uncommitted work), or an Azure DevOps PR. */
+/** What to explain: the current branch (optionally with uncommitted work), or a PR. */
 export interface ChangeRequest {
   base: string | null;
   includeUncommitted: boolean;
+  /** A PR id or URL, read from `host`; null for the current branch. */
   pr: string | null;
+  /** The PR's host; for a branch, the host its PR would be on (null when none). */
+  host: PrHost | null;
   specs: string[];
 }
 
@@ -54,10 +57,10 @@ export function repoRoot(cwd = process.cwd()): string {
 }
 
 /** The whole change as facts: source, files, components, dependencies, symbols, stats, OpenSpec and the outline. */
-export function collect(root: string, config: Config, req: ChangeRequest, az: Az): Facts {
+export function collect(root: string, config: Config, req: ChangeRequest): Facts {
   const mapper = new Mapper(config);
   const notes: string[] = [];
-  const { source, mergeBase, headRev } = changeSource(root, config, req, notes, az);
+  const { source, mergeBase, headRev } = changeSource(root, config, req, notes);
   const { files, rawDiff, totalLines } = changedFiles(
     root,
     mapper,
@@ -130,13 +133,13 @@ function changeSource(
   config: Config,
   req: ChangeRequest,
   notes: string[],
-  az: Az,
 ): { source: Source; mergeBase: string; headRev: string | null } {
   let partial: Omit<Source, "headDate" | "commits">;
   let mergeBase: string;
   let headRev: string | null;
   if (req.pr) {
-    const pr = adoSource(root, req.pr, notes, az);
+    if (!req.host) throw new Error("a PR needs its host");
+    const pr = prSource(root, req.host, req.pr, notes);
     partial = { kind: "pr", ...pr, includeUncommitted: false };
     mergeBase = pr.mergeBase;
     headRev = pr.headSha;
@@ -157,6 +160,7 @@ function changeSource(
       headRef: "HEAD",
       headSha,
       mergeBase,
+      host: req.host?.id ?? null,
       prId: null,
       url: null,
       includeUncommitted: req.includeUncommitted,
