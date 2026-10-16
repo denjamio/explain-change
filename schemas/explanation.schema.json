@@ -1,0 +1,421 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/denjamio/explain-change/main/schemas/explanation.schema.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 2
+    },
+    "key": {
+      "type": "string",
+      "description": "The change key from the draft. Another key means the explanation is stale."
+    },
+    "lang": {
+      "type": "string",
+      "enum": [
+        "en",
+        "es"
+      ],
+      "description": "The report language: write all prose in it."
+    },
+    "tldr": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280,
+      "description": "What changes and its effect."
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The need or problem behind the change; not a repeat of tldr."
+    },
+    "story": {
+      "minItems": 2,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "The thing and what happened to it (added, removed, now, moved)."
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "What behaves differently now; not a description of the code."
+          },
+          "view": {
+            "type": "string",
+            "pattern": "^(architecture|data|requirements|flow:[a-z0-9]+(?:-[a-z0-9]+)*)$",
+            "description": "The map view: architecture | flow:<flow-id> | data | requirements (lights the components that implement them)."
+          },
+          "focus": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ids on the view: components; on a flow, participants or step numbers '#2'; entity ids; requirement ids."
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^(.+?):(\\d+)(?:-(\\d+))?$",
+            "description": "file:first-last inside a hunk, shown beside the step."
+          }
+        },
+        "required": [
+          "heading",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The guided tour over the map. One step = one change, headline first, overview last."
+    },
+    "keyDependencies": {
+      "maxItems": 2,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The dependency (a drawn arrow) the change is really about."
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 140,
+            "description": "What it now does differently."
+          }
+        },
+        "required": [
+          "id",
+          "summary"
+        ],
+        "additionalProperties": false
+      },
+      "description": "One line per changed component; every changed component needs one."
+    },
+    "decisions": {
+      "maxItems": 5,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "The choice."
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Why this choice."
+          },
+          "alternative": {
+            "type": "string",
+            "maxLength": 140,
+            "description": "The main alternative not built."
+          },
+          "evidence": {
+            "type": "string",
+            "pattern": "^(.+?):(\\d+)(?:-(\\d+))?$",
+            "description": "Where the code shows it: file:line inside a hunk."
+          }
+        },
+        "required": [
+          "title",
+          "why"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "flows": {
+      "maxItems": 3,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "kebab-case; the id of a reference flow compares it with that flow."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "The action that starts it, verb first: 'Create a partial refund'."
+          },
+          "trigger": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "The code that starts it: 'RefundsController#create'."
+          },
+          "scenario": {
+            "type": "string",
+            "pattern": "^[^#]+#[a-z0-9-]+$",
+            "description": "The OpenSpec scenario this flow realizes: <requirement-id>#<scenario-id>."
+          },
+          "steps": {
+            "minItems": 1,
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                },
+                "call": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "description": "The call as the code makes it ('Refund.create!'), or a short verb phrase."
+                },
+                "delta": {
+                  "type": "string",
+                  "enum": [
+                    "added",
+                    "changed",
+                    "removed",
+                    "unchanged"
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40,
+                      "description": "The type a reader of the code knows."
+                    },
+                    "fields": {
+                      "maxItems": 8,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60,
+                        "description": "'+email: string' added, '-fax' removed, '~total: number' changed, 'id: string' unchanged."
+                      }
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "description": "What travels on this step, when it changed."
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "call",
+                "delta"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "steps"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "dataModel": {
+      "type": "object",
+      "properties": {
+        "entities": {
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "description": "The model or table name."
+              },
+              "delta": {
+                "type": "string",
+                "enum": [
+                  "added",
+                  "changed",
+                  "removed",
+                  "unchanged"
+                ]
+              },
+              "component": {
+                "type": "string"
+              },
+              "fields": {
+                "maxItems": 12,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "description": "'+email: string' added, '-fax' removed, '~total: number' changed, 'id: string' unchanged."
+                }
+              },
+              "evidence": {
+                "type": "string",
+                "pattern": "^(.+?):(\\d+)(?:-(\\d+))?$",
+                "description": "A model or migration hunk; required unless delta is 'unchanged'."
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "delta"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "relations": {
+          "maxItems": 16,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "delta": {
+                "type": "string",
+                "enum": [
+                  "added",
+                  "changed",
+                  "removed",
+                  "unchanged"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "delta"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "entities",
+        "relations"
+      ],
+      "additionalProperties": false,
+      "description": "The entities and relations the change touches."
+    },
+    "requirements": {
+      "maxItems": 80,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A requirement id from the facts: <capability>/<kebab-name>."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "implemented",
+              "partial",
+              "missing",
+              "not-applicable"
+            ]
+          },
+          "components": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tests": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "path or path:line of a test that proves it."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 160,
+            "description": "Required for partial and missing."
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "description": "OpenSpec traceability: one entry per ADDED or MODIFIED requirement."
+    }
+  },
+  "required": [
+    "version",
+    "key",
+    "lang",
+    "tldr",
+    "goal",
+    "story",
+    "components"
+  ],
+  "additionalProperties": false,
+  "description": "explanation.json: what the agent writes about one change."
+}

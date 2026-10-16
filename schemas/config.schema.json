@@ -1,57 +1,59 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "explain-change/config.schema.json",
-  "title": ".explain-change.toml (v1)",
-  "description": "Shape of the TOML config, for editors and docs. `explain-change check` validates cross-references.",
+  "$id": "https://raw.githubusercontent.com/denjamio/explain-change/main/schemas/config.schema.json",
   "type": "object",
   "properties": {
     "project": {
       "type": "object",
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "Shown in the report. Default: the repository folder name."
         },
         "direction": {
           "type": "string",
-          "description": "The architecture PRs should follow, in one or two sentences."
+          "description": "One or two sentences on the intended architecture: context for the story and the decisions."
         },
         "lang": {
+          "type": "string",
           "enum": [
             "en",
             "es"
           ],
-          "default": "en"
+          "description": "Report language (default en)."
         },
         "base": {
           "type": "string",
-          "description": "Default base ref (else origin/HEAD, main, master or develop, remote first)."
+          "description": "Default base ref for `local` (else origin/HEAD, origin/main, origin/master, main, master…)."
         },
         "budget": {
           "type": "integer",
           "minimum": 2000,
           "maximum": 100000,
-          "default": 12000,
-          "description": "Digest size in characters (~4 characters per token). --budget overrides it."
+          "description": "Digest size in characters (default 12000 ≈ 3k tokens). --budget overrides it."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "layers": {
       "type": "array",
-      "description": "Diagram lanes, drawn top to bottom in this order (entry points first, core last). Order does not define allowed dependencies: rules do.",
       "items": {
         "type": "object",
-        "required": [
-          "id"
-        ],
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[\\w.-]+$"
           },
           "name": {
             "type": "string"
           }
-        }
-      }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Map lanes, drawn top to bottom in this order (entry points first, core last). The order does not decide what may depend on what: [rules] does."
     },
     "rules": {
       "type": "object",
@@ -62,87 +64,96 @@
             "type": "string",
             "pattern": "^\\s*[\\w.-]+\\s*->\\s*[\\w.-]+\\s*$"
           },
-          "description": "If present, any other cross-layer edge is a violation. Layer or component ids."
+          "description": "Allowed dependency directions. When present, any other edge between layers is a violation."
         },
         "forbid": {
           "type": "array",
           "items": {
-            "type": "string"
-          }
+            "type": "string",
+            "pattern": "^\\s*[\\w.-]+\\s*->\\s*[\\w.-]+\\s*$"
+          },
+          "description": "Always a violation, even when `allow` matches."
         },
         "same_layer": {
           "type": "boolean",
-          "default": true
+          "description": "Allow dependencies inside a layer (default true)."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "components": {
       "type": "array",
-      "description": "A file belongs to the component whose matching path is most specific (longest literal prefix); ties go to config order.",
       "items": {
         "type": "object",
-        "required": [
-          "id",
-          "layer",
-          "paths"
-        ],
         "properties": {
           "id": {
             "type": "string",
             "pattern": "^[\\w.-]+$"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The name the team uses; it labels the box (about 20 characters)."
           },
           "layer": {
             "type": "string"
           },
           "desc": {
-            "type": "string"
+            "type": "string",
+            "description": "One line: what this component owns."
           },
           "paths": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Path globs: * and ? stay inside one folder, ** crosses folders; a plain dir matches everything below it."
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Path globs: `*` and `?` stay inside one folder, `**` crosses folders, a plain folder covers everything below it. A file belongs to the component with the most specific match."
           },
           "imports": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "TS/Python/require specifiers owned by this component. fnmatch patterns over the whole specifier: * matches any characters, including / and ., so billing.* covers billing.models.invoice."
+            "description": "TypeScript/Python/require specifiers owned by this component outside its paths. `*` matches anything, `.` and `/` included: `billing.*` covers `billing.models.invoice`."
           },
           "namespaces": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "C# namespaces. fnmatch patterns: * matches any characters, including ., so Shop.Billing* covers Shop.Billing.Invoices."
+            "description": "C# namespaces owned by this component. `*` matches anything, `.` included."
           },
           "constants": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Ruby constants. fnmatch patterns: * matches any characters, including ::, so Billing::* covers Billing::Stripe::Charge."
+            "description": "Ruby constants owned by this component. `*` matches anything, `::` included."
           }
-        }
-      }
+        },
+        "required": [
+          "id",
+          "layer",
+          "paths"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The boxes of the map. Aim for 8–20, named the way the team talks about the app."
     },
     "flows": {
       "type": "array",
-      "description": "Reference flows; insight flows with the same id are compared against them.",
       "items": {
         "type": "object",
-        "required": [
-          "id",
-          "steps"
-        ],
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[\\w.-]+$"
           },
           "title": {
             "type": "string"
@@ -151,11 +162,29 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^\\s*[\\w.-]+\\s*->\\s*[\\w.-]+\\s*(:.*)?$"
+              "pattern": "^\\s*[\\w.-]+\\s*->\\s*[\\w.-]+\\s*(?::[\\s\\S]*)?$"
             }
           }
-        }
-      }
+        },
+        "required": [
+          "id",
+          "steps"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Reference flows: runtime paths the team considers central. An explained flow with the same id is compared with it."
+    },
+    "glossary": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "The team's ubiquitous language: term = one-line definition. Name components and flows with these terms; the agent writes the explanation with them."
     },
     "ignore": {
       "type": "object",
@@ -165,15 +194,19 @@
           "items": {
             "type": "string"
           },
-          "description": "Generated/vendored files: listed apart, never analyzed."
+          "description": "Generated or vendored files: listed apart, never analyzed. Replaces the default list."
         },
         "tests": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Test file patterns. Replaces the default list."
         }
-      }
+      },
+      "additionalProperties": false
     }
-  }
+  },
+  "additionalProperties": false,
+  "description": "explain-change configuration (.explain-change.toml at the repository root)."
 }
