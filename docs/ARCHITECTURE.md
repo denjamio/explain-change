@@ -43,7 +43,7 @@ Each folder depends only on the ones above it:
 | `src/digest` | `digest.md` from the facts and the contract. |
 | `src/report` | The page: excerpts, the embedded data, the assets built from `report/`. |
 | `src/cli` | Commands, `--json` output, the work folder, the browser, skill install and self-update. |
-| `report/` | The report script, typed against the contract: `app.ts` (the header, the map and the sections below it), `sdd.ts` (the OpenSpec section), `model.ts` (the embedded data and its lookups), `ui.ts`, `dom.ts` and `words.ts` (shared pieces and the page's words); its styles and its HTML shell. |
+| `report/` | The report script, typed against the contract: `app.ts` (the header, the map's views and story, the sections below it), `camera.ts` (pan, zoom and flights), `inspector.ts` (what a component or an entity shows), `code.ts` (code excerpts), `sdd.ts` (the OpenSpec section), `model.ts` (the embedded data and its lookups), `ui.ts`, `dom.ts` and `words.ts` (shared pieces and the page's words); its styles and its HTML shell. |
 | `skills/` | The agent skills the CLI installs and the Claude Code plugin ships. |
 
 ## Determinism

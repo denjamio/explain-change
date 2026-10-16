@@ -1,4 +1,5 @@
 /** Pieces every section draws with: file links, section shells, legend items, figures, and the map's handle. */
+import type { Delta } from "../src/contract/facts.ts";
 import { type Child, h } from "./dom.ts";
 import { prFileUrl } from "./model.ts";
 export function onOpen<E extends Element>(el: E, path: string): E {
@@ -53,3 +54,30 @@ export const mapApi: {
   focus?: (view: string, ids: string[]) => void;
   showFlow?: (fid: string) => void;
 } = {};
+
+export function fieldDelta(f: string): Delta {
+  const c = f.trim().charAt(0);
+  return c === "+" ? "added" : c === "-" || c === "−" ? "removed" : c === "~" ? "changed" : "unchanged";
+}
+export const fieldText = (f: string) => (/^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim());
+export const FIELD_MARK: Record<Delta, string> = { added: "+", removed: "−", changed: "~", unchanged: "" };
+
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface View {
+  id: string;
+  svg: SVGElement;
+  W: number;
+  H: number;
+  geo: Record<string, Box>;
+  empty?: string;
+  links?: [string, string][];
+  keyOf: (x: string) => string;
+  expand: (set: Record<string, boolean>) => Record<string, boolean>;
+  focusBoxKeys?: (ids: string[]) => string[];
+}

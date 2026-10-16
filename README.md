@@ -291,7 +291,8 @@ bun run install:dev           # this checkout as `explain-change` in ~/.local/bi
 bun run examples              # rebuild examples/ after changing the report or the analysis (CI checks it)
 bun run examples -- --real    # also rebuild the 10 real pull requests (clones them at their commit)
 bun run smoke                 # compile the binary for this machine and run it on a temporary repository
-bun run eval -- --model haiku # a real agent explains each scenario with the skill (costs tokens)
+bun run eval -- --model haiku # a real agent explains each scenario with the skill (costs tokens; --real: the PRs too)
+bun scripts/example-work.ts open <example> <dir>   # rewrite an example's explanation with the current tool, then: save
 ```
 
 Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [docs/CONCEPTS.md](docs/CONCEPTS.md).
@@ -301,8 +302,13 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
 
 - **Toolchain**: Bun runs the build and the tests; the published CLI is a standalone binary (or the npm bundle on
   Node ≥ 20).
-- **Evals**: after changing the skills or the digest's rules, run the eval. It reports, per scenario, whether the
-  agent reached a valid explanation, with its turns, cost and time.
+- **Examples follow the tool**: after any change to the analysis, the outline, the draft or the rules, rewrite the
+  examples' explanations with the current tool (`scripts/example-work.ts open`, fill the draft, `save`) and rebuild
+  them with `bun run examples -- --real`. They are what the current version produces, and the eval's references.
+- **Evals**: after changing the skills or the digest's rules, run the eval (`--real` adds the 10 PRs). It reports,
+  per example, whether the agent reached a valid explanation, with its turns, cost and time, and its fidelity to
+  the committed explanation: key dependencies, flow edges, the components the story lights and the files the
+  decisions cite.
 - **Versions**: bump `ANALYSIS_VERSION` (`src/core/constants.ts`) when the analysis can produce different facts for
   the same diff, and `CONTRACT_VERSION` when `facts.json` or `explanation.json` change shape. Changes go in
   [CHANGELOG.md](CHANGELOG.md).

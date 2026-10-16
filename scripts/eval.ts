@@ -1,13 +1,15 @@
 /**
- * Evaluates the skill end to end: a real agent explains each scenario, and the result is measured. Costs tokens.
+ * Evaluates the skill end to end: a real agent explains each example, and the result is measured. Costs tokens.
  *
- *   bun scripts/eval.ts [--model haiku|sonnet|opus] [--agent "claude -p"] [scenario…]
+ *   bun scripts/eval.ts [--model haiku|sonnet|opus] [--agent "claude -p"] [--real] [example…]
  *
- * For each scenario (examples/scenarios/<name>): its git repository is built in a temp folder, `explain-change` (this
+ * The examples are the scenarios (examples/scenarios/<name>) and, with --real or by name, the real PRs
+ * (examples/real/<name>, cloned: needs the network). For each one: its git repository is built in a temp folder, `explain-change` (this
  * checkout) is put on PATH, and the agent gets the user's request plus skills/explain-change/SKILL.md (the skill
  * itself, without its front matter). Then `explain-change status --json` says whether the explanation is valid.
- * Reported per scenario: the final state, the issues left, the agent's turns, cost and time (from
- * `claude -p --output-format json`), and its fidelity to the scenario's reference explanation (fidelity()).
+ * Reported per example: the final state, the issues left, the agent's turns, cost and time (from
+ * `claude -p --output-format json`), and its fidelity to the scenario's reference explanation (fidelity()). The
+ * references are the committed explanations: rewrite them with the current tool (scripts/example-work.ts) first.
  */
 import { spawnSync } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -17,15 +19,23 @@ import { parseArgs } from "node:util";
 import type { Explanation } from "../src/contract/explanation.ts";
 import { removeTree } from "../src/core/fs.ts";
 import { buildAssets } from "./build.ts";
-import { buildScenarioRepo, GIT_ENV, SCENARIOS_DIR, scenarioNames } from "./build-examples.ts";
+import { exampleTargets, GIT_ENV } from "./build-examples.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
-  options: { model: { type: "string", default: "sonnet" }, agent: { type: "string", default: "claude -p" } },
+  options: {
+    model: { type: "string", default: "sonnet" },
+    agent: { type: "string", default: "claude -p" },
+    real: { type: "boolean", default: false },
+  },
   allowPositionals: true,
 });
-const REQUEST = "Explain the changes of this branch with explain-change.";
+/** What the user asks: the branch for a scenario, the last commit for a real PR. */
+const request = (base: string) =>
+  base === "main"
+    ? "Explain the changes of this branch with explain-change."
+    : `Explain the last commit with explain-change (its base is ${base}).`;
 
 await buildAssets();
 const tmp = mkdtempSync(join(tmpdir(), "explain-change-eval-"));
@@ -81,15 +91,19 @@ function fidelity(reference: Explanation | null, agent: Explanation | null): Rec
 
 const rows: Record<string, unknown>[] = [];
 try {
-  for (const name of positionals.length ? positionals : scenarioNames()) {
-    const repo = buildScenarioRepo(name, tmp);
+  const targets = exampleTargets().filter((t) =>
+    positionals.length ? positionals.includes(t.name) : t.kind === "scenario" || values.real,
+  );
+  for (const target of targets) {
+    const name = target.name;
+    const repo = target.build(tmp);
     const [cmd, ...args] = (values.agent as string).split(" ");
     const started = Date.now();
     const run = spawnSync(
       cmd as string,
       [
         ...args,
-        REQUEST,
+        request(target.base),
         "--model",
         values.model as string,
         "--output-format",
@@ -117,16 +131,13 @@ try {
     });
     const out = JSON.parse(status.stdout || "{}");
     rows.push({
-      scenario: name,
+      example: name,
       state: out.explanation?.state ?? "error",
       issues: out.explanation?.issues?.length ?? null,
       turns: agent.num_turns ?? null,
       costUsd: agent.total_cost_usd ?? null,
       seconds: Math.round((Date.now() - started) / 1000),
-      ...fidelity(
-        readJson(join(SCENARIOS_DIR, name, "explanation.json")),
-        readJson(join(repo, ".explain-change", "explanation.json")),
-      ),
+      ...fidelity(readJson(target.explanation), readJson(join(repo, ".explain-change", "explanation.json"))),
     });
     console.log(JSON.stringify(rows[rows.length - 1]));
   }

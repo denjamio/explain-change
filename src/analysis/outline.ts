@@ -72,21 +72,33 @@ function bestHunk(files: FileFacts[], ctx: HunkContext): string | null {
 }
 
 /**
- * Drawn dependencies the change creates or grows, the candidates for keyDependencies: new ones first, then the
- * ones that grow, strongest first. A grown dependency into the bottom lane (the shared kernel or the platform,
- * which every change touches) is no candidate: it says nothing about this change.
+ * Drawn dependencies the change creates or grows, the candidates for keyDependencies, best first: links between 2
+ * components the change touches (its own path) before links into a neighbor, new before grown, then the strongest.
+ * A link into the bottom lane (the shared kernel or the platform, which every change touches) comes last when it is
+ * new, and is no candidate when it only grows: it says little about this change.
  */
-export function keyDependencyCandidates(facts: Pick<FactsCore, "dependencies" | "config">) {
+export function keyDependencyCandidates(
+  facts: Pick<FactsCore, "dependencies" | "components"> & {
+    config: Pick<FactsCore["config"], "layers" | "components">;
+  },
+) {
   // With 3 lanes or more, the bottom one holds what every lane uses; with 2, it is the domain itself.
   const bottom = facts.config.layers.length >= 3 ? facts.config.layers.at(-1)?.id : undefined;
   const layerOf = new Map(facts.config.components.map((c) => [c.id, c.layer]));
+  const intoBottom = (to: string) => Boolean(bottom) && layerOf.get(to) === bottom;
+  const touched = new Set(facts.components.filter((c) => c.delta !== "unchanged").map((c) => c.id));
   return facts.dependencies
-    .filter(
-      (e) =>
-        e.delta === "added" ||
-        (e.delta === "changed" && e.headCount > e.baseCount && (!bottom || layerOf.get(e.to) !== bottom)),
-    )
-    .sort(byKeys((e) => [e.delta === "added" ? 0 : 1, -(e.headCount - e.baseCount), e.from, e.to]));
+    .filter((e) => e.delta === "added" || (e.delta === "changed" && e.headCount > e.baseCount && !intoBottom(e.to)))
+    .sort(
+      byKeys((e) => [
+        intoBottom(e.to) ? 1 : 0,
+        touched.has(e.from) && touched.has(e.to) ? 0 : 1,
+        e.delta === "added" ? 0 : 1,
+        -(e.headCount - e.baseCount),
+        e.from,
+        e.to,
+      ]),
+    );
 }
 
 /**

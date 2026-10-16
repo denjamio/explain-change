@@ -21,8 +21,8 @@
       "code": "saleor/product/managers.py:268-283"
     },
     {
-      "heading": "A new mutation sets the flag in bulk",
-      "body": "productVariantChannelListingAvailabilityUpdate takes up to 100 channels for a variant. It locks the listings, updates them and sends product_variant_updated.",
+      "heading": "Mutations set the flag, in bulk or per variant",
+      "body": "productVariantChannelListingAvailabilityUpdate sets it for up to 100 channels. Create, update and bulk mutations take it too.",
       "view": "flow:hide-variant-in-channel",
       "focus": [
         "#1",
@@ -40,16 +40,6 @@
         "#2"
       ],
       "code": "saleor/checkout/fetch.py:314-316"
-    },
-    {
-      "heading": "Existing listing mutations take the flag",
-      "body": "Variant create, update and bulk mutations accept is_available_for_purchase. When omitted, an update keeps the stored value.",
-      "view": "architecture",
-      "focus": [
-        "catalog-api",
-        "graphql-api"
-      ],
-      "code": "saleor/graphql/product/mutations/channels.py:417-420"
     },
     {
       "heading": "The whole change",

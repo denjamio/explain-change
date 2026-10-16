@@ -96,9 +96,9 @@ export function buildScenario(name: string, tmp: string, out: string): Facts {
   return facts;
 }
 
-const REAL_DIR = join(ROOT, "examples/real");
+export const REAL_DIR = join(ROOT, "examples/real");
 
-interface RealMeta {
+export interface RealMeta {
   repository: string;
   commit: string;
   report: string;
@@ -108,7 +108,7 @@ interface RealMeta {
   shows: string;
 }
 
-const realExamples = () =>
+export const realExamples = () =>
   readdirSync(REAL_DIR, { withFileTypes: true })
     .filter((d) => d.isDirectory() && existsSync(join(REAL_DIR, d.name, "real.json")))
     .map((d) => ({
@@ -117,8 +117,8 @@ const realExamples = () =>
     }))
     .sort((a, b) => (a.name < b.name ? -1 : 1));
 
-/** Clones the PR's commit and its parent, then explains it with the team's config and the agent's explanation. */
-function buildReal(name: string, meta: RealMeta, tmp: string): void {
+/** The PR's commit and its parent, cloned under `tmp` with the team's config. Returns the repository. */
+export function buildRealRepo(name: string, meta: RealMeta, tmp: string): string {
   const repo = join(tmp, name);
   ensureDir(repo);
   sh(["git", "init", "-q"], repo);
@@ -126,6 +126,12 @@ function buildReal(name: string, meta: RealMeta, tmp: string): void {
   sh(["git", "fetch", "-q", "--depth", "2", "origin", meta.commit], repo);
   sh(["git", "checkout", "-q", "FETCH_HEAD"], repo);
   cpSync(join(REAL_DIR, name, "explain-change.toml"), join(repo, ".explain-change.toml"));
+  return repo;
+}
+
+/** Clones the PR's commit and its parent, then explains it with the team's config and the agent's explanation. */
+function buildReal(name: string, meta: RealMeta, tmp: string): void {
+  const repo = buildRealRepo(name, meta, tmp);
   const out = join(ROOT, "examples", meta.report);
   sh(["bun", CLI, "local", "--base", "HEAD~1", "--no-open", "--out", out, "--json"], repo);
   const facts = JSON.parse(readFileSync(join(repo, ".explain-change/facts.json"), "utf8")) as Facts;
@@ -140,6 +146,37 @@ function buildReal(name: string, meta: RealMeta, tmp: string): void {
     encoding: "utf8",
   });
   if (p.status !== 0) throw new Error(`${name}: explanation rejected\n${p.stdout}${p.stderr}`);
+}
+
+/** Every example an agent explains: the scenarios (against main) and the real PRs (against their parent). */
+export interface ExampleTarget {
+  name: string;
+  kind: "scenario" | "real";
+  /** The base `local` compares with. */
+  base: string;
+  /** The committed explanation (absent for a scenario without an agent). */
+  explanation: string;
+  /** Builds its repository under `tmp`; returns its path. */
+  build: (tmp: string) => string;
+}
+
+export function exampleTargets(): ExampleTarget[] {
+  return [
+    ...scenarioNames().map((name) => ({
+      name,
+      kind: "scenario" as const,
+      base: "main",
+      explanation: join(SCENARIOS_DIR, name, "explanation.json"),
+      build: (tmp: string) => buildScenarioRepo(name, tmp),
+    })),
+    ...realExamples().map(({ name, meta }) => ({
+      name,
+      kind: "real" as const,
+      base: "HEAD~1",
+      explanation: join(REAL_DIR, name, "explanation.json"),
+      build: (tmp: string) => buildRealRepo(name, meta, tmp),
+    })),
+  ];
 }
 
 if (import.meta.main) {

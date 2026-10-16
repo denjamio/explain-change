@@ -13,8 +13,8 @@
       "code": "orders/services.py:31-38"
     },
     {
-      "heading": "Notifications app added",
-      "body": "send_order_confirmation renders the email and sends it through the EmailGateway. A Celery task retries it up to 5 times with backoff.",
+      "heading": "Notifications sends through an EmailGateway port",
+      "body": "send_order_confirmation sends through PostmarkGateway, the only adapter. A Celery task retries a GatewayError up to 5 times with backoff.",
       "view": "flow:confirm-paid-order",
       "focus": [
         "#3",
@@ -24,32 +24,13 @@
     },
     {
       "heading": "SentEmail guards against a second send",
-      "body": "A unique (order, kind) constraint lets 1 confirmation through per order. A failed send deletes its row, so the retry can send.",
+      "body": "A unique (order, kind) constraint lets 1 confirmation through per order. Order now stores contact_email, filled for existing orders.",
       "view": "data",
       "focus": [
         "sent-email",
         "order"
       ],
       "code": "notifications/models.py:1-20"
-    },
-    {
-      "heading": "Postmark sits behind an EmailGateway port",
-      "body": "PostmarkGateway is the only adapter. It turns a refusal or a timeout into GatewayError, the error the task retries.",
-      "view": "architecture",
-      "focus": [
-        "email-gateway",
-        "notifications"
-      ],
-      "code": "notifications/gateway.py:1-47"
-    },
-    {
-      "heading": "Orders keep the email they were placed with",
-      "body": "place_order stores the customer's email as contact_email. A migration fills it for existing orders.",
-      "view": "data",
-      "focus": [
-        "order"
-      ],
-      "code": "orders/migrations/0002_order_contact_email.py:1-19"
     },
     {
       "heading": "4 requirements, all implemented",

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
+import { keyDependencyCandidates } from "../src/analysis/outline.ts";
 import { portLinks } from "../src/analysis/ports.ts";
 import { type Extracted, extractRefs } from "../src/analysis/refs.ts";
 import { loadTsConfigs, SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
@@ -435,6 +436,38 @@ describe("rules", () => {
     expect(ruleViolation("o", "m", config, layerOf)).toBe("not allowed: domain -> infra");
     config.rules.forbid.push(["m", "domain"]);
     expect(ruleViolation("m", "o", config, layerOf)).toBe("forbidden: m -> domain");
+  });
+});
+
+describe("key dependencies", () => {
+  test("the change's own path first, a neighbor next, the bottom lane last", () => {
+    const comps = ["api", "orders", "billing", "kernel"].map((id, i) => ({
+      id,
+      layer: ["entry", "domain", "domain", "shared"][i] as string,
+      paths: [`${id}/**`],
+    }));
+    const config = makeConfig(comps, ["entry", "domain", "shared"]);
+    const edge = (from: string, to: string, delta: "added" | "changed", baseCount: number, headCount: number) => ({
+      from,
+      to,
+      delta,
+      baseCount,
+      headCount,
+      examples: [],
+      violation: null,
+    });
+    const delta = (id: string, d: "changed" | "unchanged") => ({ id, delta: d, files: 0, additions: 0, deletions: 0 });
+    const candidates = keyDependencyCandidates({
+      config,
+      components: [delta("api", "changed"), delta("orders", "changed"), delta("billing", "unchanged")],
+      dependencies: [
+        edge("orders", "kernel", "added", 0, 9), // new, but into the bottom lane
+        edge("orders", "billing", "added", 0, 5), // into a neighbor the change does not touch
+        edge("api", "orders", "changed", 1, 2), // the change's own path, grown
+        edge("api", "kernel", "changed", 1, 4), // grown into the bottom lane: no candidate
+      ],
+    });
+    expect(candidates.map((e) => `${e.from}->${e.to}`)).toEqual(["api->orders", "orders->billing", "orders->kernel"]);
   });
 });
 

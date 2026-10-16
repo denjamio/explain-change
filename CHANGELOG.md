@@ -6,6 +6,21 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- The examples show what this version produces: their explanations are rewritten for the 0.5 outline, in 4-5
+  steps that each say something new, and each story ends with its overview (3 had none). They are also the
+  eval's references.
+- `bun run eval -- --real` also explains the 10 real PRs; an example can be named (`bun run eval -- maybe-data-exports`).
+- `scripts/example-work.ts` rewrites an example's explanation with the current tool: `open` builds its repository
+  with a fresh draft and the committed explanation as reference, `save` validates it with `render` and writes it
+  back.
+- The digest's task is about 10% shorter: the naming rule is 1 line, and flow titles are stated once.
+- Key dependency candidates rank the change's own path first (a link between 2 components it touches), then a
+  link into a neighbor; a new link into the bottom lane comes last. The draft pre-fills the first one: in the
+  examples it is the one the explanation names in 7 of 11, up from 5. The analysis is version 10.
+- The map's camera (`camera.ts`), inspector (`inspector.ts`) and code excerpts (`code.ts`) leave `app.ts`; the
+  pages render the same.
+
 ## [0.5.0] - 2026-10-16
 
 ### Changed

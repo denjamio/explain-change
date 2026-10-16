@@ -12,19 +12,11 @@
       "code": "server/src/services/memory.service.ts:43-56"
     },
     {
-      "heading": "Memories reads people from the Database",
-      "body": "forBirthdayMemories returns the visible, named people of the owner born on the target day in an earlier year.",
+      "heading": "Memories picks people born that day, and their photos",
+      "body": "forBirthdayMemories returns the owner's named people born on that day. Each memory takes up to 5 photos per past birthday, at most 25.",
       "view": "flow:generate-birthday-memories",
       "focus": [
-        "#1"
-      ],
-      "code": "server/src/repositories/person.repository.ts:221-262"
-    },
-    {
-      "heading": "Up to 25 photos per birthday memory",
-      "body": "It takes up to 5 photos per past birthday. With more than 25 birthdays, it takes 1 photo from 25 random years.",
-      "view": "flow:generate-birthday-memories",
-      "focus": [
+        "#1",
         "#2",
         "#3"
       ],
@@ -40,17 +32,6 @@
       "code": "server/src/dtos/memory.dto.ts:21-35"
     },
     {
-      "heading": "Clients show the birthday title",
-      "body": "The web app titles the memory with the name of the person. The mobile app knows the birthday type.",
-      "view": "architecture",
-      "focus": [
-        "web",
-        "mobile",
-        "sdk"
-      ],
-      "code": "web/src/lib/utils.ts:400-403"
-    },
-    {
       "heading": "February 29 birthdays move to February 28",
       "body": "In a year without February 29, isLeapDayObserved makes February 28 the birthday of people born on February 29.",
       "view": "architecture",
@@ -59,6 +40,12 @@
         "database"
       ],
       "code": "server/src/utils/date.ts:18-24"
+    },
+    {
+      "heading": "The whole change",
+      "body": "Memories reads people from the Database and writes the memory. The memory data names the person, and the web and mobile apps title the memory with it.",
+      "view": "architecture",
+      "focus": []
     }
   ],
   "keyDependencies": [

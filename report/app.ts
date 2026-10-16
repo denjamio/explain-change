@@ -6,9 +6,12 @@
  */
 
 import type { NormalizedExplanation } from "../src/contract/explanation.ts";
-import type { ComponentFacts, Delta, DependencyFacts, FileFacts, Hunk } from "../src/contract/facts.ts";
+import type { ComponentFacts, Delta, DependencyFacts, FileFacts } from "../src/contract/facts.ts";
 import BULB from "./bulb.svg" with { type: "text" };
+import { createCamera } from "./camera.ts";
+import { codeExcerpt } from "./code.ts";
 import { append, type Child, cap, fit, fmt, h, listAt, MONO, r1, s, store, textWidth, trunc } from "./dom.ts";
+import { componentDetails, entityDetails, type InspectorNav } from "./inspector.ts";
 import {
   byCompRank,
   cfg,
@@ -16,12 +19,12 @@ import {
   compById,
   compName,
   DATA,
+  DM,
   deltaLabel,
-  type Entity,
   ex,
   facts,
-  fileIndex,
   gitLetter,
+  isNewViolation,
   layerName,
   type NFlow,
   type NStep,
@@ -37,8 +40,20 @@ import {
   st,
   summaryOf,
 } from "./model.ts";
-import { inspList, renderSpec, reqRow, scenarioStrip, sddApi } from "./sdd.ts";
-import { chip, fileLink, legendItem, mapApi, onOpen, sectionShell } from "./ui.ts";
+import { renderSpec, scenarioStrip, sddApi } from "./sdd.ts";
+import {
+  type Box,
+  chip,
+  FIELD_MARK,
+  fieldDelta,
+  fieldText,
+  fileLink,
+  legendItem,
+  mapApi,
+  onOpen,
+  sectionShell,
+  type View,
+} from "./ui.ts";
 import { T, t, tf } from "./words.ts";
 
 // ── helpers ──
@@ -172,24 +187,6 @@ function renderHeader(): HTMLElement {
 // ═════════════════════════════ views ═════════════════════════════
 // Every view draws into one SVG and registers its focusable elements: geo[key] (box), data-k on the element, and
 // edges carrying data-a / data-b. `expand(set)` says what else lights up with a focus set.
-interface Box {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-interface View {
-  id: string;
-  svg: SVGElement;
-  W: number;
-  H: number;
-  geo: Record<string, Box>;
-  empty?: string;
-  links?: [string, string][];
-  keyOf: (x: string) => string;
-  expand: (set: Record<string, boolean>) => Record<string, boolean>;
-  focusBoxKeys?: (ids: string[]) => string[];
-}
 
 function newView(id: string, W: number, H: number): View {
   const svg = s("svg", {
@@ -730,12 +727,6 @@ function buildFlow(fl: NFlow): View {
 }
 
 /** The kind of change a field line describes: "+email" added, "-fax" removed, "~total" changed, "id" unchanged. */
-function fieldDelta(f: string): Delta {
-  const c = f.trim().charAt(0);
-  return c === "+" ? "added" : c === "-" || c === "−" ? "removed" : c === "~" ? "changed" : "unchanged";
-}
-const fieldText = (f: string) => (/^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim());
-const FIELD_MARK: Record<Delta, string> = { added: "+", removed: "−", changed: "~", unchanged: "" };
 
 // What travels on a step: "Order { +email ~total −fax }", colored per field change.
 function dataChip(data: NonNullable<NStep["data"]>, cx: number, y: number): SVGElement {
@@ -766,9 +757,6 @@ function dataChip(data: NonNullable<NStep["data"]>, cx: number, y: number): SVGE
 }
 
 // ── Data: the entities the change touches (agent, with evidence) and the migrations in the diff (computed) ──
-const DM = ex?.dataModel.entities.length ? ex.dataModel : null;
-const entById: Record<string, Entity> = {};
-if (DM) for (const e of DM.entities) entById[e.id] = e;
 
 function buildData(onNode?: (g: SVGElement, key: string) => void): View {
   const dm = DM as NormalizedExplanation["dataModel"];
@@ -1014,7 +1002,6 @@ const storyIsAuto = !ex?.story.length;
  * 12 of 13 neighbors. Nor is a rule the code broke before this change.
  */
 const MEANINGFUL = new Set<string>();
-const isNewViolation = (e: DependencyFacts) => Boolean(e.violation && !e.violation.preexisting);
 for (const e of facts.dependencies) {
   if (
     e.delta === "added" ||
@@ -1131,116 +1118,7 @@ function renderMap(): HTMLElement {
   const legend = h("div", { class: "diagram-legend" });
 
   // ── camera ──
-  let vb: Box | null = null;
-  let anim = 0;
-  const ratio = () => (viewport.clientWidth || 1000) / (viewport.clientHeight || 560);
-  function apply(v: Box) {
-    vb = v;
-    current?.svg.setAttribute("viewBox", [v.x, v.y, v.w, v.h].map(r1).join(" "));
-  }
-  function frame(box: Box, pad = 28, minW?: number): Box {
-    let x = box.x - pad;
-    let y = box.y - pad;
-    let w = box.w + 2 * pad;
-    let hh = box.h + 2 * pad;
-    if (minW && w < minW) {
-      x -= (minW - w) / 2;
-      w = minW;
-    }
-    const r = ratio();
-    if (w / hh > r) {
-      const nh = w / r;
-      y -= (nh - hh) / 2;
-      hh = nh;
-    } else {
-      const nw = hh * r;
-      x -= (nw - w) / 2;
-      w = nw;
-    }
-    return { x, y, w, h: hh };
-  }
-  const fullBox = () => frame({ x: 0, y: 0, w: (current as View).W, h: (current as View).H }, 16);
-  function fly(target: Box, animate: boolean) {
-    cancelAnimationFrame(anim);
-    if (!animate || !vb || REDUCED) return apply(target);
-    const from: Box = vb;
-    let t0 = 0;
-    const D = 560;
-    const tick = (now: number) => {
-      if (!t0) t0 = now;
-      const p = Math.min(1, (now - t0) / D);
-      const e = p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2;
-      apply({
-        x: from.x + (target.x - from.x) * e,
-        y: from.y + (target.y - from.y) * e,
-        w: from.w + (target.w - from.w) * e,
-        h: from.h + (target.h - from.h) * e,
-      });
-      if (p < 1) anim = requestAnimationFrame(tick);
-    };
-    anim = requestAnimationFrame(tick);
-  }
-  function zoom(f: number, cx?: number, cy?: number) {
-    if (!vb || !current) return;
-    const w = Math.max(160, Math.min(vb.w * f, Math.max(current.W, current.H) * 3));
-    const k = w / vb.w;
-    const x0 = cx ?? vb.x + vb.w / 2;
-    const y0 = cy ?? vb.y + vb.h / 2;
-    fly({ x: x0 - (x0 - vb.x) * k, y: y0 - (y0 - vb.y) * k, w, h: vb.h * k }, false);
-  }
-  let drag: { x: number; y: number; vb: Box } | null = null;
-  let dragged = false;
-  viewport.addEventListener("pointerdown", (ev: PointerEvent) => {
-    if (ev.button !== 0 || !vb) return;
-    drag = { x: ev.clientX, y: ev.clientY, vb };
-    dragged = false;
-  });
-  viewport.addEventListener("pointermove", (ev: PointerEvent) => {
-    if (!drag || !vb) return;
-    const dx = ev.clientX - drag.x;
-    const dy = ev.clientY - drag.y;
-    if (!dragged && Math.abs(dx) + Math.abs(dy) < 5) return;
-    if (!dragged) {
-      dragged = true;
-      try {
-        viewport.setPointerCapture(ev.pointerId);
-      } catch {
-        // not capturable: panning still works while the pointer stays inside
-      }
-      viewport.classList.add("grabbing");
-    }
-    const k = drag.vb.w / (viewport.clientWidth || 1);
-    apply({ x: drag.vb.x - dx * k, y: drag.vb.y - dy * k, w: drag.vb.w, h: drag.vb.h });
-  });
-  const endDrag = () => {
-    drag = null;
-    viewport.classList.remove("grabbing");
-  };
-  viewport.addEventListener("pointerup", endDrag);
-  viewport.addEventListener("pointercancel", endDrag);
-  viewport.addEventListener(
-    "click",
-    (ev) => {
-      if (dragged) {
-        ev.stopPropagation();
-        ev.preventDefault();
-        dragged = false;
-      }
-    },
-    true,
-  );
-  viewport.addEventListener(
-    "wheel",
-    (ev: WheelEvent) => {
-      if (!(ev.ctrlKey || ev.metaKey) || !vb) return;
-      ev.preventDefault();
-      const rect = viewport.getBoundingClientRect();
-      const cx = vb.x + ((ev.clientX - rect.left) / rect.width) * vb.w;
-      const cy = vb.y + ((ev.clientY - rect.top) / rect.height) * vb.h;
-      zoom(ev.deltaY > 0 ? 1.12 : 0.89, cx, cy);
-    },
-    { passive: false },
-  );
+  const { apply, frame, fly, zoom, fullBox, box: viewBox } = createCamera(viewport, () => current);
 
   // ── lighting ──
   let lastFocus: string[] = [];
@@ -1332,7 +1210,8 @@ function renderMap(): HTMLElement {
           // no SMIL: nothing to pause
         }
       }
-      apply(prev && prev.id === current.id && vb ? vb : fullBox());
+      const shown = viewBox();
+      apply(prev && prev.id === current.id && shown ? shown : fullBox());
     }
     for (const b of Array.from(tabs.querySelectorAll(".view-tab"))) {
       const on = b.getAttribute("data-view") === id;
@@ -1566,6 +1445,11 @@ function renderMap(): HTMLElement {
   codeSplit.hidden = true;
 
   // ── inspector ──
+  const nav: InspectorNav = {
+    back: () => go(stepIdx),
+    inspect: (id) => inspect(id),
+    entity: (eid) => inspectEntity(eid),
+  };
   function inspect(key: string) {
     if (key.slice(0, 4) === "req:") return sddApi.open([key.slice(4)]);
     if (key.slice(0, 4) === "ent:") return inspectEntity(key.slice(4));
@@ -1573,75 +1457,8 @@ function renderMap(): HTMLElement {
     const hidden = changeComp[id];
     if (hidden && isContext(hidden) && !withContext) setContext(true);
     inspecting = id;
-    const c = compById[id];
-    const n = changeComp[id] ?? { id, delta: "unchanged" as Delta, files: 0, additions: 0, deletions: 0 };
-    const files = facts.files.filter((f) => f.component === id);
-    const syms = facts.symbols.filter((sy) => files.some((f) => f.path === sy.file));
-    const outE = facts.dependencies.filter((e) => e.from === id);
-    const inE = facts.dependencies.filter((e) => e.to === id);
-    const reqs = reqsOfComp(id);
     inspector.textContent = "";
-    append(inspector, [
-      h("button", { class: "back", text: `← ${T.back}`, onclick: () => go(stepIdx) }),
-      h(
-        "div",
-        { class: "insp-title" },
-        h("span", { class: `badge ${n.delta}`, text: deltaLabel(n.delta, true) }),
-        h("h3", { text: c ? c.name : id }),
-      ),
-      h("div", {
-        class: "faint",
-        text:
-          layerName(id) +
-          (n.delta !== "unchanged"
-            ? ` · ${n.files} ${n.files === 1 ? T.file : T.kFiles} · +${n.additions} −${n.deletions}`
-            : ""),
-      }),
-      summaryOf[id]
-        ? h("p", { class: "insp-summary", text: summaryOf[id] })
-        : c?.desc
-          ? h("p", { class: "insp-summary muted", text: c.desc })
-          : null,
-      files.length
-        ? inspList(
-            T.files,
-            files.map((f) =>
-              h(
-                "div",
-                { class: "insp-row" },
-                h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }),
-                fileLink(f.path, f.path.split("/").pop()),
-                h(
-                  "span",
-                  { class: "nums" },
-                  h("span", { class: "add", text: `+${f.additions}` }),
-                  " ",
-                  h("span", { class: "del", text: `−${f.deletions}` }),
-                ),
-              ),
-            ),
-          )
-        : null,
-      syms.length
-        ? inspList(
-            T.symbols,
-            syms.slice(0, 12).map((sy) =>
-              h(
-                "div",
-                { class: "insp-row" },
-                h("span", {
-                  class: `badge ${sy.delta}`,
-                  text: sy.delta === "added" ? "+" : sy.delta === "removed" ? "−" : "~",
-                }),
-                fileLink(`${sy.file}:${sy.line}`, sy.name),
-              ),
-            ),
-          )
-        : null,
-      outE.length ? inspList(T.dependsOn, outE.map(edgeRow((e) => e.to))) : null,
-      inE.length ? inspList(T.usedBy, inE.map(edgeRow((e) => e.from))) : null,
-      reqs.length ? inspList(T.reqs, reqs.map(reqRow)) : null,
-    ]);
+    append(inspector, componentDetails(id, nav));
     storyPane.hidden = true;
     codePane.hidden = codeSplit.hidden = true;
     inspector.hidden = false;
@@ -1651,71 +1468,8 @@ function renderMap(): HTMLElement {
     inspecting = id;
   }
   function inspectEntity(eid: string) {
-    const e = entById[eid] as Entity;
-    const dm = DM as NormalizedExplanation["dataModel"];
-    const rels = dm.relations.filter((r) => r.from === eid || r.to === eid);
-    const fields = e.fields ?? [];
     inspector.textContent = "";
-    append(inspector, [
-      h("button", { class: "back", text: `← ${T.back}`, onclick: () => go(stepIdx) }),
-      h(
-        "div",
-        { class: "insp-title" },
-        h("span", { class: `badge ${e.delta}`, text: deltaLabel(e.delta) }),
-        h("h3", { text: e.name }),
-      ),
-      e.component
-        ? h(
-            "div",
-            null,
-            h("a", {
-              href: "#",
-              class: "faint",
-              text: compName(e.component),
-              onclick: (ev: Event) => {
-                ev.preventDefault();
-                inspect(e.component as string);
-              },
-            }),
-          )
-        : null,
-      fields.length
-        ? inspList(
-            T.fields,
-            fields.map((f) => {
-              const k = fieldDelta(f);
-              return h(
-                "div",
-                { class: `insp-row field-row f-${k}` },
-                h("span", { class: "fmark", text: FIELD_MARK[k] || "·" }),
-                h("code", { text: fieldText(f) }),
-              );
-            }),
-          )
-        : null,
-      rels.length
-        ? inspList(
-            T.relations,
-            rels.map((r) => {
-              const other = r.from === eid ? r.to : r.from;
-              return h(
-                "div",
-                { class: "insp-row" },
-                h("span", { class: `badge ${r.delta}`, text: r.label || "—" }),
-                h("a", {
-                  href: "#",
-                  text: entById[other]?.name ?? other,
-                  onclick: (ev: Event) => {
-                    ev.preventDefault();
-                    inspectEntity(other);
-                  },
-                }),
-              );
-            }),
-          )
-        : null,
-      e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null,
-    ]);
+    append(inspector, entityDetails(eid, nav));
     storyPane.hidden = true;
     codePane.hidden = codeSplit.hidden = true;
     inspector.hidden = false;
@@ -1727,26 +1481,6 @@ function renderMap(): HTMLElement {
     inspector.hidden = true;
     storyPane.hidden = false;
     codePane.hidden = codeSplit.hidden = !codePane.firstChild;
-  }
-  function edgeRow(other: (e: DependencyFacts) => string) {
-    return (e: DependencyFacts) => {
-      const k = isNewViolation(e) ? "violation" : e.delta;
-      const mark: Record<string, string> = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
-      return h(
-        "div",
-        { class: "insp-row" },
-        h("span", { class: `badge ${k}`, text: mark[k] }),
-        h("a", {
-          href: "#",
-          text: compName(other(e)),
-          onclick: (ev: Event) => {
-            ev.preventDefault();
-            inspect(other(e));
-          },
-        }),
-        e.examples[0] ? fileLink(e.examples[0], e.examples[0].split("/").pop()) : null,
-      );
-    };
   }
 
   function setMotion(on: boolean) {
@@ -1806,7 +1540,8 @@ function renderMap(): HTMLElement {
       current = null;
       return go(stepIdx);
     }
-    apply(vb ? frame(vb, 0) : fullBox());
+    const shown = viewBox();
+    apply(shown ? frame(shown, 0) : fullBox());
   }
   if ("ResizeObserver" in window) {
     let last = { w: 0, h: 0 };
@@ -1814,6 +1549,7 @@ function renderMap(): HTMLElement {
       const w = viewport.clientWidth;
       const hh = viewport.clientHeight;
       // Same zoom, more or less of the view around the center: resizing never rescales the diagram.
+      const vb = viewBox();
       if (current && vb && last.w && last.h && w && hh) {
         const nw = (vb.w * w) / last.w;
         const nh = (vb.h * hh) / last.h;
@@ -1846,19 +1582,6 @@ function renderMap(): HTMLElement {
     show(`flow:${fid}`, [], true);
   };
   return root;
-}
-
-function codeExcerpt(ref: string): HTMLElement | null {
-  const m = /^(.+?):(\d+)(?:-(\d+))?$/.exec(ref || "");
-  if (!m || fileIndex[m[1] as string] === undefined) return null;
-  const f = facts.files[fileIndex[m[1] as string] as number] as FileFacts;
-  const lines = m[3] ? `${m[2]}-${m[3]}` : (m[2] as string);
-  return h(
-    "div",
-    { class: "step-code" },
-    h("div", { class: "step-code-head" }, fileLink(ref, `${(m[1] as string).split("/").slice(-2).join("/")}:${lines}`)),
-    h("div", { class: "excerpt diff-wrap" }, excerpt(f, lines, 1)),
-  );
 }
 
 function flowNotes(fl: NFlow): HTMLElement[] {
@@ -2038,66 +1761,6 @@ function renderChanges(): HTMLElement | null {
     ]),
     tf("leadChanges", { c: comps.length, f: nFiles }),
   );
-}
-
-function excerpt(f: FileFacts, lines: string, ctxLines = 3): HTMLElement {
-  const m = /^(\d+)(?:-(\d+))?$/.exec(lines) as RegExpExecArray;
-  const a = Number(m[1]);
-  const b = Number(m[2] ?? m[1]);
-  const removed = f.delta === "removed";
-  const table = h("table", { class: "diff" });
-  for (const hk of f.hunks) {
-    const lo = removed ? hk.oldStart : hk.newStart;
-    const hi = lo + Math.max(removed ? hk.oldLines : hk.newLines, 1) - 1;
-    if (a > hi || b < lo) continue;
-    table.appendChild(diffRows(hk, (n) => n >= a - ctxLines && n <= b + ctxLines, removed, a, b));
-  }
-  return table;
-}
-
-function diffRows(
-  hk: Hunk,
-  keep: (n: number) => boolean,
-  oldSide: boolean,
-  hlA: number,
-  hlB: number,
-): DocumentFragment {
-  const frag = document.createDocumentFragment();
-  frag.appendChild(
-    h(
-      "tr",
-      { class: "hh" },
-      h("td", {
-        colspan: "4",
-        text: `@@ −${hk.oldStart},${hk.oldLines} +${hk.newStart},${hk.newLines} @@ ${hk.header || ""}`,
-      }),
-    ),
-  );
-  let o = hk.oldStart;
-  let n = hk.newStart;
-  for (const [mark, body] of hk.lines) {
-    const ref = oldSide ? o : n;
-    const show = keep(mark === "+" ? n : mark === "-" ? (oldSide ? o : n) : ref);
-    if (show) {
-      const inRange = ref >= hlA && ref <= hlB && mark !== (oldSide ? "+" : "-");
-      frag.appendChild(
-        h(
-          "tr",
-          {
-            class: (mark === "+" ? "a" : mark === "-" ? "d" : "") + (inRange ? " hl" : ""),
-            "data-n": mark === "-" ? null : n,
-          },
-          h("td", { class: "ln", text: mark === "+" ? "" : o }),
-          h("td", { class: "ln", text: mark === "-" ? "" : n }),
-          h("td", { class: "sg", text: mark === " " ? "" : mark }),
-          h("td", { class: "code", text: body }),
-        ),
-      );
-    }
-    if (mark !== "+") o++;
-    if (mark !== "-") n++;
-  }
-  return frag;
 }
 
 // ═════════════════════════════ shell ═════════════════════════════
