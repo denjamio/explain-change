@@ -41,6 +41,8 @@ export interface ScenarioMeta {
   branch: string;
   message: string;
   dir?: string;
+  /** false: a test fixture only, built by the tests but not published in the gallery. */
+  publish?: boolean;
 }
 
 function sh(args: string[], cwd: string): string {
@@ -147,6 +149,7 @@ if (import.meta.main) {
   try {
     for (const name of scenarioNames()) {
       const meta = JSON.parse(readFileSync(join(SCENARIOS_DIR, name, "scenario.json"), "utf8")) as ScenarioMeta;
+      if (meta.publish === false) continue;
       buildScenario(name, tmp, join(ROOT, "examples", `${name}.html`));
       const example = readExample(join(ROOT, "examples"), `${name}.html`, { stack: meta.title, shows: meta.shows }, [
         ["Scenario source", `${SOURCE}/scenarios/${name}`],

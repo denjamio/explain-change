@@ -1,0 +1,9 @@
+Hello {{ order.customer.full_name }},
+
+We have your payment for order #{{ order.id }}. We are picking it now.
+
+{% for line in order.lines.all %}{{ line.quantity }} × {{ line.product.name }}
+{% endfor %}
+Total: {{ order.total_cents|floatformat:0 }} cents
+
+Larder

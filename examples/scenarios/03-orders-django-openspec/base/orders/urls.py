@@ -1,5 +1,7 @@
-from django.urls import path
+from rest_framework.routers import DefaultRouter
 
-from orders import views
+from orders.api.views import OrderViewSet
 
-urlpatterns = [path("orders/", views.create)]
+router = DefaultRouter()
+router.register("", OrderViewSet, basename="order")
+urlpatterns = router.urls

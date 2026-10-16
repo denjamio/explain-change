@@ -1,128 +1,208 @@
 {
-  "tldr": "When an order is created, create_order sends a confirmation email through the new notifications app. It implements the OpenSpec change add-order-confirmation, except the retries.",
-  "goal": "Let customers know their order was registered, without putting email delivery in the orders app.",
+  "tldr": "Larder now emails a confirmation when an order becomes paid. A new Notifications app sends it through Postmark after the payment commits, once per order, with retries.",
+  "goal": "Stop customers from asking whether their order went through, and from paying twice: about 40 support tickets a week.",
   "story": [
     {
-      "heading": "create_order now sends the confirmation",
-      "body": "After Order.place it calls send_order_confirmation, in the same transaction.",
+      "heading": "Paying an order now queues its confirmation",
+      "body": "mark_order_paid queues send_order_confirmation with transaction.on_commit. A rolled-back payment queues nothing.",
+      "view": "flow:confirm-paid-order",
+      "focus": [
+        "#1",
+        "#2"
+      ],
+      "code": "orders/services.py:31-38"
+    },
+    {
+      "heading": "Notifications app added",
+      "body": "send_order_confirmation renders the email and sends it through the EmailGateway. A Celery task retries it up to 5 times with backoff.",
+      "view": "flow:confirm-paid-order",
+      "focus": [
+        "#3",
+        "#4"
+      ],
+      "code": "notifications/services.py:1-28"
+    },
+    {
+      "heading": "SentEmail guards against a second send",
+      "body": "A unique (order, kind) constraint lets 1 confirmation through per order. A failed send deletes its row, so the retry can send.",
+      "view": "data",
+      "focus": [
+        "sent-email",
+        "order"
+      ],
+      "code": "notifications/models.py:1-20"
+    },
+    {
+      "heading": "Postmark sits behind an EmailGateway port",
+      "body": "PostmarkGateway is the only adapter. It turns a refusal or a timeout into GatewayError, the error the task retries.",
       "view": "architecture",
       "focus": [
-        "orders-svc",
+        "email-gateway",
         "notifications"
       ],
-      "code": "orders/services.py:7-11"
+      "code": "notifications/gateway.py:1-47"
     },
     {
-      "heading": "notifications app added",
-      "body": "It sends the email with send_mail. It depends on Order, in the allowed direction.",
-      "view": "architecture",
-      "focus": [
-        "notifications"
-      ],
-      "code": "notifications/email.py:1-7"
-    },
-    {
-      "heading": "The email goes out before the commit",
-      "body": "send_order_confirmation runs inside transaction.atomic. If SMTP fails, the transaction rolls back.",
-      "view": "flow:create-order",
-      "focus": [
-        "#3"
-      ],
-      "code": "orders/services.py:8-10"
-    },
-    {
-      "heading": "Order now requires a valid email",
-      "body": "New email field with a migration. Order.place rejects emails without @.",
+      "heading": "Orders keep the email they were placed with",
+      "body": "place_order stores the customer's email as contact_email. A migration fills it for existing orders.",
       "view": "data",
       "focus": [
         "order"
       ],
-      "code": "orders/models.py:7-15"
+      "code": "orders/migrations/0002_order_contact_email.py:1-19"
     },
     {
-      "heading": "2 of 3 scenarios met",
-      "body": "The 'SMTP down' scenario is missing: there is no retry and the order is not created. Task 2.3 is still open.",
+      "heading": "4 requirements, all implemented",
+      "body": "The change modifies 2 requirements of orders and adds 2 to notifications. 1 task stays open: an admin action to resend.",
       "view": "requirements",
       "focus": [
-        "orders/confirmation-email"
+        "notifications/order-confirmation-email",
+        "notifications/retry-failed-sends",
+        "orders/mark-an-order-paid"
       ]
+    },
+    {
+      "heading": "The whole change",
+      "body": "Order management now depends on Notifications, which reads Orders and calls the Email gateway. No dependency breaks a rule.",
+      "view": "architecture",
+      "focus": []
     }
   ],
   "keyDependencies": [
     {
-      "from": "orders-svc",
+      "from": "order-management",
       "to": "notifications",
-      "label": "sends the confirmation"
+      "label": "queues the confirmation on commit"
     }
   ],
   "components": [
     {
       "id": "orders-api",
-      "summary": "POST /orders/ passes the customer's email to create_order."
+      "summary": "Order responses include contact_email, read-only."
     },
     {
-      "id": "orders-svc",
-      "summary": "create_order takes the email and sends the confirmation."
-    },
-    {
-      "id": "orders-model",
-      "summary": "Order stores and validates the email; new migration."
+      "id": "order-management",
+      "summary": "place_order stores the contact email; mark_order_paid queues the confirmation after commit."
     },
     {
       "id": "notifications",
-      "summary": "New app with send_order_confirmation on top of send_mail."
+      "summary": "New app: sends the order confirmation once through the EmailGateway, from a Celery task with retries."
+    },
+    {
+      "id": "orders",
+      "summary": "Order gets contact_email, filled for existing orders from the customer."
+    },
+    {
+      "id": "sent-emails",
+      "summary": "New SentEmail records each email per order and kind, with Postmark's message id."
+    },
+    {
+      "id": "email-gateway",
+      "summary": "New EmailGateway port and PostmarkGateway adapter; provider failures raise GatewayError."
+    },
+    {
+      "id": "platform",
+      "summary": "Installs notifications; new POSTMARK_SERVER_TOKEN and EMAIL_FROM settings."
     }
   ],
   "decisions": [
     {
-      "title": "Send the email inside the transaction",
-      "why": "It is the simplest option: no order is saved without a notice.",
-      "alternative": "transaction.on_commit with a queued task and retries.",
-      "evidence": "orders/services.py:10"
+      "title": "Send when the order is paid, not when it is placed",
+      "why": "A placed order can still fail to pay. The confirmation tells the customer that the payment went through.",
+      "alternative": "Send when the order is placed.",
+      "evidence": "openspec/changes/add-order-confirmation/proposal.md:7-9"
     },
     {
-      "title": "send_mail directly, with no interface of its own",
-      "why": "Django already abstracts the email backend.",
-      "alternative": "A Notifier interface in orders that notifications implements.",
-      "evidence": "notifications/email.py:7"
+      "title": "Queue after commit, send from a Celery task",
+      "why": "The payment webhook does not wait for Postmark, and a rolled-back payment sends nothing.",
+      "alternative": "Send inside the webhook request.",
+      "evidence": "orders/services.py:36-37"
+    },
+    {
+      "title": "A SentEmail row with a unique constraint",
+      "why": "A repeated task stops at the constraint. The next emails, such as shipped or refunded, add a kind, not a field on Order.",
+      "alternative": "A confirmation_sent_at field on Order.",
+      "evidence": "openspec/changes/add-order-confirmation/design.md:16-21"
+    },
+    {
+      "title": "An EmailGateway port with 1 Postmark adapter",
+      "why": "Postmark's message id answers support questions, and tests use a fake gateway.",
+      "alternative": "Django send_mail with an SMTP backend.",
+      "evidence": "notifications/gateway.py:19-21"
+    },
+    {
+      "title": "Keep a contact email on the order",
+      "why": "A later change of the customer's email does not move the confirmation of an old order.",
+      "alternative": "Read customer.email when the email goes out.",
+      "evidence": "orders/services.py:20-24"
     }
   ],
   "flows": [
     {
-      "id": "create-order",
-      "title": "Create an order",
-      "trigger": "orders.views.create",
-      "scenario": "orders/confirmation-email#order-created",
+      "id": "confirm-paid-order",
+      "title": "Confirm a paid order",
+      "trigger": "POST /api/payments/webhook/",
       "steps": [
         {
-          "from": "orders-api",
-          "to": "orders-svc",
-          "call": "create_order(total, email)",
-          "delta": "changed",
+          "from": "payment-processing",
+          "to": "order-management",
+          "call": "mark_order_paid",
+          "delta": "changed"
+        },
+        {
+          "from": "order-management",
+          "to": "notifications",
+          "call": "send_order_confirmation.delay (on commit)",
+          "delta": "added"
+        },
+        {
+          "from": "notifications",
+          "to": "sent-emails",
+          "call": "SentEmail.objects.create",
+          "delta": "added",
           "data": {
-            "type": "POST /orders/",
+            "type": "SentEmail",
             "fields": [
-              "total: Decimal",
-              "+email: string"
+              "+order",
+              "+kind: order_confirmation",
+              "+to"
             ]
           }
         },
         {
-          "from": "orders-svc",
-          "to": "orders-model",
-          "call": "Order.place (validates email)",
-          "delta": "changed"
+          "from": "notifications",
+          "to": "email-gateway",
+          "call": "PostmarkGateway.send",
+          "delta": "added"
+        }
+      ]
+    },
+    {
+      "id": "place-order",
+      "title": "Place an order",
+      "trigger": "POST /api/orders/",
+      "steps": [
+        {
+          "from": "orders-api",
+          "to": "order-management",
+          "call": "place_order",
+          "delta": "unchanged"
         },
         {
-          "from": "orders-svc",
-          "to": "notifications",
-          "call": "send_order_confirmation",
-          "delta": "added",
+          "from": "order-management",
+          "to": "catalog",
+          "call": "Product.reserve",
+          "delta": "unchanged"
+        },
+        {
+          "from": "order-management",
+          "to": "orders",
+          "call": "Order.objects.create",
+          "delta": "changed",
           "data": {
             "type": "Order",
             "fields": [
-              "id",
-              "+email"
+              "+contact_email"
             ]
           }
         }
@@ -134,39 +214,96 @@
       {
         "id": "order",
         "name": "Order",
-        "component": "orders-model",
-        "evidence": "orders/models.py:5-15",
+        "component": "orders",
+        "delta": "changed",
+        "evidence": "orders/migrations/0002_order_contact_email.py:1-19",
         "fields": [
-          "total: Decimal",
-          "+email: EmailField"
-        ],
-        "delta": "changed"
+          "+contact_email: email"
+        ]
+      },
+      {
+        "id": "sent-email",
+        "name": "SentEmail",
+        "component": "sent-emails",
+        "delta": "added",
+        "evidence": "notifications/migrations/0001_initial.py:1-22",
+        "fields": [
+          "+order: FK",
+          "+kind: order_confirmation",
+          "+to: email",
+          "+provider_message_id",
+          "+created_at",
+          "+unique (order, kind)"
+        ]
+      },
+      {
+        "id": "customer",
+        "name": "Customer",
+        "component": "customers",
+        "delta": "unchanged",
+        "fields": []
       }
     ],
-    "relations": []
+    "relations": [
+      {
+        "from": "order",
+        "to": "sent-email",
+        "label": "1..n, 1 per kind",
+        "delta": "added"
+      },
+      {
+        "from": "customer",
+        "to": "order",
+        "label": "1..n",
+        "delta": "unchanged"
+      }
+    ]
   },
   "requirements": [
     {
-      "id": "orders/confirmation-email",
-      "status": "partial",
+      "id": "notifications/order-confirmation-email",
+      "status": "implemented",
       "components": [
-        "orders-svc",
-        "notifications"
+        "notifications",
+        "sent-emails",
+        "email-gateway"
+      ],
+      "tests": [
+        "notifications/tests/test_services.py:21"
+      ],
+      "note": "The design accepts a duplicate when Postmark times out after it accepted the message."
+    },
+    {
+      "id": "notifications/retry-failed-sends",
+      "status": "implemented",
+      "components": [
+        "notifications",
+        "email-gateway"
+      ],
+      "tests": [
+        "notifications/tests/test_services.py:30"
+      ]
+    },
+    {
+      "id": "orders/place-an-order",
+      "status": "implemented",
+      "components": [
+        "order-management",
+        "orders"
       ],
       "tests": [
         "orders/tests/test_services.py:9"
-      ],
-      "note": "The 'SMTP down' scenario is not implemented: there is no retry and the order is not created."
+      ]
     },
     {
-      "id": "orders/create-order",
+      "id": "orders/mark-an-order-paid",
       "status": "implemented",
       "components": [
-        "orders-model",
-        "orders-api"
+        "order-management"
       ],
       "tests": [
-        "orders/tests/test_services.py:5"
+        "orders/tests/test_services.py:17",
+        "orders/tests/test_services.py:25"
       ]
     }
   ]
