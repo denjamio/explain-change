@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- C#: a `using` resolves only to the projects its `.csproj` sees (its own and its `ProjectReference`s, transitively),
+  as the compiler does. A namespace that 2 projects declare no longer draws false dependencies: in Bitwarden, an Api
+  file in `Bit.Core.Enums` drew 126 Core → API references. `ANALYSIS_VERSION` is 6.
+
 ## [0.3.0] - 2026-10-16
 
 ### Added

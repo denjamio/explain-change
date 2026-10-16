@@ -43,7 +43,12 @@ export class SideIndex {
   private readonly pyIndex = new Map<string, string>();
   private readonly djangoApps = new Map<string, string>(); // app label → app folder
   private readonly rbIndex = new Map<string, string>();
-  private readonly csNamespaces = new Map<string, Set<string>>();
+  /** C#: each namespace and who declares it, by project (the .csproj) and component. */
+  private readonly csNamespaces = new Map<string, { project: string | null; component: string }[]>();
+  /** C#: each folder that holds a .csproj, to that project; and each project read, to the projects it references. */
+  private readonly csProjectByDir = new Map<string, string>();
+  private readonly csProjectRefs = new Map<string, string[]>();
+  private readonly csReachCache = new Map<string, Set<string>>();
 
   constructor(
     private readonly files: ReadonlySet<string>,
@@ -99,13 +104,26 @@ export class SideIndex {
       }
     }
 
+    for (const f of sorted) {
+      if (f.toLowerCase().endsWith(".csproj") && !this.csProjectByDir.has(dirname(f))) {
+        this.csProjectByDir.set(dirname(f), f);
+      }
+    }
+    for (const [f, ex] of extracted) {
+      if (!f.toLowerCase().endsWith(".csproj")) continue;
+      const refs = ex.refs.filter((r) => r.kind === "csproj").map((r) => this.csprojFile(f, r.raw));
+      this.csProjectRefs.set(
+        f,
+        refs.filter((r): r is string => r !== null),
+      );
+    }
     for (const [f, ex] of extracted) {
       const comp = mapper.component(f);
       if (!comp) continue;
       for (const ns of ex.namespaces) {
-        const set = this.csNamespaces.get(ns) ?? new Set<string>();
-        set.add(comp);
-        this.csNamespaces.set(ns, set);
+        const decls = this.csNamespaces.get(ns) ?? [];
+        decls.push({ project: this.csProjectOf(f), component: comp });
+        this.csNamespaces.set(ns, decls);
       }
     }
   }
@@ -152,13 +170,17 @@ export class SideIndex {
         break;
       }
       case "cs_using": {
-        const comps = this.csNamespaces.get(ref.raw);
-        if (!comps?.size) return EXTERNAL;
-        return { kind: "component", components: [...comps].sort(compareStrings), file: null };
+        // As the compiler does: a using sees its own project and the projects it references, not every project
+        // that happens to declare the same namespace.
+        const decls = this.csNamespaces.get(ref.raw) ?? [];
+        const reach = this.csReach(this.csProjectOf(src));
+        const visible = reach ? decls.filter((d) => d.project === null || reach.has(d.project)) : decls;
+        if (!visible.length) return EXTERNAL;
+        const comps = [...new Set(visible.map((d) => d.component))].sort(compareStrings);
+        return { kind: "component", components: comps, file: null };
       }
       case "csproj": {
-        const path = normpath(join(dirname(src), ref.raw.replace(/\\/g, "/")));
-        target = this.file(path) ?? this.lower.get(path.toLowerCase()) ?? null;
+        target = this.csprojFile(src, ref.raw);
         if (!target) return UNRESOLVED;
         break;
       }
@@ -166,6 +188,38 @@ export class SideIndex {
     if (!target) return UNRESOLVED;
     const comp = this.mapper.component(target);
     return comp ? { kind: "component", components: [comp], file: target } : { kind: "unmapped" };
+  }
+
+  /** The .csproj a ProjectReference points at, matched without case as MSBuild does on Windows. */
+  private csprojFile(src: string, raw: string): string | null {
+    const path = normpath(join(dirname(src), raw.replace(/\\/g, "/")));
+    return this.file(path) ?? this.lower.get(path.toLowerCase()) ?? null;
+  }
+
+  /** The project of a C# file: the .csproj in its folder or the nearest folder above it. */
+  private csProjectOf(file: string): string | null {
+    for (let dir = dirname(file); ; dir = dirname(dir)) {
+      const project = this.csProjectByDir.get(dir);
+      if (project) return project;
+      if (!dir || dir === ".") return null;
+    }
+  }
+
+  /** The projects a project sees: itself and its references, transitively; null when its .csproj was not read. */
+  private csReach(project: string | null): Set<string> | null {
+    if (!project || !this.csProjectRefs.has(project)) return null;
+    const cached = this.csReachCache.get(project);
+    if (cached) return cached;
+    const reach = new Set<string>();
+    const stack = [project];
+    while (stack.length) {
+      const p = stack.pop() as string;
+      if (reach.has(p)) continue;
+      reach.add(p);
+      stack.push(...(this.csProjectRefs.get(p) ?? []));
+    }
+    this.csReachCache.set(project, reach);
+    return reach;
   }
 
   private file(path: string): string | null {
