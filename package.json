@@ -1,0 +1,60 @@
+{
+  "name": "explain-change",
+  "version": "0.2.0",
+  "description": "Visual, architecture-first explanation of a code change, as one self-contained HTML page. A deterministic CLI does the analysis; an agent writes only the prose.",
+  "license": "MIT",
+  "author": "denjamio",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/denjamio/explain-change.git"
+  },
+  "homepage": "https://github.com/denjamio/explain-change#readme",
+  "keywords": [
+    "code-review",
+    "architecture",
+    "pull-request",
+    "diff",
+    "agent",
+    "claude-code",
+    "skill",
+    "openspec"
+  ],
+  "type": "module",
+  "bin": {
+    "explain-change": "dist/explain-change.js"
+  },
+  "files": [
+    "dist/explain-change.js",
+    "skills",
+    "schemas",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "dev": "bun scripts/build.ts --assets && bun src/cli/bin.ts",
+    "test": "bun test",
+    "typecheck": "bun --bun tsc --noEmit",
+    "lint": "bun --bun biome check .",
+    "format": "bun --bun biome check --write .",
+    "examples": "bun scripts/build-examples.ts",
+    "check": "bun run typecheck && bun run lint && bun test",
+    "install:dev": "bun scripts/install-dev.ts",
+    "schemas": "bun scripts/build.ts --schemas",
+    "compile": "bun scripts/build.ts --compile",
+    "eval": "bun scripts/eval.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/bun": "1.4.3",
+    "smol-toml": "1.9.1",
+    "typescript": "7.0.2",
+    "zod": "4.6.7"
+  },
+  "packageManager": "bun@1.4.2"
+}

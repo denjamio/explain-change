@@ -1,3 +1,6 @@
+node_modules/
+dist/
+.explain-change/
+src/report/assets.gen.ts
 __pycache__/
 *.pyc
-.explain-change/
