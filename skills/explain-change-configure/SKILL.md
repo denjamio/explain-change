@@ -104,6 +104,8 @@ A component is a unit of ownership a reviewer names in one word of the domain. A
   **Refund an order**), with their steps as `"component -> component : call"`. A change that touches one is
   compared with it.
 - `project.lang`: the language the team writes PRs in (`en` or `es`).
+- `project.host`: only when the remotes do not tell where the PRs live (a mirror on both hosts, or none): `azure-devops`
+  or `github`. Leave it out otherwise; the remotes decide.
 
 `explain-change schema config` prints the full JSON Schema of the file.
 

@@ -240,7 +240,8 @@ concept); other layouts get one component per top-level folder.
 
 The [install script](#quick-start) puts the standalone binary in `~/.local/bin` and the skills where agents look for
 them (`~/.agents/skills` and `~/.claude/skills`). Binaries for Linux and macOS (x64, arm64) and Windows (x64) are on
-the [releases page](https://github.com/denjamio/explain-change/releases). It needs git.
+the [releases page](https://github.com/denjamio/explain-change/releases), with a `SHA256SUMS`: the install scripts and
+`explain-change update` check each binary against it before they run it. It needs git.
 
 - **Claude Code plugin**: `/plugin marketplace add denjamio/explain-change`, then
   `/plugin install explain-change@explain-change`.
