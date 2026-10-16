@@ -320,7 +320,11 @@ describe("determinism", () => {
         env[`GIT_CONFIG_VALUE_${i}`] = v;
       });
       const res = r.run(["local", "--base", "main", "--out", "out.html"], env);
-      expect(res.status).toBe(0);
+      expect({ config: cfg, status: res.status, stderr: res.status ? res.stderr : "" }).toEqual({
+        config: cfg,
+        status: 0,
+        stderr: "",
+      });
       seen.add(`${r.facts().key}|${r.read("out.html")}`);
     }
     expect(seen.size).toBe(1);

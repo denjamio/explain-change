@@ -29,7 +29,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run lint
-      - run: bun test
+      - run: scripts/ci-run.sh "bun test" bun test
+        shell: bash
 
   artifacts:
     name: Examples, schemas, npm bundle and binary
@@ -45,7 +46,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun --version && git --version
       - name: Rebuild the examples
-        run: bun run examples
+        run: scripts/ci-run.sh "Rebuild the examples" bun run examples
       - name: Rebuild the schemas
         run: bun run schemas
       - name: Examples and schemas are up to date
