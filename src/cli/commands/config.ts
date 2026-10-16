@@ -1,7 +1,7 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, openSync, readSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { assessArchitecture } from "../../analysis/assess.ts";
-import { repoRoot } from "../../analysis/collect.ts";
+import { looksGenerated, repoRoot } from "../../analysis/collect.ts";
 import { draftConfig } from "../../config/draft.ts";
 import { detectStructure, inferConfig, structureLayers } from "../../config/infer.ts";
 import { loadConfig } from "../../config/load.ts";
@@ -35,6 +35,21 @@ export function init(opts: { force: boolean; json: boolean }): number {
 }
 
 /** `check`: validates the config and lists each lane with its components and file counts, and what no component holds. */
+/** The first bytes of a file, enough for a generator marker; null when it cannot be read. */
+function fileHead(path: string): string | null {
+  try {
+    const fd = openSync(path, "r");
+    try {
+      const buf = Buffer.alloc(2048);
+      return buf.toString("utf8", 0, readSync(fd, buf, 0, buf.length, 0));
+    } finally {
+      closeSync(fd);
+    }
+  } catch {
+    return null;
+  }
+}
+
 export function check(opts: { json: boolean; history: number }): number {
   const root = repoRoot();
   if (!existsSync(join(root, CONFIG_NAME))) throw new UserError(`No ${CONFIG_NAME}. Run \`explain-change init\`.`);
@@ -46,7 +61,10 @@ export function check(opts: { json: boolean; history: number }): number {
   const hidden = { migrations: [] as string[], adrs: [] as string[] };
   for (const f of gitPaths(["ls-files"], root)) {
     const category = mapper.category(f);
-    if (category === "ignored" && matchesAny(f, MIGRATION_PATTERNS)) hidden.migrations.push(f);
+    // A generated migration file (EF's .Designer.cs) is no evidence: ignoring it hides nothing.
+    if (category === "ignored" && matchesAny(f, MIGRATION_PATTERNS) && !looksGenerated(fileHead(join(root, f)))) {
+      hidden.migrations.push(f);
+    }
     if (category === "ignored" && matchesAny(f, ADR_PATTERNS)) hidden.adrs.push(f);
     if (category === "test" || category === "ignored" || category === "docs" || category === "migration") continue;
     const comp = mapper.component(f);
