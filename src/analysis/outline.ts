@@ -1,0 +1,287 @@
+import { LIMITS } from "../contract/explanation.ts";
+import type { DetectedFlow, Facts, FileFacts, Hunk, Outline } from "../contract/facts.ts";
+import { LOCATION_RE } from "../contract/facts.ts";
+import { langOf } from "../core/lang.ts";
+import { basename } from "../core/paths.ts";
+import { byKeys } from "../core/text.ts";
+import { mappableRequirements } from "./openspec.ts";
+import { declarationOf } from "./symbols.ts";
+
+/** Facts before the outline is added: what the outline is computed from. */
+export type FactsCore = Omit<Facts, "outline">;
+
+/** Where the data model lives: models/, schemas/, entities/ or db/ folders, and Django's models.py. */
+const DATA_PATH_RE = /(^|\/)(models?|schemas?|entities|db)\/|(^|\/)models\.py$/;
+
+/** Files that change the data model: migrations first, then models and schemas. */
+export function dataFiles(facts: Pick<FactsCore, "files">): FileFacts[] {
+  const fs = facts.files.filter((f) => f.hunks.length && f.category !== "test");
+  return [
+    ...fs.filter((f) => f.category === "migration"),
+    ...fs.filter((f) => f.category === "code" && DATA_PATH_RE.test(f.path)),
+  ];
+}
+
+/** file:first-last of a hunk, on the side the report shows (the old side for a removed file). */
+export function hunkRef(f: FileFacts, h: Hunk): string {
+  const [start, len] = f.delta === "removed" ? [h.oldStart, h.oldLines] : [h.newStart, h.newLines];
+  return `${f.path}:${start}-${start + Math.max(len, 1) - 1}`;
+}
+
+/** The file of a "file:line" location. */
+export const locationFile = (loc: string) => LOCATION_RE.exec(loc)?.[1] ?? loc;
+
+/** What makes a hunk worth reading: the context the scores need. */
+export interface HunkContext {
+  symbolLines: Set<string>; // "file\0line"
+  crossFiles: Set<string>; // files whose references create, remove or break a dependency
+}
+
+export function hunkContext(facts: Pick<FactsCore, "symbols" | "dependencies">): HunkContext {
+  return {
+    symbolLines: new Set(facts.symbols.map((s) => `${s.file}\0${s.line}`)),
+    crossFiles: new Set(
+      facts.dependencies
+        .filter((e) => e.delta !== "unchanged" || e.violation)
+        .flatMap((e) => e.examples.map(locationFile)),
+    ),
+  };
+}
+
+/** 0 = never shown. Code in a component beats config and migrations, which beat unmapped code; public symbols and dependency changes add to it. */
+export function hunkScore(f: FileFacts, h: Hunk, ctx: HunkContext): number {
+  if (f.category === "test" || f.category === "docs" || f.category === "ignored") return 0;
+  let score = f.category === "code" ? (f.component ? 3 : 1) : 2;
+  for (let n = h.newStart; n < h.newStart + Math.max(h.newLines, 1); n++) {
+    if (ctx.symbolLines.has(`${f.path}\0${n}`)) {
+      score += 3;
+      break;
+    }
+  }
+  if (ctx.crossFiles.has(f.path)) score += 2;
+  return score;
+}
+
+/** The highest-ranked hunk among these files, as file:first-last. */
+function bestHunk(files: FileFacts[], ctx: HunkContext): string | null {
+  const scored = files
+    .flatMap((f) => f.hunks.map((h, i) => ({ f, h, i, score: hunkScore(f, h, ctx) })))
+    .sort(byKeys((x) => [-x.score, x.f.path, x.i]));
+  const top = scored[0];
+  return top && top.score > 0 ? hunkRef(top.f, top.h) : null;
+}
+
+/** Drawn dependencies the change creates or grows, strongest first: the candidates for keyDependencies. */
+export function keyDependencyCandidates(facts: Pick<FactsCore, "dependencies">) {
+  return facts.dependencies
+    .filter((e) => e.delta === "added" || (e.delta === "changed" && e.headCount > e.baseCount))
+    .sort(byKeys((e) => [-(e.headCount - e.baseCount), e.from, e.to]));
+}
+
+/** Where a runtime path starts: a request handler, a background job or a command. First match wins. */
+const ENTRY_RES: [string, RegExp][] = [
+  [
+    "request",
+    /(?:^|\/)(?:controllers|views|api|handlers|endpoints|resolvers|graphql)\/|(?:^|\/)views\.py$|Controller\.\w+$/,
+  ],
+  ["job", /(?:^|\/)(?:jobs|workers|consumers|subscribers|listeners)\/|(?:^|\/)tasks\.py$/],
+  ["command", /(?:^|\/)(?:management\/commands|commands|lib\/tasks|bin)\//],
+];
+const NOT_ENTRY_RE = /\.(?:erb|haml|slim|html?|jinja2?|j2|hbs|mustache|liquid|txt|md)$/;
+const IMPORT_LINE_RE = /^\s*(?:import|from\s+\S+\s+import|require(?:_relative)?|using|export\s+.*\bfrom)\b/;
+const CALL_RE = /(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*(?:\.[a-z_]\w*[?!]?)?|\b[a-z_]\w*\.[a-z_]\w*[?!]?(?=\()/;
+const SCOPE_KINDS = new Set(["class", "module", "interface", "record", "struct"]);
+
+/**
+ * [class, method, text] around a new-side line of a changed file, read from its hunk: the declarations above it in
+ * the hunk, else git's function header.
+ */
+export function enclosing(f: FileFacts, line: number): [string | null, string | null, string] {
+  const lang = langOf(f.path);
+  for (const h of f.hunks) {
+    let n = h.newStart;
+    let cls: string | null = null;
+    let fn: string | null = null;
+    for (const [mark, body] of h.lines) {
+      if (mark === "-") continue;
+      const decl = declarationOf(lang, body);
+      if (decl) {
+        if (SCOPE_KINDS.has(decl[0])) [cls, fn] = [decl[1], null];
+        else fn = decl[1];
+      }
+      if (n === line) {
+        if (!cls && !fn) fn = declarationOf(lang, h.header)?.[1] ?? null;
+        return [cls, fn, body];
+      }
+      n++;
+    }
+  }
+  return [null, null, ""];
+}
+
+interface Call {
+  from: string;
+  to: string;
+  added: boolean;
+  path: string;
+  line: number;
+}
+
+/**
+ * Runtime paths the change starts, read from the code: an entry point (request handler, job, command) whose added
+ * lines call another component, then the calls onward from each component reached. Each path names its trigger and
+ * its steps with the call the code makes. Same change → same paths.
+ */
+export function detectFlows(facts: Pick<FactsCore, "files" | "dependencies">): DetectedFlow[] {
+  const files = new Map(facts.files.filter((f) => f.hunks.length && f.category === "code").map((f) => [f.path, f]));
+  const addedLines = new Map<string, Set<number>>(); // only lines the change adds can start or carry a path
+  for (const [path, f] of files) {
+    for (const h of f.hunks) {
+      let n = h.newStart;
+      for (const [mark, body] of h.lines) {
+        if (mark === "+" && !IMPORT_LINE_RE.test(body)) {
+          const set = addedLines.get(path) ?? new Set<number>();
+          set.add(n);
+          addedLines.set(path, set);
+        }
+        if (mark !== "-") n++;
+      }
+    }
+  }
+  const calls: Call[] = [];
+  for (const e of facts.dependencies) {
+    if (e.delta === "removed") continue;
+    for (const ref of e.examples) {
+      const m = LOCATION_RE.exec(ref);
+      if (m && !m[3] && addedLines.get(m[1] as string)?.has(Number(m[2]))) {
+        calls.push({ from: e.from, to: e.to, added: e.delta === "added", path: m[1] as string, line: Number(m[2]) });
+      }
+    }
+  }
+  calls.sort(byKeys((c) => [c.path, c.line, c.to]));
+  const entryKind = (path: string) => (NOT_ENTRY_RE.test(path) ? null : ENTRY_RES.findIndex(([, rx]) => rx.test(path)));
+  const kindRank = (path: string) => {
+    const k = entryKind(path);
+    return k === null || k < 0 ? 9 : k;
+  };
+  const scope = (c: Call) => enclosing(files.get(c.path) as FileFacts, c.line);
+  const pair = (c: Call) => `${c.from}\0${c.to}`;
+  const out: DetectedFlow[] = [];
+  const covered = new Set<string>();
+  for (const c of [...calls].sort(byKeys((c) => [kindRank(c.path), c.path, c.line]))) {
+    if (kindRank(c.path) === 9 || covered.has(pair(c)) || out.length === LIMITS.flows) continue;
+    const [cls, fn] = scope(c);
+    const sep = langOf(c.path) === "rb" ? "#" : ".";
+    const trigger = (cls && fn ? `${cls}${sep}${fn}` : (fn ?? cls ?? (basename(c.path).split(".")[0] as string))).slice(
+      0,
+      LIMITS["flows.trigger"],
+    );
+    const sameScope = calls.filter((x) => x.path === c.path && scope(x)[0] === cls && scope(x)[1] === fn);
+    const steps: DetectedFlow["steps"] = [];
+    const seen = new Set<string>();
+    const queue = sameScope.filter((x) => x.from === c.from);
+    while (queue.length && steps.length < 6) {
+      const x = queue.shift() as Call;
+      if (seen.has(pair(x))) continue;
+      seen.add(pair(x));
+      const text = scope(x)[2].trim();
+      steps.push({ from: x.from, to: x.to, call: CALL_RE.exec(text)?.[0] ?? "", delta: x.added ? "added" : "changed" });
+      queue.push(...calls.filter((y) => y.from === x.to && y.to !== c.from && !seen.has(pair(y))));
+    }
+    for (const s of seen) covered.add(s);
+    let id =
+      trigger
+        .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 40) || "flow";
+    if (out.some((fl) => fl.id === id)) id = `${id}-${out.length + 1}`;
+    out.push({ id, trigger, steps });
+  }
+  return out;
+}
+
+/**
+ * The story's skeleton from the facts: what each step is about, its view, focus and code. The agent writes the
+ * words and keeps this order unless the hunks show another headline. Same change → same outline.
+ */
+export function outline(facts: FactsCore): Outline {
+  const ctx = hunkContext(facts);
+  const filesOf = new Map<string, FileFacts[]>();
+  for (const f of facts.files) {
+    if (f.component && f.category !== "test" && f.category !== "ignored") {
+      filesOf.set(f.component, [...(filesOf.get(f.component) ?? []), f]);
+    }
+  }
+  const touched = facts.components.filter((c) => c.delta !== "unchanged");
+  const story: Outline["story"] = [];
+  for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
+    const file = locationFile(e.examples[0] ?? "");
+    story.push({
+      about: `${e.from} now depends on ${e.to} (${e.violation?.rule})`,
+      view: "architecture",
+      focus: [e.from, e.to],
+      code: bestHunk(
+        facts.files.filter((f) => f.path === file),
+        ctx,
+      ),
+    });
+  }
+  for (const [delta, n] of [
+    ["added", 2],
+    ["removed", 1],
+  ] as const) {
+    for (const c of touched.filter((c) => c.delta === delta).slice(0, n)) {
+      story.push({
+        about: `${c.id} ${delta}`,
+        view: "architecture",
+        focus: [c.id],
+        code: bestHunk(filesOf.get(c.id) ?? [], ctx),
+      });
+    }
+  }
+  const changed = touched
+    .filter((c) => c.delta === "changed")
+    .sort(byKeys((c) => [-(c.additions + c.deletions), c.id]));
+  for (const c of changed.slice(0, Math.max(0, 4 - story.length))) {
+    story.push({
+      about: `${c.id} changed`,
+      view: "architecture",
+      focus: [c.id],
+      code: bestHunk(filesOf.get(c.id) ?? [], ctx),
+    });
+  }
+  const flows = facts.components.length >= 2 ? detectFlows(facts) : [];
+  const firstFlow = flows[0];
+  if (firstFlow) {
+    story.push({
+      about: `what happens when ${firstFlow.trigger} runs`,
+      view: `flow:${firstFlow.id}`,
+      focus: [],
+      code: null,
+    });
+  }
+  const data = dataFiles(facts);
+  if (data.length) {
+    story.push({ about: "the data model", view: "data", focus: [], code: bestHunk(data.slice(0, 1), ctx) });
+  }
+  const reqs = mappableRequirements(facts);
+  if (reqs.length) {
+    story.push({
+      about: "the requirements the code meets",
+      view: "requirements",
+      focus: reqs.slice(0, 3).map((r) => r.id),
+      code: null,
+    });
+  }
+  return {
+    story: [
+      ...story.slice(0, LIMITS.story - 1),
+      { about: "overview: the whole change in one step", view: "architecture", focus: [], code: null },
+    ],
+    flows,
+    keyDependencyCandidates: keyDependencyCandidates(facts).map(({ from, to }) => ({ from, to })),
+    dataFiles: data.map((f) => f.path),
+  };
+}
