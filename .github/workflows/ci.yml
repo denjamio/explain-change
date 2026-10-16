@@ -29,7 +29,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run lint
-      - run: scripts/ci-run.sh "bun test" bun test
+      - run: scripts/ci-run.sh "bun test" bun run test
         shell: bash
       - name: The standalone binary runs on this system
         run: scripts/ci-run.sh "Binary smoke test" bun run smoke
