@@ -6,16 +6,21 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-16
+
 ### Added
 - GitHub PRs: `explain-change pr <id|url>` reads github.com PRs through `gh`, without a checkout. PRs from forks
   work through `refs/pull/<id>/head`; file links open the file in the PR's diff. The host comes from the PR URL,
   `--host`, `project.host`, the remotes (Azure DevOps first), else Azure DevOps.
-- `facts.json` names the PR host in `source.host`.
+- `facts.json` names the PR host in `source.host`: where the PR lives, or would for a branch.
 - C# / .NET again: `using`, namespaces (and the `namespaces` config key), `.csproj` project references, public
   types and methods, ASP.NET endpoints, EF Core migrations, .NET test and generated files. `ANALYSIS_VERSION` is 5,
   so explanations written against 4 turn stale.
 
 ### Changed
+- The contract is version 3 (`source.host` in `facts.json`): run `local` or `pr` again on a change collected with
+  0.2. The host code moves to `src/hosts`, a port with one adapter per host (see `docs/ARCHITECTURE.md`).
+- `share` uses the GA 7.1 attachments API of Azure DevOps instead of 7.1-preview.1.
 - `share` on a GitHub PR stops with a clear message: GitHub's API and `gh` attach only images and videos. It
   checks the host before the explanation, so nobody finishes an explanation that cannot be shared.
 

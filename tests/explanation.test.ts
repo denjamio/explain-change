@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Explanation } from "../src/contract/explanation.ts";
 import type { Facts } from "../src/contract/facts.ts";
+import { CONTRACT_VERSION } from "../src/core/constants.ts";
 import { normalizeExplanation } from "../src/explanation/normalize.ts";
 import { compactWords, proseRules, REFUSED } from "../src/explanation/prose.ts";
 import { loadExplanation, prepareExplanation } from "../src/explanation/store.ts";
@@ -12,7 +13,7 @@ import { tempDir } from "./helpers.ts";
 /** A change with two components: `a` changed (file f.rb, hunk at lines 10-14) and `b` drawn as a neighbor. */
 function makeFacts(over: Partial<Facts> = {}, lang: "en" | "es" = "en"): Facts {
   return {
-    version: 2,
+    version: CONTRACT_VERSION,
     tool: "test",
     analysis: 0,
     key: "k1",
@@ -90,7 +91,7 @@ function makeFacts(over: Partial<Facts> = {}, lang: "en" | "es" = "en"): Facts {
 
 function valid(over: Record<string, unknown> = {}, lang = "en") {
   return {
-    version: 2,
+    version: CONTRACT_VERSION,
     key: "k1",
     lang,
     tldr: "t",
@@ -116,7 +117,7 @@ describe("validation", () => {
     const es = makeFacts({}, "es");
     expect(messages(valid({}, "es"), es)).toEqual([]);
     const errs = joined(valid({ version: 7, lang: "en", key: "k0" }), es);
-    expect(errs).toContain("version: '7' must be 2");
+    expect(errs).toContain(`version: '7' must be ${CONTRACT_VERSION}`);
     expect(errs).toContain("lang: 'en' must be 'es'");
     expect(errs).toContain("key: 'k0' is not this change's key 'k1'");
   });

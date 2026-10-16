@@ -597,8 +597,125 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 <body>
 <div id="app" class="app"></div>
 <noscript><p style="padding:24px">This report uses JavaScript to draw its diagrams. Open it in a browser with scripts enabled.</p></noscript>
-<script type="application/json" id="ec-data">{"tool":"0.2.1","facts":{"version":2,"tool":"0.2.1","analysis":4,"key":"5aeb5204ccdeeb31","source":{"kind":"local","title":"Add 10'000 character length limit for check's description field","description":"","branch":"a37fcf82","baseRef":"HEAD~1","headRef":"HEAD","headSha":"a37fcf82131a26653d75edc18c2c0cedffc880c9","mergeBase":"73701ff96cd6256efdfa24a2a2458925883c0565","prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-06T09:20:25+03:00","commits":1},"config":{"inferred":false,"name":"healthchecks","direction":"Django monolith: hc.api owns checks, pings and alerts; hc.front is the dashboard; each notification channel lives in hc.integrations.","lang":"en","layers":[{"id":"web","name":"Web"},{"id":"core","name":"Core"},{"id":"integrations","name":"Integrations"},{"id":"shared","name":"Shared"}],"components":[{"id":"dashboard","name":"Dashboard","layer":"web","desc":"My Checks screens, check details, project settings"},{"id":"api","name":"Ping & management API","layer":"web","desc":"Ping endpoints and the REST management API"},{"id":"ui","name":"Templates & JS","layer":"web","desc":"HTML and email templates, dashboard JavaScript"},{"id":"project","name":"Settings & URLs","layer":"web","desc":"Settings, root URLs, WSGI/ASGI"},{"id":"checks","name":"Checks, pings & alerts","layer":"core","desc":"Check, Ping, Channel and Flip models; sendalerts, sendreports and smtpd commands"},{"id":"accounts","name":"Accounts & projects","layer":"core","desc":"Users, projects, team members, 2FA"},{"id":"logs","name":"Logs","layer":"core","desc":""},{"id":"payments","name":"Billing","layer":"core","desc":""},{"id":"integrations","name":"Integrations","layer":"integrations","desc":"25+ notification channels: Slack, email, webhooks, PagerDuty…"},{"id":"lib","name":"lib","layer":"shared","desc":"Shared helpers: emails, dates, HTTP"}],"rules":{"allow":[],"forbid":[]},"referenceFlows":[{"id":"ping","title":"Receive a ping","steps":[{"from":"api","to":"checks","message":"Check.ping"}]}],"glossary":[]},"files":[{"path":"CHANGELOG.md","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[]},{"path":"hc/api/tests/test_create_check.py","previousPath":null,"delta":"changed","binary":false,"additions":3,"deletions":0,"component":"checks","category":"test","truncated":false,"hunks":[]},{"path":"hc/api/tests/test_update_check.py","previousPath":null,"delta":"changed","binary":false,"additions":12,"deletions":1,"component":"checks","category":"test","truncated":false,"hunks":[]},{"path":"hc/api/views.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":1,"component":"api","category":"code","truncated":false,"hunks":[{"oldStart":60,"oldLines":7,"newStart":60,"newLines":7,"header":"def guess_kind(schedule: str) -> str:","lines":[[" ",""],[" ","class Spec(BaseModel):"],[" ","    channels: str | None = None"],["-","    desc: str | None = None"],["+","    desc: str | None = Field(None, max_length=10000)"],[" ","    failure_kw: str | None = Field(None, max_length=200)"],[" ","    filter_subject: bool | None = None"],[" ","    filter_body: bool | None = None"]]}]},{"path":"hc/front/forms.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":1,"component":"dashboard","category":"code","truncated":false,"hunks":[{"oldStart":33,"oldLines":7,"newStart":33,"newLines":7,"header":"class NameTagsForm(forms.Form):","lines":[[" ","    name = forms.CharField(max_length=100, required=False)"],[" ","    slug = forms.SlugField(max_length=100, required=False)"],[" ","    tags = forms.CharField(max_length=500, required=False)"],["-","    desc = forms.CharField(required=False)"],["+","    desc = forms.CharField(max_length=10000, required=False)"],[" ",""],[" ","    def clean_tags(self) -> str:"],[" ","        result = []"]]}]},{"path":"hc/front/tests/test_update_name.py","previousPath":null,"delta":"changed","binary":false,"additions":7,"deletions":0,"component":"dashboard","category":"test","truncated":false,"hunks":[]},{"path":"hc/front/views.py","previousPath":null,"delta":"changed","binary":false,"additions":8,"deletions":6,"component":"dashboard","category":"code","truncated":false,"hunks":[{"oldStart":559,"oldLines":12,"newStart":559,"newLines":14,"header":"def update_name(request: AuthenticatedHttpRequest, code: UUID) -> HttpResponse:","lines":[[" ","    check = _get_rw_check_for_user(request, code)"],[" ",""],[" ","    form = forms.NameTagsForm(request.POST)"],["-","    if form.is_valid():"],["-","        check.name = form.cleaned_data[\"name\"]"],["-","        check.slug = form.cleaned_data[\"slug\"]"],["-","        check.tags = form.cleaned_data[\"tags\"]"],["-","        check.desc = form.cleaned_data[\"desc\"]"],["-","        check.save(update_fields=(\"name\", \"slug\", \"tags\", \"desc\"))"],["+","    if not form.is_valid():"],["+","        return HttpResponseBadRequest()"],["+",""],["+","    check.name = form.cleaned_data[\"name\"]"],["+","    check.slug = form.cleaned_data[\"slug\"]"],["+","    check.tags = form.cleaned_data[\"tags\"]"],["+","    check.desc = form.cleaned_data[\"desc\"]"],["+","    check.save(update_fields=(\"name\", \"slug\", \"tags\", \"desc\"))"],[" ",""],[" ","    if \"/details/\" in request.headers.get(\"Referer\", \"\"):"],[" ","        return redirect(\"hc-details\", code)"]]}]},{"path":"templates/docs/api.html-fragment","previousPath":null,"delta":"changed","binary":false,"additions":448,"deletions":445,"component":"ui","category":"ignored","truncated":true,"hunks":[]},{"path":"templates/docs/api.md","previousPath":null,"delta":"changed","binary":false,"additions":2,"deletions":2,"component":"ui","category":"docs","truncated":false,"hunks":[]},{"path":"templates/front/update_name_modal.html","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"ui","category":"code","truncated":false,"hunks":[]}],"components":[{"id":"dashboard","delta":"changed","files":2,"additions":9,"deletions":7},{"id":"api","delta":"changed","files":1,"additions":1,"deletions":1},{"id":"ui","delta":"changed","files":2,"additions":3,"deletions":2},{"id":"checks","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"accounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"integrations","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"lib","delta":"unchanged","files":0,"additions":0,"deletions":0}],"dependencies":[{"from":"api","to":"accounts","delta":"unchanged","baseCount":2,"headCount":2,"examples":["hc/api/views.py:38","hc/api/decorators.py:10"],"violation":null},{"from":"api","to":"checks","delta":"unchanged","baseCount":1,"headCount":1,"examples":["hc/api/views.py:41"],"violation":null},{"from":"api","to":"integrations","delta":"unchanged","baseCount":1,"headCount":1,"examples":["hc/api/views.py:3"],"violation":null},{"from":"api","to":"lib","delta":"unchanged","baseCount":5,"headCount":5,"examples":["hc/api/views.py:42","hc/api/decorators.py:11"],"violation":null},{"from":"dashboard","to":"accounts","delta":"unchanged","baseCount":2,"headCount":2,"examples":["hc/front/views.py:42"],"violation":null},{"from":"dashboard","to":"checks","delta":"unchanged","baseCount":2,"headCount":2,"examples":["hc/front/views.py:44","hc/front/templatetags/hc_extras.py:26"],"violation":null},{"from":"dashboard","to":"integrations","delta":"unchanged","baseCount":9,"headCount":9,"examples":["hc/front/views.py:3"],"violation":null},{"from":"dashboard","to":"lib","delta":"unchanged","baseCount":9,"headCount":9,"examples":["hc/front/views.py:62","hc/front/decorators.py:10","hc/front/management/commands/populate_searchdb.py:10"],"violation":null}],"dependencyGraph":[["accounts","checks"],["accounts","dashboard"],["accounts","lib"],["accounts","payments"],["api","accounts"],["api","checks"],["api","integrations"],["api","lib"],["checks","accounts"],["checks","dashboard"],["checks","integrations"],["checks","lib"],["dashboard","accounts"],["dashboard","checks"],["dashboard","integrations"],["dashboard","lib"],["integrations","accounts"],["integrations","checks"],["integrations","dashboard"],["integrations","lib"],["lib","integrations"],["logs","lib"],["project","accounts"],["project","api"],["project","dashboard"],["project","integrations"],["project","payments"]],"symbols":[],"stats":{"files":10,"additions":36,"deletions":11,"testAdditions":22,"testDeletions":1,"unmapped":[],"unresolved":1,"newViolations":0,"codeLines":19,"mappedLines":19},"notes":[],"openspec":null,"outline":{"story":[{"about":"dashboard changed","view":"architecture","focus":["dashboard"],"code":"hc/front/forms.py:33-39"},{"about":"ui changed","view":"architecture","focus":["ui"],"code":"templates/front/update_name_modal.html:89-95"},{"about":"api changed","view":"architecture","focus":["api"],"code":"hc/api/views.py:60-66"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[],"dataFiles":[]}},"explanation":{"version":2,"key":"5aeb5204ccdeeb31","lang":"en","tldr":"A check's description now has a limit of 10,000 characters. The API, the dashboard form and the edit dialog all enforce it, and the dashboard returns 400 on invalid input.","goal":"Keep check descriptions to a bounded size on every path that writes them.","story":[{"heading":"API now limits desc to 10,000 characters","body":"The Spec model of the management API rejects a longer desc on create and update.","view":"architecture","focus":["api","checks"],"code":"hc/api/views.py:63"},{"heading":"Dashboard form applies the same limit","body":"NameTagsForm gets max_length=10000 on desc. The edit dialog textarea stops at 10,000 characters.","view":"flow:update-desc","focus":["#1"],"code":"hc/front/forms.py:36"},{"heading":"update_name now returns 400 on invalid input","body":"Before, an invalid form skipped the save and redirected as if it worked. Now the view stops with 400.","view":"flow:update-desc","focus":["#1","#2"],"code":"hc/front/views.py:559-569"},{"heading":"No change to the Check model","body":"Check.desc keeps its type. The limit lives at the 2 entry points, so the change needs no migration.","view":"architecture","focus":["dashboard","api","checks"]}],"keyDependencies":[],"components":[{"id":"dashboard","summary":"NameTagsForm limits desc to 10,000 characters; update_name returns 400 when the form is invalid."},{"id":"api","summary":"The Spec model limits desc to 10,000 characters on create and update."},{"id":"ui","summary":"The description textarea has maxlength=10000; the API docs list the new limit."}],"decisions":[{"title":"Validate at the entry points, not in the model","why":"The API Spec and the dashboard form each check the limit. Check.desc stays as it is, so no migration runs on a large table.","alternative":"A max_length on Check.desc with a migration.","evidence":"hc/api/views.py:63"},{"title":"Answer invalid dashboard input with 400","why":"update_name used to skip a failed form without a sign. A 400 makes the failure visible to the caller.","alternative":"Show the form error inside the dialog.","evidence":"hc/front/views.py:562"}],"flows":[{"id":"update-desc","title":"Edit a check's description","steps":[{"from":"dashboard","to":"dashboard","call":"NameTagsForm.is_valid()","delta":"changed","data":{"type":"NameTagsForm","fields":["~desc: max 10000 chars"]},"verified":true,"via":null},{"from":"dashboard","to":"checks","call":"check.save(desc)","delta":"unchanged","verified":true,"via":null}]}],"dataModel":{"entities":[],"relations":[]},"requirements":[]},"state":"valid","issues":[]}</script>
+<script type="application/json" id="ec-data">{"tool":"0.3.0","facts":{"version":3,"tool":"0.3.0","analysis":5,"key":"d390a9eae50ea61f","source":{"kind":"local","title":"Add 10'000 character length limit for check's description field","description":"","branch":"a37fcf82","baseRef":"HEAD~1","headRef":"HEAD","headSha":"a37fcf82131a26653d75edc18c2c0cedffc880c9","mergeBase":"73701ff96cd6256efdfa24a2a2458925883c0565","host":"github","prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-06T09:20:25+03:00","commits":1},"config":{"inferred":false,"name":"healthchecks","direction":"Django monolith: hc.api owns checks, pings and alerts; hc.front is the dashboard; each notification channel lives in hc.integrations.","lang":"en","layers":[{"id":"web","name":"Web"},{"id":"core","name":"Core"},{"id":"integrations","name":"Integrations"},{"id":"shared","name":"Shared"}],"components":[{"id":"dashboard","name":"Dashboard","layer":"web","desc":"My Checks screens, check details, project settings"},{"id":"api","name":"Ping & management API","layer":"web","desc":"Ping endpoints and the REST management API"},{"id":"ui","name":"Templates & JS","layer":"web","desc":"HTML and email templates, dashboard JavaScript"},{"id":"project","name":"Settings & URLs","layer":"web","desc":"Settings, root URLs, WSGI/ASGI"},{"id":"checks","name":"Checks, pings & alerts","layer":"core","desc":"Check, Ping, Channel and Flip models; sendalerts, sendreports and smtpd commands"},{"id":"accounts","name":"Accounts & projects","layer":"core","desc":"Users, projects, team members, 2FA"},{"id":"logs","name":"Logs","layer":"core","desc":""},{"id":"payments","name":"Billing","layer":"core","desc":""},{"id":"integrations","name":"Integrations","layer":"integrations","desc":"25+ notification channels: Slack, email, webhooks, PagerDuty…"},{"id":"lib","name":"lib","layer":"shared","desc":"Shared helpers: emails, dates, HTTP"}],"rules":{"allow":[],"forbid":[]},"referenceFlows":[{"id":"ping","title":"Receive a ping","steps":[{"from":"api","to":"checks","message":"Check.ping"}]}],"glossary":[]},"files":[{"path":"CHANGELOG.md","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[]},{"path":"hc/api/tests/test_create_check.py","previousPath":null,"delta":"changed","binary":false,"additions":3,"deletions":0,"component":"checks","category":"test","truncated":false,"hunks":[]},{"path":"hc/api/tests/test_update_check.py","previousPath":null,"delta":"changed","binary":false,"additions":12,"deletions":1,"component":"checks","category":"test","truncated":false,"hunks":[]},{"path":"hc/api/views.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":1,"component":"api","category":"code","truncated":false,"hunks":[{"oldStart":60,"oldLines":7,"newStart":60,"newLines":7,"header":"def guess_kind(schedule: str) -> str:","lines":[[" ",""],[" ","class Spec(BaseModel):"],[" ","    channels: str | None = None"],["-","    desc: str | None = None"],["+","    desc: str | None = Field(None, max_length=10000)"],[" ","    failure_kw: str | None = Field(None, max_length=200)"],[" ","    filter_subject: bool | None = None"],[" ","    filter_body: bool | None = None"]]}]},{"path":"hc/front/forms.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":1,"component":"dashboard","category":"code","truncated":false,"hunks":[{"oldStart":33,"oldLines":7,"newStart":33,"newLines":7,"header":"class NameTagsForm(forms.Form):","lines":[[" ","    name = forms.CharField(max_length=100, required=False)"],[" ","    slug = forms.SlugField(max_length=100, required=False)"],[" ","    tags = forms.CharField(max_length=500, required=False)"],["-","    desc = forms.CharField(required=False)"],["+","    desc = forms.CharField(max_length=10000, required=False)"],[" ",""],[" ","    def clean_tags(self) -> str:"],[" ","        result = []"]]}]},{"path":"hc/front/tests/test_update_name.py","previousPath":null,"delta":"changed","binary":false,"additions":7,"deletions":0,"component":"dashboard","category":"test","truncated":false,"hunks":[]},{"path":"hc/front/views.py","previousPath":null,"delta":"changed","binary":false,"additions":8,"deletions":6,"component":"dashboard","category":"code","truncated":false,"hunks":[{"oldStart":559,"oldLines":12,"newStart":559,"newLines":14,"header":"def update_name(request: AuthenticatedHttpRequest, code: UUID) -> HttpResponse:","lines":[[" ","    check = _get_rw_check_for_user(request, code)"],[" ",""],[" ","    form = forms.NameTagsForm(request.POST)"],["-","    if form.is_valid():"],["-","        check.name = form.cleaned_data[\"name\"]"],["-","        check.slug = form.cleaned_data[\"slug\"]"],["-","        check.tags = form.cleaned_data[\"tags\"]"],["-","        check.desc = form.cleaned_data[\"desc\"]"],["-","        check.save(update_fields=(\"name\", \"slug\", \"tags\", \"desc\"))"],["+","    if not form.is_valid():"],["+","        return HttpResponseBadRequest()"],["+",""],["+","    check.name = form.cleaned_data[\"name\"]"],["+","    check.slug = form.cleaned_data[\"slug\"]"],["+","    check.tags = form.cleaned_data[\"tags\"]"],["+","    check.desc = form.cleaned_data[\"desc\"]"],["+","    check.save(update_fields=(\"name\", \"slug\", \"tags\", \"desc\"))"],[" ",""],[" ","    if \"/details/\" in request.headers.get(\"Referer\", \"\"):"],[" ","        return redirect(\"hc-details\", code)"]]}]},{"path":"templates/docs/api.html-fragment","previousPath":null,"delta":"changed","binary":false,"additions":448,"deletions":445,"component":"ui","category":"ignored","truncated":true,"hunks":[]},{"path":"templates/docs/api.md","previousPath":null,"delta":"changed","binary":false,"additions":2,"deletions":2,"component":"ui","category":"docs","truncated":false,"hunks":[]},{"path":"templates/front/update_name_modal.html","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"ui","category":"code","truncated":false,"hunks":[]}],"components":[{"id":"dashboard","delta":"changed","files":2,"additions":9,"deletions":7},{"id":"api","delta":"changed","files":1,"additions":1,"deletions":1},{"id":"ui","delta":"changed","files":2,"additions":3,"deletions":2},{"id":"checks","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"accounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"integrations","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"lib","delta":"unchanged","files":0,"additions":0,"deletions":0}],"dependencies":[{"from":"api","to":"accounts","delta":"unchanged","baseCount":2,"headCount":2,"examples":["hc/api/views.py:38","hc/api/decorators.py:10"],"violation":null},{"from":"api","to":"checks","delta":"unchanged","baseCount":1,"headCount":1,"examples":["hc/api/views.py:41"],"violation":null},{"from":"api","to":"integrations","delta":"unchanged","baseCount":1,"headCount":1,"examples":["hc/api/views.py:3"],"violation":null},{"from":"api","to":"lib","delta":"unchanged","baseCount":5,"headCount":5,"examples":["hc/api/views.py:42","hc/api/decorators.py:11"],"violation":null},{"from":"dashboard","to":"accounts","delta":"unchanged","baseCount":2,"headCount":2,"examples":["hc/front/views.py:42"],"violation":null},{"from":"dashboard","to":"checks","delta":"unchanged","baseCount":2,"headCount":2,"examples":["hc/front/views.py:44","hc/front/templatetags/hc_extras.py:26"],"violation":null},{"from":"dashboard","to":"integrations","delta":"unchanged","baseCount":9,"headCount":9,"examples":["hc/front/views.py:3"],"violation":null},{"from":"dashboard","to":"lib","delta":"unchanged","baseCount":9,"headCount":9,"examples":["hc/front/views.py:62","hc/front/decorators.py:10","hc/front/management/commands/populate_searchdb.py:10"],"violation":null}],"dependencyGraph":[["accounts","checks"],["accounts","dashboard"],["accounts","lib"],["accounts","payments"],["api","accounts"],["api","checks"],["api","integrations"],["api","lib"],["checks","accounts"],["checks","dashboard"],["checks","integrations"],["checks","lib"],["dashboard","accounts"],["dashboard","checks"],["dashboard","integrations"],["dashboard","lib"],["integrations","accounts"],["integrations","checks"],["integrations","dashboard"],["integrations","lib"],["lib","integrations"],["logs","lib"],["project","accounts"],["project","api"],["project","dashboard"],["project","integrations"],["project","payments"]],"symbols":[],"stats":{"files":10,"additions":36,"deletions":11,"testAdditions":22,"testDeletions":1,"unmapped":[],"unresolved":1,"newViolations":0,"codeLines":19,"mappedLines":19},"notes":[],"openspec":null,"outline":{"story":[{"about":"dashboard changed","view":"architecture","focus":["dashboard"],"code":"hc/front/forms.py:33-39"},{"about":"ui changed","view":"architecture","focus":["ui"],"code":"templates/front/update_name_modal.html:89-95"},{"about":"api changed","view":"architecture","focus":["api"],"code":"hc/api/views.py:60-66"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[],"dataFiles":[]}},"explanation":{"version":3,"key":"d390a9eae50ea61f","lang":"en","tldr":"A check's description now has a limit of 10,000 characters. The API, the dashboard form and the edit dialog all enforce it, and the dashboard returns 400 on invalid input.","goal":"Keep check descriptions to a bounded size on every path that writes them.","story":[{"heading":"API now limits desc to 10,000 characters","body":"The Spec model of the management API rejects a longer desc on create and update.","view":"architecture","focus":["api","checks"],"code":"hc/api/views.py:63"},{"heading":"Dashboard form applies the same limit","body":"NameTagsForm gets max_length=10000 on desc. The edit dialog textarea stops at 10,000 characters.","view":"flow:update-desc","focus":["#1"],"code":"hc/front/forms.py:36"},{"heading":"update_name now returns 400 on invalid input","body":"Before, an invalid form skipped the save and redirected as if it worked. Now the view stops with 400.","view":"flow:update-desc","focus":["#1","#2"],"code":"hc/front/views.py:559-569"},{"heading":"No change to the Check model","body":"Check.desc keeps its type. The limit lives at the 2 entry points, so the change needs no migration.","view":"architecture","focus":["dashboard","api","checks"]}],"keyDependencies":[],"components":[{"id":"dashboard","summary":"NameTagsForm limits desc to 10,000 characters; update_name returns 400 when the form is invalid."},{"id":"api","summary":"The Spec model limits desc to 10,000 characters on create and update."},{"id":"ui","summary":"The description textarea has maxlength=10000; the API docs list the new limit."}],"decisions":[{"title":"Validate at the entry points, not in the model","why":"The API Spec and the dashboard form each check the limit. Check.desc stays as it is, so no migration runs on a large table.","alternative":"A max_length on Check.desc with a migration.","evidence":"hc/api/views.py:63"},{"title":"Answer invalid dashboard input with 400","why":"update_name used to skip a failed form without a sign. A 400 makes the failure visible to the caller.","alternative":"Show the form error inside the dialog.","evidence":"hc/front/views.py:562"}],"flows":[{"id":"update-desc","title":"Edit a check's description","steps":[{"from":"dashboard","to":"dashboard","call":"NameTagsForm.is_valid()","delta":"changed","data":{"type":"NameTagsForm","fields":["~desc: max 10000 chars"]},"verified":true,"via":null},{"from":"dashboard","to":"checks","call":"check.save(desc)","delta":"unchanged","verified":true,"via":null}]}],"dataModel":{"entities":[],"relations":[]},"requirements":[]},"state":"valid","issues":[]}</script>
 <script>(() => {
+  // src/core/sha256.ts
+  var K = new Uint32Array([
+    1116352408,
+    1899447441,
+    3049323471,
+    3921009573,
+    961987163,
+    1508970993,
+    2453635748,
+    2870763221,
+    3624381080,
+    310598401,
+    607225278,
+    1426881987,
+    1925078388,
+    2162078206,
+    2614888103,
+    3248222580,
+    3835390401,
+    4022224774,
+    264347078,
+    604807628,
+    770255983,
+    1249150122,
+    1555081692,
+    1996064986,
+    2554220882,
+    2821834349,
+    2952996808,
+    3210313671,
+    3336571891,
+    3584528711,
+    113926993,
+    338241895,
+    666307205,
+    773529912,
+    1294757372,
+    1396182291,
+    1695183700,
+    1986661051,
+    2177026350,
+    2456956037,
+    2730485921,
+    2820302411,
+    3259730800,
+    3345764771,
+    3516065817,
+    3600352804,
+    4094571909,
+    275423344,
+    430227734,
+    506948616,
+    659060556,
+    883997877,
+    958139571,
+    1322822218,
+    1537002063,
+    1747873779,
+    1955562222,
+    2024104815,
+    2227730452,
+    2361852424,
+    2428436474,
+    2756734187,
+    3204031479,
+    3329325298
+  ]);
+  function sha256Hex(text) {
+    const bytes = new TextEncoder().encode(text);
+    const padded = new Uint8Array(Math.ceil((bytes.length + 9) / 64) * 64);
+    padded.set(bytes);
+    padded[bytes.length] = 128;
+    const view = new DataView(padded.buffer);
+    view.setUint32(padded.length - 8, Math.floor(bytes.length * 8 / 2 ** 32));
+    view.setUint32(padded.length - 4, bytes.length * 8 >>> 0);
+    const h = new Uint32Array([
+      1779033703,
+      3144134277,
+      1013904242,
+      2773480762,
+      1359893119,
+      2600822924,
+      528734635,
+      1541459225
+    ]);
+    const w = new Uint32Array(64);
+    const rotr = (x, n) => x >>> n | x << 32 - n;
+    for (let off = 0;off < padded.length; off += 64) {
+      for (let i = 0;i < 16; i++)
+        w[i] = view.getUint32(off + i * 4);
+      for (let i = 16;i < 64; i++) {
+        const a = w[i - 15];
+        const b = w[i - 2];
+        const s0 = rotr(a, 7) ^ rotr(a, 18) ^ a >>> 3;
+        const s1 = rotr(b, 17) ^ rotr(b, 19) ^ b >>> 10;
+        w[i] = w[i - 16] + s0 + w[i - 7] + s1 >>> 0;
+      }
+      const v = Array.from(h);
+      for (let i = 0;i < 64; i++) {
+        const [a, b, c, d, e, f, g, hh] = v;
+        const t1 = hh + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + (e & f ^ ~e & g) + K[i] + w[i] >>> 0;
+        const t2 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + (a & b ^ a & c ^ b & c) >>> 0;
+        v.splice(0, 8, t1 + t2 >>> 0, a, b, c, d + t1 >>> 0, e, f, g);
+      }
+      for (let i = 0;i < 8; i++)
+        h[i] = h[i] + v[i] >>> 0;
+    }
+    return Array.from(h, (x) => x.toString(16).padStart(8, "0")).join("");
+  }
+
+  // src/hosts/links.ts
+  var FILE_URL = {
+    "azure-devops": (prUrl, path) => `${prUrl}?_a=files&path=${encodeURIComponent(`/${path}`)}`,
+    github: (prUrl, path) => `${prUrl}/files#diff-${sha256Hex(path)}`
+  };
+  var prFileUrl = (host, prUrl, path) => FILE_URL[host](prUrl, path);
+
   // report/bulb.svg
   var bulb_default = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="explain-change">
   <path class="bulb-line" d="M16 1.6v2.6M5.6 6l1.8 1.8M26.4 6l-1.8 1.8M1.8 15.2h2.6M27.6 15.2h2.6" fill="none" stroke="#4b4fd6" stroke-width="2.2" stroke-linecap="round"/>
@@ -1110,11 +1227,11 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     none: "–"
   };
   var rsLabel = (v) => v === "pending" ? T.notMapped : v === "none" ? "—" : t(v);
-  function prFileUrl(path) {
-    return src.kind === "pr" && src.url ? `${src.url}?_a=files&path=${encodeURIComponent(`/${path}`)}` : null;
+  function prFileUrl2(path) {
+    return src.kind === "pr" && src.url && src.host ? prFileUrl(src.host, src.url, path) : null;
   }
   function onOpen(el, path) {
-    const url = prFileUrl(path);
+    const url = prFileUrl2(path);
     if (url) {
       el.classList.add("linked");
       el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
@@ -1123,7 +1240,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   }
   function fileLink(ref, label) {
     const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
-    const url = prFileUrl(path);
+    const url = prFileUrl2(path);
     return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref }) : h("code", { class: "ref", text: label || ref });
   }
   function sectionShell(id, title, body, lead) {

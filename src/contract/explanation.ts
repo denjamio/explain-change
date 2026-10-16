@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CONTRACT_VERSION } from "../core/constants.ts";
 import { LANGS } from "./config.ts";
 import { DELTAS, Location, View } from "./facts.ts";
 
@@ -59,7 +60,7 @@ const FIELD_HELP = "'+email: string' added, '-fax' removed, '~total: number' cha
 
 export const ExplanationSchema = z
   .strictObject({
-    version: z.literal(2),
+    version: z.literal(CONTRACT_VERSION),
     key: z.string().describe("The change key from the draft. Another key means the explanation is stale."),
     lang: z.enum(LANGS).describe("The report language: write all prose in it."),
     tldr: text(LIMITS.tldr, "What changes and its effect."),

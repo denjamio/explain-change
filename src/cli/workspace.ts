@@ -44,8 +44,6 @@ export function readFacts(work: string): Facts {
       "The collected change comes from another version of explain-change. Run `explain-change local` or `pr` again.",
     );
   }
-  // Facts from 0.2 name no host: their PRs were all on Azure DevOps.
-  facts.source.host ??= facts.source.kind === "pr" ? "azure-devops" : null;
   return facts;
 }
 

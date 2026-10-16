@@ -152,7 +152,7 @@ const COMMANDS: Record<string, Command> = {
   update: {
     usage: "update [--version TAG]",
     summary: "replace this binary with the latest release (or TAG) and refresh the skills",
-    options: { version: { type: "string", help: "a release tag such as v0.2.0 (default: the latest)" }, json },
+    options: { version: { type: "string", help: "a release tag such as v0.3.0 (default: the latest)" }, json },
     positionals: [0, 0],
     run: (o) => update({ version: str(o.version), json: Boolean(o.json) }),
   },

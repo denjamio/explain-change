@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CONTRACT_VERSION } from "../core/constants.ts";
 import { HOST_IDS, LANGS } from "./config.ts";
 
 /**
@@ -240,7 +241,7 @@ export type Outline = z.infer<typeof Outline>;
 
 export const FactsSchema = z
   .object({
-    version: z.literal(2),
+    version: z.literal(CONTRACT_VERSION),
     tool: z.string(),
     analysis: z.int(),
     key: z.string().describe("Identifies the change: diff, config, contract and analysis version."),

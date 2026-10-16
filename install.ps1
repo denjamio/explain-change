@@ -3,7 +3,7 @@
 #
 #   irm https://raw.githubusercontent.com/denjamio/explain-change/main/install.ps1 | iex
 #
-# $env:EXPLAIN_CHANGE_VERSION = "v0.2.0" picks a release (default: the latest).
+# $env:EXPLAIN_CHANGE_VERSION = "v0.3.0" picks a release (default: the latest).
 $ErrorActionPreference = "Stop"
 $repo = "denjamio/explain-change"
 $bin = Join-Path $env:LOCALAPPDATA "explain-change\bin"

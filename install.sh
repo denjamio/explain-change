@@ -4,7 +4,7 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/install.sh | sh
 #
-# EXPLAIN_CHANGE_VERSION=v0.2.0 picks a release (default: the latest); EXPLAIN_CHANGE_BIN the folder (~/.local/bin).
+# EXPLAIN_CHANGE_VERSION=v0.3.0 picks a release (default: the latest); EXPLAIN_CHANGE_BIN the folder (~/.local/bin).
 set -eu
 
 repo="denjamio/explain-change"
