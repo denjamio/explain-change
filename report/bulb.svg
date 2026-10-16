@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="explain-change">
+  <path class="bulb-line" d="M16 1.6v2.6M5.6 6l1.8 1.8M26.4 6l-1.8 1.8M1.8 15.2h2.6M27.6 15.2h2.6" fill="none" stroke="#4b4fd6" stroke-width="2.2" stroke-linecap="round"/>
+  <path class="bulb-line" d="M16 7.2a8 8 0 0 0-4.8 14.4c.9.7 1.4 1.6 1.4 2.7v.4h6.8v-.4c0-1.1.5-2 1.4-2.7A8 8 0 0 0 16 7.2z" fill="#ffd65a" stroke="#4b4fd6" stroke-width="2.2" stroke-linejoin="round"/>
+  <path class="bulb-line" d="M13.4 19.6q2.6-3.6 5.2 0" fill="none" stroke="#4b4fd6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="bulb-line" d="M12.8 27.6h6.4M14.2 30.2h3.6" fill="none" stroke="#4b4fd6" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

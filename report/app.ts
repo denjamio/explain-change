@@ -16,7 +16,7 @@ import type {
   SpecChange,
 } from "../src/contract/facts.ts";
 import type { ReportData } from "../src/report/data.ts";
-import LOGO from "./logo.svg" with { type: "text" };
+import BULB from "./bulb.svg" with { type: "text" };
 
 type NFlow = NormalizedExplanation["flows"][number];
 type NStep = NFlow["steps"][number];
@@ -3189,10 +3189,10 @@ const navList = h(
     h("a", { href: `#${x.id}`, "data-sec": x.id }, x.title, h("span", { class: "nav-n", text: String(x.n) })),
   ),
 );
-/** The logo, report/logo.svg: a lit bulb. */
+/** The mark, report/bulb.svg: a lit bulb drawn in the accent color. */
 function brandMark(): HTMLElement {
   const mark = h("span", { class: "brand-mark", "aria-hidden": "true" });
-  mark.innerHTML = LOGO;
+  mark.innerHTML = BULB;
   return mark;
 }
 
