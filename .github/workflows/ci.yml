@@ -13,63 +13,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
+  check:
+    name: Typecheck, lint, tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        python: ["3.11", "3.12", "3.13"]
-        include:
-          - os: windows-latest
-            python: "3.12"
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: oven-sh/setup-bun@v2
         with:
-          python-version: ${{ matrix.python }}
-      - uses: actions/setup-node@v4  # runs the report template in tests/test_package.py
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+
+  artifacts:
+    name: Examples, schemas, npm bundle and binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Unit, end-to-end and template tests
-        shell: bash
-        run: |  # failures become annotations, readable without signing in
-          set +e  # Actions runs bash with -e -o pipefail; the status is checked below
-          PYTHONIOENCODING=utf-8 python -m unittest discover -s tests -v 2>&1 | tee "$RUNNER_TEMP/tests.log"
-          status=${PIPESTATUS[0]}
-          [ "$status" -eq 0 ] || python .github/report_failure.py tests "$RUNNER_TEMP/tests.log"
-          exit "$status"
-      - name: Install into a temporary home
-        if: runner.os == 'Linux'
+      - run: bun install --frozen-lockfile
+      - name: Examples and schemas are up to date
         run: |
-          export HOME="$RUNNER_TEMP/home"
-          python explain_change.py install
-          python explain_change.py install   # a second run must be a no-op
-          "$HOME/.local/bin/explain-change" --version
-          test -f "$HOME/.claude/skills/explain-change/SKILL.md"
-          test ! -e "$HOME/.claude/skills/explain-change/examples"   # only runtime files are linked
-          "$HOME/.claude/skills/explain-change/explain_change.py" --help   # runs through the link
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install ruff==0.6.9
-      - run: ruff check --output-format=github .
-
-  examples:
-    name: Examples are up to date
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Rebuild the synthetic examples
-        run: python examples/build_examples.py
-      - name: Fail if the committed reports differ
-        run: git diff --quiet -- examples/ || { python .github/report_failure.py examples; exit 1; }
+          bun run examples
+          bun run schemas
+          git diff --exit-code -- examples schemas
+      - name: The npm bundle runs on Node 20
+        run: |
+          bun run build
+          node dist/explain-change.js --version
+          cd "$RUNNER_TEMP" && git init -q -b main demo && cd demo
+          git -c user.name=ci -c user.email=ci@example.com commit -q --allow-empty -m base
+          git checkout -qb feature && mkdir -p app/models && echo 'class Order; end' > app/models/order.rb
+          git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm feature
+          node "$GITHUB_WORKSPACE/dist/explain-change.js" local --base main --no-open --json
+      - name: The standalone binary runs
+        run: |
+          bun run compile bun-linux-x64
+          dist/bin/explain-change-linux-x64 --version
+          dist/bin/explain-change-linux-x64 schema explanation > /dev/null
