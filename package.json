@@ -39,7 +39,7 @@
     "build": "bun scripts/build.ts",
     "dev": "bun scripts/build.ts --assets && bun src/cli/bin.ts",
     "test": "bun test",
-    "typecheck": "bun --bun tsc --noEmit",
+    "typecheck": "bun scripts/build.ts --assets && bun --bun tsc --noEmit",
     "lint": "bun --bun biome check .",
     "format": "bun --bun biome check --write .",
     "examples": "bun scripts/build-examples.ts",
