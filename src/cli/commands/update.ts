@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { expectedSum, SUMS_FILE, sha256 } from "../../core/checksum.ts";
 import { REPOSITORY, VERSION } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
 import { printJson } from "../output.ts";
@@ -21,7 +22,29 @@ export function assetName(platform = process.platform, arch = process.arch): str
   return `explain-change-${os}-${arch}${os === "windows" ? ".exe" : ""}`;
 }
 
-/** `update`: replaces the standalone binary with the latest release (or --version), then refreshes the skills. */
+/** Throws unless the release's SHA256SUMS lists this asset with this exact content. */
+export function verifyAsset(asset: string, data: Uint8Array, sums: string): void {
+  const expected = expectedSum(sums, asset);
+  if (!expected) throw new UserError(`The release's ${SUMS_FILE} does not list ${asset}: not installing it.`);
+  const actual = sha256(data);
+  if (actual !== expected) {
+    throw new UserError(
+      `The downloaded ${asset} does not match the release's ${SUMS_FILE} (expected ${expected}, got ${actual}): not installing it.`,
+    );
+  }
+}
+
+async function download(url: string): Promise<Uint8Array> {
+  const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": `explain-change/${VERSION}` } });
+  if (!res.ok)
+    throw new UserError(`Download failed (${res.status}) from ${url}. Check the version and your connection.`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+/**
+ * `update`: replaces the standalone binary with the latest release (or --version) once its hash matches the release's
+ * SHA256SUMS, then refreshes the skills.
+ */
 export async function update(opts: { version: string | null; json: boolean }): Promise<number> {
   const kind = installKind();
   if (kind === "npm")
@@ -29,13 +52,12 @@ export async function update(opts: { version: string | null; json: boolean }): P
   if (kind === "source")
     throw new UserError("This is a source checkout: update it with `git pull`, then `bun run install:dev`.");
   const base = process.env.EXPLAIN_CHANGE_RELEASES ?? `https://github.com/${REPOSITORY}/releases`;
-  const url = opts.version
-    ? `${base}/download/${opts.version.startsWith("v") ? opts.version : `v${opts.version}`}/${assetName()}`
-    : `${base}/latest/download/${assetName()}`;
-  const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": `explain-change/${VERSION}` } });
-  if (!res.ok)
-    throw new UserError(`Download failed (${res.status}) from ${url}. Check the version and your connection.`);
-  const data = new Uint8Array(await res.arrayBuffer());
+  const dir = opts.version
+    ? `${base}/download/${opts.version.startsWith("v") ? opts.version : `v${opts.version}`}`
+    : `${base}/latest/download`;
+  const asset = assetName();
+  const [data, sums] = await Promise.all([download(`${dir}/${asset}`), download(`${dir}/${SUMS_FILE}`)]);
+  verifyAsset(asset, data, new TextDecoder().decode(sums));
   const self = process.execPath;
   const next = `${self}.new`;
   writeFileSync(next, data);

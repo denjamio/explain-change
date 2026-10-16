@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+- Each release carries a `SHA256SUMS` of its binaries. `install.sh`, `install.ps1` and `explain-change update` refuse
+  a binary whose hash does not match it, before they run the binary. Releases before this one have no
+  `SHA256SUMS`, so these installers do not install them.
+
 ## [0.2.1] - 2026-10-16
 
 ### Added
