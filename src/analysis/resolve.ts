@@ -52,6 +52,8 @@ export class SideIndex {
   private readonly csProjectByDir = new Map<string, string>();
   private readonly csProjectRefs = new Map<string, string[]>();
   private readonly csReachCache = new Map<string, Set<string>>();
+  /** SQL: each stored procedure to the .sql file that creates it. A migration script that also creates it loses. */
+  private readonly procedures = new Map<string, string>();
 
   constructor(
     private readonly files: ReadonlySet<string>,
@@ -110,6 +112,13 @@ export class SideIndex {
     for (const f of sorted) {
       if (f.toLowerCase().endsWith(".csproj") && !this.csProjectByDir.has(dirname(f))) {
         this.csProjectByDir.set(dirname(f), f);
+      }
+    }
+    for (const [f, ex] of [...extracted].sort(([a], [b]) => compareStrings(a, b))) {
+      for (const name of ex.procedures ?? []) {
+        const prev = this.procedures.get(name);
+        if (!prev || (/DbScripts|migrations/i.test(prev) && !/DbScripts|migrations/i.test(f)))
+          this.procedures.set(name, f);
       }
     }
     for (const [f, ex] of extracted) {
@@ -181,6 +190,11 @@ export class SideIndex {
         if (!visible.length) return EXTERNAL;
         const comps = [...new Set(visible.map((d) => d.component))].sort(compareStrings);
         return { kind: "component", components: comps, file: null };
+      }
+      case "sql_proc": {
+        target = this.procedures.get(ref.raw) ?? null;
+        if (!target) return EXTERNAL; // a procedure of another database, or a dynamic name
+        break;
       }
       case "csproj": {
         target = this.csprojFile(src, ref.raw);

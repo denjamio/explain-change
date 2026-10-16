@@ -268,6 +268,26 @@ describe("TypeScript and C#", () => {
     ]);
   });
 
+  test("SQL Server: Dapper calls stored procedures by name; DbScripts are migrations", () => {
+    const files: Record<string, string> = {
+      "src/Infrastructure.Dapper/Vault/FolderRepository.cs":
+        'namespace Bit.Dapper;\npublic class FolderRepository\n{\n  void D() => Execute($"[{Schema}].[Folder_DeleteByIds]", new { Ids = ids.ToTvp("[dbo].[GuidIdArray]") });\n}\n',
+      "src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql":
+        "CREATE PROCEDURE [dbo].[Folder_DeleteByIds]\n    @Ids AS [dbo].[GuidIdArray] READONLY\nAS\nBEGIN\nEND\n",
+      // the migration script creates it too: the project's own file wins
+      "util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql":
+        "CREATE OR ALTER PROCEDURE [dbo].[Folder_DeleteByIds]\nAS\nBEGIN\nEND\nGO\n",
+    };
+    const { edges, unresolved } = edgesFor(files, [
+      { id: "dapper", layer: "adapters", paths: ["src/Infrastructure.Dapper/**"] },
+      { id: "schema", layer: "database", paths: ["src/Sql/**", "util/Migrator/**"] },
+    ]);
+    expect(edges).toEqual({ "dapper->schema": 1 }); // the procedure; [dbo].[GuidIdArray] is a table type
+    expect(unresolved).toBe(0);
+    const mapper = new Mapper(makeConfig([{ id: "schema", layer: "database", paths: ["util/**"] }]));
+    expect(mapper.category("util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql")).toBe("migration");
+  });
+
   test("ports and adapters: who declares an interface, who implements it", () => {
     const files: Record<string, string> = {
       "Core/Vault/IFolderRepository.cs":

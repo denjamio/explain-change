@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
   lifelines and shows the full call as its tooltip.
 
 ### Added
+- SQL Server: a stored procedure a C# string names (`[dbo].[Folder_DeleteByIds]`, `$"[{Schema}].[…]"`) links to the
+  .sql file that creates it, and `DbScripts/` folders are migrations, the data model's evidence. In Bitwarden,
+  Dapper now depends on the SQL Server schema (309 references); before, the 2 were not linked.
 - Vue and Svelte components are analyzed from their `<script>` blocks, so a Vue or Svelte UI gets its dependencies.
   Imports resolve through bundler aliases (`vite.config`, `vite.shared`, `svelte.config`, SvelteKit's implicit
   `$lib`) and through the repository's own packages by their package.json name (`@immich/sdk` → `packages/sdk`). In

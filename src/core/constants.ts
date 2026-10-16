@@ -108,7 +108,14 @@ export const FRAMEWORK_CONFIG = [
   "**/asgi.py",
   "manage.py",
 ];
-export const MIGRATION_PATTERNS = ["**/migrations/**", "**/Migrations/**", "db/migrate/**", "**/db/migrate/**"];
+// DbScripts: SQL Server migration scripts, as Bitwarden's util/Migrator keeps them.
+export const MIGRATION_PATTERNS = [
+  "**/migrations/**",
+  "**/Migrations/**",
+  "db/migrate/**",
+  "**/db/migrate/**",
+  "**/DbScripts/**",
+];
 /** Architecture decision records: the evidence behind a change's decisions. */
 export const ADR_PATTERNS = ["**/adr/**", "**/adrs/**", "**/decisions/**", "**/architecture/decisions/**"];
 export const CONFIG_EXT = new Set([
