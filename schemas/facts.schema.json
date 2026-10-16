@@ -35,7 +35,8 @@
             {
               "type": "string",
               "enum": [
-                "azure-devops"
+                "azure-devops",
+                "github"
               ]
             },
             {

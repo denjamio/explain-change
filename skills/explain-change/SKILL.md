@@ -1,6 +1,6 @@
 ---
 name: explain-change
-description: Visual, architecture-first explanation of a code change (local branch, uncommitted work or Azure DevOps PR) as one shareable HTML page — an architecture map with a guided story, data flows, the data model, OpenSpec requirement → code traceability and the design decisions behind the change. It explains; it does not review (bugs, gaps and merge readiness belong to a reviewer). Use when the user asks to explain, walk through, visualize or understand a PR, branch, diff or change, or how it fits the architecture.
+description: Visual, architecture-first explanation of a code change (local branch, uncommitted work, or an Azure DevOps or GitHub PR) as one shareable HTML page — an architecture map with a guided story, data flows, the data model, OpenSpec requirement → code traceability and the design decisions behind the change. It explains; it does not review (bugs, gaps and merge readiness belong to a reviewer). Use when the user asks to explain, walk through, visualize or understand a PR, branch, diff or change, or how it fits the architecture.
 ---
 
 # explain-change
@@ -22,7 +22,7 @@ is not on PATH, ask the user to install it:
 | this branch, my changes, what I did | `explain-change local --json` (`--base <ref>` for another base) |
 | work not committed yet, or `local` finds 0 files | `explain-change local --include-uncommitted --json` |
 
-`pr` is for Azure DevOps. For a GitHub or GitLab PR, check out its branch and run `local`. If `pr` without an id
+`pr` reads Azure DevOps and GitHub PRs. For a GitLab PR, check out its branch and run `local`. If `pr` without an id
 finds no PR, run `local`. Add `--spec <change-id>` for an OpenSpec change the code implements without touching it.
 
 ## 2. Follow `next.action`

@@ -13,19 +13,19 @@ export async function share(opts: { force: boolean; json: boolean }, hosts: Host
   const root = repoRoot();
   const work = join(root, WORK_DIR);
   const facts = readFacts(work);
-  const status = loadExplanation(work, facts, root);
-  if (status.state !== "valid") {
-    throw new UserError(
-      `The explanation is ${status.state}: only a finished report is shared. Run \`explain-change status\` for the next step.`,
-    );
-  }
   const host = facts.source.host ? hosts[facts.source.host] : null;
   if (!host) {
     throw new UserError("This repository has no remote of a PR host explain-change knows: the report stays local.");
   }
   if (!host.share) {
     throw new UserError(
-      `${host.name} cannot take the report as a PR attachment: share the file at .explain-change/out/ yourself.`,
+      `${host.name} cannot take the report as a PR attachment (its API and CLI attach only images and videos): send the HTML file in .explain-change/out/ yourself.`,
+    );
+  }
+  const status = loadExplanation(work, facts, root);
+  if (status.state !== "valid") {
+    throw new UserError(
+      `The explanation is ${status.state}: only a finished report is shared. Run \`explain-change status\` for the next step.`,
     );
   }
   const result = await host.share(root, facts, renderHtml(facts, status), opts.force);

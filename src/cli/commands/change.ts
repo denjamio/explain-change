@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { collect, repoRoot } from "../../analysis/collect.ts";
 import { inferConfig } from "../../config/infer.ts";
 import { loadConfig } from "../../config/load.ts";
+import { HOST_IDS, type HostId } from "../../contract/config.ts";
 import type { Facts } from "../../contract/facts.ts";
 import { BUDGET_RANGE, CONFIG_NAME, WORK_DIR } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
@@ -18,6 +19,8 @@ import { ensureWorkdir, readFacts, workPaths, writeFacts } from "../workspace.ts
 export interface ExplainOptions {
   /** null: the current branch (`local`); "": the active PR of the branch (`pr`); else a PR id or URL. */
   pr: string | null;
+  /** --host: where the PR lives, over project.host and the remotes. */
+  host: string | null;
   base: string | null;
   includeUncommitted: boolean;
   specs: string[];
@@ -44,8 +47,11 @@ export function explain(opts: ExplainOptions, hosts: Hosts = createHosts()): num
   ) {
     throw new UserError(`--budget must be an integer between ${BUDGET_RANGE[0]} and ${BUDGET_RANGE[1]}.`);
   }
+  if (opts.host !== null && !(HOST_IDS as readonly string[]).includes(opts.host)) {
+    throw new UserError(`--host must be ${HOST_IDS.join(" or ")}, not '${opts.host}'.`);
+  }
   let pr = opts.pr;
-  const host = changeHost(root, pr, hosts);
+  const host = changeHost(root, pr, hosts, { flag: opts.host as HostId | null, config: config.host });
   if (pr === "" && host) {
     const branch = git(["branch", "--show-current"], root).trim();
     if (!branch) throw new UserError("HEAD is detached: pass the PR id, `explain-change pr <id>`.");

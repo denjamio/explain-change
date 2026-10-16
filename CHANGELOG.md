@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- GitHub PRs: `explain-change pr <id|url>` reads github.com PRs through `gh`, without a checkout. PRs from forks
+  work through `refs/pull/<id>/head`; file links open the file in the PR's diff. The host comes from the PR URL,
+  `--host`, `project.host`, the remotes (Azure DevOps first), else Azure DevOps.
+- `facts.json` names the PR host in `source.host`.
+
+### Changed
+- `share` on a GitHub PR stops with a clear message: GitHub's API and `gh` attach only images and videos. It
+  checks the host before the explanation, so nobody finishes an explanation that cannot be shared.
+
 ### Security
 - Each release carries a `SHA256SUMS` of its binaries. `install.sh`, `install.ps1` and `explain-change update` refuse
   a binary whose hash does not match it, before they run the binary. Releases before this one have no

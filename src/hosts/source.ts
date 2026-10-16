@@ -106,7 +106,7 @@ export function fetchRefs(
  */
 export function prSource(root: string, host: PrHost, pr: string, notes: string[], deps?: FetchDeps): PrSource {
   const prId = host.prId(pr);
-  const meta = host.metadata(root, prId, notes);
+  const meta = host.metadata(root, prId, pr, notes);
   const remote = host.remote(root, meta);
   const ref = `refs/explain-change/pr-${prId}`;
   const source = meta.sourceBranch ?? "";

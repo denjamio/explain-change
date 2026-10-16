@@ -72,7 +72,8 @@ The report opens in your browser when it is ready.
 | "explain my changes", "what does this branch do" | `explain-change local` |
 | the same, with work not committed yet | `explain-change local --include-uncommitted` |
 
-GitHub and GitLab PRs work through their branch: `gh pr checkout 123`, then "explain my changes".
+Azure DevOps and GitHub PRs are read directly. GitLab PRs work through their branch: check it out, then "explain my
+changes".
 
 ## The report
 
@@ -88,7 +89,7 @@ The page reads from *what* to *where* to *why*:
 
 **Reading the map:** 🟩 added · 🟦 changed · ⬜ removed · 🟥 a dependency that breaks one of your `[rules]`.
 Components the change does not touch stay hidden unless it alters their link to it; the rest is one click away
-(**Context**). For an Azure DevOps PR, each file links to the file in the PR.
+(**Context**). For a PR, each file links to the file on the PR page.
 
 ## How it works
 
@@ -148,6 +149,8 @@ mentions it but never runs it on its own.
 
 - A local branch is shared on its active PR, and only when the PR is at the commit the report explains: push first.
 - A report with uncommitted work is never shared.
+- GitHub cannot take a report: its API and `gh` attach only images and videos to a PR comment. `share` says so; send
+  the HTML file yourself.
 - Sharing the same change twice is a no-op, unless `--force`.
 
 </details>
@@ -179,6 +182,7 @@ silently.
 | `project.lang` | Report language: `en` (default) or `es`. |
 | `project.base` | Default base for `local`. |
 | `project.budget` | Digest size in characters (2000–100000, default 12000 ≈ 3k tokens). `--budget` overrides it. |
+| `project.host` | Where the PRs live: `azure-devops` or `github` (default: the host of the remotes, else Azure DevOps). `--host` overrides it; a PR URL names its own. |
 | `[[layers]]` | Map lanes, top to bottom in the listed order (entry points first, core last). The order does not decide what may depend on what: `[rules]` does. |
 | `[rules] allow` | Allowed dependency directions (`"a -> b"`, layer or component ids). When present, any other edge between layers is a violation. |
 | `[rules] forbid` | Always a violation, even when `allow` matches. |
@@ -202,24 +206,32 @@ silently.
 Without a config, Rails and Django layouts are recognized (an app per component, big Rails namespaces split by
 concept); other layouts get one component per top-level folder.
 
-## Azure DevOps
+## Pull requests
 
-`explain-change pr` explains a PR without checking it out. Azure DevOps is detected from the URL or, for an id, from
-the repository's remotes. It needs the `az` CLI with the `azure-devops` extension.
+`explain-change pr` explains a PR without checking it out, on Azure DevOps (through the `az` CLI with the
+`azure-devops` extension) or GitHub (through `gh`). The host comes from the first of:
+
+1. the PR URL, when you paste one;
+2. `--host azure-devops|github`;
+3. `host` under `[project]` in `.explain-change.toml`;
+4. the repository's remotes (Azure DevOps first);
+5. Azure DevOps.
 
 <details>
 <summary>Login, code and metadata</summary>
 
-- **Login**: when `az` has no session or it expired, it runs `az login` once, in the browser. git uses your own
-  credentials first (SSH key or credential manager) and, on an HTTPS remote, the `az` token next, passed through the
-  environment and never stored. Nothing else ever prompts.
+- **Login**: when `az` has no session or it expired, it runs `az login` once, in the browser. `gh` never logs in on
+  its own: run `gh auth login` once. git uses your own credentials first (SSH key or credential manager) and, on an
+  HTTPS remote, the CLI's token next, passed through the environment and never stored. Nothing else ever prompts.
 - **Code** comes from git: `refs/pull/<id>/merge`, the PR applied to its target, the change the PR page shows. A PR
-  without one (merge conflicts, completed, abandoned) is explained as its source branch against the merge base with
-  its target, and the CLI says so.
-- **Title, description and file links** come from `az repos pr show`. If the organization is not detected from the
-  remote, run `az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>`. Without
-  `az`, the page still renders from git alone, and the CLI says what is missing.
+  without one (merge conflicts, completed, abandoned) is explained as its own commits against the merge base with
+  its target, and the CLI says so. On GitHub these come from `refs/pull/<id>/head`, so PRs from forks need no
+  extra remote.
+- **Title, description and file links** come from `az repos pr show` or `gh pr view`. If az does not detect the
+  organization from the remote, run `az devops configure --defaults organization=https://dev.azure.com/<org>
+  project=<project>`. Without the CLI, the page still renders from git alone, and the CLI says what is missing.
 - Fetched refs live under `refs/explain-change/`, away from your branches. Every call has a timeout.
+- GitHub Enterprise Server is not supported yet: github.com only.
 
 </details>
 
@@ -239,7 +251,7 @@ the [releases page](https://github.com/denjamio/explain-change/releases). It nee
 
 ```bash
 explain-change local [--base REF] [--include-uncommitted]   # the current branch against its base
-explain-change pr [ID|URL]                                  # an Azure DevOps PR (without an id: the branch's)
+explain-change pr [ID|URL] [--host HOST]                    # an Azure DevOps or GitHub PR (no id: the branch's)
 explain-change render                                       # validate explanation.json and write the page
 explain-change status                                       # the explanation's state and the next step
 explain-change share [--force]                              # attach the finished report to its Azure DevOps PR
@@ -252,7 +264,7 @@ explain-change install | update | --version
 <summary>Options and defaults</summary>
 
 - `local` and `pr` also take `--spec <id>` (an OpenSpec change the code implements without touching it),
-  `--budget <chars>`, `--out <path>`, `--no-open` and `--json`.
+  `--host <azure-devops|github>`, `--budget <chars>`, `--out <path>`, `--no-open` and `--json`.
 - Reports go to `.explain-change/out/<branch>.html`. The work folder is added to `.git/info/exclude`, so it never
   shows in `git status`.
 - The base is `--base`, else `project.base`, else the first that exists of `origin/HEAD`, `origin/main`,

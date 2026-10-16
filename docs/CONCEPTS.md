@@ -8,7 +8,7 @@ When two words could name the same thing, this page says which one is used.
 | Term | Meaning |
 |---|---|
 | **Change** | What is explained: the diff between a **base** and a **head**. |
-| **Source** | Where the change comes from: `local` (the current branch, optionally with uncommitted work) or `pr` (an Azure DevOps pull request). |
+| **Source** | Where the change comes from: `local` (the current branch, optionally with uncommitted work) or `pr` (an Azure DevOps or GitHub pull request). `host` names where the PR lives (or would, for a branch). |
 | **Base**, **merge base** | The ref the change is compared with (`--base`, `project.base`, else `origin/HEAD`, `main`…), and the commit where head and base diverge. The diff starts at the merge base. |
 | **Key** | A hash of the diff, the config, the contract version and the analysis version. Same key = same change; an explanation is valid only for the key it was written for. |
 | **File category** | `code`, `test`, `config`, `migration`, `docs`, or `ignored` (generated or vendored). |

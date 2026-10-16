@@ -24,7 +24,7 @@ export function azureDevOps(deps: { az: Az; fetch: HttpFetch }): PrHost {
     prId: adoPrId,
     webUrlFrom: adoWebUrl,
     activePr: (root, branch) => branchPr(root, branch, deps.az),
-    metadata: (root, prId, notes) => toPrMeta(adoMetadata(root, prId, notes, deps.az), prId),
+    metadata: (root, prId, _input, notes) => toPrMeta(adoMetadata(root, prId, notes, deps.az), prId),
     remote: adoRemote,
     mergeRef: (prId) => `refs/pull/${prId}/merge`,
     headRef: (_prId, meta) => (meta.sourceBranch ? `refs/heads/${meta.sourceBranch}` : null),

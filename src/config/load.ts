@@ -52,6 +52,7 @@ export function normalizeConfig(raw: unknown, inferred: boolean): LoadedConfig {
     direction: "",
     lang: "en",
     base: "",
+    host: null,
     budget: DEFAULT_BUDGET,
     layers: [],
     components: [],
@@ -69,6 +70,7 @@ export function normalizeConfig(raw: unknown, inferred: boolean): LoadedConfig {
     direction: r.project?.direction ?? "",
     lang: r.project?.lang ?? "en",
     base: r.project?.base ?? "",
+    host: r.project?.host ?? null,
     budget: r.project?.budget ?? DEFAULT_BUDGET,
   });
   const layerIds = new Set<string>();

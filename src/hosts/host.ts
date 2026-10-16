@@ -49,8 +49,11 @@ export interface PrHost {
   webUrlFrom(input: string, prId: string): string | null;
   /** The id of the active PR from a branch. */
   activePr(root: string, branch: string): string;
-  /** What the host's CLI says about a PR, or less, with a note in `notes` that says what is missing. */
-  metadata(root: string, prId: string, notes: string[]): PrMeta;
+  /**
+   * What the host's CLI says about a PR, or less, with a note in `notes` that says what is missing. `input` is the
+   * id or URL as the user gave it.
+   */
+  metadata(root: string, prId: string, input: string, notes: string[]): PrMeta;
   /** The remote that holds the PR. */
   remote(root: string, meta: PrMeta): string;
   /** The ref that holds the PR applied to its target (a merge commit: target, then source). */

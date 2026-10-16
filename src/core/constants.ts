@@ -33,6 +33,7 @@ export const DEFAULT_BUDGET = 12_000; // digest characters, ~3k tokens
 export const BUDGET_RANGE = [2_000, 100_000] as const;
 
 export const AZ_TIMEOUT_MS = 60_000; // one az call
+export const GH_TIMEOUT_MS = 60_000; // one gh call
 export const LOGIN_TIMEOUT_MS = 300_000; // finishing `az login` in the browser
 export const FETCH_TIMEOUT_MS = 600_000; // one git fetch of a PR
 export const ADO_RESOURCE = "499b84ac-1321-427f-aa17-267ca6975798"; // Azure DevOps, for `az account get-access-token`

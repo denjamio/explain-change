@@ -17,7 +17,7 @@ import { type Az, azHint, needsLogin } from "../src/hosts/azure-devops/az.ts";
 import { adoPrId, adoRemote, branchPr, toPrMeta } from "../src/hosts/azure-devops/pr.ts";
 import { prHost } from "../src/hosts/index.ts";
 import { fetchRefs, prSource } from "../src/hosts/source.ts";
-import { FakeAz, fail, fakeHosts, ok, Repo, tempDir } from "./helpers.ts";
+import { FakeAz, fail, fakeHosts, ok, Repo, tempDir, throwsUser } from "./helpers.ts";
 
 const repos: Repo[] = [];
 const repo = (config?: string, opts?: { empty?: boolean }) => {
@@ -31,17 +31,6 @@ afterEach(() => {
 
 const MODELS_CONFIG =
   '[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n';
-const throwsUser = (fn: () => unknown, needle: string) => {
-  try {
-    fn();
-  } catch (e) {
-    expect(e).toBeInstanceOf(UserError);
-    expect((e as Error).message).toContain(needle);
-    return;
-  }
-  throw new Error(`expected a UserError with '${needle}'`);
-};
-
 describe("base resolution", () => {
   test("--base, project.base, then remote first", () => {
     const r = repo();
@@ -232,19 +221,25 @@ describe("Azure DevOps", () => {
     }
   });
 
-  test("`pr` takes Azure DevOps remotes and URLs, and refuses other hosts", () => {
+  test("`pr` takes Azure DevOps remotes and URLs, and refuses unknown hosts", () => {
     const r = repo();
+    const none = { flag: null, config: null };
     r.git("remote", "add", "origin", "https://org@dev.azure.com/org/proj/_git/repo");
-    prHost(r.path, "42", fakeHosts());
-    prHost(r.path, "https://org.visualstudio.com/proj/_git/repo/pullrequest/42", fakeHosts());
-    r.git("remote", "set-url", "origin", "git@github.com:org/repo.git");
-    for (const pr of ["42", "https://github.com/org/repo/pull/42", "https://dev.azure.com.evil.io/x/pullrequest/42"]) {
-      throwsUser(() => prHost(r.path, pr, fakeHosts()), "explain-change local");
+    prHost(r.path, "42", fakeHosts(), none);
+    prHost(r.path, "https://org.visualstudio.com/proj/_git/repo/pullrequest/42", fakeHosts(), none);
+    r.git("remote", "set-url", "origin", "git@gitlab.com:org/repo.git");
+    for (const pr of [
+      "42",
+      "https://gitlab.com/org/repo/-/merge_requests/42",
+      "https://dev.azure.com.evil.io/x/pullrequest/42",
+    ]) {
+      throwsUser(() => prHost(r.path, pr, fakeHosts(), none), "explain-change local");
     }
     const res = r.run(["pr", "42"]);
     expect(res.status).toBe(2);
     expect(res.stderr).toContain("Azure DevOps");
     expect(r.run(["pr", "42", "--base", "main"]).stderr).toContain("--base");
+    expect(r.run(["pr", "42", "--host", "gitlab"]).stderr).toContain("--host must be azure-devops or github");
     expect(r.run(["local", "--base", "main"]).status).toBe(0);
   });
 

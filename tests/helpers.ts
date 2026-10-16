@@ -1,3 +1,4 @@
+import { expect } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,7 +8,9 @@ import { collect } from "../src/analysis/collect.ts";
 import { inferConfig } from "../src/config/infer.ts";
 import { loadConfig, normalizeConfig } from "../src/config/load.ts";
 import type { Facts } from "../src/contract/facts.ts";
+import { UserError } from "../src/core/errors.ts";
 import { Az, type AzResult } from "../src/hosts/azure-devops/az.ts";
+import { Gh, type GhResult } from "../src/hosts/github/gh.ts";
 import { changeHost, createHosts, type HostDeps, type Hosts } from "../src/hosts/index.ts";
 
 export const ROOT = join(import.meta.dir, "..");
@@ -83,7 +86,7 @@ export class Repo {
       base: opts.base ?? "main",
       includeUncommitted: opts.uncommitted ?? false,
       pr,
-      host: changeHost(this.path, pr, hosts),
+      host: changeHost(this.path, pr, hosts, { flag: null, config: config.host }),
       specs: [],
     });
   }
@@ -120,8 +123,35 @@ export class FakeAz extends Az {
 export function fakeHosts(deps: Partial<HostDeps> = {}): Hosts {
   return createHosts({
     az: deps.az ?? new FakeAz([]),
+    gh: deps.gh ?? new FakeGh([]),
     fetch: deps.fetch ?? (async () => new Response("{}", { status: 500 })),
   });
+}
+
+/** gh replaced: each call returns the next scripted result. */
+export class FakeGh extends Gh {
+  readonly calls: string[][] = [];
+
+  constructor(private readonly results: GhResult[]) {
+    super();
+  }
+
+  override call(args: string[]): GhResult {
+    this.calls.push(args);
+    return this.results.shift() ?? { error: "gh CLI not found" };
+  }
+}
+
+/** Expects `fn` to throw a UserError whose message contains `needle`. */
+export function throwsUser(fn: () => unknown, needle: string): void {
+  try {
+    fn();
+  } catch (e) {
+    expect(e).toBeInstanceOf(UserError);
+    expect((e as Error).message).toContain(needle);
+    return;
+  }
+  throw new Error(`expected a UserError with '${needle}'`);
 }
 
 export const ok = (stdout: unknown): AzResult => ({ status: 0, stdout: JSON.stringify(stdout), stderr: "" });

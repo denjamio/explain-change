@@ -11,7 +11,7 @@ export const LANGS = ["en", "es"] as const;
 export type ReportLang = (typeof LANGS)[number];
 
 /** Where pull requests live: the hosts `pr` and `share` work with. */
-export const HOST_IDS = ["azure-devops"] as const;
+export const HOST_IDS = ["azure-devops", "github"] as const;
 export type HostId = (typeof HOST_IDS)[number];
 
 const ID_RE = /^[\w.-]+$/;
@@ -32,6 +32,13 @@ export const RawConfigSchema = z
         base: z
           .string()
           .describe("Default base ref for `local` (else origin/HEAD, origin/main, origin/master, main, master…).")
+          .optional(),
+        host: z
+          .enum(HOST_IDS, { error: `must be ${HOST_IDS.map((h) => `'${h}'`).join(" or ")}` })
+          .describe(
+            "Where the PRs live, for `pr <id>` and `share`. Default: the host of the git remotes, else azure-devops. " +
+              "A PR URL always names its own host.",
+          )
           .optional(),
         budget: z
           .int({ error: `must be an integer between ${BUDGET_RANGE[0]} and ${BUDGET_RANGE[1]} (digest characters)` })
@@ -161,6 +168,8 @@ export interface Config {
   direction: string;
   lang: ReportLang;
   base: string;
+  /** Where the PRs live; null: the host of the git remotes. */
+  host: HostId | null;
   budget: number;
   layers: Layer[];
   components: ComponentConfig[];

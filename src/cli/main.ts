@@ -26,6 +26,10 @@ const out = {
 };
 const noOpen = { type: "boolean" as const, help: "do not open the report in the browser" };
 const changeOptions = {
+  host: {
+    type: "string" as const,
+    help: "where the PR lives: azure-devops or github (default: project.host, else the host of the git remotes)",
+  },
   spec: {
     type: "string" as const,
     multiple: true,
@@ -55,6 +59,7 @@ const COMMANDS: Record<string, Command> = {
     run: (o) =>
       explain({
         pr: null,
+        host: str(o.host),
         base: str(o.base),
         includeUncommitted: Boolean(o["include-uncommitted"]),
         specs: (o.spec as string[] | undefined) ?? [],
@@ -65,13 +70,14 @@ const COMMANDS: Record<string, Command> = {
       }),
   },
   pr: {
-    usage: "pr [ID|URL] [--spec ID]…",
-    summary: "explain an Azure DevOps PR (without an id: the active PR from the current branch)",
+    usage: "pr [ID|URL] [--host HOST] [--spec ID]…",
+    summary: "explain an Azure DevOps or GitHub PR (without an id: the active PR from the current branch)",
     options: changeOptions,
     positionals: [0, 1],
     run: (o, pos) =>
       explain({
         pr: pos[0] ?? "",
+        host: str(o.host),
         base: null,
         includeUncommitted: false,
         specs: (o.spec as string[] | undefined) ?? [],
