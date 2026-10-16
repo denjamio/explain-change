@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-16
+
 ### Changed
 - A flow step is verified through a port when 1 side implements an interface the other declares (C# `class X :
   IFoo`, TypeScript `implements`), named after the interface its call uses ("Through the port IFolderRepository"),
