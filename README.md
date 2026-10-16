@@ -19,7 +19,8 @@ The page reads from what to where:
 
 Color encodes the delta (green added, blue changed, gray removed); a dependency that breaks one of your `[rules]` is a
 red arrow. For an Azure DevOps PR, each file links to the file in the PR. The page works offline, in light and dark
-mode, and carries only the code it shows. See the [examples](examples/index.html).
+mode, and carries only the code it shows. See the [examples](https://denjamio.github.io/explain-change/) (built from
+[examples/](examples/)).
 
 ## How it works
 
@@ -179,6 +180,7 @@ bun run check                 # typecheck, lint and the tests
 bun run dev -- local          # the CLI from source (any command)
 bun run install:dev           # this checkout as `explain-change` in ~/.local/bin, skills linked to skills/
 bun run examples              # rebuild examples/ after changing the report or the analysis (CI checks it)
+bun run smoke                 # compile the binary for this machine and run it on a temporary repository
 bun run eval -- --model haiku # a real agent explains each scenario with the skill (costs tokens)
 ```
 

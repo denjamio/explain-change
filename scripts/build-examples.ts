@@ -10,10 +10,12 @@
  * explain-change.toml and the agent's explanation.json.
  */
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Facts } from "../src/contract/facts.ts";
+import { REPOSITORY, VERSION } from "../src/core/constants.ts";
+import { ensureDir } from "../src/core/fs.ts";
 import { readReportData } from "../src/report/data.ts";
 import { buildAssets } from "./build.ts";
 
@@ -59,7 +61,7 @@ export function buildScenarioRepo(name: string, tmp: string): string {
   const src = join(SCENARIOS_DIR, name);
   const meta = JSON.parse(readFileSync(join(src, "scenario.json"), "utf8")) as ScenarioMeta;
   const repo = join(tmp, name, meta.dir ?? "repo");
-  mkdirSync(repo, { recursive: true });
+  ensureDir(repo);
   sh(["git", "init", "-q", "-b", "main"], repo);
   cpSync(join(src, "base"), repo, { recursive: true });
   if (existsSync(join(src, "explain-change.toml")))
@@ -105,6 +107,8 @@ interface Row {
   deletions: number;
   components: number;
   violations: number;
+  /** What the report was built from: [label, URL]. */
+  links: [string, string][];
 }
 
 const REAL_DIR = join(ROOT, "examples/real");
@@ -131,7 +135,7 @@ const realExamples = () =>
 /** Clones the PR's commit and its parent, then explains it with the team's config and the agent's explanation. */
 function buildReal(name: string, meta: RealMeta, tmp: string): void {
   const repo = join(tmp, name);
-  mkdirSync(repo, { recursive: true });
+  ensureDir(repo);
   sh(["git", "init", "-q"], repo);
   sh(["git", "remote", "add", "origin", meta.repository], repo);
   sh(["git", "fetch", "-q", "--depth", "2", "origin", meta.commit], repo);
@@ -153,8 +157,14 @@ function buildReal(name: string, meta: RealMeta, tmp: string): void {
   if (p.status !== 0) throw new Error(`${name}: explanation rejected\n${p.stdout}${p.stderr}`);
 }
 
+const SOURCE = `https://github.com/${REPOSITORY}/tree/main/examples`;
+
 /** A gallery card from a rendered report: its numbers come from the data the page embeds. */
-function rowOf(file: string, card: { project?: string; title?: string; stack: string; shows: string }): Row {
+function rowOf(
+  file: string,
+  card: { project?: string; title?: string; stack: string; shows: string },
+  links: Row["links"],
+): Row {
   const html = readFileSync(join(ROOT, "examples", file), "utf8");
   const data = readReportData(html);
   const facts = data.facts;
@@ -170,6 +180,7 @@ function rowOf(file: string, card: { project?: string; title?: string; stack: st
     deletions: facts.stats.deletions,
     components: facts.components.filter((c) => c.delta !== "unchanged").length,
     violations: facts.stats.newViolations,
+    links,
   };
 }
 
@@ -190,9 +201,14 @@ body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--font); m
 h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -.01em; text-wrap: balance; }
 .lead { color: var(--muted); margin: 0 0 28px; max-width: 62ch; }
 .list { display: grid; gap: 12px; }
-a.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding: 16px 18px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 12px; color: inherit; text-decoration: none; }
-a.item:hover, a.item:focus-visible { border-color: var(--accent); outline: none; }
+.item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding: 16px 18px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.item:hover, .item:focus-within { border-color: var(--accent); }
+a.open { color: inherit; text-decoration: none; outline: none; }
+a.open::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
+.links { grid-column: 1 / -1; display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
+.links a, .foot a { position: relative; color: var(--accent); text-decoration: none; }
+.links a:hover, .links a:focus-visible, .foot a:hover { text-decoration: underline; }
 .top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; min-width: 0; }
 .name { font-weight: 650; }
 .branch { font-family: var(--mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
@@ -215,13 +231,14 @@ function gallery(real: Row[], rows: Row[]): string {
     list
       .map(
         (r) =>
-          `<a class="item" href="${esc(r.file)}"><div class="top"><span class="name">${esc(r.project)}</span>` +
+          `<article class="item"><div class="top"><a class="open name" href="${esc(r.file)}">${esc(r.project)}</a>` +
           `<span class="branch">${esc(r.branch)}</span></div><span class="badge ${r.kind}">${label[r.kind]}</span>` +
           `<div class="stack">${esc(r.stack)}</div><p class="shows">${esc(r.shows)}</p>` +
           `<div class="stats"><span>${r.files} files</span><span><span class="add">+${r.additions}</span> ` +
           `<span class="del">−${r.deletions}</span></span><span>${r.components} components</span>` +
           (r.violations ? `<span>${r.violations} broken rules</span>` : "") +
-          "</div></a>",
+          `</div><div class="links">${r.links.map(([label, url]) => `<a href="${esc(url)}">${esc(label)} ↗</a>`).join("")}</div>` +
+          "</article>",
       )
       .join("");
   const items =
@@ -235,7 +252,8 @@ function gallery(real: Row[], rows: Row[]): string {
     "changes, OpenSpec requirements traced to code) driven by a step-by-step story, then the design decisions " +
     "behind the change.</p>" +
     items +
-    '<p class="foot">Generated by <code>scripts/build-examples.ts</code>.</p></main>\n'
+    `<p class="foot">Built with <a href="https://github.com/${REPOSITORY}">explain-change</a> ${VERSION} by ` +
+    "<code>scripts/build-examples.ts</code>.</p></main>\n"
   );
 }
 
@@ -247,7 +265,11 @@ if (import.meta.main) {
     for (const name of scenarioNames()) {
       const meta = JSON.parse(readFileSync(join(SCENARIOS_DIR, name, "scenario.json"), "utf8")) as ScenarioMeta;
       buildScenario(name, tmp, join(ROOT, "examples", `${name}.html`));
-      rows.push(rowOf(`${name}.html`, { stack: meta.title, shows: meta.shows }));
+      rows.push(
+        rowOf(`${name}.html`, { stack: meta.title, shows: meta.shows }, [
+          ["Scenario source", `${SOURCE}/scenarios/${name}`],
+        ]),
+      );
       console.log(`${name}.html: ${rows[rows.length - 1]?.kind}`);
     }
     if (process.argv.includes("--real")) {
@@ -262,7 +284,10 @@ if (import.meta.main) {
   const real = realExamples()
     .filter(({ meta }) => existsSync(join(ROOT, "examples", meta.report)))
     .map(({ name, meta }) =>
-      rowOf(meta.report, { ...meta, shows: `${meta.shows} Config and explanation in examples/real/${name}.` }),
+      rowOf(meta.report, meta, [
+        ["Upstream commit", `${meta.repository.replace(/\.git$/, "")}/commit/${meta.commit}`],
+        ["Config and explanation", `${SOURCE}/real/${name}`],
+      ]),
     );
   writeFileSync(join(ROOT, "examples/index.html"), gallery(real, rows));
 }

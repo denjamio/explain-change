@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- The examples are published at https://denjamio.github.io/explain-change/; each card links to its inputs (and, for
+  real pull requests, the upstream commit).
+- CI compiles the standalone binary on Linux, macOS and Windows and runs it through pipes on a temporary repository
+  (`bun run smoke`), so the Windows binary runs before it ships.
+
+### Fixed
+- Folders are created one at a time: on Windows, Bun's recursive mkdir could throw EEXIST under existing parents with
+  another spelling (8.3 short names such as `RUNNER~1`), not only for existing folders. Scripts set the exit code
+  instead of calling `process.exit()`, as the CLI does.
+
 ### Changed
 - Docs and skills no longer point to npm, which is not published yet: an agent that does not find the CLI asks the
   user to install it with `install.sh`. The README says how to release; the architecture doc describes `check`.
