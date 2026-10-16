@@ -12,6 +12,10 @@ All notable changes to this project are documented here. The format follows
   lifelines and shows the full call as its tooltip.
 
 ### Added
+- Vue and Svelte components are analyzed from their `<script>` blocks, so a Vue or Svelte UI gets its dependencies.
+  Imports resolve through bundler aliases (`vite.config`, `vite.shared`, `svelte.config`, SvelteKit's implicit
+  `$lib`) and through the repository's own packages by their package.json name (`@immich/sdk` → `packages/sdk`). In
+  Immich, the web app now depends on its SDK (322 references); before, it depended on nothing.
 - A `configure` next action: when the team's config maps none of the changed code, `local`, `pr` and `render` ask
   to update the config instead of an explanation of an empty map. The skills say what to do with it.
 

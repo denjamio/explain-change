@@ -53,8 +53,24 @@ const CSPROJ_REF = /<ProjectReference\s+Include\s*=\s*["']([^"']+)["']/gi;
 /** Ruby code without string literals and without a trailing comment. */
 const rubyCode = (line: string) => line.replace(RB_STR, "").split(" #")[0] as string;
 
-export function extractRefs(path: string, text: string | null): Extracted {
+/**
+ * The <script> blocks of a Vue or Svelte component, the rest blanked out: lines keep their numbers, so references
+ * point at the right line, and the template's markup reads as no code.
+ */
+export function scriptBlocks(text: string): string {
+  let out = "";
+  let at = 0;
+  for (const m of text.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
+    const start = (m.index as number) + m[0].indexOf(">") + 1;
+    out += text.slice(at, start).replace(/[^\n]/g, " ") + (m[1] as string);
+    at = start + (m[1] as string).length;
+  }
+  return out + text.slice(at).replace(/[^\n]/g, " ");
+}
+
+export function extractRefs(path: string, raw: string | null): Extracted {
   const lang = langOf(path);
+  const text = raw !== null && /\.(vue|svelte)$/i.test(path) ? scriptBlocks(raw) : raw;
   const out: Extracted = { refs: [], namespaces: [] };
   if (!lang || text === null) return out;
   const lineOf = lineIndex(text);

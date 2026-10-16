@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
 import { type Extracted, extractRefs } from "../src/analysis/refs.ts";
-import { SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
+import { loadTsConfigs, SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
 import { extractSymbols } from "../src/analysis/symbols.ts";
 import { detectStructure } from "../src/config/infer.ts";
 import { Mapper } from "../src/config/mapper.ts";
@@ -224,6 +224,47 @@ describe("TypeScript and C#", () => {
       { id: "billing", layer: "domain", paths: ["Shop.Billing/**"] },
     ]);
     expect(edges).toEqual({ "api->billing": 2 });
+  });
+
+  test("Vue and Svelte: the <script> blocks, with Vite and SvelteKit aliases", () => {
+    const files: Record<string, string> = {
+      // Chatwoot: aliases in a shared Vite file; `vue` is a package, not a folder.
+      "vite.shared.ts":
+        "export const aliases = {\n  vue: 'vue/dist/vue.esm-bundler.js',\n  dashboard: path.resolve('./app/javascript/dashboard'),\n};\n",
+      "app/javascript/dashboard/api/inbox.js": "export const getHealth = () => {};\n",
+      "app/javascript/dashboard/routes/AccountHealth.vue":
+        '<template>\n  <div>{{ import_me }}</div>\n</template>\n<script setup>\nimport { getHealth } from "dashboard/api/inbox";\nimport { ref } from "vue";\n</script>\n',
+      // Immich: SvelteKit's $lib, implicit.
+      "web/svelte.config.js": "export default { kit: {} };\n",
+      "web/src/lib/sdk.ts": "export const getLogs = () => {};\n",
+      "web/src/routes/Logs.svelte":
+        '<script lang="ts">\n  import { getLogs } from "$lib/sdk";\n  import { getWorkflowLogs } from "@shop/sdk";\n</script>\n<p>logs</p>\n',
+      // a monorepo package, imported by its name; its package.json points at a build the repository does not hold
+      "packages/sdk/package.json": '{ "name": "@shop/sdk", "main": "./build/index.js" }',
+      "packages/sdk/src/index.ts": "export const getWorkflowLogs = () => {};\n",
+    };
+    const read = (p: string) => files[p] ?? null;
+    const { edges, unresolved } = edgesFor(
+      files,
+      [
+        { id: "routes", layer: "web", paths: ["app/javascript/dashboard/routes/**", "web/src/routes/**"] },
+        { id: "api", layer: "domain", paths: ["app/javascript/dashboard/api/**", "web/src/lib/**"] },
+        { id: "sdk", layer: "domain", paths: ["packages/sdk/**"] },
+      ],
+      loadTsConfigs(Object.keys(files), read),
+    );
+    expect(edges).toEqual({ "routes->api": 2, "routes->sdk": 1 });
+    expect(unresolved).toBe(0);
+    // the template is no code: its text gives no reference, and lines keep their numbers
+    expect(
+      extractRefs("x.vue", files["app/javascript/dashboard/routes/AccountHealth.vue"] as string).refs.map((r) => [
+        r.raw,
+        r.line,
+      ]),
+    ).toEqual([
+      ["dashboard/api/inbox", 5],
+      ["vue", 6],
+    ]);
   });
 
   test("C#: a using sees only its project and the projects it references", () => {
