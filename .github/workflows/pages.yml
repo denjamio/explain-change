@@ -1,7 +1,8 @@
 name: Examples site
 
 # Publishes the example reports (examples/*.html, gallery at index.html) on GitHub Pages. CI already checks they
-# match the code, so this only copies them. One-time setup: Settings → Pages → Source: GitHub Actions.
+# match the code, so this only copies them. Site: https://denjamio.github.io/explain-change/ (needs Settings → Pages →
+# Source: GitHub Actions).
 on:
   push:
     branches: [main]
