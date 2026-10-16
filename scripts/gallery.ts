@@ -231,8 +231,8 @@ export function galleryHtml(real: Example[], scenarios: Example[]): string {
 <main class="wrap">
 <header>
 <div class="brand"><span class="mark" aria-hidden="true">${readFileSync(join(import.meta.dir, "../report/bulb.svg"), "utf8").trim()}</span>explain-change</div>
-<h1>See what a change does to the architecture</h1>
-<p class="lead">Each example is one offline HTML page generated from a pull request: the map of the architecture it touches, a story that walks through it, and the decisions behind it. The CLI computes the facts; an agent writes the prose.</p>
+<h1>See what a code change does</h1>
+<p class="lead">Its architecture, data flows and design decisions, in one page. Each example below is a real or synthetic pull request, rendered as one offline HTML file. The CLI computes the facts; an agent writes the prose.</p>
 <div class="actions"><a class="btn primary" href="${esc(real[0]?.file ?? scenarios[0]?.file ?? "#")}">Open an example</a>` +
     `<a class="btn" href="${REPO_URL}#quick-start">Install</a><a class="btn" href="${REPO_URL}">GitHub</a></div>
 </header>
