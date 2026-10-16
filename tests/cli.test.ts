@@ -721,6 +721,29 @@ describe("architecture check", () => {
     expect(out.warnings.join("\n")).toContain("hides 1 architecture decision records");
   });
 
+  test("each component's commits, the ones that rarely change and lists of single files", () => {
+    const files = Array.from({ length: 9 }, (_, i) => `"app/models/m${i}.rb"`).join(", ");
+    const r = repo(
+      '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n' +
+        '[[components]]\nid = "orders-api"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
+        `[[components]]\nid = "orders"\nlayer = "domain"\npaths = [${files}]\n`,
+    );
+    for (let i = 0; i < 3; i++) {
+      r.write({ "app/controllers/orders_controller.rb": `class OrdersController\n  # ${i}\nend\n` });
+      r.commit(`api ${i}`);
+    }
+    r.write({ "app/models/m0.rb": "class M0\nend\n" });
+    r.commit("model");
+    const out = r.json(["check"]).out;
+    const layers = out.layers as { components: { id: string; commits: number }[] }[];
+    const commits = Object.fromEntries(layers.flatMap((l) => l.components.map((c) => [c.id, c.commits])));
+    expect(commits["orders-api"]).toBeGreaterThan(commits.orders ?? 0);
+    expect((out.quiet.components as { id: string }[]).map((q) => q.id)).toEqual(["orders"]);
+    expect(out.singleFiles).toEqual([
+      { id: "orders", files: Array.from({ length: 9 }, (_, i) => `app/models/m${i}.rb`) },
+    ]);
+  });
+
   test("the glossary reaches the digest", () => {
     const r = repo(`${MODELS_CONFIG}[glossary]\nrefund = "Money returned to a customer for an order"\n`);
     r.run(["local", "--base", "main"]);

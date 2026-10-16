@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `check` shows how many commits change each component, lists the components that rarely change (1% of the history
+  or less) and the ones that list single files. The configure skill turns them into 1 set of rules: a context or a
+  team the code names keeps its box however quiet, a quiet part of a context merges into it, framework
+  configuration belongs to Platform, and paths are folders and name globs (`app/models/conversation**`), so a new
+  file finds its owner instead of falling to the shared kernel.
+
 ### Changed
 - The draft's story opens where the behavior is decided, the same way for every change: components rank by lane
   first (the inner lanes, then the entry lane, then the bottom one), then by weight. A migration is weight: a new

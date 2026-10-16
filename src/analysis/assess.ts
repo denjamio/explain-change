@@ -13,7 +13,8 @@ import { loadTsConfigs, SideIndex } from "./resolve.ts";
  *
  * - violations: dependencies between components that break [rules] today;
  * - cycles: components that depend on each other, the usual sign of a boundary drawn in the wrong place;
- * - cochange: components that change in the same commits: one context split in two, or a boundary that leaks.
+ * - cochange: components that change in the same commits: one context split in two, or a boundary that leaks;
+ * - activity: the commits that change each component, to tell a context the team works in from a quiet one.
  */
 export interface Assessment {
   files: number;
@@ -21,6 +22,8 @@ export interface Assessment {
   cycles: { a: string; b: string; refsAB: number; refsBA: number }[];
   cochange: { a: string; b: string; commits: number; coupling: number }[];
   commits: number;
+  /** Commits of the history that change each component's code (mass edits left out), in config order. */
+  activity: { id: string; commits: number }[];
 }
 
 const CHUNK = 500;
@@ -99,5 +102,6 @@ export function assessArchitecture(root: string, config: Config, mapper: Mapper,
     cycles: cycles.slice(0, 10),
     cochange,
     commits,
+    activity: config.components.map((c) => ({ id: c.id, commits: perComponent.get(c.id) ?? 0 })),
   };
 }

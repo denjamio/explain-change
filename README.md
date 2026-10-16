@@ -164,9 +164,10 @@ Ask your agent to **"configure explain-change for this repo"**. The configure sk
 talks about the app (bounded contexts in the domain's words, not framework artifacts) and tries the result on recent
 PRs.
 
-`explain-change check` measures how the config fits the code: each lane with its components and file counts, the
-files no component covers, the dependencies that break `[rules]` today, components that depend on each other, and
-components that change together in the git history.
+`explain-change check` measures how the config fits the code: each lane with its components, their files and the
+commits that change them, the files no component covers, the dependencies that break `[rules]` today, components
+that depend on each other, components that change together in the git history, and the hints that keep the config
+small: components that rarely change and components that list single files instead of folders and name globs.
 
 <details>
 <summary><b>.explain-change.toml reference</b></summary>

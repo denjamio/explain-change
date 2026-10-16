@@ -67,7 +67,8 @@ files are scanned only in the touched components, and files are read in chunks.
 
 `explain-change check` reads the whole repository at HEAD (`src/analysis/assess.ts`) and measures how the config fits
 the code: dependencies between components that break `[rules]` today, components that depend on each other, and
-components that change in the same commits (the git history, mass edits left out). It is the evidence the configure
+components that change in the same commits (the git history, mass edits left out), and how often each one changes.
+It is the evidence the configure
 skill draws boundaries with; it never changes the facts of a change.
 
 ## Explanation lifecycle

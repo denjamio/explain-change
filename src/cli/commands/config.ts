@@ -34,7 +34,16 @@ export function init(opts: { force: boolean; json: boolean }): number {
   return 0;
 }
 
-/** `check`: validates the config and lists each lane with its components and file counts, and what no component holds. */
+/** A component changed in this share of the history or less (and at least QUIET_MIN commits) rarely changes. */
+const QUIET_SHARE = 0.01;
+const QUIET_MIN = 2;
+/**
+ * More single files than this in a component's paths, and it is a list to keep up by hand: a new file next to them
+ * falls to another component, usually the shared kernel. Folders and name globs (`app/models/order**`) keep up.
+ */
+const SINGLE_FILES = 3;
+const isSingleFile = (path: string) => !/[*?[]/.test(path) && /\.[^/]+$/.test(path);
+
 /** The first bytes of a file, enough for a generator marker; null when it cannot be read. */
 function fileHead(path: string): string | null {
   try {
@@ -50,6 +59,7 @@ function fileHead(path: string): string | null {
   }
 }
 
+/** `check`: validates the config and lists each lane with its components and file counts, and what no component holds. */
 export function check(opts: { json: boolean; history: number }): number {
   const root = repoRoot();
   if (!existsSync(join(root, CONFIG_NAME))) throw new UserError(`No ${CONFIG_NAME}. Run \`explain-change init\`.`);
@@ -90,6 +100,14 @@ export function check(opts: { json: boolean; history: number }): number {
   ];
   const mapped = [...counts.values()].reduce((a, n) => a + n, 0);
   const fit = assessArchitecture(root, config, mapper, opts.history);
+  const commitsOf = new Map(fit.activity.map((a) => [a.id, a.commits]));
+  // Hints for a config that stays small and easy to keep: a component that rarely changes may belong inside its
+  // context, and a list of single files breaks each time a file is added next to them.
+  const quietMax = Math.max(QUIET_MIN, Math.floor(fit.commits * QUIET_SHARE));
+  const quiet = fit.commits ? fit.activity.filter((a) => a.commits <= quietMax) : [];
+  const singleFiles = config.components
+    .map((c) => ({ id: c.id, files: c.paths.filter(isSingleFile) }))
+    .filter((c) => c.files.length > SINGLE_FILES);
   if (opts.json) {
     printJson({
       command: "check",
@@ -98,13 +116,21 @@ export function check(opts: { json: boolean; history: number }): number {
         name: l.name,
         components: config.components
           .filter((c) => c.layer === l.id)
-          .map((c) => ({ id: c.id, name: c.name, files: counts.get(c.id) ?? 0, paths: c.paths })),
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            files: counts.get(c.id) ?? 0,
+            commits: commitsOf.get(c.id) ?? 0,
+            paths: c.paths,
+          })),
       })),
       mapped,
       unmapped: { files: unmapped.length, folders: topFolders.map(([dir, files]) => ({ dir, files })) },
       violations: fit.violations,
       cycles: fit.cycles,
       changeTogether: { commits: fit.commits, pairs: fit.cochange },
+      quiet: { maxCommits: quietMax, components: quiet },
+      singleFiles,
       warnings,
     });
     return 0;
@@ -114,7 +140,9 @@ export function check(opts: { json: boolean; history: number }): number {
   for (const layer of config.layers) {
     console.log(layer.id);
     for (const c of config.components.filter((c) => c.layer === layer.id)) {
-      console.log(`  ${c.id.padEnd(width)}  ${String(counts.get(c.id) ?? 0).padStart(5)} files  ${c.paths.join(", ")}`);
+      const files = `${String(counts.get(c.id) ?? 0).padStart(5)} files`;
+      const commits = `${String(commitsOf.get(c.id) ?? 0).padStart(4)} commits`;
+      console.log(`  ${c.id.padEnd(width)}  ${files}  ${commits}  ${c.paths.join(", ")}`);
     }
   }
   console.log(`${config.components.length} components, ${mapped} source files mapped, ${unmapped.length} unmapped`);
@@ -127,5 +155,11 @@ export function check(opts: { json: boolean; history: number }): number {
   console.log(`Components that change together (last ${fit.commits} commits): ${fit.cochange.length || "none"}`);
   for (const c of fit.cochange)
     console.log(`  ${c.a} + ${c.b}  ${c.commits} commits, ${Math.round(c.coupling * 100)}%`);
+  console.log(
+    `Components that rarely change (${quietMax} of the last ${fit.commits} commits or fewer): ${quiet.length || "none"}`,
+  );
+  for (const q of quiet) console.log(`  ${q.id}  ${q.commits} commit${q.commits === 1 ? "" : "s"}`);
+  console.log(`Components that list more than ${SINGLE_FILES} single files: ${singleFiles.length || "none"}`);
+  for (const c of singleFiles) console.log(`  ${c.id}  ${c.files.length} files, e.g. ${c.files[0]}`);
   return 0;
 }
