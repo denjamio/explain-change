@@ -7,6 +7,9 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Fixed
+- Generated files are recognized by the first lines of the file, not of the first hunk, so a change in the middle
+  of a generated file counts too; "DO NOT MODIFY" and "this file has been generated" are markers now. Immich's
+  generated SDK no longer opened the story. `ANALYSIS_VERSION` is 7.
 - The draft pre-fills a reference flow from the config only when the change reaches its calls: every name of 1 of
   its steps is on a changed line or names the function a hunk is in. Before, sharing 1 component was enough, and 36
   of 40 surveyed pull requests got an unrelated flow.

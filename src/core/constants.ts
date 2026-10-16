@@ -11,7 +11,7 @@ export const CONTRACT_VERSION = 3;
  * Part of the change key. Bump it when a change to the analysis (parsers, mapping, dependencies, symbols, outline)
  * can change facts.json for the same diff, so explanations written against the old analysis turn stale, not valid.
  */
-export const ANALYSIS_VERSION = 6;
+export const ANALYSIS_VERSION = 7;
 
 /** The GitHub repository: releases, issues, the published schemas and the examples site. */
 export const REPOSITORY = "denjamio/explain-change";
@@ -53,7 +53,8 @@ export const DIFF_FLAGS = [
 ];
 
 /** Markers of generated files, read from their first lines (plus `linguist-generated` in .gitattributes). */
-export const GENERATED_RE = /@generated|do not edit|auto-?generated|<meta name="generator"/i;
+export const GENERATED_RE =
+  /@generated|do not (?:edit|modify)|auto-?generated|(?:this|the) file (?:is|was|has been) (?:auto-?)?generated|<meta name="generator"/i;
 export const GENERATED_HEAD = 10;
 
 export const DEFAULT_TESTS = [

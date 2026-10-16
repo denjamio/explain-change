@@ -300,6 +300,19 @@ describe("generated files", () => {
     for (const p of ["report.html", "app/api/client.py", "app/schema.graphql"]) expect(cats[p]).toBe("ignored");
     expect(cats["app/models/refund.rb"]).toBe("code");
   });
+
+  test("a marker at the top counts when the change is further down the file", () => {
+    // Immich's generated SDK: "DO NOT MODIFY - This file has been generated using oazapfts.", edited mid-file.
+    const r = repo();
+    const header = "/**\n * Shop\n * DO NOT MODIFY - This file has been generated using oazapfts.\n */\n";
+    const body = (extra: string) => `${header}${"export const a = 1;\n".repeat(30)}${extra}`;
+    r.write({ "sdk/client.ts": body(""), "app/models/refund.rb": "class Refund\nend\n" });
+    r.commit("sdk");
+    r.write({ "sdk/client.ts": body("export function getRefunds() {}\n") });
+    r.commit("sdk change");
+    const cats = Object.fromEntries(r.collect({ base: "HEAD~1" }).files.map((f) => [f.path, f.category]));
+    expect(cats["sdk/client.ts"]).toBe("ignored");
+  });
 });
 
 describe("determinism", () => {
