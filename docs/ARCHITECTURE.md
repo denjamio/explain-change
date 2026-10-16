@@ -62,6 +62,13 @@ Django string references, URL includes), TypeScript (imports, `tsconfig` paths a
 namespaces, project references). Unresolved references are counted, never hidden. Repositories over 20,000 source
 files are scanned only in the touched components, and files are read in chunks.
 
+## Config assessment
+
+`explain-change check` reads the whole repository at HEAD (`src/analysis/assess.ts`) and measures how the config fits
+the code: dependencies between components that break `[rules]` today, components that depend on each other, and
+components that change in the same commits (the git history, mass edits left out). It is the evidence the configure
+skill draws boundaries with; it never changes the facts of a change.
+
 ## Explanation lifecycle
 
 `local` / `pr` make `explanation.json` belong to the current change: they keep it when it already does, restore the
@@ -75,7 +82,8 @@ One code base, three ways to run it:
 
 - **Standalone binaries** (`bun build --compile`), attached to each GitHub release; `install.sh` / `install.ps1`
   download one, and `explain-change update` replaces it.
-- **npm** (`npx explain-change`): one bundled file for Node ≥ 20, with no runtime dependencies.
+- **npm** (`npx explain-change`): one bundled file for Node ≥ 20, with no runtime dependencies. Built and tested in
+  CI; published by the release workflow once the repository has an `NPM_TOKEN` secret.
 - **Source** (`bun src/cli/bin.ts`), for development.
 
 The skills are embedded in the CLI (`explain-change install` writes them to `~/.agents/skills` and

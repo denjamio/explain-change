@@ -10,7 +10,8 @@ story outline, the layout and the page. You write only the prose, in `.explain-c
 CLI drafts for you. Never read the full diff: the digest already selects what matters.
 
 Run every command from the repository root, with `--json`, and do what its `next.action` says. If `explain-change`
-is not on PATH, use `npx -y explain-change` (or `bunx explain-change`) instead.
+is not on PATH, ask the user to install it:
+`curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/install.sh | sh` (Windows: `install.ps1`).
 
 ## 1. Collect the change
 

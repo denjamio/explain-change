@@ -22,6 +22,7 @@ When two words could name the same thing, this page says which one is used.
 | **Rule** | `allow` / `forbid` entries `a -> b` between layers or components. A dependency that breaks one is a **violation**. |
 | **Reference flow** | A runtime path the team calls central, declared in the config (`[[flows]]`). An explained flow with the same id is compared with it. |
 | **Glossary** | The team's ubiquitous language (`[glossary]`): one term per concept, with its definition. Component names, flow titles and explanations use it. |
+| **Co-change** | How often two components change in the same commits (`check`): above ~70% between domain components, they behave as one context. |
 | **Inferred config** | The layers and components guessed from folders when the repository has no config. Reported as such everywhere. |
 
 ## The analysis (`facts.json`, computed, no LLM)

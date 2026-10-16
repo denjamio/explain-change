@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Docs and skills no longer point to npm, which is not published yet: an agent that does not find the CLI asks the
+  user to install it with `install.sh`. The README says how to release; the architecture doc describes `check`.
+
 ## [0.2.0] - 2026-10-16
 
 A rewrite in TypeScript with one contract between the CLI, the agent and the report. The analysis gives the same facts

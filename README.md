@@ -54,8 +54,9 @@ curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/instal
 irm https://raw.githubusercontent.com/denjamio/explain-change/main/install.ps1 | iex
 ```
 
-Or with Node ≥ 20: `npm install -g explain-change && explain-change install` (or `npx -y explain-change …`
-without installing). It needs git and, for Azure DevOps PRs, the `az` CLI with the `azure-devops` extension.
+The binaries come from the [GitHub releases](https://github.com/denjamio/explain-change/releases) (Linux and macOS,
+x64 and arm64; Windows x64). An npm package for Node ≥ 20 is built too, but not published yet. It needs git and, for
+Azure DevOps PRs, the `az` CLI with the `azure-devops` extension.
 
 `explain-change install` puts the skills where agents look for them (`~/.agents/skills` and `~/.claude/skills`).
 In Claude Code you can also add them as a plugin:
@@ -65,7 +66,7 @@ In Claude Code you can also add them as a plugin:
 /plugin install explain-change@explain-change
 ```
 
-Update with `explain-change update` (binary) or `npm install -g explain-change@latest`.
+Update with `explain-change update`.
 
 ## Use
 
@@ -182,10 +183,15 @@ bun run eval -- --model haiku # a real agent explains each scenario with the ski
 ```
 
 Change the skills or the digest's rules, then run the eval: it reports, per scenario, whether the agent reached a
-valid explanation, with its turns, cost and time. Bun runs the toolchain; the published CLI runs on Node ≥ 20 or as a standalone binary. Read
+valid explanation, with its turns, cost and time. Bun runs the toolchain; the published CLI runs as a standalone binary (or on Node ≥ 20 from the npm bundle). Read
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first. Bump `ANALYSIS_VERSION` (`src/core/constants.ts`) when the
 analysis can produce different facts for the same diff, and `CONTRACT_VERSION` when `facts.json` or
 `explanation.json` change shape. Changes go in [CHANGELOG.md](CHANGELOG.md).
+
+**Release**: set the version in `package.json` and `.claude-plugin/plugin.json` (a test checks they match the
+CHANGELOG), move the CHANGELOG's notes under the new version, then push the tag `vX.Y.Z` from `main`. The release
+workflow runs the checks, attaches the 5 binaries to a GitHub release with those notes, and publishes the npm package
+when the repository has an `NPM_TOKEN` secret (it skips npm without it).
 
 ## License
 

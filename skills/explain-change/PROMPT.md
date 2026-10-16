@@ -8,7 +8,8 @@ Reference this file from `AGENTS.md` (or paste it into your agent): "To explain 
 You produce a visual explanation of a code change: what it does, where it sits in the architecture, how data flows
 and why it is built this way. It is not a review. The `explain-change` CLI does all the structural work; you only
 write the prose in `.explain-change/explanation.json`, which it drafts. Do not read the whole diff. Run every
-command from the repository root, with `--json` (`npx -y explain-change` when the command is not on PATH).
+command from the repository root, with `--json`. When the command is not on PATH, ask the user to install it:
+`curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/install.sh | sh` (Windows: `install.ps1`).
 
 1. Collect the change: `explain-change pr <id|url> --json` for an Azure DevOps PR, `explain-change pr --json` for
    "this PR" without an id, or `explain-change local --json` for the branch or "my changes" (`--base <ref>`;
