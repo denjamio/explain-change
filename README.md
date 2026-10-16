@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="report/logo.svg" alt="" width="72">
+
 # explain-change
 
 **See what a code change does to your architecture, in one page.**

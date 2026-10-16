@@ -30,6 +30,8 @@ All notable changes to this project are documented here. The format follows
   instead of calling `process.exit()`, as the CLI does.
 
 ### Changed
+- A logo: a lit bulb (`report/logo.svg`), in the report's top bar and as its favicon, in the examples gallery and in
+  the README.
 - Docs and skills no longer point to npm, which is not published yet: an agent that does not find the CLI asks the
   user to install it with `install.sh`. The README says how to release; the architecture doc describes `check`.
 

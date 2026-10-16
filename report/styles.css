@@ -77,7 +77,8 @@ h1, h2, h3, h4 { line-height: 1.25; margin: 0; letter-spacing: -.01em; }
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: var(--s4); padding: 10px var(--s5); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
 .brand { font-weight: 650; font-size: 14px; display: flex; align-items: center; gap: var(--s2); color: var(--text); flex: none; }
 .brand:hover { text-decoration: none; }
-.brand-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 12px; }
+.brand-mark { width: 22px; height: 22px; display: block; flex: none; }
+.brand-mark svg { width: 100%; height: 100%; display: block; }
 .topnav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
 .topnav a { white-space: nowrap; padding: 5px 10px; border-radius: 999px; color: var(--muted); font-size: 13.5px; display: inline-flex; gap: 6px; align-items: baseline; }
 .topnav a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
