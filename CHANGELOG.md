@@ -14,8 +14,8 @@ All notable changes to this project are documented here. The format follows
 - The examples are published at https://denjamio.github.io/explain-change/, all in English: real pull requests, a
   feature tour, and a table of what each report shows, read from the data it embeds. Each card links to its inputs
   (and, for real pull requests, the upstream commit).
-- The README explains which parts of Domain-Driven Design and of ASD-STE100 (Simplified Technical English) the tool
-  uses, and which prose rules `render` enforces.
+- The README explains which parts of ASD-STE100 (Simplified Technical English) the explanation follows, and which
+  prose rules `render` enforces.
 - CI compiles the standalone binary on Linux, macOS and Windows and runs it through pipes on a temporary repository
   (`bun run smoke`), so the Windows binary runs before it ships.
 
