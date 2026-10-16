@@ -1,8 +1,9 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Explanation, NormalizedExplanation } from "../contract/explanation.ts";
 import type { Facts } from "../contract/facts.ts";
 import { FILES } from "../core/constants.ts";
+import { ensureDir } from "../core/fs.ts";
 import { draftExplanation } from "./draft.ts";
 import { normalizeExplanation } from "./normalize.ts";
 import { type Issue, validateExplanation } from "./validate.ts";
@@ -54,7 +55,7 @@ export function prepareExplanation(work: string, facts: Facts): "kept" | "restor
   const path = explanationPath(work);
   const current = readCurrent(path);
   if (current.kind === "unreadable" || (current.kind === "json" && current.key === facts.key)) return "kept";
-  mkdirSync(join(work, FILES.saved), { recursive: true });
+  ensureDir(join(work, FILES.saved));
   if (current.kind === "json" && current.key && !existsSync(savedPath(work, current.key))) {
     copyFileSync(path, savedPath(work, current.key));
   }
@@ -91,7 +92,7 @@ export function loadExplanation(work: string, facts: Facts, root: string | null)
   const issues = validateExplanation(value, facts, root);
   if (issues.some((i) => i.code === "placeholder")) return { state: "draft", issues, explanation: null };
   if (issues.length) return { state: "invalid", issues, explanation: null };
-  mkdirSync(join(work, FILES.saved), { recursive: true });
+  ensureDir(join(work, FILES.saved));
   writeJson(savedPath(work, facts.key), value);
   return { state: "valid", issues: [], explanation: normalizeExplanation(value as Explanation, facts) };
 }

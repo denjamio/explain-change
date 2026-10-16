@@ -15,7 +15,7 @@ beforeAll(() => {
     for (const name of scenarioNames()) facts[name] = buildScenario(name, dir, join(dir, `${name}.html`));
     runs.push({ dir, facts });
   }
-});
+}, 180_000); // 6 repositories built and explained: slow on Windows runners
 afterAll(() => {
   for (const r of runs) rmSync(r.dir, { recursive: true, force: true });
 });

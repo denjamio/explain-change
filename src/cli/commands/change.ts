@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { Az } from "../../ado/az.ts";
 import { branchPr, requireAdo } from "../../ado/pr.ts";
 import { collect, repoRoot } from "../../analysis/collect.ts";
@@ -61,8 +61,7 @@ export function explain(opts: ExplainOptions, az = new Az()): number {
   writeFileSync(paths.digest, digest, "utf8");
   const action = prepareExplanation(work, facts);
   const status = loadExplanation(work, facts, root);
-  const report = opts.out ?? defaultReportPath(work, facts);
-  writeReport(report, facts, status);
+  const report = writeReport(opts.out ?? defaultReportPath(work, facts), facts, status);
   const opened = status.state === "valid" && shouldOpen(opts.noOpen) && openReport(report);
   const result: ChangeResult = {
     command: opts.pr === null ? "local" : "pr",
@@ -96,8 +95,8 @@ export function render(opts: RenderOptions): number {
   const work = join(root, WORK_DIR);
   const facts = readFacts(work);
   const status = loadExplanation(work, facts, root);
-  const report = opts.out ?? defaultReportPath(work, facts);
-  if (!opts.dryRun) writeReport(report, facts, status);
+  const target = opts.out ?? defaultReportPath(work, facts);
+  const report = opts.dryRun ? resolve(target) : writeReport(target, facts, status);
   const opened = !opts.dryRun && status.state === "valid" && shouldOpen(opts.noOpen) && openReport(report);
   const result: ChangeResult = {
     command: opts.dryRun ? "status" : "render",

@@ -6,7 +6,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { readReportData } from "../src/report/render.ts";
+import { readReportData } from "../src/report/data.ts";
 
 function diff(a: unknown, b: unknown, path: string, out: string[]): void {
   if (out.length >= 5 || JSON.stringify(a) === JSON.stringify(b)) return;

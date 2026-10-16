@@ -1,20 +1,21 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 import type { Facts } from "../contract/facts.ts";
 import { CONTRACT_VERSION, FILES, WORK_DIR } from "../core/constants.ts";
 import { UserError } from "../core/errors.ts";
+import { ensureDir } from "../core/fs.ts";
 import { git } from "../core/git.ts";
 
 /** The work folder, .explain-change/ at the repository root. It is added to .git/info/exclude, never committed. */
 export function ensureWorkdir(root: string): string {
   const work = join(root, WORK_DIR);
-  mkdirSync(join(work, FILES.reports), { recursive: true });
+  ensureDir(join(work, FILES.reports));
   try {
     const raw = git(["rev-parse", "--git-path", "info/exclude"], root).trim();
     const exclude = isAbsolute(raw) ? raw : join(root, raw);
     const text = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
     if (!text.split("\n").includes(`/${WORK_DIR}/`)) {
-      mkdirSync(join(exclude, ".."), { recursive: true });
+      ensureDir(join(exclude, ".."));
       writeFileSync(exclude, `${text}${text && !text.endsWith("\n") ? "\n" : ""}/${WORK_DIR}/\n`);
     }
   } catch {

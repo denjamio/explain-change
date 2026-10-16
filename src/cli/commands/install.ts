@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,6 +6,7 @@ import prompt from "../../../skills/explain-change/PROMPT.md" with { type: "text
 import skill from "../../../skills/explain-change/SKILL.md" with { type: "text" };
 import configureSkill from "../../../skills/explain-change-configure/SKILL.md" with { type: "text" };
 import { VERSION } from "../../core/constants.ts";
+import { ensureDir } from "../../core/fs.ts";
 import { printJson } from "../output.ts";
 
 /** The skills the CLI carries: folder name → files. Agents with skill support find them in ~/.agents/skills and ~/.claude/skills. */
@@ -56,7 +57,7 @@ export function installSkill(
     return "up-to-date";
   }
   rmSync(dest, { recursive: true, force: true }); // removes links, never what they point to
-  mkdirSync(dest, { recursive: true });
+  ensureDir(dest);
   for (const [name, text] of Object.entries(files)) {
     if (opts.linkFrom) symlinkSync(join(opts.linkFrom, name), join(dest, name));
     else writeFileSync(join(dest, name), text, "utf8");

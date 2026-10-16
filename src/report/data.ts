@@ -11,3 +11,10 @@ export interface ReportData {
   state: ExplanationState;
   issues: Issue[];
 }
+
+/** The data a rendered page embeds: what renderHtml wrote, for scripts and tests that read reports back. */
+export function readReportData(html: string): ReportData {
+  const m = /<script type="application\/json" id="ec-data">([\s\S]*?)<\/script>/.exec(html);
+  if (!m) throw new Error("not an explain-change report: no embedded data");
+  return JSON.parse(m[1] as string);
+}

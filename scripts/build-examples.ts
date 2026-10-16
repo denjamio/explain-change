@@ -14,7 +14,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Facts } from "../src/contract/facts.ts";
-import { readReportData } from "../src/report/render.ts";
+import { readReportData } from "../src/report/data.ts";
 import { buildAssets } from "./build.ts";
 
 const ROOT = join(import.meta.dir, "..");

@@ -1,10 +1,11 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { specRequirements } from "../analysis/openspec.ts";
 import type { NormalizedExplanation } from "../contract/explanation.ts";
 import type { Facts, FileFacts, Hunk } from "../contract/facts.ts";
 import { LOCATION_RE } from "../contract/facts.ts";
 import { FILES, VERSION } from "../core/constants.ts";
+import { ensureDir } from "../core/fs.ts";
 import { slugify } from "../core/text.ts";
 import type { ExplanationStatus } from "../explanation/store.ts";
 import { REPORT_CSS, REPORT_HTML, REPORT_JS } from "./assets.gen.ts";
@@ -90,13 +91,6 @@ export function renderHtml(facts: Facts, status: ExplanationStatus): string {
     .replace("{{DATA}}", () => payload);
 }
 
-/** The data a rendered page embeds: what renderHtml wrote, for scripts and tests that read reports back. */
-export function readReportData(html: string): ReportData {
-  const m = /<script type="application\/json" id="ec-data">([\s\S]*?)<\/script>/.exec(html);
-  if (!m) throw new Error("not an explain-change report: no embedded data");
-  return JSON.parse(m[1] as string);
-}
-
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -105,7 +99,10 @@ function escapeHtml(s: string): string {
 export const defaultReportPath = (work: string, facts: Facts) =>
   join(work, FILES.reports, `${slugify(facts.source.branch || "change")}.html`);
 
-export function writeReport(target: string, facts: Facts, status: ExplanationStatus): void {
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, renderHtml(facts, status), "utf8");
+/** Writes the page; returns its absolute path. */
+export function writeReport(target: string, facts: Facts, status: ExplanationStatus): string {
+  const path = resolve(target);
+  ensureDir(dirname(path));
+  writeFileSync(path, renderHtml(facts, status), "utf8");
+  return path;
 }

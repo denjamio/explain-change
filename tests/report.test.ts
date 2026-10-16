@@ -3,7 +3,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { NormalizedExplanation } from "../src/contract/explanation.ts";
 import type { Facts } from "../src/contract/facts.ts";
-import { excerptRanges, pruneHunks, readReportData, renderHtml } from "../src/report/render.ts";
+import { readReportData } from "../src/report/data.ts";
+import { excerptRanges, pruneHunks, renderHtml } from "../src/report/render.ts";
 import { smoke } from "./dom.ts";
 import { ROOT } from "./helpers.ts";
 
