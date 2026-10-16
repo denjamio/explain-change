@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { type HttpFetch, shareReport } from "../src/hosts/azure-devops/share.ts";
+import { shareReport } from "../src/hosts/azure-devops/share.ts";
+import type { HttpFetch } from "../src/hosts/host.ts";
 import { shareable } from "../src/hosts/index.ts";
 import { FakeAz, fakeHosts, ok, Repo } from "./helpers.ts";
 

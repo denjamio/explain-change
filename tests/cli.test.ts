@@ -9,7 +9,6 @@ import { draftConfig } from "../src/config/draft.ts";
 import { detectStructure } from "../src/config/infer.ts";
 import { normalizeConfig } from "../src/config/load.ts";
 import { DEFAULT_BUDGET } from "../src/core/constants.ts";
-import { UserError } from "../src/core/errors.ts";
 import { buildDigest, task } from "../src/digest/digest.ts";
 import { draftExplanation } from "../src/explanation/draft.ts";
 import { validateExplanation } from "../src/explanation/validate.ts";
@@ -196,7 +195,8 @@ describe("Azure DevOps", () => {
     const run2 = (url: string, results: (string | null)[], token: string | null) => {
       r.git("remote", "add", "origin", url);
       const calls: (string | null)[] = [];
-      const host = { ...ado(new FakeAz([])), gitAuth: () => token && `Bearer ${token}` };
+      const base = ado(new FakeAz([]));
+      const host = { ...base, git: { ...base.git, auth: () => token && `Bearer ${token}` } };
       const err = fetchRefs(r.path, host, "origin", ["x"], {
         fetch: (_root, _args, auth) => {
           calls.push(auth);

@@ -55,7 +55,7 @@ export function explain(opts: ExplainOptions, hosts: Hosts = createHosts()): num
   if (pr === "" && host) {
     const branch = git(["branch", "--show-current"], root).trim();
     if (!branch) throw new UserError("HEAD is detached: pass the PR id, `explain-change pr <id>`.");
-    pr = host.activePr(root, branch);
+    pr = host.api.activePr(root, branch);
     process.stderr.write(`explain-change: PR ${pr}, the active PR from this branch\n`);
   }
   const work = ensureWorkdir(root);

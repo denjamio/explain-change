@@ -1,5 +1,5 @@
 import { UserError } from "../../core/errors.ts";
-import type { PrMeta } from "../host.ts";
+import type { PrMeta, PrRef } from "../host.ts";
 import { hostnameOf, remotes, remoteUrl, splitUrl } from "../source.ts";
 import { GH_SETUP, type Gh, ghHint } from "./gh.ts";
 
@@ -92,23 +92,24 @@ interface GhPr {
  * `gh pr view`, or only the pasted PR page with a note saying what is missing and how to fix it. A pasted URL
  * names the repository, so gh does not guess it from the remotes.
  */
-export function gitHubMetadata(root: string, prId: string, pasted: string | null, notes: string[], gh: Gh): PrMeta {
+export function gitHubMetadata(root: string, pr: PrRef, notes: string[], gh: Gh): PrMeta {
+  const pasted = pr.webUrl;
   const repo = repoOfWebUrl(pasted);
   const fields = "title,body,headRefName,baseRefName,url,state,mergeable";
-  const r = ghJson(gh, ["pr", "view", prId, "--json", fields, ...(repo ? ["--repo", repo] : [])], root);
+  const r = ghJson(gh, ["pr", "view", pr.id, "--json", fields, ...(repo ? ["--repo", repo] : [])], root);
   if ("problem" in r) {
     notes.push(`${r.problem}: no PR title, description or file links.`);
     return { webUrl: pasted ?? undefined };
   }
-  const pr = (r.value ?? {}) as GhPr;
-  const url = pr.url ?? pasted ?? undefined;
+  const view = (r.value ?? {}) as GhPr;
+  const url = view.url ?? pasted ?? undefined;
   const slug = repoOfWebUrl(url ?? null);
   return {
-    title: pr.title,
-    description: pr.body,
-    sourceBranch: pr.headRefName,
-    targetBranch: pr.baseRefName,
-    status: pr.mergeable === "CONFLICTING" ? "conflicts" : pr.state?.toLowerCase(),
+    title: view.title,
+    description: view.body,
+    sourceBranch: view.headRefName,
+    targetBranch: view.baseRefName,
+    status: view.mergeable === "CONFLICTING" ? "conflicts" : view.state?.toLowerCase(),
     webUrl: url,
     repo: slug ? { name: slug.split("/")[1], urls: [`https://github.com/${slug}`] } : undefined,
   };

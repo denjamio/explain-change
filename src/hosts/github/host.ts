@@ -23,18 +23,24 @@ export function gitHub(deps: { gh: Gh }): PrHost {
     setup: GH_SETUP,
     ownsHostname: isGitHubHostname,
     ownsRemote: (url) => gitHubSlug(url) !== null,
-    prId: gitHubPrId,
-    webUrlFrom: gitHubWebUrl,
-    activePr: (root, branch) => activeGitHubPr(root, branch, deps.gh),
-    metadata: (root, prId, input, notes) => gitHubMetadata(root, prId, gitHubWebUrl(input, prId), notes, deps.gh),
-    remote: gitHubRemote,
-    mergeRef: (prId) => `refs/pull/${prId}/merge`,
-    headRef: (prId) => `refs/pull/${prId}/head`,
-    takesToken: isGitHubHttps,
-    gitAuth: (root) => {
-      const token = ghToken(root, deps.gh);
-      return token && `Basic ${Buffer.from(`x-access-token:${token}`).toString("base64")}`;
+    api: {
+      parse: (input) => {
+        const id = gitHubPrId(input);
+        return { id, webUrl: gitHubWebUrl(input, id) };
+      },
+      activePr: (root, branch) => activeGitHubPr(root, branch, deps.gh),
+      metadata: (root, pr, notes) => gitHubMetadata(root, pr, notes, deps.gh),
+      share: null,
     },
-    share: null,
+    git: {
+      remote: gitHubRemote,
+      mergeRef: (prId) => `refs/pull/${prId}/merge`,
+      headRef: (prId) => `refs/pull/${prId}/head`,
+      takesToken: isGitHubHttps,
+      auth: (root) => {
+        const token = ghToken(root, deps.gh);
+        return token && `Basic ${Buffer.from(`x-access-token:${token}`).toString("base64")}`;
+      },
+    },
   };
 }

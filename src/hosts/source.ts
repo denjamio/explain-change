@@ -86,8 +86,8 @@ export function fetchRefs(
   const args = ["fetch", "--quiet", "--no-tags", remote, ...refspecs];
   let err = deps.fetch(root, args, null);
   const missing = (e: string | null) => Boolean(e?.toLowerCase().includes("couldn't find remote ref"));
-  if (err && !missing(err) && host.takesToken(remoteUrl(root, remote))) {
-    const auth = host.gitAuth(root);
+  if (err && !missing(err) && host.git.takesToken(remoteUrl(root, remote))) {
+    const auth = host.git.auth(root);
     if (auth) err = deps.fetch(root, args, auth);
   }
   if (err && !missing(err)) {
@@ -104,17 +104,18 @@ export function fetchRefs(
  * The PR as a change source. Prefers the host's merge ref (the PR applied to its target); a PR without one
  * (merge conflicts, completed, abandoned) falls back to its own commits against the merge base with its target.
  */
-export function prSource(root: string, host: PrHost, pr: string, notes: string[], deps?: FetchDeps): PrSource {
-  const prId = host.prId(pr);
-  const meta = host.metadata(root, prId, pr, notes);
-  const remote = host.remote(root, meta);
+export function prSource(root: string, host: PrHost, input: string, notes: string[], deps?: FetchDeps): PrSource {
+  const pr = host.api.parse(input);
+  const prId = pr.id;
+  const meta = host.api.metadata(root, pr, notes);
+  const remote = host.git.remote(root, meta);
   const ref = `refs/explain-change/pr-${prId}`;
   const source = meta.sourceBranch ?? "";
   const target = meta.targetBranch ?? "";
   let head: string | null = null;
   let base: string | null = null;
   let headRef = `${ref}/merge`;
-  if (!fetchRefs(root, host, remote, [`+${host.mergeRef(prId)}:${ref}/merge`], deps)) {
+  if (!fetchRefs(root, host, remote, [`+${host.git.mergeRef(prId)}:${ref}/merge`], deps)) {
     const parents = git(["rev-list", "--parents", "-n", "1", `${ref}/merge`], root)
       .split(/\s+/)
       .filter(Boolean);
@@ -122,7 +123,7 @@ export function prSource(root: string, host: PrHost, pr: string, notes: string[]
   }
   if (head === null || base === null) {
     headRef = `${ref}/source`;
-    const own = host.headRef(prId, meta);
+    const own = host.git.headRef(prId, meta);
     if (!own || !target) {
       throw new UserError(
         `PR ${prId} has no merge ref (merge conflicts, completed or abandoned?), and without ${host.name} metadata its branches are unknown (${host.setup}).`,
@@ -150,6 +151,6 @@ export function prSource(root: string, host: PrHost, pr: string, notes: string[]
     branch: source || `pr-${prId}`,
     title: meta.title || `PR ${prId}`,
     description: (meta.description ?? "").slice(0, 4000),
-    url: meta.webUrl ?? host.webUrlFrom(pr, prId),
+    url: meta.webUrl ?? pr.webUrl,
   };
 }

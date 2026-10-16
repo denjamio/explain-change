@@ -141,10 +141,10 @@ describe("GitHub", () => {
   test("`pr` without an id finds the branch's open PR", () => {
     const r = repo();
     const gh = new FakeGh([ok([{ number: 42, baseRefName: "main" }])]);
-    expect(fakeHosts({ gh }).github.activePr(r.path, "feature")).toBe("42");
+    expect(fakeHosts({ gh }).github.api.activePr(r.path, "feature")).toBe("42");
     expect(gh.calls[0]?.slice(0, 4)).toEqual(["pr", "list", "--head", "feature"]);
     throwsUser(
-      () => fakeHosts({ gh: new FakeGh([ok([])]) }).github.activePr(r.path, "feature"),
+      () => fakeHosts({ gh: new FakeGh([ok([])]) }).github.api.activePr(r.path, "feature"),
       "explain-change local",
     );
     throwsUser(
@@ -156,7 +156,7 @@ describe("GitHub", () => {
               { number: 2, baseRefName: "release" },
             ]),
           ]),
-        }).github.activePr(r.path, "feature"),
+        }).github.api.activePr(r.path, "feature"),
       "1 → main, 2 → release",
     );
   });
@@ -164,9 +164,9 @@ describe("GitHub", () => {
   test("git over HTTPS takes gh's token as basic auth", () => {
     const r = repo();
     const host = fakeHosts({ gh: new FakeGh([{ status: 0, stdout: "tok\n", stderr: "" }]) }).github;
-    expect(host.gitAuth(r.path)).toBe(`Basic ${Buffer.from("x-access-token:tok").toString("base64")}`);
-    expect(host.takesToken("https://github.com/org/repo")).toBe(true);
-    expect(host.takesToken(GITHUB)).toBe(false);
+    expect(host.git.auth(r.path)).toBe(`Basic ${Buffer.from("x-access-token:tok").toString("base64")}`);
+    expect(host.git.takesToken("https://github.com/org/repo")).toBe(true);
+    expect(host.git.takesToken(GITHUB)).toBe(false);
   });
 
   test("file links use GitHub's diff anchors", () => {
@@ -181,17 +181,8 @@ describe("GitHub", () => {
     const facts = r.collect();
     expect(shareable(facts, fakeHosts())).toBe(false);
     r.run(["local", "--base", "main", "--no-open"]);
-    const cwd = process.cwd();
-    process.chdir(r.path);
-    try {
-      await share({ force: false, json: false }, fakeHosts()).then(
-        () => {
-          throw new Error("share succeeded");
-        },
-        (e: Error) => expect(e.message).toContain("GitHub cannot take the report"),
-      );
-    } finally {
-      process.chdir(cwd);
-    }
+    await expect(share({ force: false, json: false }, fakeHosts(), r.path)).rejects.toThrow(
+      "GitHub cannot take the report",
+    );
   });
 });

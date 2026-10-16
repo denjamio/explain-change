@@ -1,4 +1,4 @@
-import type { PrHost } from "../host.ts";
+import type { HttpFetch, PrHost } from "../host.ts";
 import { AZ_SETUP, type Az } from "./az.ts";
 import {
   adoMetadata,
@@ -11,7 +11,7 @@ import {
   isAdoRepoUrl,
   toPrMeta,
 } from "./pr.ts";
-import { type HttpFetch, shareReport } from "./share.ts";
+import { shareReport } from "./share.ts";
 
 /** Azure DevOps, through the az CLI and its token. Reports go up as PR attachments. */
 export function azureDevOps(deps: { az: Az; fetch: HttpFetch }): PrHost {
@@ -21,18 +21,24 @@ export function azureDevOps(deps: { az: Az; fetch: HttpFetch }): PrHost {
     setup: AZ_SETUP,
     ownsHostname: (hostname) => /(^|\.)dev\.azure\.com$|\.visualstudio\.com$/i.test(hostname),
     ownsRemote: (url) => isAdoHttps(url.toLowerCase()) || isAdoRepoUrl(url.toLowerCase()),
-    prId: adoPrId,
-    webUrlFrom: adoWebUrl,
-    activePr: (root, branch) => branchPr(root, branch, deps.az),
-    metadata: (root, prId, _input, notes) => toPrMeta(adoMetadata(root, prId, notes, deps.az), prId),
-    remote: adoRemote,
-    mergeRef: (prId) => `refs/pull/${prId}/merge`,
-    headRef: (_prId, meta) => (meta.sourceBranch ? `refs/heads/${meta.sourceBranch}` : null),
-    takesToken: isAdoHttps,
-    gitAuth: (root) => {
-      const token = azToken(root, deps.az);
-      return token && `Bearer ${token}`;
+    api: {
+      parse: (input) => {
+        const id = adoPrId(input);
+        return { id, webUrl: adoWebUrl(input, id) };
+      },
+      activePr: (root, branch) => branchPr(root, branch, deps.az),
+      metadata: (root, pr, notes) => toPrMeta(adoMetadata(root, pr.id, notes, deps.az), pr.id),
+      share: (root, facts, html, force) => shareReport(root, facts, html, deps, force),
     },
-    share: (root, facts, html, force) => shareReport(root, facts, html, deps, force),
+    git: {
+      remote: adoRemote,
+      mergeRef: (prId) => `refs/pull/${prId}/merge`,
+      headRef: (_prId, meta) => (meta.sourceBranch ? `refs/heads/${meta.sourceBranch}` : null),
+      takesToken: isAdoHttps,
+      auth: (root) => {
+        const token = azToken(root, deps.az);
+        return token && `Bearer ${token}`;
+      },
+    },
   };
 }

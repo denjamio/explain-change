@@ -2,7 +2,7 @@ import type { Facts } from "../../contract/facts.ts";
 import { VERSION } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
 import { git } from "../../core/git.ts";
-import type { ShareResult } from "../host.ts";
+import type { HttpFetch, ShareResult } from "../host.ts";
 import { AZ_SETUP, type Az, azHint } from "./az.ts";
 import { azToken, branchPr, type PrMetadata } from "./pr.ts";
 
@@ -13,8 +13,6 @@ import { azToken, branchPr, type PrMetadata } from "./pr.ts";
 
 const API = "api-version=7.1";
 const ATTACHMENTS_API = "api-version=7.1";
-
-export type HttpFetch = (url: string, init: RequestInit) => Promise<Response>;
 
 /** The attachment's name: one per change, so sharing the same change twice is noticed. */
 export const attachmentName = (facts: Facts) => `explain-change-${facts.key}.html`;

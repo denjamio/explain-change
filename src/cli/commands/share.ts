@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { repoRoot } from "../../analysis/collect.ts";
-import { WORK_DIR } from "../../core/constants.ts";
+import { FILES, WORK_DIR } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
 import { loadExplanation } from "../../explanation/store.ts";
 import { createHosts, type Hosts } from "../../hosts/index.ts";
@@ -9,17 +9,21 @@ import { printJson } from "../output.ts";
 import { readFacts } from "../workspace.ts";
 
 /** `share`: attaches the report of the explained change to its PR and comments with the link. */
-export async function share(opts: { force: boolean; json: boolean }, hosts: Hosts = createHosts()): Promise<number> {
-  const root = repoRoot();
+export async function share(
+  opts: { force: boolean; json: boolean },
+  hosts: Hosts = createHosts(),
+  root: string = repoRoot(),
+): Promise<number> {
   const work = join(root, WORK_DIR);
   const facts = readFacts(work);
   const host = facts.source.host ? hosts[facts.source.host] : null;
   if (!host) {
     throw new UserError("This repository has no remote of a PR host explain-change knows: the report stays local.");
   }
-  if (!host.share) {
+  const attach = host.api.share;
+  if (!attach) {
     throw new UserError(
-      `${host.name} cannot take the report as a PR attachment (its API and CLI attach only images and videos): send the HTML file in .explain-change/out/ yourself.`,
+      `${host.name} cannot take the report as a PR attachment (its API and CLI attach only images and videos): send the HTML file in ${WORK_DIR}/${FILES.reports}/ yourself.`,
     );
   }
   const status = loadExplanation(work, facts, root);
@@ -28,7 +32,7 @@ export async function share(opts: { force: boolean; json: boolean }, hosts: Host
       `The explanation is ${status.state}: only a finished report is shared. Run \`explain-change status\` for the next step.`,
     );
   }
-  const result = await host.share(root, facts, renderHtml(facts, status), opts.force);
+  const result = await attach(root, facts, renderHtml(facts, status), opts.force);
   if (opts.json) printJson({ command: "share", ...result });
   else if (result.state === "already-shared") {
     console.log(

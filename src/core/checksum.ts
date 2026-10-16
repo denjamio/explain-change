@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+/* Hashes with node:crypto, for release binaries. The report bundles ./sha256.ts instead, which needs no Node. */
+
 /** The file each release carries next to its binaries, in the format of `sha256sum`: "<hex>  <name>" per line. */
 export const SUMS_FILE = "SHA256SUMS";
 
