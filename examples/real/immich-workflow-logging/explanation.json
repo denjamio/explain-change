@@ -23,24 +23,14 @@
       "code": "server/src/schema/migrations/1783930557118-AddWorkflowLogsTable.ts:1-24"
     },
     {
-      "heading": "A new endpoint reads the log",
-      "body": "GET /workflows/:id/logs returns up to 50 entries, newest first. It filters by result and by date.",
+      "heading": "A new endpoint reads the log, for the owner only",
+      "body": "GET /workflows/:id/logs returns up to 50 entries, newest first, by result and date. The WorkflowLogs permission checks the owner.",
       "view": "flow:view-workflow-logs",
       "focus": [
         "#2",
         "#4"
       ],
       "code": "server/src/services/workflow.service.ts:85-107"
-    },
-    {
-      "heading": "WorkflowLogs permission added",
-      "body": "Only the owner of the workflow reads its log, with the same check as for a delete.",
-      "view": "architecture",
-      "focus": [
-        "identity",
-        "rest-api"
-      ],
-      "code": "server/src/utils/access.ts:324-331"
     },
     {
       "heading": "The web app shows the log in a modal",

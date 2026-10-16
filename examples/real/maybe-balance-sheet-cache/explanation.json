@@ -22,43 +22,32 @@
       "code": "app/models/sync.rb:166-191"
     },
     {
-      "heading": "Cache keys now expire on data updates",
-      "body": "build_cache_key adds latest_sync_completed_at when asked. It replaces a query for the newest entry on each key.",
-      "view": "architecture",
-      "focus": [
-        "family",
-        "insights"
-      ],
-      "code": "app/models/family.rb:94-102"
-    },
-    {
       "heading": "BalanceSheet splits into small objects",
-      "body": "AccountTotals, ClassificationGroup, AccountGroup, NetWorthSeriesBuilder and SyncStatusMonitor replace a single large query and its Structs.",
+      "body": "AccountTotals, AccountGroup, NetWorthSeriesBuilder and SyncStatusMonitor replace a single large query. Sync status is read once per sync activity.",
       "view": "flow:show-balance-sheet",
       "focus": [
         "#1",
-        "#2"
+        "#2",
+        "#3"
       ],
       "code": "app/models/balance_sheet.rb:12-62"
     },
     {
-      "heading": "Sync status is cached until the next sync activity",
-      "body": "SyncStatusMonitor reads the syncing account ids once per latest_sync_activity_at. Idle pages make no sync query.",
-      "view": "flow:show-balance-sheet",
-      "focus": [
-        "#3"
-      ],
-      "code": "app/models/balance_sheet/sync_status_monitor.rb:1-35"
-    },
-    {
-      "heading": "Sparklines use HTTP conditional GET",
-      "body": "The controller sends an ETag and Last-Modified, so the browser gets 304 Not Modified until the next completed sync.",
+      "heading": "Caches expire on the next completed sync",
+      "body": "build_cache_key adds latest_sync_completed_at, in place of a query per key. Sparklines send an ETag, so the browser gets 304 until the next sync.",
       "view": "architecture",
       "focus": [
-        "web-endpoints",
-        "web-ui"
+        "family",
+        "insights",
+        "web-endpoints"
       ],
-      "code": "app/controllers/accountable_sparklines_controller.rb:5-16"
+      "code": "app/models/family.rb:94-102"
+    },
+    {
+      "heading": "The whole change",
+      "body": "Sync writes 2 timestamps on Family. Insights and the sparklines read them to expire their caches.",
+      "view": "architecture",
+      "focus": []
     }
   ],
   "keyDependencies": [

@@ -23,22 +23,13 @@
       "code": "app/services/email_templates/db_resolver_service.rb:76-114"
     },
     {
-      "heading": "Replies render through the branded layout",
-      "body": "ConversationReplyMailer sets the current inbox and uses the base layout for email_reply and reply_without_summary when a layout exists.",
+      "heading": "Replies render the layout with the inbox's data",
+      "body": "ConversationReplyMailer uses the base layout when one exists. InboxDrop gives the template business_name, avatar_url and email.",
       "view": "flow:send-branded-reply",
       "focus": [
         "#1"
       ],
       "code": "app/mailers/conversation_reply_mailer.rb:210-224"
-    },
-    {
-      "heading": "The layout reads the inbox through Liquid",
-      "body": "InboxDrop now gives business_name, avatar_url and email to the template, next to the agent, the contact and the message.",
-      "view": "architecture",
-      "focus": [
-        "email-delivery"
-      ],
-      "code": "app/drops/inbox_drop.rb:5-18"
     },
     {
       "heading": "Admins set layouts through the API",

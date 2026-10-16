@@ -42,17 +42,6 @@
       "code": "src/Core/AdminConsole/Services/Implementations/OrganizationService.cs:637-666"
     },
     {
-      "heading": "Members can now be read by email in bulk",
-      "body": "IOrganizationUserRepository gets GetManyByOrganizationEmailsAsync. Dapper calls a new stored procedure and Entity Framework runs the same query in LINQ.",
-      "view": "architecture",
-      "focus": [
-        "dapper",
-        "entity-framework",
-        "sql-server-schema"
-      ],
-      "code": "src/Core/AdminConsole/Repositories/IOrganizationUserRepository.cs:66-70"
-    },
-    {
       "heading": "The whole change",
       "body": "The API calls a single Admin Console command. Admin Console asks Billing about the Secrets Manager discount, and both adapters implement the new read.",
       "view": "architecture",

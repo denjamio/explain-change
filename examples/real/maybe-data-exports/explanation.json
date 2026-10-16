@@ -13,23 +13,15 @@
       "code": "app/models/family/data_exporter.rb:9-36"
     },
     {
-      "heading": "Settings now starts an export",
-      "body": "The controller creates a FamilyExport and queues FamilyDataExportJob. The request returns at once.",
+      "heading": "Settings starts an export; a job builds the ZIP",
+      "body": "The controller creates a FamilyExport and queues FamilyDataExportJob. The job sets processing, then completed, or failed on an error.",
       "view": "flow:export-data",
       "focus": [
         "#1",
-        "#2"
-      ],
-      "code": "app/controllers/family_exports_controller.rb:11-21"
-    },
-    {
-      "heading": "The job builds and attaches the ZIP",
-      "body": "Status moves to processing, then completed. On an error the job sets failed.",
-      "view": "flow:export-data",
-      "focus": [
+        "#2",
         "#3"
       ],
-      "code": "app/jobs/family_data_export_job.rb:4-21"
+      "code": "app/controllers/family_exports_controller.rb:11-21"
     },
     {
       "heading": "FamilyExport added",
@@ -42,23 +34,20 @@
       "code": "db/migrate/20250724115507_create_family_exports.rb:1-10"
     },
     {
-      "heading": "Download goes through the controller",
-      "body": "download sends the stored file only when the export is completed and attached.",
-      "view": "flow:download-export",
-      "focus": [
-        "#1"
-      ],
-      "code": "app/controllers/family_exports_controller.rb:28-34"
-    },
-    {
-      "heading": "Settings lists the last 10 exports",
-      "body": "A Turbo frame shows the list. It refreshes every 3 seconds while an export runs.",
+      "heading": "Settings lists the last 10 exports to download",
+      "body": "A Turbo frame refreshes the list every 3 seconds while an export runs. download sends the file only when the export is completed.",
       "view": "architecture",
       "focus": [
         "web-ui",
         "web-endpoints"
       ],
       "code": "app/views/family_exports/_list.html.erb:1-5"
+    },
+    {
+      "heading": "The whole change",
+      "body": "Web endpoints start the export, Background jobs call Family::DataExporter, and a FamilyExport record holds the status and the file.",
+      "view": "architecture",
+      "focus": []
     }
   ],
   "keyDependencies": [

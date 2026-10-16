@@ -30,26 +30,20 @@
       "code": "db/migrate/20261001100000_create_refunds.rb:3-8"
     },
     {
-      "heading": "The gateway receives the idempotency key",
-      "body": "Gateway.refund passes Idempotency-Key on to the payment gateway.",
+      "heading": "The gateway gets the key; the customer an email",
+      "body": "Gateway.refund passes Idempotency-Key on to the payment gateway. The email goes out with deliver_later, so an SMTP outage does not fail the refund.",
       "view": "flow:create-refund",
       "focus": [
-        "#4"
+        "#4",
+        "#5"
       ],
       "code": "app/clients/payments/gateway.rb:8-10"
     },
     {
-      "heading": "The customer gets an email at the end",
-      "body": "deliver_later: if SMTP is down, the refund does not fail.",
-      "view": "flow:create-refund",
-      "focus": [
-        "#5"
-      ]
-    },
-    {
-      "heading": "5 components, 0 violations",
-      "body": "Every new dependency goes web → application → domain/infra.",
-      "view": "architecture"
+      "heading": "The whole change",
+      "body": "5 components change. Every new dependency goes web → application → domain or infrastructure, so no rule breaks.",
+      "view": "architecture",
+      "focus": []
     }
   ],
   "keyDependencies": [

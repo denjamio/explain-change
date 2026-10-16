@@ -33,23 +33,15 @@
       "code": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1-35"
     },
     {
-      "heading": "SQL Server runs Folder_DeleteByIds",
-      "body": "Dapper calls a stored procedure in a transaction. It clears the folder of each item with JSON_MODIFY, then deletes the folders.",
+      "heading": "Both adapters clear the items, then delete the folders",
+      "body": "Dapper calls Folder_DeleteByIds, which clears each item with JSON_MODIFY in a transaction. Entity Framework does the same in LINQ.",
       "view": "architecture",
       "focus": [
         "dapper",
+        "entity-framework",
         "sql-server-schema"
       ],
       "code": "src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql:1-94"
-    },
-    {
-      "heading": "Entity Framework does the same in LINQ",
-      "body": "It removes the folder from each filed item, deletes the folders and bumps the account revision date. DeleteAsync now calls it too.",
-      "view": "architecture",
-      "focus": [
-        "entity-framework"
-      ],
-      "code": "src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:45-117"
     },
     {
       "heading": "The whole change",

@@ -12,8 +12,8 @@
       "code": "saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"
     },
     {
-      "heading": "Async triggers now split the webhooks of an event",
-      "body": "For a deferrable event, DEFERRED webhooks go to the background task. IMMEDIATE webhooks get their payload built at once.",
+      "heading": "Async triggers split the webhooks of an event",
+      "body": "DEFERRED webhooks go to the background task. IMMEDIATE ones get their payload at once, and only they slow the request down.",
       "view": "flow:trigger-async-webhooks",
       "focus": [
         "#1",
@@ -22,32 +22,14 @@
       "code": "saleor/webhook/transport/asynchronous/transport.py:422-461"
     },
     {
-      "heading": "Only the IMMEDIATE webhook pays the cost",
-      "body": "The other webhooks of the same event stay deferred. The request or task that fires the event slows down only for IMMEDIATE ones.",
-      "view": "architecture",
-      "focus": [
-        "webhooks"
-      ],
-      "code": "saleor/webhook/transport/asynchronous/transport.py:301-327"
-    },
-    {
-      "heading": "Apps set it in the manifest or the API",
-      "body": "The manifest accepts DEFERRED or IMMEDIATE and stores deferred when the value is missing. webhookCreate and webhookUpdate take the same enum.",
+      "heading": "Apps set it; webhookTrigger respects it",
+      "body": "The manifest, webhookCreate and webhookUpdate take DEFERRED or IMMEDIATE. A manual trigger defers only for a DEFERRED webhook.",
       "view": "flow:register-webhook",
       "focus": [
         "#1",
         "#2"
       ],
       "code": "saleor/app/manifest_validations.py:293-323"
-    },
-    {
-      "heading": "webhookTrigger respects the setting",
-      "body": "A manual trigger defers the payload only when the event defers and the webhook is DEFERRED.",
-      "view": "architecture",
-      "focus": [
-        "graphql-api"
-      ],
-      "code": "saleor/graphql/webhook/mutations/webhook_trigger.py:168-179"
     },
     {
       "heading": "ADR 0011 records the trade-off",

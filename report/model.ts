@@ -1,7 +1,7 @@
 /** The report's data (embedded in the page) and the lookups every section shares. */
 
 import type { NormalizedExplanation } from "../src/contract/explanation.ts";
-import type { ComponentFacts, Delta, FileFacts, Requirement } from "../src/contract/facts.ts";
+import type { ComponentFacts, Delta, DependencyFacts, FileFacts, Requirement } from "../src/contract/facts.ts";
 import { prFileUrl as fileUrlOnPr } from "../src/hosts/links.ts";
 import type { ReportData } from "../src/report/data.ts";
 import { cap } from "./dom.ts";
@@ -101,3 +101,9 @@ export const rsLabel = (v: ReqStatus) => (v === "pending" ? T.notMapped : v === 
 export function prFileUrl(path: string): string | null {
   return src.kind === "pr" && src.url && src.host ? fileUrlOnPr(src.host, src.url, path) : null;
 }
+
+export const DM = ex?.dataModel.entities.length ? ex.dataModel : null;
+export const entById: Record<string, Entity> = {};
+if (DM) for (const e of DM.entities) entById[e.id] = e;
+
+export const isNewViolation = (e: DependencyFacts) => Boolean(e.violation && !e.violation.preexisting);

@@ -22,22 +22,13 @@
       "code": "db/migrate/20260718000000_add_phone_number_health_to_channel_whatsapp.rb:1-8"
     },
     {
-      "heading": "HealthService reads 2 Graph API resources",
-      "body": "It reads the phone number and its business account, and uses Graph API version 24 or later for the health fields.",
+      "heading": "HealthService reads Graph API, keeps the newest check",
+      "body": "It reads the phone number and its business account. update_all writes the result only when no later check exists.",
       "view": "flow:sync-number-health",
       "focus": [
         "#3"
       ],
       "code": "app/services/whatsapp/health_service.rb:51-68"
-    },
-    {
-      "heading": "Only the newest check is written",
-      "body": "update_all writes the result only when no later check exists. A risky quality rating or status goes to the log once per change.",
-      "view": "architecture",
-      "focus": [
-        "whatsapp"
-      ],
-      "code": "app/services/whatsapp/health_service.rb:175-224"
     },
     {
       "heading": "Account Health page shows the new details",
