@@ -127,10 +127,10 @@ desc = "Owns workflows and plugins: user automations that run actions when an ev
 
 [[components]]
 id = "identity"
-name = "Identity"
+name = "Identity and access"
 layer = "core"
-paths = ["server/src/services/auth*", "server/src/services/user*", "server/src/services/api-key*", "server/src/services/session*"]
-desc = "Owns users, sessions, API keys and login (password and OAuth)."
+paths = ["server/src/services/auth*", "server/src/services/user*", "server/src/services/api-key*", "server/src/services/session*", "server/src/utils/access*"]
+desc = "Owns users, sessions, API keys and login, and decides which user may read or change which resource."
 
 [[components]]
 id = "media-processing"
@@ -146,13 +146,6 @@ layer = "core"
 paths = ["server/src/services/**", "server/src/commands/**", "server/src/maintenance/**"]
 desc = "Owns server config, notifications, backups, maintenance, version checks and the mobile sync stream."
 
-[[components]]
-id = "access"
-name = "Access control"
-layer = "core"
-paths = ["server/src/utils/access.ts"]
-desc = "Decides which user may read or change which resource; every service checks it first."
-
 # ── Adapters: the outside systems, as the architecture doc draws them ────────────────────────────────────────
 
 [[components]]
@@ -161,13 +154,6 @@ name = "Database"
 layer = "adapters"
 paths = ["server/src/repositories/**", "server/src/schema/**", "server/src/queries/**", "server/src/utils/database.ts"]
 desc = "Owns the Postgres schema, its migrations and the Kysely repositories that read and write it."
-
-[[components]]
-id = "jobs-events"
-name = "Jobs and events"
-layer = "adapters"
-paths = ["server/src/repositories/job.repository.ts", "server/src/repositories/event.repository.ts", "server/src/repositories/websocket.repository.ts", "server/src/repositories/cron.repository.ts"]
-desc = "Owns the Redis job queues (BullMQ), scheduled jobs, server events and websocket pushes to clients."
 
 [[components]]
 id = "machine-learning"
@@ -180,15 +166,15 @@ desc = "Owns the Python ML service (CLIP, faces, OCR) and the server's client fo
 id = "files-media-tools"
 name = "Files and media tools"
 layer = "adapters"
-paths = ["server/src/repositories/storage.repository.ts", "server/src/repositories/media.repository.ts", "server/src/repositories/metadata.repository.ts", "server/src/repositories/process.repository.ts", "server/src/repositories/video-stream.repository.ts"]
+paths = ["server/src/repositories/storage*", "server/src/repositories/media*", "server/src/repositories/metadata*", "server/src/repositories/process*", "server/src/repositories/video-stream*"]
 desc = "Owns the file system and the media tools: ffmpeg, sharp and exiftool."
 
 [[components]]
 id = "platform"
 name = "Platform"
 layer = "adapters"
-paths = ["server/src/repositories/config.repository.ts", "server/src/repositories/logging.repository.ts", "server/src/repositories/crypto.repository.ts", "server/src/repositories/email.repository.ts", "server/src/repositories/oauth.repository.ts", "server/src/repositories/server-info.repository.ts", "server/src/repositories/telemetry.repository.ts", "server/src/emails/**"]
-desc = "Owns configuration, logging, telemetry, crypto, e-mail delivery and the OAuth provider client."
+paths = ["server/src/repositories/config*", "server/src/repositories/logging*", "server/src/repositories/crypto*", "server/src/repositories/email*", "server/src/repositories/oauth*", "server/src/repositories/server-info*", "server/src/repositories/telemetry*", "server/src/repositories/job*", "server/src/repositories/event*", "server/src/repositories/websocket*", "server/src/repositories/cron*", "server/src/emails/**"]
+desc = "Owns configuration, logging, telemetry, crypto, e-mail, the OAuth client, and the Redis job queues, scheduled jobs and websocket pushes."
 
 # ── Shared ───────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -213,7 +199,7 @@ steps = [
   "web -> rest-api : POST /assets",
   "rest-api -> assets : AssetMediaService.uploadAsset",
   "assets -> database : assetRepository.create",
-  "assets -> jobs-events : queue metadata extraction",
+  "assets -> platform : queue metadata extraction",
 ]
 
 [[flows]]
@@ -222,7 +208,7 @@ title = "Recognize faces"
 steps = [
   "media-processing -> machine-learning : detectFaces",
   "people -> database : personRepository.createAssetFaces",
-  "people -> jobs-events : queue facial recognition",
+  "people -> platform : queue facial recognition",
 ]
 
 [glossary]

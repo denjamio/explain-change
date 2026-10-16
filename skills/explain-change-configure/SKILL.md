@@ -51,7 +51,8 @@ Identify the style the code actually follows, and draw its lanes with its own wo
 
 ## 3. Components: bounded contexts and capabilities, in domain language
 
-A component is a unit of ownership a reviewer names in one word of the domain. Aim for 8–20.
+A component is a unit of ownership a reviewer names in one word of the domain. Aim for 8–20. The map draws only
+what a change touches, so a quiet box costs nothing on the page; what a box costs is keeping its paths right.
 
 - **Domain first.** Each bounded context or business capability is a component: Orders, Billing, Refunds,
   Catalog, Identity. Split a context across lanes only where the code separates it, and then name the parts with a
@@ -69,7 +70,14 @@ A component is a unit of ownership a reviewer names in one word of the domain. A
   **Shared kernel**, keep it to value objects and ids, and say so in `desc`.
 - **Granularity.** Split when two parts have different aggregates, lifecycles or owners; merge when they always
   change together (step 6 measures it). A component with 0 files is wrong; one with far more files than the rest
-  usually hides several contexts.
+  usually hides several contexts. Apply the same rules to every box:
+  - A context or a team the code names keeps its box, however quiet (Bitwarden's teams in CODEOWNERS, Saleor's
+    Django apps, an enterprise edition).
+  - A part that rarely changes (`check` lists them) and belongs to a context merges into it: campaigns into the
+    inboxes they send from, a permission helper into identity. Never merge 2 unrelated contexts to save a box.
+  - Framework configuration (`config/`, Rails initializers, settings) belongs to **Platform**; a composition root
+    written as code (`app.module.ts`, a SharedWeb project) keeps its box in the entry lane.
+  - Past 20 boxes, every box must be a context or a team the code names.
 - **Fields.**
   - `id`: kebab-case of the name (`orders-api`), stable: rules, flows and explanations reference it.
   - `name`: the domain noun, ≤ 20 characters, in the team's language (`project.lang`), singular or plural as the
@@ -78,6 +86,10 @@ A component is a unit of ownership a reviewer names in one word of the domain. A
     order's total and what can still be refunded.*
   - `paths` decide ownership; `constants` (Ruby), `imports` (Python, TypeScript) and `namespaces` (C#) only for code
     owned outside them. A component may share its id with a layer only when it lives in that layer.
+  - Write `paths` as folders (`app/services/conversations/**`) and name globs: `app/models/conversation**` owns
+    `conversation.rb`, `conversation_*.rb` and `conversation/`. They keep up with new files; a single file does not,
+    and a new file next to it silently falls to another component, usually the shared kernel. List a single file
+    only when no name groups it (Rails delegated types such as `loan.rb`, `vehicle.rb`).
 
 ## 4. Rules: the dependency rule as an architecture decision
 
@@ -122,6 +134,8 @@ explain-change check      # --history N reads more commits for "change together"
   interface, an event). Merge them, or keep them and name the cycle in `direction` as debt.
 - **Components that change together** (share of commits): above ~70% between two domain components, they are one
   context for the team; merge them. Between a context's parts across lanes (Orders API + Orders) it is expected.
+- **Components that rarely change**: a context or a team keeps its box; a part of a context merges into it (step 3).
+- **Components that list single files**: replace them with folders and name globs where a name groups them.
 - **Unmapped folders**: give them an owner or add them to `[ignore]`. Never ignore migrations or architecture
   decision records: they are the evidence for the data model and the decisions. `check` warns when `[ignore]` hides
   them.

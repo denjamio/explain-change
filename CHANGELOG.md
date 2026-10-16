@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `check` shows how many commits change each component, lists the components that rarely change (1% of the history
+  or less) and the ones that list single files. The configure skill turns them into 1 set of rules: a context or a
+  team the code names keeps its box however quiet, a quiet part of a context merges into it, framework
+  configuration belongs to Platform, and paths are folders and name globs (`app/models/conversation**`), so a new
+  file finds its owner instead of falling to the shared kernel.
+
 ### Changed
 - The draft's story opens where the behavior is decided, the same way for every change: components rank by lane
   first (the inner lanes, then the entry lane, then the bottom one), then by weight. A migration is weight: a new
@@ -15,6 +22,11 @@ All notable changes to this project are documented here. The format follows
   the web lane, is now Captain, its API, the Voice channel and the overlays, each in its lane; Bitwarden's licensed
   PAM service had no owner (155 files) and Dapper's calls to the stored procedures broke no agreed rule; Saleor's
   account API has its box, and its development seed data is ignored, as Chatwoot's and Bitwarden's already were.
+- Examples follow the configure skill's rules: Chatwoot goes from 26 boxes to 22 (campaigns into Inboxes, agent
+  notifications into Accounts, event listeners with the jobs, initializers into Platform) and Immich from 23 to 21
+  (access control into Identity, the job queues into Platform). Chatwoot, Immich and Maybe list folders and name
+  globs instead of single files; 9 files that had fallen to the shared kernel or the enterprise overlay found
+  their owner.
 
 ### Fixed
 - `check` no longer warns that `[ignore]` hides migrations when they are generated files (Entity Framework's

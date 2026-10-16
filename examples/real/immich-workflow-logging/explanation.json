@@ -37,7 +37,7 @@
       "body": "Only the owner of the workflow reads its log, with the same check as for a delete.",
       "view": "architecture",
       "focus": [
-        "access",
+        "identity",
         "rest-api"
       ],
       "code": "server/src/utils/access.ts:324-331"
@@ -81,7 +81,7 @@
       "summary": "Each run gets a runId and, when logging is on, stores its result and the step where it stopped."
     },
     {
-      "id": "access",
+      "id": "identity",
       "summary": "WorkflowLogs is checked like WorkflowDelete: only the owner of the workflow passes."
     },
     {
@@ -165,7 +165,7 @@
         },
         {
           "from": "workflows",
-          "to": "access",
+          "to": "identity",
           "call": "requireAccess(WorkflowLogs)",
           "delta": "added"
         },

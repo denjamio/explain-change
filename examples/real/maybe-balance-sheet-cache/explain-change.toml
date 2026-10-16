@@ -58,63 +58,63 @@ desc = "Owns the routes and the thin controllers of the app, its settings and it
 id = "family"
 name = "Family"
 layer = "domain"
-paths = ["app/models/family.rb", "app/models/family/**", "app/models/user.rb", "app/models/session.rb", "app/models/invitation.rb", "app/models/invite_code.rb", "app/models/impersonation_session*.rb", "app/models/subscription.rb", "app/models/address.rb", "app/models/family_export.rb"]
-desc = "Owns Family, its users, sessions, invitations, subscription and data exports; the currency and preferences of a household."
+paths = ["app/models/family**", "app/models/user.rb", "app/models/session.rb", "app/models/invit**", "app/models/impersonation_session**", "app/models/subscription**", "app/models/address**", "app/models/api_key**", "app/models/mobile_device**"]
+desc = "Owns Family, its users, sessions, devices, API keys, invitations, subscription and data exports; the currency and preferences of a household."
 
 [[components]]
 id = "accounts"
 name = "Accounts"
 layer = "domain"
-paths = ["app/models/account.rb", "app/models/account/**", "app/models/balance.rb", "app/models/balance/**", "app/models/valuation.rb", "app/models/depository.rb", "app/models/credit_card.rb", "app/models/loan.rb", "app/models/property.rb", "app/models/vehicle.rb", "app/models/crypto.rb", "app/models/other_asset.rb", "app/models/other_liability.rb", "app/models/investment.rb", "app/data_migrations/balance_*.rb"]
+paths = ["app/models/account.rb", "app/models/account/**", "app/models/balance**", "app/models/valuation**", "app/models/depository.rb", "app/models/credit_card.rb", "app/models/loan.rb", "app/models/property.rb", "app/models/vehicle.rb", "app/models/crypto.rb", "app/models/other_asset.rb", "app/models/other_liability.rb", "app/models/investment.rb", "app/data_migrations/balance_*"]
 desc = "Owns Account and its types (depository, investment, loan…), balances and valuations; what a family has and owes."
 
 [[components]]
 id = "transactions"
 name = "Transactions"
 layer = "domain"
-paths = ["app/models/entry.rb", "app/models/entry_search.rb", "app/models/entryable.rb", "app/models/transaction.rb", "app/models/transaction/**", "app/models/transfer.rb", "app/models/rejected_transfer.rb", "app/models/category.rb", "app/models/merchant.rb", "app/models/family_merchant.rb", "app/models/provider_merchant.rb", "app/models/tag.rb", "app/models/tagging.rb"]
+paths = ["app/models/entr**", "app/models/transaction.rb", "app/models/transaction/**", "app/models/transfer**", "app/models/rejected_transfer**", "app/models/category**", "app/models/merchant**", "app/models/family_merchant**", "app/models/provider_merchant**", "app/models/tag**"]
 desc = "Owns entries, transactions, transfers, categories, merchants and tags; the money that moves."
 
 [[components]]
 id = "investments"
 name = "Investments"
 layer = "domain"
-paths = ["app/models/holding.rb", "app/models/holding/**", "app/models/security.rb", "app/models/security/**", "app/models/trade.rb", "app/models/trade_builder.rb"]
+paths = ["app/models/holding**", "app/models/security**", "app/models/trade.rb", "app/models/trade/**", "app/models/trade_builder**"]
 desc = "Owns holdings, securities and trades; what an investment account holds and its value over time."
 
 [[components]]
 id = "insights"
 name = "Insights"
 layer = "domain"
-paths = ["app/models/balance_sheet.rb", "app/models/balance_sheet/**", "app/models/income_statement.rb", "app/models/income_statement/**", "app/models/budget.rb", "app/models/budget_category.rb", "app/models/period.rb", "app/models/series.rb", "app/models/trend.rb", "app/models/measurement.rb"]
+paths = ["app/models/balance_sheet**", "app/models/income_statement**", "app/models/budget**", "app/models/period**", "app/models/series**", "app/models/trend**", "app/models/measurement**"]
 desc = "Owns the balance sheet, the income statement and budgets; the net worth, cash flow and spending a family sees."
 
 [[components]]
 id = "imports"
 name = "Imports"
 layer = "domain"
-paths = ["app/models/import.rb", "app/models/import/**", "app/models/*_import.rb"]
+paths = ["app/models/import**", "app/models/*_import.rb"]
 desc = "Owns CSV imports of accounts, transactions and trades: mapping, preview and publish."
 
 [[components]]
 id = "rules"
 name = "Rules"
 layer = "domain"
-paths = ["app/models/rule.rb", "app/models/rule/**", "app/models/data_enrichment.rb"]
+paths = ["app/models/rule**", "app/models/data_enrichment**"]
 desc = "Owns rules: conditions and actions that categorize and enrich transactions."
 
 [[components]]
 id = "assistant"
 name = "Assistant"
 layer = "domain"
-paths = ["app/models/assistant.rb", "app/models/assistant/**", "app/models/chat.rb", "app/models/chat/**", "app/models/message.rb", "app/models/*_message.rb", "app/models/tool_call.rb", "app/models/tool_call/**"]
+paths = ["app/models/assistant**", "app/models/chat**", "app/models/message.rb", "app/models/*_message.rb", "app/models/tool_call**"]
 desc = "Owns the AI assistant: chats, messages and the functions it calls on the family's data."
 
 [[components]]
 id = "sync"
 name = "Sync"
 layer = "domain"
-paths = ["app/models/sync.rb", "app/models/concerns/syncable.rb", "app/models/exchange_rate.rb", "app/models/exchange_rate/**", "app/models/market_data_importer.rb"]
+paths = ["app/models/sync**", "app/models/concerns/syncable**", "app/models/exchange_rate**", "app/models/market_data_importer**"]
 desc = "Owns syncs: the runs that refresh accounts, connections and market data, and their status."
 
 [[components]]
