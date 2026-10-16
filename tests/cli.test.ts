@@ -337,6 +337,26 @@ describe("determinism", () => {
     expect(keys[0]).toBe(keys[1] as string);
   });
 
+  test("a reference flow is pre-filled only when the change reaches its calls", () => {
+    // refund comes first: sharing the components alone would pre-fill it
+    const flows =
+      '[[flows]]\nid = "refund"\ntitle = "Refund an order"\nsteps = ["controllers -> models : Refund.create"]\n' +
+      '[[flows]]\nid = "place"\ntitle = "Place an order"\nsteps = ["controllers -> models : Order.place"]\n';
+    const r = repo(
+      '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n' +
+        '[[components]]\nid = "controllers"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
+        flows,
+    );
+    r.write({
+      "app/models/order.rb": "class Order\n  def place\n    save!\n  end\nend\n",
+      "app/controllers/orders_controller.rb": "class OrdersController\n  def create\n    Order.new.place\n  end\nend\n",
+    });
+    r.commit("place");
+    const ids = (draftExplanation(r.collect()).flows as { id: string }[]).map((f) => f.id);
+    expect(ids).toContain("place"); // the change edits Order and its place method
+    expect(ids).not.toContain("refund"); // it shares the components, not the calls
+  });
+
   test("the same change gets the same outline and draft", () => {
     const r = repo(
       '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n' +

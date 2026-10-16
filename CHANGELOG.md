@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- The draft pre-fills a reference flow from the config only when the change reaches its calls: every name of 1 of
+  its steps is on a changed line or names the function a hunk is in. Before, sharing 1 component was enough, and 36
+  of 40 surveyed pull requests got an unrelated flow.
+
 ## [0.3.1] - 2026-10-16
 
 ### Changed
