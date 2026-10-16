@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/bitwarden/server.git",
+  "commit": "c30db9c7efc892796a72984d8e058b8801b0dd92",
+  "report": "real-bitwarden-dotnet-invite-staged-users.html",
+  "project": "Bitwarden",
+  "title": "Invite staged users (#8283)",
+  "stack": "C# / .NET",
+  "shows": "A bulk command with per-member results, seat reservation with rollback, and a new read on both repository adapters."
+}

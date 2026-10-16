@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/immich-app/immich.git",
+  "commit": "447cc40a509e22fa34fed76d14552cd48be128e5",
+  "report": "real-immich-ts-workflow-logging.html",
+  "project": "Immich",
+  "title": "Workflow logging (#29878)",
+  "stack": "TypeScript",
+  "shows": "A run log through every layer: SvelteKit modal, generated SDK, NestJS endpoint, service, Kysely repository and a new table."
+}

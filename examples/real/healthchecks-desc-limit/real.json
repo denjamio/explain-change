@@ -1,9 +1,0 @@
-{
-  "repository": "https://github.com/healthchecks/healthchecks.git",
-  "commit": "a37fcf82131a26653d75edc18c2c0cedffc880c9",
-  "report": "real-healthchecks-django-desc-limit.html",
-  "project": "healthchecks",
-  "title": "Description length limit",
-  "stack": "Django",
-  "shows": "A small validation change across the API, the dashboard and a template, configured with the configure skill."
-}

@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/chatwoot/chatwoot.git",
+  "commit": "d644c207f021cac7e692bac8a1c32492af350846",
+  "report": "real-chatwoot-rails-whatsapp-number-health.html",
+  "project": "Chatwoot",
+  "title": "WhatsApp number health (#15100)",
+  "stack": "Ruby on Rails",
+  "shows": "A scheduled sync through the WhatsApp channel adapter: an hourly scheduler, 1 job per channel, guarded writes and new channel columns."
+}

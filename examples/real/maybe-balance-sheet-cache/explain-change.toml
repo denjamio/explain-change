@@ -1,0 +1,195 @@
+# Maybe: personal finance for families.
+# A Rails app with skinny controllers and fat models (.cursor/rules/project-conventions.mdc): business logic lives
+# in app/models as models, concerns and POROs, not service objects. Family is the root; Account is the center,
+# a delegated type. External data comes through Provider::Registry: "concepts" (exchange rates, securities, LLM)
+# implemented by Synth, OpenAI, Plaid and Stripe.
+
+[project]
+name = "Maybe"
+direction = "Skinny controllers, fat models: each context keeps its rules in app/models (models, concerns, POROs). Slow work runs in jobs. External data comes only through Provider::Registry and its concepts, never from a provider class directly."
+lang = "en"
+
+[[layers]]
+id = "web"
+name = "Web"
+
+[[layers]]
+id = "async"
+name = "Jobs"
+
+[[layers]]
+id = "domain"
+name = "Domain"
+
+[[layers]]
+id = "providers"
+name = "Providers"
+
+[[layers]]
+id = "platform"
+name = "Platform"
+
+[rules]
+# The domain never renders or routes; providers return data and never reach into the web layer.
+# Providers may queue jobs: a Plaid item schedules its own sync.
+allow = ["web -> domain", "web -> async", "web -> platform", "domain -> async", "domain -> providers", "domain -> platform", "async -> domain", "async -> providers", "async -> platform", "providers -> domain", "providers -> async", "providers -> platform"]
+forbid = ["domain -> web", "providers -> web"]
+same_layer = true
+
+# ── Web ──────────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "web-ui"
+name = "Web UI"
+layer = "web"
+paths = ["app/views/**", "app/components/**", "app/helpers/**", "app/javascript/**", "app/assets/**", "app/mailers/**", "app/channels/**"]
+desc = "Owns the Hotwire UI: views, view components, Stimulus controllers, the design system and e-mails."
+
+[[components]]
+id = "web-endpoints"
+name = "Web endpoints"
+layer = "web"
+paths = ["app/controllers/**", "config/routes.rb"]
+desc = "Owns the routes and the thin controllers of the app, its settings and its public API."
+
+# ── Domain: each context in app/models ───────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "family"
+name = "Family"
+layer = "domain"
+paths = ["app/models/family.rb", "app/models/family/**", "app/models/user.rb", "app/models/session.rb", "app/models/invitation.rb", "app/models/invite_code.rb", "app/models/impersonation_session*.rb", "app/models/subscription.rb", "app/models/address.rb", "app/models/family_export.rb"]
+desc = "Owns Family, its users, sessions, invitations, subscription and data exports; the currency and preferences of a household."
+
+[[components]]
+id = "accounts"
+name = "Accounts"
+layer = "domain"
+paths = ["app/models/account.rb", "app/models/account/**", "app/models/balance.rb", "app/models/balance/**", "app/models/valuation.rb", "app/models/depository.rb", "app/models/credit_card.rb", "app/models/loan.rb", "app/models/property.rb", "app/models/vehicle.rb", "app/models/crypto.rb", "app/models/other_asset.rb", "app/models/other_liability.rb", "app/models/investment.rb"]
+desc = "Owns Account and its types (depository, investment, loan…), balances and valuations; what a family has and owes."
+
+[[components]]
+id = "transactions"
+name = "Transactions"
+layer = "domain"
+paths = ["app/models/entry.rb", "app/models/entry_search.rb", "app/models/entryable.rb", "app/models/transaction.rb", "app/models/transaction/**", "app/models/transfer.rb", "app/models/rejected_transfer.rb", "app/models/category.rb", "app/models/merchant.rb", "app/models/family_merchant.rb", "app/models/provider_merchant.rb", "app/models/tag.rb", "app/models/tagging.rb"]
+desc = "Owns entries, transactions, transfers, categories, merchants and tags; the money that moves."
+
+[[components]]
+id = "investments"
+name = "Investments"
+layer = "domain"
+paths = ["app/models/holding.rb", "app/models/holding/**", "app/models/security.rb", "app/models/security/**", "app/models/trade.rb", "app/models/trade_builder.rb"]
+desc = "Owns holdings, securities and trades; what an investment account holds and its value over time."
+
+[[components]]
+id = "insights"
+name = "Insights"
+layer = "domain"
+paths = ["app/models/balance_sheet.rb", "app/models/balance_sheet/**", "app/models/income_statement.rb", "app/models/income_statement/**", "app/models/budget.rb", "app/models/budget_category.rb", "app/models/period.rb", "app/models/series.rb", "app/models/trend.rb", "app/models/measurement.rb"]
+desc = "Owns the balance sheet, the income statement and budgets; the net worth, cash flow and spending a family sees."
+
+[[components]]
+id = "imports"
+name = "Imports"
+layer = "domain"
+paths = ["app/models/import.rb", "app/models/import/**", "app/models/*_import.rb"]
+desc = "Owns CSV imports of accounts, transactions and trades: mapping, preview and publish."
+
+[[components]]
+id = "rules"
+name = "Rules"
+layer = "domain"
+paths = ["app/models/rule.rb", "app/models/rule/**", "app/models/data_enrichment.rb"]
+desc = "Owns rules: conditions and actions that categorize and enrich transactions."
+
+[[components]]
+id = "assistant"
+name = "Assistant"
+layer = "domain"
+paths = ["app/models/assistant.rb", "app/models/assistant/**", "app/models/chat.rb", "app/models/chat/**", "app/models/message.rb", "app/models/*_message.rb", "app/models/tool_call.rb", "app/models/tool_call/**"]
+desc = "Owns the AI assistant: chats, messages and the functions it calls on the family's data."
+
+[[components]]
+id = "sync"
+name = "Sync"
+layer = "domain"
+paths = ["app/models/sync.rb", "app/models/concerns/syncable.rb", "app/models/exchange_rate.rb", "app/models/exchange_rate/**", "app/models/market_data_importer.rb"]
+desc = "Owns syncs: the runs that refresh accounts, connections and market data, and their status."
+
+[[components]]
+id = "shared-kernel"
+name = "Shared kernel"
+layer = "domain"
+paths = ["app/models/**"]
+desc = "Owns ApplicationRecord, Current, settings and the shared model concerns; no business rules."
+
+# ── Jobs ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "background-jobs"
+name = "Background jobs"
+layer = "async"
+paths = ["app/jobs/**"]
+desc = "Owns the Sidekiq jobs: syncs, imports, market data, rules, the assistant's replies and Stripe events."
+
+# ── Providers: external data behind Provider::Registry ───────────────────────────────────────────────────
+
+[[components]]
+id = "plaid"
+name = "Plaid"
+layer = "providers"
+paths = ["app/models/plaid_item.rb", "app/models/plaid_item/**", "app/models/plaid_account.rb", "app/models/plaid_account/**", "app/models/plaid_entry/**", "app/models/provider/plaid*.rb"]
+desc = "Owns bank connections through Plaid: items, linked accounts and the import of their transactions and holdings."
+
+[[components]]
+id = "providers"
+name = "Data and AI providers"
+layer = "providers"
+paths = ["app/models/provider.rb", "app/models/provider/**"]
+desc = "Owns Provider::Registry, its concepts (exchange rates, securities, LLM) and the Synth, OpenAI, Stripe and GitHub clients."
+
+# ── Platform ─────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "platform"
+name = "Platform"
+layer = "platform"
+paths = ["config/**", "lib/**", "db/**"]
+desc = "Owns configuration, the database schema and migrations, and lib/."
+
+[[flows]]
+id = "sync-account"
+title = "Sync an account"
+steps = [
+  "web-endpoints -> sync : account.sync_later",
+  "background-jobs -> sync : Sync#perform",
+  "sync -> accounts : Account::Syncer",
+  "accounts -> insights : family.broadcast_refresh",
+]
+
+[[flows]]
+id = "import-market-data"
+title = "Import market data"
+steps = [
+  "background-jobs -> sync : MarketDataImporter",
+  "sync -> providers : Provider::Registry exchange_rates",
+]
+
+[glossary]
+family = "A household: its users, accounts, currency and subscription."
+account = "1 financial account, such as a checking account, a brokerage or a home, with a balance and a currency."
+entry = "A dated movement on an account: a transaction, a valuation or a trade."
+transaction = "Money in or out of an account, with a category and a merchant."
+transfer = "2 transactions that move money between the family's own accounts."
+valuation = "A recorded value of an account on a date, such as a home appraisal."
+holding = "A security an investment account holds on a date, with its quantity and value."
+"balance sheet" = "The family's assets and liabilities, and its net worth."
+"income statement" = "The family's income and expenses over a period."
+rule = "Conditions and actions that categorize or enrich transactions."
+sync = "A run that refreshes an account or a connection and recalculates its balances."
+provider = "An external source of data behind a concept: Synth, Plaid, OpenAI or Stripe."
+
+[ignore]
+paths = ["**/*.lock", "db/schema.rb", "app/models/demo/**", "public/**", "vendor/**", "docs/**", ".cursor/**", "**/*.min.js", "**/*.map", "app/assets/builds/**", "lib/tasks/**"]
+tests = ["test/**", "spec/**"]

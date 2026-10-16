@@ -7,6 +7,11 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- The gallery shows 10 real pull requests, 2 from each of 5 open-source products: Immich (TypeScript), Saleor
+  (Django), Bitwarden (.NET), Chatwoot (Rails) and Maybe (Rails). Each product has a config written with the
+  configure skill from its own docs and rules (ADRs, CODEOWNERS, agent guides), and each story is checked against
+  the code. Maybe's config is redone the same way, and Healthchecks leaves the gallery: it does not use pull
+  requests. The README screenshot shows the new Maybe map.
 - The spec-driven example is now a realistic Django shop: catalog, customers, orders, payments with signed
   webhooks, and a new notifications app behind an `EmailGateway` port. Its OpenSpec change modifies 2 requirements,
   adds 2 and leaves 1 task open. The other 2 synthetic scenarios are test fixtures now, not gallery examples; the

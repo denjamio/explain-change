@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/saleor/saleor.git",
+  "commit": "925b69959a97c9deda7cdc85092494896d0aa1f4",
+  "report": "real-saleor-django-variant-channel-availability.html",
+  "project": "Saleor",
+  "title": "Variant availability per channel (#19911)",
+  "stack": "Django",
+  "shows": "1 new flag, 1 definition of a sellable listing: the Catalog API sets it, and Checkout and Discounts read it."
+}

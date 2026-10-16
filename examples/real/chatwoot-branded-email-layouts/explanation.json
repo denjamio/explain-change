@@ -1,0 +1,210 @@
+{
+  "tldr": "An e-mail inbox can now send replies in its own HTML layout, written in Liquid. The account can set a fallback layout. The branded_email_templates feature flag turns it on per account.",
+  "goal": "Let a company that runs several brands from 1 account send each brand's replies in that brand's e-mail design.",
+  "story": [
+    {
+      "heading": "E-mail templates now belong to an inbox too",
+      "body": "inbox_id joins account_id. 3 partial unique indexes keep 1 template per name, type and locale for each scope.",
+      "view": "data",
+      "focus": [
+        "email-template",
+        "inbox"
+      ],
+      "code": "db/migrate/20260706000000_add_inbox_scope_to_email_templates.rb:1-50"
+    },
+    {
+      "heading": "The resolver looks for the inbox layout first",
+      "body": "For an e-mail inbox with the flag on, the order is inbox, then account, then installation, each by locale with English as the fallback.",
+      "view": "flow:send-branded-reply",
+      "focus": [
+        "#2",
+        "#3"
+      ],
+      "code": "app/services/email_templates/db_resolver_service.rb:76-114"
+    },
+    {
+      "heading": "Replies render through the branded layout",
+      "body": "ConversationReplyMailer sets the current inbox and uses the base layout for email_reply and reply_without_summary when a layout exists.",
+      "view": "flow:send-branded-reply",
+      "focus": [
+        "#1"
+      ],
+      "code": "app/mailers/conversation_reply_mailer.rb:210-224"
+    },
+    {
+      "heading": "The layout reads the inbox through Liquid",
+      "body": "InboxDrop now gives business_name, avatar_url and email to the template, next to the agent, the contact and the message.",
+      "view": "architecture",
+      "focus": [
+        "email-delivery"
+      ],
+      "code": "app/drops/inbox_drop.rb:5-18"
+    },
+    {
+      "heading": "Admins set layouts through the API",
+      "body": "A new endpoint sets the account layout. The inbox update takes branded_email_layout, in the same transaction as the other inbox fields.",
+      "view": "architecture",
+      "focus": [
+        "rest-api",
+        "inboxes"
+      ],
+      "code": "app/controllers/api/v1/accounts/inboxes_controller.rb:167-194"
+    },
+    {
+      "heading": "The whole change",
+      "body": "The REST API writes layouts into Inboxes. E-mail delivery reads them when it renders a reply. No dependency breaks a rule.",
+      "view": "architecture",
+      "focus": []
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "email-delivery",
+      "to": "inboxes",
+      "label": "finds the branded layout"
+    }
+  ],
+  "components": [
+    {
+      "id": "rest-api",
+      "summary": "New branded_email_layout endpoint for the account; the inbox update and its JSON include the inbox layout."
+    },
+    {
+      "id": "inboxes",
+      "summary": "EmailTemplate gets an inbox scope, Liquid and layout checks; Inbox can read, find and update its branded layout."
+    },
+    {
+      "id": "email-delivery",
+      "summary": "The resolver finds inbox, account, then installation layouts by locale; replies render through the branded layout."
+    },
+    {
+      "id": "platform",
+      "summary": "New branded_email_templates feature flag, Current.inbox, and the migrations for the inbox scope."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "3 scopes with a fixed order: inbox, account, installation",
+      "why": "1 brand per inbox overrides the account layout, and the installation layout stays the last fallback.",
+      "alternative": "1 layout per account only.",
+      "evidence": "app/services/email_templates/db_resolver_service.rb:59-65"
+    },
+    {
+      "title": "Partial unique indexes, 1 per scope",
+      "why": "A plain unique index cannot treat NULL account or inbox ids as a scope. Each partial index guards 1 scope.",
+      "alternative": "Validate uniqueness only in the model.",
+      "evidence": "db/migrate/20260706000000_add_inbox_scope_to_email_templates.rb:8-22"
+    },
+    {
+      "title": "Check the Liquid and the layout slot on save",
+      "why": "A layout without {{ content_for_layout }} or with bad Liquid fails at save time, not when a reply goes out.",
+      "alternative": "Accept any body and fail when the mailer renders it.",
+      "evidence": "app/models/email_template.rb:44-119"
+    },
+    {
+      "title": "A feature flag, off by default",
+      "why": "branded_email_templates turns the layouts on per account. The resolver and the API check it before they use a layout.",
+      "alternative": "Always on for e-mail inboxes.",
+      "evidence": "config/features.yml:123-125"
+    },
+    {
+      "title": "Current.inbox carries the inbox to the resolver",
+      "why": "Rails calls the view resolver without the mailer's objects. Current.inbox gives the resolver the inbox of the reply.",
+      "alternative": "Pass the inbox through the view details.",
+      "evidence": "app/mailers/conversation_reply_mailer.rb:72-73"
+    }
+  ],
+  "flows": [
+    {
+      "id": "send-branded-reply",
+      "title": "Send a reply in the branded layout",
+      "trigger": "ConversationReplyMailer#email_reply",
+      "steps": [
+        {
+          "from": "email-delivery",
+          "to": "email-delivery",
+          "call": "branded_email_layout_action?",
+          "delta": "added"
+        },
+        {
+          "from": "email-delivery",
+          "to": "inboxes",
+          "call": "EmailTemplate where inbox: Current.inbox",
+          "delta": "added"
+        },
+        {
+          "from": "email-delivery",
+          "to": "inboxes",
+          "call": "EmailTemplate where account, then installation",
+          "delta": "changed"
+        }
+      ]
+    },
+    {
+      "id": "set-inbox-layout",
+      "title": "Set the branded layout of an inbox",
+      "trigger": "PATCH /api/v1/accounts/:id/inboxes/:id",
+      "steps": [
+        {
+          "from": "rest-api",
+          "to": "inboxes",
+          "call": "inbox.update_branded_email_layout!",
+          "delta": "added",
+          "data": {
+            "type": "EmailTemplate",
+            "fields": [
+              "+inbox_id",
+              "+body: Liquid with content_for_layout"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "email-template",
+        "name": "email_templates",
+        "component": "inboxes",
+        "delta": "changed",
+        "evidence": "db/migrate/20260706000000_add_inbox_scope_to_email_templates.rb:1-22",
+        "fields": [
+          "+inbox_id: integer",
+          "~unique: per installation, account or inbox scope"
+        ]
+      },
+      {
+        "id": "inbox",
+        "name": "inboxes",
+        "component": "inboxes",
+        "delta": "changed",
+        "evidence": "app/models/inbox.rb:70-72",
+        "fields": [
+          "+email_templates: has_many"
+        ]
+      },
+      {
+        "id": "account",
+        "name": "accounts",
+        "component": "accounts",
+        "delta": "unchanged",
+        "fields": []
+      }
+    ],
+    "relations": [
+      {
+        "from": "inbox",
+        "to": "email-template",
+        "label": "0..n",
+        "delta": "added"
+      },
+      {
+        "from": "account",
+        "to": "email-template",
+        "label": "0..n",
+        "delta": "unchanged"
+      }
+    ]
+  }
+}

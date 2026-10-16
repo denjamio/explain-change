@@ -1,0 +1,193 @@
+{
+  "tldr": "Users can now delete many folders in 1 request. The items in those folders stay in the vault with no folder, on SQL Server and on the EF databases.",
+  "goal": "Let a client clean up many folders at once, in place of 1 delete request per folder.",
+  "story": [
+    {
+      "heading": "1 port, 2 adapters: IFolderRepository.DeleteManyAsync",
+      "body": "The Vault port now deletes many folders. Dapper implements it on SQL Server and Entity Framework on PostgreSQL, MySQL and SQLite.",
+      "view": "architecture",
+      "focus": [
+        "vault",
+        "dapper",
+        "entity-framework"
+      ],
+      "code": "src/Core/Vault/Repositories/IFolderRepository.cs:6-22"
+    },
+    {
+      "heading": "DELETE /folders added",
+      "body": "The endpoint takes a list of folder ids. Cloud requests take up to 500 ids. The VFO1Foundation feature flag gates it.",
+      "view": "flow:delete-folders",
+      "focus": [
+        "#1"
+      ],
+      "code": "src/Api/Vault/Controllers/FoldersController.cs:113-131"
+    },
+    {
+      "heading": "DeleteManyFoldersCommand added to Vault",
+      "body": "It keeps only the folders the user owns, deletes them and pushes 1 vault sync to the user's clients.",
+      "view": "flow:delete-folders",
+      "focus": [
+        "#2",
+        "#5"
+      ],
+      "code": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1-35"
+    },
+    {
+      "heading": "SQL Server runs Folder_DeleteByIds",
+      "body": "Dapper calls 1 stored procedure in a transaction. It clears the folder of each item with JSON_MODIFY, then deletes the folders.",
+      "view": "architecture",
+      "focus": [
+        "dapper",
+        "sql-server-schema"
+      ],
+      "code": "src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql:1-94"
+    },
+    {
+      "heading": "Entity Framework does the same in LINQ",
+      "body": "It removes the folder from each filed item, deletes the folders and bumps the account revision date. DeleteAsync now calls it too.",
+      "view": "architecture",
+      "focus": [
+        "entity-framework"
+      ],
+      "code": "src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:45-117"
+    },
+    {
+      "heading": "The whole change",
+      "body": "The change follows the ports and adapters rule: API, then Vault, then 2 adapters. Core references no infrastructure.",
+      "view": "architecture",
+      "focus": []
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "api",
+      "to": "vault",
+      "label": "IDeleteManyFoldersCommand"
+    }
+  ],
+  "components": [
+    {
+      "id": "api",
+      "summary": "New DELETE /folders endpoint and FolderBulkDeleteRequestModel, with a limit of 500 ids on cloud."
+    },
+    {
+      "id": "vault",
+      "summary": "New DeleteManyFoldersCommand; IFolderRepository gets DeleteManyAsync."
+    },
+    {
+      "id": "dapper",
+      "summary": "FolderRepository.DeleteManyAsync calls Folder_DeleteByIds in a transaction."
+    },
+    {
+      "id": "entity-framework",
+      "summary": "FolderRepository.DeleteManyAsync removes the folders and clears them from filed items; DeleteAsync uses it."
+    },
+    {
+      "id": "sql-server-schema",
+      "summary": "New Folder_DeleteByIds stored procedure and its migration script."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "1 port, 2 adapters",
+      "why": "Core references no infrastructure. The port in Vault defines the behavior, and Dapper and EF give it to SQL Server and to PostgreSQL, MySQL and SQLite.",
+      "alternative": "Call DeleteAsync once per folder from the command.",
+      "evidence": "src/Core/Vault/Repositories/IFolderRepository.cs:12-18"
+    },
+    {
+      "title": "SQL Server does the work in a stored procedure",
+      "why": "1 round trip updates the items and deletes the folders in 1 transaction, as the other SQL Server repositories do.",
+      "alternative": "Load the items in C# and update them, as EF does.",
+      "evidence": "src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:50-72"
+    },
+    {
+      "title": "Ids the user does not own are ignored",
+      "why": "The command filters the user's own folders. A request with other ids deletes nothing else and does not fail.",
+      "alternative": "Refuse the whole request when 1 id is not the user's.",
+      "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:19-25"
+    },
+    {
+      "title": "1 vault sync in place of 1 notification per folder",
+      "why": "A delete also moves the items out of the folders. The clients need the whole vault again, not only the folder ids.",
+      "alternative": "Push 1 folder delete notification per folder.",
+      "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:27-30"
+    },
+    {
+      "title": "A limit of 500 ids, on cloud only",
+      "why": "The cloud API caps the cost of 1 request. A self-hosted server has no limit.",
+      "alternative": "The same limit for every server.",
+      "evidence": "src/Api/Vault/Controllers/FoldersController.cs:119-122"
+    }
+  ],
+  "flows": [
+    {
+      "id": "delete-folders",
+      "title": "Delete folders in bulk",
+      "trigger": "DELETE /folders",
+      "steps": [
+        {
+          "from": "api",
+          "to": "vault",
+          "call": "IDeleteManyFoldersCommand.DeleteManyAsync",
+          "delta": "added"
+        },
+        {
+          "from": "vault",
+          "to": "vault",
+          "call": "folderRepository.GetManyByUserIdAsync",
+          "delta": "unchanged"
+        },
+        {
+          "from": "vault",
+          "to": "dapper",
+          "call": "IFolderRepository.DeleteManyAsync",
+          "delta": "added"
+        },
+        {
+          "from": "dapper",
+          "to": "sql-server-schema",
+          "call": "Folder_DeleteByIds",
+          "delta": "added",
+          "data": {
+            "type": "Cipher",
+            "fields": [
+              "~Folders: user's entry removed"
+            ]
+          }
+        },
+        {
+          "from": "vault",
+          "to": "platform",
+          "call": "pushService.PushSyncVaultAsync",
+          "delta": "added"
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "folder",
+        "name": "Folder",
+        "component": "vault",
+        "delta": "unchanged",
+        "fields": []
+      },
+      {
+        "id": "cipher",
+        "name": "Cipher",
+        "component": "vault",
+        "delta": "unchanged",
+        "fields": []
+      }
+    ],
+    "relations": [
+      {
+        "from": "cipher",
+        "to": "folder",
+        "label": "Folders: user id → folder id",
+        "delta": "unchanged"
+      }
+    ]
+  }
+}

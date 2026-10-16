@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/bitwarden/server.git",
+  "commit": "e93b962371d80964556f5590c6615f5160a437a1",
+  "report": "real-bitwarden-dotnet-bulk-folder-delete.html",
+  "project": "Bitwarden",
+  "title": "Bulk folder delete (#8157)",
+  "stack": "C# / .NET",
+  "shows": "Ports and adapters in 1 change: an endpoint, a Core command, 1 repository port and its 2 adapters, Dapper and Entity Framework."
+}

@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/maybe-finance/maybe.git",
+  "commit": "10ce2c8e23b4695030982351f5bf09d5a6e4e803",
+  "report": "real-maybe-rails-balance-sheet-cache.html",
+  "project": "maybe",
+  "title": "Balance sheet cache layer (#2356)",
+  "stack": "Ruby on Rails",
+  "shows": "Cache invalidation by design: sync transitions touch 2 family timestamps that key the balance sheet, sync status and sparkline caches."
+}

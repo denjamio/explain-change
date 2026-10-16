@@ -1,0 +1,216 @@
+# Saleor: headless commerce, with a GraphQL API.
+# Each commerce context is a Django app (saleor/<app>) with its models and business logic; saleor/graphql/<app>
+# exposes it. Apps and plugins extend Saleor: the PluginsManager turns domain events into plugin calls and
+# webhooks to apps. Payment gateways are plugins too.
+
+[project]
+name = "Saleor"
+direction = "Layered by context: GraphQL mutations in saleor/graphql call the commerce apps; the apps hold the models and rules and never import the API. Side effects to apps and plugins go through the PluginsManager, not Django signals."
+lang = "en"
+
+[[layers]]
+id = "api"
+name = "API"
+
+[[layers]]
+id = "domain"
+name = "Commerce"
+
+[[layers]]
+id = "integrations"
+name = "Integrations"
+
+[[layers]]
+id = "platform"
+name = "Platform"
+
+[rules]
+# The apps never import the GraphQL layer; extensions are reached through the PluginsManager.
+# Webhook payloads are GraphQL subscriptions, so Webhooks is the one integration that reads the API.
+allow = ["api -> domain", "api -> integrations", "api -> platform", "domain -> integrations", "domain -> platform", "integrations -> domain", "integrations -> platform", "webhooks -> api"]
+forbid = ["domain -> api", "platform -> api"]
+same_layer = true
+
+# ── API: saleor/graphql, per context where the context is large ──────────────────────────────────────────
+
+[[components]]
+id = "catalog-api"
+name = "Catalog API"
+layer = "api"
+paths = ["saleor/graphql/product/**", "saleor/graphql/attribute/**"]
+desc = "Owns the GraphQL types, queries and mutations for products, variants, categories, collections and attributes."
+
+[[components]]
+id = "checkout-api"
+name = "Checkout API"
+layer = "api"
+paths = ["saleor/graphql/checkout/**"]
+desc = "Owns the checkout mutations: create, add lines, set delivery, apply a voucher, complete."
+
+[[components]]
+id = "orders-api"
+name = "Orders API"
+layer = "api"
+paths = ["saleor/graphql/order/**", "saleor/graphql/invoice/**"]
+desc = "Owns order queries and the staff mutations: drafts, fulfilments, refunds, invoices."
+
+[[components]]
+id = "discounts-api"
+name = "Discounts API"
+layer = "api"
+paths = ["saleor/graphql/discount/**", "saleor/graphql/giftcard/**"]
+desc = "Owns the GraphQL types and mutations for vouchers, promotions and gift cards."
+
+[[components]]
+id = "payments-api"
+name = "Payments API"
+layer = "api"
+paths = ["saleor/graphql/payment/**"]
+desc = "Owns payment and transaction queries and mutations, and the payment gateway list."
+
+[[components]]
+id = "graphql-api"
+name = "GraphQL API"
+layer = "api"
+paths = ["saleor/graphql/**"]
+desc = "Owns the schema, the base mutation and types, and the API of accounts, channels, apps, webhooks and content."
+
+# ── Commerce: one Django app or a group of them per context ──────────────────────────────────────────────
+
+[[components]]
+id = "catalog"
+name = "Catalog"
+layer = "domain"
+paths = ["saleor/product/**", "saleor/attribute/**", "saleor/thumbnail/**", "saleor/csv/**"]
+desc = "Owns Product, ProductVariant, Category, Collection and attributes; what is sold and in which channels."
+
+[[components]]
+id = "checkout"
+name = "Checkout"
+layer = "domain"
+paths = ["saleor/checkout/**"]
+desc = "Owns Checkout and its lines; prices a cart and turns it into an order."
+
+[[components]]
+id = "orders"
+name = "Orders"
+layer = "domain"
+paths = ["saleor/order/**", "saleor/invoice/**"]
+desc = "Owns Order, its lines, fulfilments, events and invoices; the order life cycle after checkout."
+
+[[components]]
+id = "discounts"
+name = "Discounts"
+layer = "domain"
+paths = ["saleor/discount/**", "saleor/giftcard/**"]
+desc = "Owns vouchers, promotions and gift cards; which discount applies to which line."
+
+[[components]]
+id = "payments"
+name = "Payments"
+layer = "domain"
+paths = ["saleor/payment/**"]
+desc = "Owns Payment, TransactionItem and their events; what was authorized, charged and refunded."
+
+[[components]]
+id = "stock-shipping"
+name = "Stock and shipping"
+layer = "domain"
+paths = ["saleor/warehouse/**", "saleor/shipping/**"]
+desc = "Owns warehouses, stock, allocations, shipping zones and methods."
+
+[[components]]
+id = "channels"
+name = "Channels and taxes"
+layer = "domain"
+paths = ["saleor/channel/**", "saleor/tax/**", "saleor/site/**"]
+desc = "Owns channels (currency, country, settings) and tax configuration; each sales context of a shop."
+
+[[components]]
+id = "accounts"
+name = "Accounts"
+layer = "domain"
+paths = ["saleor/account/**", "saleor/permission/**", "saleor/auth/**"]
+desc = "Owns users, customers, staff, addresses and permissions."
+
+[[components]]
+id = "content"
+name = "Content"
+layer = "domain"
+paths = ["saleor/page/**", "saleor/menu/**", "saleor/seo/**", "saleor/translations/**"]
+desc = "Owns pages, menus, SEO fields and translations."
+
+# ── Integrations: how Saleor reaches apps, plugins and payment providers ─────────────────────────────────
+
+[[components]]
+id = "apps"
+name = "Apps"
+layer = "integrations"
+paths = ["saleor/app/**"]
+desc = "Owns installed apps, their tokens, permissions and manifests."
+
+[[components]]
+id = "webhooks"
+name = "Webhooks"
+layer = "integrations"
+paths = ["saleor/webhook/**"]
+desc = "Owns webhooks and their events; builds each payload from a GraphQL subscription and delivers it, sync or async."
+
+[[components]]
+id = "plugins"
+name = "Plugins"
+layer = "integrations"
+paths = ["saleor/plugins/**"]
+desc = "Owns the PluginsManager, the event bus that calls plugins and webhooks, and the built-in plugins."
+
+[[components]]
+id = "payment-gateways"
+name = "Payment gateways"
+layer = "integrations"
+paths = ["saleor/payment/gateways/**"]
+desc = "Owns the built-in payment gateway plugins and their provider clients."
+
+# ── Platform ─────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "platform"
+name = "Platform"
+layer = "platform"
+paths = ["saleor/core/**", "saleor/schedulers/**", "saleor/asgi/**", "saleor/*.py", "saleor/static/**", "saleor/json_schemas/**"]
+desc = "Owns settings, Celery, ASGI, money and taxed-money helpers, and the base models every app uses."
+
+[[flows]]
+id = "complete-checkout"
+title = "Complete a checkout"
+steps = [
+  "checkout-api -> checkout : complete_checkout",
+  "checkout -> discounts : apply voucher and promotions",
+  "checkout -> orders : create order from checkout",
+  "checkout -> plugins : manager.checkout_fully_paid",
+]
+
+[[flows]]
+id = "notify-apps"
+title = "Notify apps of an event"
+steps = [
+  "orders -> plugins : manager.order_created",
+  "plugins -> webhooks : trigger_webhooks_async",
+]
+
+[glossary]
+product = "An item for sale; its variants are what a customer buys."
+variant = "A sellable version of a product, with its own SKU, price and stock."
+channel = "A sales context: its currency, countries and which products it sells."
+checkout = "A customer's cart before it becomes an order."
+order = "What a customer bought, from payment to fulfilment."
+voucher = "A code that gives a discount when the customer enters it."
+promotion = "A discount that applies on its own when its rules match."
+"gift card" = "A prepaid balance a customer spends at checkout."
+warehouse = "A place that holds stock and ships orders."
+app = "An external service with a token and webhooks, which extends Saleor through the API."
+webhook = "An event delivery from Saleor to an app, sync or async."
+plugin = "A Python extension that the PluginsManager calls on domain events."
+
+[ignore]
+paths = ["**/*.lock", "**/package-lock.json", "saleor/graphql/schema.graphql", "**/__snapshots__/**", "saleor/static/**", "templates/**", "docs/agents/**", "CHANGELOG.md", ".semgrep/**", ".claude/**"]
+tests = ["**/tests/**", "**/test_*.py", "**/conftest.py", "**/*_test.py"]

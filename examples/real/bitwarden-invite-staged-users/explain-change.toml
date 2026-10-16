@@ -1,0 +1,226 @@
+# Bitwarden server: the API, identity and admin hosts behind the Bitwarden password manager.
+# Core holds the domain: entities, commands, queries and the repository interfaces (ports). Two adapters
+# implement every repository: Dapper on SQL Server stored procedures, and Entity Framework for PostgreSQL, MySQL
+# and SQLite. Each layer is split by team, the same way in every project (.github/CODEOWNERS: **/Vault, …).
+
+[project]
+name = "Bitwarden"
+direction = "Ports and adapters: Core defines entities, commands, queries and repository interfaces and references no infrastructure; Dapper and Entity Framework each implement every repository. Code is split by team folder (Vault, AdminConsole, Auth…) in every project."
+lang = "en"
+
+[[layers]]
+id = "hosts"
+name = "Hosts"
+
+[[layers]]
+id = "core"
+name = "Core"
+
+[[layers]]
+id = "adapters"
+name = "Adapters"
+
+[[layers]]
+id = "database"
+name = "Database"
+
+[rules]
+# Core.csproj references no infrastructure project: the adapters depend on Core, never the reverse.
+# Shared web is the composition root of every host: it registers the Dapper or EF implementations.
+# The migration tools build on the EF DbContext and Core settings, and the admin portal runs them.
+allow = ["hosts -> core", "adapters -> core", "shared-web -> adapters", "database -> core", "database -> adapters", "admin-portal -> database"]
+forbid = ["core -> adapters", "core -> hosts"]
+same_layer = true
+
+# ── Hosts: the deployables ────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "api"
+name = "API"
+layer = "hosts"
+paths = ["src/Api/**"]
+desc = "Owns the REST API that the clients call: controllers and request and response models, by team."
+
+[[components]]
+id = "identity"
+name = "Identity"
+layer = "hosts"
+paths = ["src/Identity/**"]
+desc = "Owns login and token issuance: the OAuth 2.0 and OpenID Connect server."
+
+[[components]]
+id = "admin-portal"
+name = "Admin portal"
+layer = "hosts"
+paths = ["src/Admin/**"]
+desc = "Owns the internal admin site for support and operations."
+
+[[components]]
+id = "other-hosts"
+name = "Event and billing hosts"
+layer = "hosts"
+paths = ["src/Events/**", "src/EventsProcessor/**", "src/Notifications/**", "src/Icons/**", "src/Billing/**"]
+desc = "Owns the smaller hosts: event collection and processing, push notifications, icons and billing webhooks."
+
+[[components]]
+id = "scim-sso"
+name = "SCIM and SSO"
+layer = "hosts"
+paths = ["bitwarden_license/src/Scim/**", "bitwarden_license/src/Sso/**"]
+desc = "Owns the licensed hosts: SCIM provisioning from identity providers, and SSO login."
+
+[[components]]
+id = "shared-web"
+name = "Shared web"
+layer = "hosts"
+paths = ["src/SharedWeb/**", "src/HttpExtensions/**"]
+desc = "Owns what every host shares: service registration (the composition root), auth and HTTP setup."
+
+# ── Core: one component per team (.github/CODEOWNERS) ────────────────────────────────────────────────────
+
+[[components]]
+id = "vault"
+name = "Vault"
+layer = "core"
+paths = ["src/Core/Vault/**"]
+desc = "Owns ciphers, folders and collections access for vault items; what a user stores and how it is shared."
+
+[[components]]
+id = "admin-console"
+name = "Admin Console"
+layer = "core"
+paths = ["src/Core/AdminConsole/**", "src/Core/OrganizationFeatures/**"]
+desc = "Owns organizations, members, groups, policies and providers; who belongs to which organization."
+
+[[components]]
+id = "auth"
+name = "Auth"
+layer = "core"
+paths = ["src/Core/Auth/**"]
+desc = "Owns login methods, two-factor, SSO configuration, devices and emergency access."
+
+[[components]]
+id = "billing"
+name = "Billing"
+layer = "core"
+paths = ["src/Core/Billing/**"]
+desc = "Owns plans, subscriptions, seats and the payment provider integration."
+
+[[components]]
+id = "key-management"
+name = "Key management"
+layer = "core"
+paths = ["src/Core/KeyManagement/**"]
+desc = "Owns account keys, key rotation and the encryption versions of user data."
+
+[[components]]
+id = "tools"
+name = "Tools"
+layer = "core"
+paths = ["src/Core/Tools/**"]
+desc = "Owns Send, import and export."
+
+[[components]]
+id = "secrets-manager"
+name = "Secrets Manager"
+layer = "core"
+paths = ["src/Core/SecretsManager/**"]
+desc = "Owns projects, secrets, service accounts and their access policies."
+
+[[components]]
+id = "data-insights"
+name = "Data insights"
+layer = "core"
+paths = ["src/Core/Dirt/**"]
+desc = "Owns reports and Access Intelligence: password health and risk insights for organizations."
+
+[[components]]
+id = "notification-center"
+name = "Notification center"
+layer = "core"
+paths = ["src/Core/NotificationCenter/**"]
+desc = "Owns the notifications a user sees in the clients, and their status."
+
+[[components]]
+id = "pam"
+name = "PAM"
+layer = "core"
+paths = ["src/Core/Pam/**", "src/Pam.Domain/**"]
+desc = "Owns privileged access management: access connectors and their rules."
+
+[[components]]
+id = "platform"
+name = "Platform"
+layer = "core"
+paths = ["src/Core/Platform/**", "src/Core/Jobs/**", "src/Core/HostedServices/**", "src/Core/MailTemplates/**"]
+desc = "Owns push, mail, installations, feature flags and scheduled jobs that every team uses."
+
+[[components]]
+id = "licensed"
+name = "Licensed features"
+layer = "core"
+paths = ["bitwarden_license/src/Commercial.Core/**"]
+desc = "Owns the commercially licensed domain logic: providers, SSO configuration and enterprise features."
+
+[[components]]
+id = "shared-kernel"
+name = "Shared kernel"
+layer = "core"
+paths = ["src/Core/**"]
+desc = "Owns the shared entities (User, Organization…), the legacy services and repository interfaces, and utilities."
+
+# ── Adapters: 2 implementations of the same repository interfaces ────────────────────────────────────────
+
+[[components]]
+id = "dapper"
+name = "Dapper (SQL Server)"
+layer = "adapters"
+paths = ["src/Infrastructure.Dapper/**"]
+desc = "Owns the SQL Server repositories: Dapper calls to stored procedures."
+
+[[components]]
+id = "entity-framework"
+name = "Entity Framework"
+layer = "adapters"
+paths = ["src/Infrastructure.EntityFramework/**", "bitwarden_license/src/Commercial.Infrastructure.EntityFramework/**"]
+desc = "Owns the EF Core repositories and models for PostgreSQL, MySQL and SQLite."
+
+# ── Database ─────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "sql-server-schema"
+name = "SQL Server schema"
+layer = "database"
+paths = ["src/Sql/**", "util/Migrator/**"]
+desc = "Owns the SQL Server tables, views and stored procedures, and their migration scripts."
+
+[[components]]
+id = "ef-migrations"
+name = "EF migrations"
+layer = "database"
+paths = ["util/PostgresMigrations/**", "util/MySqlMigrations/**", "util/SqliteMigrations/**", "util/EfShared/**"]
+desc = "Owns the generated EF migrations for PostgreSQL, MySQL and SQLite."
+
+[[flows]]
+id = "save-cipher"
+title = "Save a vault item"
+steps = [
+  "api -> vault : CreateCipherCommand",
+  "vault -> shared-kernel : ICipherRepository.CreateAsync",
+  "dapper -> shared-kernel : CipherRepository implements ICipherRepository",
+]
+
+[glossary]
+vault = "A user's encrypted store of items; Bitwarden never sees the plain text."
+cipher = "1 encrypted vault item: a login, a card, an identity, a secure note or an SSH key."
+folder = "A user's own grouping of vault items, encrypted with the user's key."
+collection = "An organization's grouping of vault items, shared with members and groups."
+organization = "A team or company account that shares collections with its members."
+member = "A user's membership in an organization, with a role and a status (invited, accepted, confirmed)."
+"staged user" = "A member that an admin creates in advance and invites later."
+"account recovery" = "An organization's ability to reset a member's master password."
+send = "A short-lived encrypted share of text or a file, with a link."
+
+[ignore]
+paths = ["**/packages.lock.json", "**/*.Designer.cs", "**/*.g.cs", "**/bin/**", "**/obj/**", "dev/**", "perf/**", "AppHost/**", "util/Seeder*/**", "util/Setup/**", "util/Server/**", "util/Nginx/**", "util/Attachments/**", "util/MsSql*/**", "util/RustSdk/**", "util/SqlServerEFScaffold/**", "src/Libraries/**", "**/*.csproj.user", "**/*ModelSnapshot.cs"]
+tests = ["test/**", "bitwarden_license/test/**", "**/*.Test/**", "**/*.Tests/**", "**/*Tests.cs", "**/*Test.cs"]

@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/saleor/saleor.git",
+  "commit": "3dd4bf79a46132ed2f8e6225a9863f5ef8dc243b",
+  "report": "real-saleor-django-webhook-payload-generation.html",
+  "project": "Saleor",
+  "title": "Per-webhook payload generation (#19920)",
+  "stack": "Django",
+  "shows": "An opt-out from deferred webhook payloads across the API, the app manifest and the async transport, with its ADR."
+}

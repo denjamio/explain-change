@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/immich-app/immich.git",
+  "commit": "d6d094738366aaf4d2fcefdfe2702f50c72ba5b0",
+  "report": "real-immich-ts-birthday-memories.html",
+  "project": "Immich",
+  "title": "Birthday memories (#30831)",
+  "stack": "TypeScript",
+  "shows": "A new kind of memory: a nightly job reads people from another context and their photos, with a leap-day rule."
+}

@@ -1,0 +1,243 @@
+# Immich: self-hosted photo and video management.
+# The server loosely follows hexagonal architecture (docs/docs/developer/architecture.mdx): controllers and DTOs
+# are the REST API, services hold the business logic, and repositories are the only code that talks to Postgres,
+# Redis, the machine-learning service and the file system. Web, mobile and CLI clients use a generated OpenAPI SDK.
+
+[project]
+name = "Immich"
+direction = "Hexagonal, loosely: services in server/src/services own the business logic per context; controllers and DTOs only map HTTP; repositories are the only code that touches Postgres, Redis, the machine-learning service or the file system."
+lang = "en"
+
+[[layers]]
+id = "clients"
+name = "Clients"
+
+[[layers]]
+id = "api"
+name = "API"
+
+[[layers]]
+id = "core"
+name = "Core"
+
+[[layers]]
+id = "adapters"
+name = "Adapters"
+
+[[layers]]
+id = "shared"
+name = "Shared"
+
+[rules]
+# From the architecture doc: HTTP goes through services, and only repositories reach the outside systems.
+# The bootstrap is the composition root: it wires every layer, so only the REST API is held to "not adapters".
+allow = ["clients -> clients", "api -> core", "api -> shared", "core -> adapters", "core -> shared", "adapters -> shared", "bootstrap -> adapters"]
+forbid = ["rest-api -> adapters", "adapters -> core"]
+same_layer = true
+
+# ── Clients ──────────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "web"
+name = "Web app"
+layer = "clients"
+paths = ["web/**", "i18n/**"]
+desc = "Owns the SvelteKit web app and the translations it shares with the other clients."
+
+[[components]]
+id = "mobile"
+name = "Mobile app"
+layer = "clients"
+paths = ["mobile/**"]
+desc = "Owns the Flutter app: its on-device database, sync and backup."
+
+[[components]]
+id = "sdk"
+name = "SDK"
+layer = "clients"
+paths = ["open-api/**", "packages/sdk/**", "packages/plugin-sdk/**", "packages/plugin-core/**"]
+desc = "Owns the OpenAPI spec, the TypeScript client generated from the server's DTOs, and the plugin SDK."
+
+[[components]]
+id = "cli"
+name = "CLI"
+layer = "clients"
+paths = ["packages/cli/**", "cli/**"]
+desc = "Owns the command-line client that uploads and manages assets through the API."
+
+# ── API ──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "rest-api"
+name = "REST API"
+layer = "api"
+paths = ["server/src/controllers/**", "server/src/middleware/**"]
+desc = "Owns the HTTP endpoints: routes, authentication guards and request validation."
+
+[[components]]
+id = "bootstrap"
+name = "Server bootstrap"
+layer = "api"
+paths = ["server/src/workers/**", "server/src/bin/**", "server/src/main.ts", "server/src/app.module.ts", "server/src/app.common.ts"]
+desc = "Owns the composition root: wires controllers, services and repositories, and starts the API and job workers."
+
+# ── Core: one component per business context ─────────────────────────────────────────────────────────────
+
+[[components]]
+id = "assets"
+name = "Assets"
+layer = "core"
+paths = ["server/src/services/asset*", "server/src/services/stack*", "server/src/services/duplicate*", "server/src/services/trash*", "server/src/services/timeline*", "server/src/services/view*", "server/src/services/download*", "server/src/services/integrity*", "server/src/services/tag*"]
+desc = "Owns assets, stacks, tags, the timeline, duplicates and the trash; uploads, edits and deletes."
+
+[[components]]
+id = "sharing"
+name = "Sharing"
+layer = "core"
+paths = ["server/src/services/album*", "server/src/services/shared-link*", "server/src/services/partner*", "server/src/services/activity*"]
+desc = "Owns albums, shared links, partners and album activity; who can see which assets."
+
+[[components]]
+id = "people"
+name = "People"
+layer = "core"
+paths = ["server/src/services/person*", "server/src/services/cluster-group*"]
+desc = "Owns people and their faces; recognizes and clusters faces into people."
+
+[[components]]
+id = "memories"
+name = "Memories"
+layer = "core"
+paths = ["server/src/services/memory*"]
+desc = "Owns memories: the generated 'on this day' style collections shown to each user."
+
+[[components]]
+id = "search"
+name = "Search"
+layer = "core"
+paths = ["server/src/services/search*", "server/src/services/smart-info*", "server/src/services/map*", "server/src/services/ocr*"]
+desc = "Owns metadata, smart (CLIP) and text (OCR) search, and the map."
+
+[[components]]
+id = "workflows"
+name = "Workflows"
+layer = "core"
+paths = ["server/src/services/workflow*", "server/src/services/plugin*"]
+desc = "Owns workflows and plugins: user automations that run actions when an event matches their filters."
+
+[[components]]
+id = "identity"
+name = "Identity"
+layer = "core"
+paths = ["server/src/services/auth*", "server/src/services/user*", "server/src/services/api-key*", "server/src/services/session*"]
+desc = "Owns users, sessions, API keys and login (password and OAuth)."
+
+[[components]]
+id = "media-processing"
+name = "Media processing"
+layer = "core"
+paths = ["server/src/services/media*", "server/src/services/metadata*", "server/src/services/transcoding*", "server/src/services/hls*", "server/src/services/storage*", "server/src/services/library*", "server/src/services/job*", "server/src/services/queue*", "server/src/cores/**"]
+desc = "Owns the background pipeline: thumbnails, metadata extraction, transcoding, storage templates and external libraries."
+
+[[components]]
+id = "system"
+name = "System"
+layer = "core"
+paths = ["server/src/services/**", "server/src/commands/**", "server/src/maintenance/**"]
+desc = "Owns server config, notifications, backups, maintenance, version checks and the mobile sync stream."
+
+[[components]]
+id = "access"
+name = "Access control"
+layer = "core"
+paths = ["server/src/utils/access.ts"]
+desc = "Decides which user may read or change which resource; every service checks it first."
+
+# ── Adapters: the outside systems, as the architecture doc draws them ────────────────────────────────────────
+
+[[components]]
+id = "database"
+name = "Database"
+layer = "adapters"
+paths = ["server/src/repositories/**", "server/src/schema/**", "server/src/queries/**"]
+desc = "Owns the Postgres schema, its migrations and the Kysely repositories that read and write it."
+
+[[components]]
+id = "jobs-events"
+name = "Jobs and events"
+layer = "adapters"
+paths = ["server/src/repositories/job.repository.ts", "server/src/repositories/event.repository.ts", "server/src/repositories/websocket.repository.ts", "server/src/repositories/cron.repository.ts"]
+desc = "Owns the Redis job queues (BullMQ), scheduled jobs, server events and websocket pushes to clients."
+
+[[components]]
+id = "machine-learning"
+name = "Machine learning"
+layer = "adapters"
+paths = ["machine-learning/**", "server/src/repositories/machine-learning.repository.ts"]
+desc = "Owns the Python ML service (CLIP, faces, OCR) and the server's client for it."
+
+[[components]]
+id = "files-media-tools"
+name = "Files and media tools"
+layer = "adapters"
+paths = ["server/src/repositories/storage.repository.ts", "server/src/repositories/media.repository.ts", "server/src/repositories/metadata.repository.ts", "server/src/repositories/process.repository.ts", "server/src/repositories/video-stream.repository.ts"]
+desc = "Owns the file system and the media tools: ffmpeg, sharp and exiftool."
+
+[[components]]
+id = "platform"
+name = "Platform"
+layer = "adapters"
+paths = ["server/src/repositories/config.repository.ts", "server/src/repositories/logging.repository.ts", "server/src/repositories/crypto.repository.ts", "server/src/repositories/email.repository.ts", "server/src/repositories/oauth.repository.ts", "server/src/repositories/server-info.repository.ts", "server/src/repositories/telemetry.repository.ts", "server/src/emails/**"]
+desc = "Owns configuration, logging, telemetry, crypto, e-mail delivery and the OAuth provider client."
+
+# ── Shared ───────────────────────────────────────────────────────────────────────────────────────────────────
+
+[[components]]
+id = "api-contract"
+name = "API contract"
+layer = "shared"
+paths = ["server/src/dtos/**"]
+desc = "Owns the DTOs: what services take and return, and what the OpenAPI spec and the SDK are generated from."
+
+[[components]]
+id = "shared-kernel"
+name = "Shared kernel"
+layer = "shared"
+paths = ["server/src/**"]
+desc = "Owns the types, enums, constants and helpers every server layer uses; no business rules."
+
+[[flows]]
+id = "upload-asset"
+title = "Upload an asset"
+steps = [
+  "web -> rest-api : POST /assets",
+  "rest-api -> assets : AssetMediaService.uploadAsset",
+  "assets -> database : assetRepository.create",
+  "assets -> jobs-events : queue metadata extraction",
+]
+
+[[flows]]
+id = "recognize-faces"
+title = "Recognize faces"
+steps = [
+  "media-processing -> machine-learning : detectFaces",
+  "people -> database : personRepository.createAssetFaces",
+  "people -> jobs-events : queue facial recognition",
+]
+
+[glossary]
+asset = "A photo or video a user owns; the unit everything else refers to."
+album = "A named set of assets, which its owner can share with other users."
+"shared link" = "A public link that gives access to an album or some assets without an account."
+partner = "A user who sees another user's whole library."
+person = "A cluster of faces recognized as the same individual; it can have a name and a birth date."
+memory = "A generated collection of assets shown to a user, such as 'on this day' a year ago."
+workflow = "A user automation: a trigger, filters and actions that run on matching assets."
+"external library" = "A folder on the server's disk that Immich scans and indexes without moving the files."
+job = "A unit of background work in a Redis queue, such as a thumbnail or face detection."
+"smart search" = "Search by meaning, with CLIP embeddings from the machine-learning service."
+stack = "A group of assets shown as one, such as a burst or a RAW and its JPEG."
+
+[ignore]
+paths = ["**/*.lock", "**/pnpm-lock.yaml", "**/package-lock.json", "**/*.min.js", "**/*.map", "**/*.generated.*", "**/*.g.dart", "**/*.freezed.dart", "**/dist/**", "**/build/**", "**/node_modules/**", "docs/**", "design/**", "misc/**", "fastlane/**", "readme_i18n/**", "docker/**", "deployment/**", "mise.lock", "**/__snapshots__/**", "packages/e2e-auth-server/**", "packages/scripts/**"]
+tests = ["**/test/**", "**/tests/**", "**/e2e/**", "**/*.spec.ts", "**/*.test.ts", "**/test_*.py", "mobile/test/**", "mobile/integration_test/**"]
