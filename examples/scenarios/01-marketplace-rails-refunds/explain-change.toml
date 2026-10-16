@@ -1,0 +1,58 @@
+[project]
+name = "marketplace"
+direction = "Thin controllers; logic lives in application services and models; external integrations are isolated in clients/ and mailers/."
+
+[glossary]
+refund = "Money given back to the customer for an order, in full or in part; never more than the refundable total"
+"idempotency key" = "A key the client chooses so that a retry acts only once"
+
+[[layers]]
+id = "web"
+name = "Web"
+[[layers]]
+id = "application"
+name = "Application"
+[[layers]]
+id = "domain"
+name = "Domain"
+[[layers]]
+id = "infra"
+name = "Infrastructure"
+
+[rules]
+allow = ["web -> application", "application -> domain", "application -> infra", "infra -> domain"]
+
+[[components]]
+id = "controllers"
+name = "Orders API"
+layer = "web"
+paths = ["app/controllers/**", "config/routes.rb"]
+desc = "HTTP endpoints for orders and refunds"
+[[components]]
+id = "checkout"
+name = "Checkout"
+layer = "application"
+paths = ["app/services/checkout/**"]
+[[components]]
+id = "refunds"
+name = "Refunds"
+layer = "application"
+paths = ["app/services/refunds/**"]
+desc = "Refund use cases"
+[[components]]
+id = "models"
+name = "Orders"
+layer = "domain"
+paths = ["app/models/**"]
+desc = "Order and Refund: the order total and what can still be refunded"
+[[components]]
+id = "payments"
+name = "Payment gateway"
+layer = "infra"
+paths = ["app/clients/payments/**"]
+[[components]]
+id = "mailers"
+name = "Email delivery"
+layer = "infra"
+paths = ["app/mailers/**"]
+

@@ -38,12 +38,10 @@ const TS_SUFFIXES = [
 
 /** Resolves raw references to components for one side (base or head) of the change. */
 export class SideIndex {
-  private readonly lower = new Map<string, string>();
-  private readonly overrides: Record<"imports" | "namespaces" | "constants", [string, string[]][]>;
+  private readonly overrides: Record<"imports" | "constants", [string, string[]][]>;
   private readonly pyIndex = new Map<string, string>();
   private readonly djangoApps = new Map<string, string>(); // app label → app folder
   private readonly rbIndex = new Map<string, string>();
-  private readonly csNamespaces = new Map<string, Set<string>>();
 
   constructor(
     private readonly files: ReadonlySet<string>,
@@ -51,10 +49,9 @@ export class SideIndex {
     private readonly tsconfigs: TsConfig[],
     extracted: ReadonlyMap<string, Extracted>,
   ) {
-    for (const f of files) this.lower.set(f.toLowerCase(), f);
-    const own = (k: "imports" | "namespaces" | "constants") =>
+    const own = (k: "imports" | "constants") =>
       mapper.components.filter((c) => c[k].length).map((c) => [c.id, c[k]] as [string, string[]]);
-    this.overrides = { imports: own("imports"), namespaces: own("namespaces"), constants: own("constants") };
+    this.overrides = { imports: own("imports"), constants: own("constants") };
 
     const sorted = [...files].sort(compareStrings);
     // Python roots: the repository, src/, every manage.py folder and the parent of every Django app.
@@ -98,20 +95,10 @@ export class SideIndex {
         if (!this.rbIndex.has(constant)) this.rbIndex.set(constant, f);
       }
     }
-
-    for (const [f, ex] of extracted) {
-      const comp = mapper.component(f);
-      if (!comp) continue;
-      for (const ns of ex.namespaces) {
-        const set = this.csNamespaces.get(ns) ?? new Set<string>();
-        set.add(comp);
-        this.csNamespaces.set(ns, set);
-      }
-    }
   }
 
   resolve(src: string, ref: Ref): Resolution {
-    const overrideKind = ref.kind === "cs_using" ? "namespaces" : ref.kind === "rb_const" ? "constants" : "imports";
+    const overrideKind = ref.kind === "rb_const" ? "constants" : "imports";
     const owner = this.overrides[overrideKind].find(([, patterns]) => patterns.some((p) => fnmatch(ref.raw, p)));
     if (owner) return { kind: "component", components: [owner[0]], file: null };
     let target: string | null = null;
@@ -149,17 +136,6 @@ export class SideIndex {
         target =
           [`${appDir}/models.py`, `${appDir}/models/__init__.py`, `${appDir}/apps.py`].find((t) => this.file(t)) ??
           null;
-        break;
-      }
-      case "cs_using": {
-        const comps = this.csNamespaces.get(ref.raw);
-        if (!comps?.size) return EXTERNAL;
-        return { kind: "component", components: [...comps].sort(compareStrings), file: null };
-      }
-      case "csproj": {
-        const path = normpath(join(dirname(src), ref.raw.replace(/\\/g, "/")));
-        target = this.file(path) ?? this.lower.get(path.toLowerCase()) ?? null;
-        if (!target) return UNRESOLVED;
         break;
       }
     }

@@ -39,11 +39,11 @@ describe("end to end", () => {
   });
 
   test("Rails: new dependencies through the layers, no violation", () => {
-    const e = edges("01-marketplace-rails-refunds-es");
+    const e = edges("01-marketplace-rails-refunds");
     for (const pair of ["controllers->refunds", "refunds->models", "refunds->payments", "refunds->mailers"]) {
       expect(e[pair]).toEqual(["added", false, false]);
     }
-    expect(facts("01-marketplace-rails-refunds-es").stats.newViolations).toBe(0);
+    expect(facts("01-marketplace-rails-refunds").stats.newViolations).toBe(0);
   });
 
   test("Django without config: components inferred from the apps", () => {
@@ -54,13 +54,13 @@ describe("end to end", () => {
   });
 
   test("Django with OpenSpec: requirement deltas and the new app", () => {
-    const name = "03-orders-django-openspec-es";
+    const name = "03-orders-django-openspec";
     expect(edges(name)["orders-svc->notifications"]).toEqual(["added", false, false]);
     expect(edges(name)["notifications->orders-model"]).toEqual(["added", false, false]);
     expect(facts(name).components.find((c) => c.id === "notifications")?.delta).toBe("added");
     const reqs = Object.fromEntries(
       facts(name).openspec?.changes.flatMap((c) => c.requirements.map((r) => [r.id, r.op])) ?? [],
     );
-    expect(reqs).toEqual({ "orders/email-de-confirmacion": "ADDED", "orders/crear-pedido": "MODIFIED" });
+    expect(reqs).toEqual({ "orders/confirmation-email": "ADDED", "orders/create-order": "MODIFIED" });
   });
 });

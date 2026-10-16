@@ -122,13 +122,6 @@
             },
             "description": "TypeScript/Python/require specifiers owned by this component outside its paths. `*` matches anything, `.` and `/` included: `billing.*` covers `billing.models.invoice`."
           },
-          "namespaces": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "C# namespaces owned by this component. `*` matches anything, `.` included."
-          },
           "constants": {
             "type": "array",
             "items": {

@@ -58,8 +58,7 @@ Each folder depends only on the ones above it:
 
 References are read with regular expressions written for the declarations that matter to a dependency graph, and
 tested on them: Ruby (Zeitwerk constants with lexical nesting, associations, `require`), ERB, Python (imports,
-Django string references, URL includes), TypeScript (imports, `tsconfig` paths and `baseUrl`), C# (`using`,
-namespaces, project references). Unresolved references are counted, never hidden. Repositories over 20,000 source
+Django string references, URL includes) and TypeScript (imports, `tsconfig` paths and `baseUrl`). Unresolved references are counted, never hidden. Repositories over 20,000 source
 files are scanned only in the touched components, and files are read in chunks.
 
 ## Config assessment

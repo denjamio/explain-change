@@ -11,10 +11,17 @@ All notable changes to this project are documented here. The format follows
   who can open the PR can download it. It refuses a report of other commits than the PR's, and does not attach the
   same change twice (`--force` does). `local`, `pr` and `render` say when a report can be shared (`share` in
   `--json`); the skill mentions it and runs it only when asked.
-- The examples are published at https://denjamio.github.io/explain-change/; each card links to its inputs (and, for
-  real pull requests, the upstream commit).
+- The examples are published at https://denjamio.github.io/explain-change/, all in English: real pull requests, a
+  feature tour, and a table of what each report shows, read from the data it embeds. Each card links to its inputs
+  (and, for real pull requests, the upstream commit).
+- The README explains which parts of Domain-Driven Design the tool uses.
 - CI compiles the standalone binary on Linux, macOS and Windows and runs it through pipes on a temporary repository
   (`bun run smoke`), so the Windows binary runs before it ships.
+
+### Removed
+- C# support: `using`, namespaces, project references, ASP.NET endpoints and the .NET test, generated and build
+  patterns. The `namespaces` component key is now an unknown key (an error). `ANALYSIS_VERSION` is 4, so explanations
+  written before turn stale.
 
 ### Fixed
 - Folders are created one at a time: on Windows, Bun's recursive mkdir could throw EEXIST under existing parents with

@@ -1,0 +1,202 @@
+{
+  "tldr": "Adds partial order refunds through POST /refunds, idempotent by the Idempotency-Key header, with an email to the customer.",
+  "goal": "Let support give back part of an order's amount without charging twice.",
+  "story": [
+    {
+      "heading": "New use case Refunds::Create",
+      "body": "Support can refund part of an order. A retry with the same key does not charge again.",
+      "view": "architecture",
+      "focus": [
+        "refunds"
+      ],
+      "code": "app/services/refunds/create.rb:4-11"
+    },
+    {
+      "heading": "Order now computes what is refundable",
+      "body": "The amount rule lives in the model, not in the service.",
+      "view": "architecture",
+      "focus": [
+        "models"
+      ],
+      "code": "app/models/order.rb:5-10"
+    },
+    {
+      "heading": "Table refunds added",
+      "body": "Each refund stores its amount and a unique idempotency key. An order has 0 or more refunds.",
+      "view": "data",
+      "focus": [
+        "refund"
+      ],
+      "code": "db/migrate/20261001100000_create_refunds.rb:3-8"
+    },
+    {
+      "heading": "The gateway receives the idempotency key",
+      "body": "Gateway.refund passes Idempotency-Key on to the payment gateway.",
+      "view": "flow:create-refund",
+      "focus": [
+        "#4"
+      ],
+      "code": "app/clients/payments/gateway.rb:8-10"
+    },
+    {
+      "heading": "The customer gets an email at the end",
+      "body": "deliver_later: if SMTP is down, the refund does not fail.",
+      "view": "flow:create-refund",
+      "focus": [
+        "#5"
+      ]
+    },
+    {
+      "heading": "5 components, 0 violations",
+      "body": "Every new dependency goes web → application → domain/infra.",
+      "view": "architecture"
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "refunds",
+      "to": "payments",
+      "label": "refund + idempotency"
+    }
+  ],
+  "components": [
+    {
+      "id": "controllers",
+      "summary": "New route POST /refunds; the controller requires Idempotency-Key and delegates."
+    },
+    {
+      "id": "refunds",
+      "summary": "New use case: deduplicates by key, records the refund, calls the gateway and notifies."
+    },
+    {
+      "id": "models",
+      "summary": "New Refund model; Order computes the refundable amount and creates refunds."
+    },
+    {
+      "id": "payments",
+      "summary": "The gateway exposes refund(), passing the idempotency key on."
+    },
+    {
+      "id": "mailers",
+      "summary": "New refund confirmation email."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "Idempotency through the Idempotency-Key header",
+      "why": "The client controls retries, and the same key reaches the gateway.",
+      "alternative": "Deduplicate by (order, amount) within a time window.",
+      "evidence": "app/controllers/refunds_controller.rb:6"
+    },
+    {
+      "title": "The amount rule lives in Order",
+      "why": "Order knows its total and its refunds; the service only coordinates the calls.",
+      "evidence": "app/models/order.rb:6"
+    },
+    {
+      "title": "Email in the background",
+      "why": "deliver_later neither blocks the response nor fails the refund if SMTP is down.",
+      "evidence": "app/services/refunds/create.rb:11"
+    }
+  ],
+  "flows": [
+    {
+      "id": "create-refund",
+      "title": "Create a refund",
+      "trigger": "RefundsController#create",
+      "steps": [
+        {
+          "from": "controllers",
+          "to": "refunds",
+          "call": "Refunds::Create.call",
+          "delta": "added",
+          "data": {
+            "type": "RefundParams",
+            "fields": [
+              "+order_id",
+              "+amount",
+              "+idempotency_key"
+            ]
+          }
+        },
+        {
+          "from": "refunds",
+          "to": "models",
+          "call": "Refund.find_by(key)",
+          "delta": "added"
+        },
+        {
+          "from": "refunds",
+          "to": "models",
+          "call": "order.refund!(amount)",
+          "delta": "added",
+          "data": {
+            "type": "Refund",
+            "fields": [
+              "+amount: decimal",
+              "+idempotency_key: string"
+            ]
+          }
+        },
+        {
+          "from": "refunds",
+          "to": "payments",
+          "call": "Gateway.refund",
+          "delta": "added",
+          "data": {
+            "type": "RefundRequest",
+            "fields": [
+              "+charge",
+              "+amount",
+              "+idempotency_key"
+            ]
+          }
+        },
+        {
+          "from": "refunds",
+          "to": "mailers",
+          "call": "RefundMailer.confirmation",
+          "delta": "added"
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "refund",
+        "name": "Refund",
+        "component": "models",
+        "evidence": "db/migrate/20261001100000_create_refunds.rb:1-10",
+        "fields": [
+          "+order_id: references",
+          "+amount: decimal(10,2)",
+          "+idempotency_key: string (unique)",
+          "+created_at, updated_at"
+        ],
+        "delta": "added"
+      },
+      {
+        "id": "order",
+        "name": "Order",
+        "component": "models",
+        "evidence": "app/models/order.rb:1-11",
+        "fields": [
+          "id",
+          "total: decimal",
+          "+refunds: has_many",
+          "+refundable_total(): total − Σ refunds"
+        ],
+        "delta": "changed"
+      }
+    ],
+    "relations": [
+      {
+        "from": "order",
+        "to": "refund",
+        "label": "1 → 0..n",
+        "delta": "added"
+      }
+    ]
+  }
+}

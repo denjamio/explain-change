@@ -1,0 +1,46 @@
+[project]
+name = "orders"
+direction = "Thin views; logic lives in services and models; external integrations live in their own app."
+
+[[layers]]
+id = "web"
+name = "Web"
+[[layers]]
+id = "application"
+name = "Application"
+[[layers]]
+id = "domain"
+name = "Domain"
+[[layers]]
+id = "infra"
+name = "Infrastructure"
+
+[rules]
+allow = ["web -> application", "application -> domain", "application -> infra", "infra -> domain"]
+
+[[components]]
+id = "orders-api"
+name = "Orders API"
+layer = "web"
+paths = ["orders/views.py", "orders/urls.py"]
+[[components]]
+id = "orders-svc"
+name = "Order management"
+layer = "application"
+paths = ["orders/services.py"]
+[[components]]
+id = "orders-model"
+name = "Orders"
+layer = "domain"
+paths = ["orders/models.py", "orders/migrations/**"]
+[[components]]
+id = "notifications"
+name = "Notifications"
+layer = "infra"
+paths = ["notifications/**"]
+
+
+[[flows]]
+id = "create-order"
+title = "Create an order"
+steps = ["orders-api -> orders-svc : create_order", "orders-svc -> orders-model : Order.place"]

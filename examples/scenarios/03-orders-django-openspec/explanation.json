@@ -1,0 +1,173 @@
+{
+  "tldr": "When an order is created, create_order sends a confirmation email through the new notifications app. It implements the OpenSpec change add-order-confirmation, except the retries.",
+  "goal": "Let customers know their order was registered, without putting email delivery in the orders app.",
+  "story": [
+    {
+      "heading": "create_order now sends the confirmation",
+      "body": "After Order.place it calls send_order_confirmation, in the same transaction.",
+      "view": "architecture",
+      "focus": [
+        "orders-svc",
+        "notifications"
+      ],
+      "code": "orders/services.py:7-11"
+    },
+    {
+      "heading": "notifications app added",
+      "body": "It sends the email with send_mail. It depends on Order, in the allowed direction.",
+      "view": "architecture",
+      "focus": [
+        "notifications"
+      ],
+      "code": "notifications/email.py:1-7"
+    },
+    {
+      "heading": "The email goes out before the commit",
+      "body": "send_order_confirmation runs inside transaction.atomic. If SMTP fails, the transaction rolls back.",
+      "view": "flow:create-order",
+      "focus": [
+        "#3"
+      ],
+      "code": "orders/services.py:8-10"
+    },
+    {
+      "heading": "Order now requires a valid email",
+      "body": "New email field with a migration. Order.place rejects emails without @.",
+      "view": "data",
+      "focus": [
+        "order"
+      ],
+      "code": "orders/models.py:7-15"
+    },
+    {
+      "heading": "2 of 3 scenarios met",
+      "body": "The 'SMTP down' scenario is missing: there is no retry and the order is not created. Task 2.3 is still open.",
+      "view": "requirements",
+      "focus": [
+        "orders/confirmation-email"
+      ]
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "orders-svc",
+      "to": "notifications",
+      "label": "sends the confirmation"
+    }
+  ],
+  "components": [
+    {
+      "id": "orders-api",
+      "summary": "POST /orders/ passes the customer's email to create_order."
+    },
+    {
+      "id": "orders-svc",
+      "summary": "create_order takes the email and sends the confirmation."
+    },
+    {
+      "id": "orders-model",
+      "summary": "Order stores and validates the email; new migration."
+    },
+    {
+      "id": "notifications",
+      "summary": "New app with send_order_confirmation on top of send_mail."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "Send the email inside the transaction",
+      "why": "It is the simplest option: no order is saved without a notice.",
+      "alternative": "transaction.on_commit with a queued task and retries.",
+      "evidence": "orders/services.py:10"
+    },
+    {
+      "title": "send_mail directly, with no interface of its own",
+      "why": "Django already abstracts the email backend.",
+      "alternative": "A Notifier interface in orders that notifications implements.",
+      "evidence": "notifications/email.py:7"
+    }
+  ],
+  "flows": [
+    {
+      "id": "create-order",
+      "title": "Create an order",
+      "trigger": "orders.views.create",
+      "scenario": "orders/confirmation-email#order-created",
+      "steps": [
+        {
+          "from": "orders-api",
+          "to": "orders-svc",
+          "call": "create_order(total, email)",
+          "delta": "changed",
+          "data": {
+            "type": "POST /orders/",
+            "fields": [
+              "total: Decimal",
+              "+email: string"
+            ]
+          }
+        },
+        {
+          "from": "orders-svc",
+          "to": "orders-model",
+          "call": "Order.place (validates email)",
+          "delta": "changed"
+        },
+        {
+          "from": "orders-svc",
+          "to": "notifications",
+          "call": "send_order_confirmation",
+          "delta": "added",
+          "data": {
+            "type": "Order",
+            "fields": [
+              "id",
+              "+email"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "order",
+        "name": "Order",
+        "component": "orders-model",
+        "evidence": "orders/models.py:5-15",
+        "fields": [
+          "total: Decimal",
+          "+email: EmailField"
+        ],
+        "delta": "changed"
+      }
+    ],
+    "relations": []
+  },
+  "requirements": [
+    {
+      "id": "orders/confirmation-email",
+      "status": "partial",
+      "components": [
+        "orders-svc",
+        "notifications"
+      ],
+      "tests": [
+        "orders/tests/test_services.py:9"
+      ],
+      "note": "The 'SMTP down' scenario is not implemented: there is no retry and the order is not created."
+    },
+    {
+      "id": "orders/create-order",
+      "status": "implemented",
+      "components": [
+        "orders-model",
+        "orders-api"
+      ],
+      "tests": [
+        "orders/tests/test_services.py:5"
+      ]
+    }
+  ]
+}

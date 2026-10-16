@@ -1,0 +1,6 @@
+{
+  "title": "Ruby on Rails",
+  "shows": "A clean feature across four layers: no violations, Zeitwerk constant resolution, a migration and routes, and a glossary the story follows.",
+  "branch": "feature/refunds",
+  "message": "Idempotent order refunds"
+}

@@ -1,6 +1,0 @@
-{
-  "title": "Django · OpenSpec",
-  "shows": "An OpenSpec change (proposal, design, tasks, spec deltas) carried by the PR: SDD pipeline, requirement → code traceability, a scenario drawn as a flow and a model change.",
-  "branch": "feature/add-order-confirmation",
-  "message": "Confirmación de pedido por email (openspec: add-order-confirmation)"
-}

@@ -188,7 +188,7 @@ describe("Rails", () => {
   });
 });
 
-describe("TypeScript and C#", () => {
+describe("TypeScript", () => {
   test("relative imports, tsconfig paths and baseUrl", () => {
     const files = {
       "src/app/main.ts":
@@ -208,22 +208,6 @@ describe("TypeScript and C#", () => {
       tsconfigs,
     );
     expect(edges).toEqual({ "app->domain": 1, "app->core": 1 });
-  });
-
-  test("C# namespaces and project references", () => {
-    const files = {
-      "Shop.Api/OrdersController.cs":
-        "using Shop.Billing;\nusing System;\nnamespace Shop.Api;\npublic class OrdersController {}\n",
-      "Shop.Billing/Invoice.cs": "namespace Shop.Billing\n{\n  public class Invoice {}\n}\n",
-      "Shop.Api/Shop.Api.csproj":
-        '<Project><ItemGroup><ProjectReference Include="..\\Shop.Billing\\Shop.Billing.csproj" /></ItemGroup></Project>',
-      "Shop.Billing/Shop.Billing.csproj": "<Project />",
-    };
-    const { edges } = edgesFor(files, [
-      { id: "api", layer: "web", paths: ["Shop.Api/**"] },
-      { id: "billing", layer: "domain", paths: ["Shop.Billing/**"] },
-    ]);
-    expect(edges).toEqual({ "api->billing": 2 });
   });
 });
 

@@ -32,7 +32,7 @@ When two words could name the same thing, this page says which one is used.
 | **Facts** | Everything the tool knows about one change. Same change + config + tool version → byte-identical facts. |
 | **Delta** | How an element of the map differs between base and head: `added`, `changed`, `removed` or `unchanged`. The same four values for files, components, dependencies, symbols, flow steps, entities and relations. |
 | **Neighbor** | A component with delta `unchanged` that a dependency of the change reaches. The report labels it "untouched", and draws it by default only when the change alters its link (a dependency added, removed, changed or broken, or the key dependency) or the story points at it; the others are **context**, shown on demand. |
-| **Dependency** | Component A uses component B in code (import, constant, association, `using`, project reference). Drawn as an arrow. `changed` = it exists on both sides with a different number of references. |
+| **Dependency** | Component A uses component B in code (import, constant, association, string model reference). Drawn as an arrow. `changed` = it exists on both sides with a different number of references. |
 | **Dependency graph** | Every component dependency at the head, drawn or not; used to verify flow steps. |
 | **Symbol** | A public declaration (class, function, endpoint…) the change adds, changes or removes. |
 | **Outline** | The story's skeleton computed from the facts: steps with their view, focus and code; detected flows; key-dependency candidates; data files. |

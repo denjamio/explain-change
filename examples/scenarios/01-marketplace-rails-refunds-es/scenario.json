@@ -1,6 +1,0 @@
-{
-  "title": "Ruby on Rails · Spanish UI",
-  "shows": "A clean feature across four layers: no violations, Zeitwerk constant resolution, migration and routes, Spanish labels.",
-  "branch": "feature/refunds",
-  "message": "Reembolsos idempotentes de pedidos"
-}

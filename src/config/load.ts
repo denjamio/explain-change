@@ -106,7 +106,6 @@ export function normalizeConfig(raw: unknown, inferred: boolean): LoadedConfig {
       desc: c.desc ?? "",
       paths,
       imports: c.imports ?? [],
-      namespaces: c.namespaces ?? [],
       constants: c.constants ?? [],
     });
   });
