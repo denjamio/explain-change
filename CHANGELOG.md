@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- A flow step's `call` takes up to 80 characters, up from 50: real names such as
+  `product_variant_channel_listing_qs_select_for_update` did not fit. The flow view fits the label between its 2
+  lifelines and shows the full call as its tooltip.
+
 ### Added
 - A `configure` next action: when the team's config maps none of the changed code, `local`, `pr` and `render` ask
   to update the config instead of an explanation of an empty map. The skills say what to do with it.

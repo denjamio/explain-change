@@ -1168,7 +1168,13 @@ function buildFlow(fl: NFlow): View {
     );
     if (stp.from === stp.to) {
       g.appendChild(s("path", { id: pid, d: `M${x1},${y - 6} h38 v16 h-34`, class: "msg-line", "marker-end": marker }));
-      g.appendChild(s("text", { x: x1 + 46, y: y + 4, class: "msg-label", text: trunc(stp.call, 40) }));
+      g.appendChild(
+        s(
+          "text",
+          { x: x1 + 46, y: y + 4, class: "msg-label", text: trunc(stp.call, 40) },
+          s("title", { text: stp.call }),
+        ),
+      );
       V.geo[key] = { x: x1 - 10, y: y - 24, w: 220, h: 36 };
     } else {
       const dir = x2 > x1 ? 1 : -1;
@@ -1180,14 +1186,20 @@ function buildFlow(fl: NFlow): View {
           "marker-end": marker,
         }),
       );
+      // The label fits between the 2 lifelines (about 6.5 px a character); the full call is its tooltip.
+      const fits = Math.max(12, Math.floor(Math.abs(x2 - x1) / 6.5));
       g.appendChild(
-        s("text", {
-          x: (x1 + x2) / 2,
-          y: y - 8,
-          "text-anchor": "middle",
-          class: "msg-label",
-          text: stp.call + (stp.verified ? "" : "  ?"),
-        }),
+        s(
+          "text",
+          {
+            x: (x1 + x2) / 2,
+            y: y - 8,
+            "text-anchor": "middle",
+            class: "msg-label",
+            text: trunc(stp.call, fits) + (stp.verified ? "" : "  ?"),
+          },
+          s("title", { text: stp.call }),
+        ),
       );
       if (stp.data) g.appendChild(dataChip(stp.data, (x1 + x2) / 2, y + 17));
       V.geo[key] = { x: Math.min(x1, x2), y: y - 24, w: Math.abs(x2 - x1), h: 36 };

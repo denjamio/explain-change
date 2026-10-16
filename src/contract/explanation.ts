@@ -28,7 +28,7 @@ export const LIMITS = {
   "flows.title": 60,
   "flows.trigger": 60,
   "flows.steps": 12,
-  "flows.steps.call": 50,
+  "flows.steps.call": 80,
   "flows.steps.data.type": 40,
   "flows.steps.data.fields": 8,
   "flows.steps.data.fields.item": 60,
