@@ -316,7 +316,8 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
   CHANGELOG), move the CHANGELOG's notes under the new version, then push the tag `vX.Y.Z` from `main`. The release
   workflow runs the checks, attaches the 5 binaries to a GitHub release with those notes, and publishes the npm
   package when the repository has an `NPM_TOKEN` secret (it skips npm without it).
-- **Screenshot**: `docs/report.png` is the maybe example at 1440×900; retake it when the report's look changes.
+- **Screenshot**: `docs/report.png` is the maybe example at 1440×900, light theme, on its first story step with **Fit**
+  pressed (the whole map); retake it when the report's look or that example's story changes.
 
 </details>
 
