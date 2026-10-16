@@ -9,8 +9,8 @@ import { prSource } from "../src/hosts/source.ts";
 import { FakeGh, fakeHosts, ok, Repo, throwsUser } from "./helpers.ts";
 
 const repos: Repo[] = [];
-const repo = () => {
-  const r = new Repo();
+const repo = (opts?: { empty?: boolean }) => {
+  const r = new Repo(undefined, opts);
   repos.push(r);
   return r;
 };
@@ -88,7 +88,7 @@ describe("GitHub", () => {
       server.git("update-ref", "refs/pull/42/merge", "HEAD");
       server.git("reset", "-q", "--hard", "HEAD~1");
     }
-    const clone = repo();
+    const clone = repo({ empty: true });
     const path = `${clone.path}/c`;
     spawnSync("git", ["clone", "-q", server.path, path], { env: process.env });
     return path;
@@ -97,6 +97,8 @@ describe("GitHub", () => {
     spawnSync("git", ["diff", "--name-only", src.mergeBase, src.headSha], { cwd: path, encoding: "utf8" })
       .stdout.split(/\s+/)
       .filter(Boolean);
+  // A server, a clone and its fetches: some 20 git processes, which take seconds on Windows runners.
+  const CLONE_TIMEOUT_MS = 20_000;
   const pr = {
     title: "Add line items",
     body: "Why",
@@ -107,36 +109,44 @@ describe("GitHub", () => {
     mergeable: "MERGEABLE",
   };
 
-  test("merge ref with gh metadata; a pasted URL names the repository", () => {
-    const path = gitHubClone(true);
-    const gh = new FakeGh([ok(pr)]);
-    const notes: string[] = [];
-    const src = prSource(path, fakeHosts({ gh }).github, "https://github.com/org/repo/pull/42/files", notes);
-    expect(changed(path, src)).toEqual(["app/models/order.rb"]);
-    expect([src.host, src.prId, src.title, src.branch, src.baseRef, src.url]).toEqual([
-      "github",
-      "42",
-      "Add line items",
-      "feature",
-      "main",
-      "https://github.com/org/repo/pull/42",
-    ]);
-    const args = gh.calls[0] as string[];
-    expect(args.slice(0, 3)).toEqual(["pr", "view", "42"]);
-    expect(args[args.indexOf("--repo") + 1]).toBe("org/repo");
-    expect(notes).toEqual([]);
-  });
+  test(
+    "merge ref with gh metadata; a pasted URL names the repository",
+    () => {
+      const path = gitHubClone(true);
+      const gh = new FakeGh([ok(pr)]);
+      const notes: string[] = [];
+      const src = prSource(path, fakeHosts({ gh }).github, "https://github.com/org/repo/pull/42/files", notes);
+      expect(changed(path, src)).toEqual(["app/models/order.rb"]);
+      expect([src.host, src.prId, src.title, src.branch, src.baseRef, src.url]).toEqual([
+        "github",
+        "42",
+        "Add line items",
+        "feature",
+        "main",
+        "https://github.com/org/repo/pull/42",
+      ]);
+      const args = gh.calls[0] as string[];
+      expect(args.slice(0, 3)).toEqual(["pr", "view", "42"]);
+      expect(args[args.indexOf("--repo") + 1]).toBe("org/repo");
+      expect(notes).toEqual([]);
+    },
+    CLONE_TIMEOUT_MS,
+  );
 
-  test("no merge ref: refs/pull/<id>/head against its merge base; without gh it stops", () => {
-    const path = gitHubClone(false);
-    const notes: string[] = [];
-    const conflicting = { ...pr, mergeable: "CONFLICTING" };
-    const src = prSource(path, fakeHosts({ gh: new FakeGh([ok(conflicting)]) }).github, "42", notes);
-    expect(changed(path, src)).toEqual(["app/models/order.rb"]);
-    expect(src.headRef).toBe("refs/explain-change/pr-42/source");
-    expect(notes[0]).toContain("conflicts");
-    throwsUser(() => prSource(path, fakeHosts().github, "42", []), "gh auth login");
-  });
+  test(
+    "no merge ref: refs/pull/<id>/head against its merge base; without gh it stops",
+    () => {
+      const path = gitHubClone(false);
+      const notes: string[] = [];
+      const conflicting = { ...pr, mergeable: "CONFLICTING" };
+      const src = prSource(path, fakeHosts({ gh: new FakeGh([ok(conflicting)]) }).github, "42", notes);
+      expect(changed(path, src)).toEqual(["app/models/order.rb"]);
+      expect(src.headRef).toBe("refs/explain-change/pr-42/source");
+      expect(notes[0]).toContain("conflicts");
+      throwsUser(() => prSource(path, fakeHosts().github, "42", []), "gh auth login");
+    },
+    CLONE_TIMEOUT_MS,
+  );
 
   test("`pr` without an id finds the branch's open PR", () => {
     const r = repo();
