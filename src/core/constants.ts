@@ -6,7 +6,7 @@ export const VERSION: string = pkg.version;
  * Version of the agent contract: the shape of facts.json and explanation.json. Explanations written for another
  * contract are stale.
  */
-export const CONTRACT_VERSION = 3;
+export const CONTRACT_VERSION = 4;
 /**
  * Part of the change key. Bump it when a change to the analysis (parsers, mapping, dependencies, symbols, outline)
  * can change facts.json for the same diff, so explanations written against the old analysis turn stale, not valid.

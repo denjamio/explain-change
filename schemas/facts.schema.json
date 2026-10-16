@@ -5,7 +5,7 @@
   "properties": {
     "version": {
       "type": "number",
-      "const": 3
+      "const": 4
     },
     "tool": {
       "type": "string"
@@ -555,6 +555,33 @@
         "maxItems": 2
       },
       "description": "Every component dependency at the head, to verify flow steps."
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "interfaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "interfaces"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Ports and adapters that touch the change: `to` implements `interfaces` that `from` declares. They verify a flow step between 2 components that do not import each other."
     },
     "symbols": {
       "type": "array",
@@ -1310,6 +1337,7 @@
     "components",
     "dependencies",
     "dependencyGraph",
+    "ports",
     "symbols",
     "stats",
     "notes",

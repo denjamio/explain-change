@@ -255,6 +255,11 @@ export const FactsSchema = z
     dependencyGraph: z
       .array(z.tuple([z.string(), z.string()]))
       .describe("Every component dependency at the head, to verify flow steps."),
+    ports: z
+      .array(z.object({ from: z.string(), to: z.string(), interfaces: z.array(z.string()) }))
+      .describe(
+        "Ports and adapters that touch the change: `to` implements `interfaces` that `from` declares. They verify a flow step between 2 components that do not import each other.",
+      ),
     symbols: z.array(SymbolFacts),
     stats: Stats,
     notes: z.array(z.string()),

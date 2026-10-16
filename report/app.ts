@@ -109,7 +109,7 @@ const I18N = {
     themeDark: "dark",
     alternative: "Alternative",
     unverified: "The code has no dependency between these components",
-    viaPort: "Linked through {x}: both depend on it",
+    viaPort: "Through the port {x}: 1 side implements it",
     unverifiedNote: "No dependency in the code:",
     prev: "Previous",
     next: "Next",
@@ -271,7 +271,7 @@ const I18N = {
     themeDark: "oscuro",
     alternative: "Alternativa",
     unverified: "El código no tiene dependencia entre estos componentes",
-    viaPort: "Conectados a través de {x}: ambos dependen de él",
+    viaPort: "A través del puerto {x}: un lado lo implementa",
     unverifiedNote: "Sin dependencia en el código:",
     prev: "Anterior",
     next: "Siguiente",
@@ -1153,7 +1153,7 @@ function buildFlow(fl: NFlow): View {
       "data-to": `p:${stp.to}`,
     });
     if (!stp.verified) g.appendChild(s("title", { text: T.unverified }));
-    else if (stp.via) g.appendChild(s("title", { text: tf("viaPort", { x: compName(stp.via) }) }));
+    else if (stp.via) g.appendChild(s("title", { text: tf("viaPort", { x: stp.via }) }));
     const marker = `url(#sq-${fl.id}-${stp.delta})`;
     const pid = `fm-${fl.id}-${i}`;
     g.appendChild(

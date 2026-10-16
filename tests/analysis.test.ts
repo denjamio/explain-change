@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
+import { portLinks } from "../src/analysis/ports.ts";
 import { type Extracted, extractRefs } from "../src/analysis/refs.ts";
 import { loadTsConfigs, SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
 import { extractSymbols } from "../src/analysis/symbols.ts";
@@ -264,6 +265,35 @@ describe("TypeScript and C#", () => {
     ).toEqual([
       ["dashboard/api/inbox", 5],
       ["vue", 6],
+    ]);
+  });
+
+  test("ports and adapters: who declares an interface, who implements it", () => {
+    const files: Record<string, string> = {
+      "Core/Vault/IFolderRepository.cs":
+        "namespace Bit.Core.Vault;\npublic interface IFolderRepository : IRepository<Folder, Guid>\n{\n}\n",
+      "Core/Vault/DeleteManyFoldersCommand.cs":
+        "namespace Bit.Core.Vault;\npublic class DeleteManyFoldersCommand(\n    IFolderRepository folderRepository,\n    IPushNotificationService push)\n    : IDeleteManyFoldersCommand\n{\n}\n",
+      "Dapper/FolderRepository.cs":
+        "namespace Bit.Dapper;\npublic class FolderRepository : Repository<Folder, Guid>, IFolderRepository\n{\n}\n",
+      "web/gateway.ts": "export interface EmailGateway {}\n",
+      "adapters/postmark.ts":
+        "export class PostmarkGateway extends Base<Config> implements EmailGateway, Disposable {\n}\n",
+    };
+    const extracted = new Map(Object.entries(files).map(([p, t]) => [p, extractRefs(p, t)]));
+    expect(extracted.get("Dapper/FolderRepository.cs")?.implements).toEqual(["IFolderRepository"]);
+    expect(extracted.get("Core/Vault/DeleteManyFoldersCommand.cs")?.implements).toEqual(["IDeleteManyFoldersCommand"]);
+    const mapper = new Mapper(
+      makeConfig([
+        { id: "vault", layer: "core", paths: ["Core/Vault/**"] },
+        { id: "dapper", layer: "adapters", paths: ["Dapper/**"] },
+        { id: "notifications", layer: "core", paths: ["web/**"] },
+        { id: "email", layer: "adapters", paths: ["adapters/**"] },
+      ]),
+    );
+    expect(portLinks(extracted, mapper)).toEqual([
+      { from: "notifications", to: "email", interfaces: ["EmailGateway"] },
+      { from: "vault", to: "dapper", interfaces: ["IFolderRepository"] },
     ]);
   });
 

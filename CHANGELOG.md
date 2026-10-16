@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- A flow step is verified through a port when 1 side implements an interface the other declares (C# `class X :
+  IFoo`, TypeScript `implements`), named after the interface its call uses ("Through the port IFolderRepository"),
+  else by a dependency in either direction. A third component both use is no evidence any more: in the examples,
+  3 of its 4 "linked through" reasons were wrong. `facts.json` lists `ports`; the contract is version 4.
 - A flow step's `call` takes up to 80 characters, up from 50: real names such as
   `product_variant_channel_listing_qs_select_for_update` did not fit. The flow view fits the label between its 2
   lifelines and shows the full call as its tooltip.

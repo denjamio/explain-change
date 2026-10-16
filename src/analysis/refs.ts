@@ -20,6 +20,9 @@ export interface Extracted {
   refs: Ref[];
   /** C# namespaces the file declares. */
   namespaces: string[];
+  /** Interfaces the file declares, and those its classes implement: the ports of ports and adapters (C#, TypeScript). */
+  interfaces?: string[];
+  implements?: string[];
   /** Django AppConfig.label, from apps.py. */
   djangoLabel?: string;
   /** Rails inflections: `inflect.acronym "API"` and `"html_parser" => "HTMLParser"`. */
@@ -48,6 +51,20 @@ const RB_REQUIRE_LINE = /^require(?:_relative|_dependency)?\b/;
 const ERB_BLOCK = /<%[=-]?([\s\S]*?)-?%>/g;
 const CS_USING = /^[ \t]*(?:global[ \t]+)?using[ \t]+(?:static[ \t]+)?(?:\w+[ \t]*=[ \t]*)?([A-Za-z_][\w.]*)[ \t]*;/gm;
 const CS_NS = /^[ \t]*namespace[ \t]+([A-Za-z_][\w.]*)/gm;
+const CS_INTERFACE = /^[ \t]*(?:(?:public|internal|partial)[ \t]+)*interface[ \t]+(I[A-Z]\w*)/gm;
+// `class X : Base, IFoo` and `class X(IBar bar) : IFoo`, the primary constructor over several lines.
+const CS_BASES =
+  /^[ \t]*(?:(?:public|internal|private|protected|sealed|abstract|partial|static|file)[ \t]+)*(?:class|record)[ \t]+\w+(?:<[^>{]*>)?(?:\s*\([^)]*\))?\s*:\s*([^{;]+)/gm;
+const TS_INTERFACE = /\binterface\s+([A-Z]\w*)/g;
+const TS_IMPLEMENTS = /\bclass\s+\w+(?:<[^>{]*>)?(?:\s+extends\s+[\w.]+(?:<[^>{]*>)?)?\s+implements\s+([^{]+)\{/g;
+
+/** The names in a list of base types, without generic arguments: `Repository<A, B>, IFolderRepository`. */
+const typeNames = (list: string) =>
+  list
+    .replace(/<[^<>]*>/g, "")
+    .split(",")
+    .map((t) => t.trim().split(/\s/)[0] as string)
+    .filter(Boolean);
 const CSPROJ_REF = /<ProjectReference\s+Include\s*=\s*["']([^"']+)["']/gi;
 
 /** Ruby code without string literals and without a trailing comment. */
@@ -79,6 +96,8 @@ export function extractRefs(path: string, raw: string | null): Extracted {
 
   if (lang === "ts") {
     for (const m of text.matchAll(TS_RE)) add("ts", m[1] as string, lineOf(m.indices?.[1]?.[0] ?? m.index));
+    out.interfaces = [...text.matchAll(TS_INTERFACE)].map((m) => m[1] as string);
+    out.implements = [...text.matchAll(TS_IMPLEMENTS)].flatMap((m) => typeNames(m[1] as string));
   } else if (lang === "py") {
     for (const m of text.matchAll(PY_IMPORT)) {
       for (const part of (m[1] as string).split(",")) {
@@ -125,6 +144,11 @@ export function extractRefs(path: string, raw: string | null): Extracted {
   } else if (lang === "cs") {
     for (const m of text.matchAll(CS_USING)) add("cs_using", m[1] as string, lineOf(m.index));
     out.namespaces = [...text.matchAll(CS_NS)].map((m) => m[1] as string);
+    out.interfaces = [...text.matchAll(CS_INTERFACE)].map((m) => m[1] as string);
+    // By convention a C# interface is I + a capital: the rest of the list is the base class.
+    out.implements = [...text.matchAll(CS_BASES)].flatMap((m) =>
+      typeNames(m[1] as string).filter((t) => /^I[A-Z]\w*$/.test(t)),
+    );
   } else if (lang === "csproj") {
     for (const m of text.matchAll(CSPROJ_REF)) add("csproj", m[1] as string, lineOf(m.index));
   }
