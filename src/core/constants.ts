@@ -11,7 +11,7 @@ export const CONTRACT_VERSION = 2;
  * Part of the change key. Bump it when a change to the analysis (parsers, mapping, dependencies, symbols, outline)
  * can change facts.json for the same diff, so explanations written against the old analysis turn stale, not valid.
  */
-export const ANALYSIS_VERSION = 4;
+export const ANALYSIS_VERSION = 5;
 
 /** The GitHub repository: releases, issues, the published schemas and the examples site. */
 export const REPOSITORY = "denjamio/explain-change";
@@ -67,6 +67,10 @@ export const DEFAULT_TESTS = [
   "**/*_test.*",
   "**/*_spec.rb",
   "**/test_*.py",
+  "**/*Tests/**",
+  "**/*.Tests/**",
+  "**/*Tests.cs",
+  "**/*Test.cs",
 ];
 export const DEFAULT_IGNORE = [
   "**/*.lock",
@@ -78,9 +82,12 @@ export const DEFAULT_IGNORE = [
   "**/*.min.js",
   "**/*.map",
   "**/*.generated.*",
+  "**/*.g.cs",
+  "**/*.Designer.cs",
   "**/dist/**",
   "**/build/**",
   "**/bin/**",
+  "**/obj/**",
   "**/node_modules/**",
   "**/vendor/**",
   "db/schema.rb",
@@ -100,7 +107,7 @@ export const FRAMEWORK_CONFIG = [
   "**/asgi.py",
   "manage.py",
 ];
-export const MIGRATION_PATTERNS = ["**/migrations/**", "db/migrate/**", "**/db/migrate/**"];
+export const MIGRATION_PATTERNS = ["**/migrations/**", "**/Migrations/**", "db/migrate/**", "**/db/migrate/**"];
 export const CONFIG_EXT = new Set([
   ".json",
   ".yml",
@@ -109,6 +116,10 @@ export const CONFIG_EXT = new Set([
   ".ini",
   ".cfg",
   ".xml",
+  ".csproj",
+  ".sln",
+  ".props",
+  ".targets",
   ".config",
   ".env",
   ".gradle",

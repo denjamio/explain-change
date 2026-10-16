@@ -187,7 +187,7 @@ silently.
 | `[rules] allow` | Allowed dependency directions (`"a -> b"`, layer or component ids). When present, any other edge between layers is a violation. |
 | `[rules] forbid` | Always a violation, even when `allow` matches. |
 | `[rules] same_layer` | Allow dependencies inside a layer (default `true`). |
-| `[[components]]` | `id`, `layer`, `paths` (globs: `*` stays inside a folder, `**` crosses folders; the most specific match wins). Optional `name`, `desc`, and `imports` (Python, TypeScript), `constants` (Ruby) for code owned outside `paths` (their `*` matches anything, `.` and `::` included). |
+| `[[components]]` | `id`, `layer`, `paths` (globs: `*` stays inside a folder, `**` crosses folders; the most specific match wins). Optional `name`, `desc`, and `imports` (Python, TypeScript), `namespaces` (C#), `constants` (Ruby) for code owned outside `paths` (their `*` matches anything, `.` and `::` included). |
 | `[[flows]]` | Reference runtime flows (`"compA -> compB : message"`). An explained flow with the same id is compared with it. |
 | `[glossary]` | The team's ubiquitous language: `term = "one-line definition"`. The agent writes every explanation with these terms. |
 | `[ignore] paths / tests` | Generated or vendored files, and test patterns. Each list **replaces** its default (`explain-change init` writes the defaults out). |
@@ -201,6 +201,7 @@ silently.
 | **Ruby on Rails** | Zeitwerk constants (with `inflect.acronym`), lexical nesting, associations, ERB, routes |
 | **Python / Django** | Imports, string model references, `include()`, `import_string`, celery tasks, URL routes |
 | **TypeScript / JavaScript** | Relative imports, `tsconfig` paths and `baseUrl` |
+| **C# / .NET** | `using`, namespaces, `.csproj` project references, public types and methods, ASP.NET endpoints (`[HttpGet]`, `[Route]`…); EF Core `Migrations/` and generated files (`*.g.cs`, `*.Designer.cs`, `obj/`) set apart |
 | **OpenSpec** | Proposal, design decisions, tasks and requirement deltas (`ADDED`, `MODIFIED`, `REMOVED`, `RENAMED`) with their scenarios, from `openspec/changes/<id>/` and `openspec/specs/<capability>/spec.md` |
 
 Without a config, Rails and Django layouts are recognized (an app per component, big Rails namespaces split by

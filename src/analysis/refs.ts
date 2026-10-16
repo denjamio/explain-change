@@ -5,7 +5,7 @@ import { camelize, lineIndex, singularize, words } from "../core/text.ts";
  * Raw references in one source file, before they are resolved to a file and a component. Regular expressions,
  * not parsers: each one is written for the declarations that matter to a dependency graph, and tested on them.
  */
-export type RefKind = "ts" | "py" | "dj_model" | "rb_req" | "rb_rel" | "rb_const";
+export type RefKind = "ts" | "py" | "dj_model" | "rb_req" | "rb_rel" | "rb_const" | "cs_using" | "csproj";
 
 export interface Ref {
   kind: RefKind;
@@ -18,6 +18,8 @@ export interface Ref {
 
 export interface Extracted {
   refs: Ref[];
+  /** C# namespaces the file declares. */
+  namespaces: string[];
   /** Django AppConfig.label, from apps.py. */
   djangoLabel?: string;
   /** Rails inflections: `inflect.acronym "API"` and `"html_parser" => "HTMLParser"`. */
@@ -44,13 +46,16 @@ const RB_CONST = /(?<![\w:@$])(?:::)?([A-Z][A-Za-z0-9_]*(?:::[A-Z][A-Za-z0-9_]*)
 const RB_STR = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
 const RB_REQUIRE_LINE = /^require(?:_relative|_dependency)?\b/;
 const ERB_BLOCK = /<%[=-]?([\s\S]*?)-?%>/g;
+const CS_USING = /^[ \t]*(?:global[ \t]+)?using[ \t]+(?:static[ \t]+)?(?:\w+[ \t]*=[ \t]*)?([A-Za-z_][\w.]*)[ \t]*;/gm;
+const CS_NS = /^[ \t]*namespace[ \t]+([A-Za-z_][\w.]*)/gm;
+const CSPROJ_REF = /<ProjectReference\s+Include\s*=\s*["']([^"']+)["']/gi;
 
 /** Ruby code without string literals and without a trailing comment. */
 const rubyCode = (line: string) => line.replace(RB_STR, "").split(" #")[0] as string;
 
 export function extractRefs(path: string, text: string | null): Extracted {
   const lang = langOf(path);
-  const out: Extracted = { refs: [] };
+  const out: Extracted = { refs: [], namespaces: [] };
   if (!lang || text === null) return out;
   const lineOf = lineIndex(text);
   const add = (kind: RefKind, raw: string, line: number, extra: readonly string[] = []) =>
@@ -101,6 +106,11 @@ export function extractRefs(path: string, text: string | null): Extracted {
       out.rubyInflections = [...text.matchAll(RB_INFLECT)].map((m) => [m[1] as string, m[2] as string]);
     }
     extractRubyConstants(text, add);
+  } else if (lang === "cs") {
+    for (const m of text.matchAll(CS_USING)) add("cs_using", m[1] as string, lineOf(m.index));
+    out.namespaces = [...text.matchAll(CS_NS)].map((m) => m[1] as string);
+  } else if (lang === "csproj") {
+    for (const m of text.matchAll(CSPROJ_REF)) add("csproj", m[1] as string, lineOf(m.index));
   }
   return out;
 }

@@ -11,6 +11,9 @@ All notable changes to this project are documented here. The format follows
   work through `refs/pull/<id>/head`; file links open the file in the PR's diff. The host comes from the PR URL,
   `--host`, `project.host`, the remotes (Azure DevOps first), else Azure DevOps.
 - `facts.json` names the PR host in `source.host`.
+- C# / .NET again: `using`, namespaces (and the `namespaces` config key), `.csproj` project references, public
+  types and methods, ASP.NET endpoints, EF Core migrations, .NET test and generated files. `ANALYSIS_VERSION` is 5,
+  so explanations written against 4 turn stale.
 
 ### Changed
 - `share` on a GitHub PR stops with a clear message: GitHub's API and `gh` attach only images and videos. It

@@ -17,18 +17,29 @@ export const SYMBOL_RES: Partial<Record<Lang, [string | null, RegExp][]>> = {
     [null, /^\s*(?<k>class|module)\s+(?<n>[A-Z][\w:]*)/],
     ["def", /^\s*def\s+(?<n>(?:self\.)?[a-z_]\w*[?!=]?)/],
   ],
+  cs: [
+    [
+      null,
+      /^\s*public\s+(?:(?:static|sealed|abstract|partial|readonly|ref)\s+)*(?<k>class|interface|record|struct|enum)\s+(?<n>\w+)/,
+    ],
+    [
+      "method",
+      /^\s*public\s+(?:(?:static|async|override|virtual|abstract|sealed|new|extern)\s+)*(?!class\b|interface\b|record\b|struct\b|enum\b)[\w.?[\],]+(?:<[^>]*>)?\??\s+(?<n>\w+)\s*[(<]/,
+    ],
+  ],
 };
 
 const RAILS_ROUTES = /(?:^|\/)config\/routes(?:\.rb|\/.+\.rb)$/;
 const PY_ROUTES = /(?:^|\/)(?:urls|routers?|routes|routing)(?:\.py|\/.+\.py)$/;
 /**
  * Endpoint patterns, each limited to the files where it declares a route: elsewhere `get url` or `delete user` is a
- * plain method call. Rails routes, Django urls and DRF routers, Angular routes.
+ * plain method call. Rails routes, Django urls and DRF routers, ASP.NET attributes, Angular routes.
  */
 const ENDPOINT_RES: [(path: string) => boolean, RegExp][] = [
   [(p) => RAILS_ROUTES.test(p), /^\s*(?<k>get|post|put|patch|delete|resources|resource)\s+['":]?(?<n>[\w/:{}.-]+)/],
   [(p) => PY_ROUTES.test(p), /\b(?<k>re_path|path)\(\s*r?['"](?<n>[^'"]*)['"]/],
   [(p) => PY_ROUTES.test(p), /\b(?<k>register)\(\s*r?['"](?<n>[^'"]+)['"]\s*,/],
+  [(p) => langOf(p) === "cs", /\[(?<k>Http(?:Get|Post|Put|Patch|Delete)|Route)(?:\(\s*"(?<n>[^"]*)"[^)]*\))?\]/],
   [
     (p) => langOf(p) === "ts",
     /\b(?<k>path)\s*:\s*['"](?<n>[^'"]*)['"]\s*,\s*(?:component|loadComponent|loadChildren|children|redirectTo)/,

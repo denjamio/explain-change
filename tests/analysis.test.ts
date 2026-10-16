@@ -188,7 +188,7 @@ describe("Rails", () => {
   });
 });
 
-describe("TypeScript", () => {
+describe("TypeScript and C#", () => {
   test("relative imports, tsconfig paths and baseUrl", () => {
     const files = {
       "src/app/main.ts":
@@ -208,6 +208,22 @@ describe("TypeScript", () => {
       tsconfigs,
     );
     expect(edges).toEqual({ "app->domain": 1, "app->core": 1 });
+  });
+
+  test("C# namespaces and project references", () => {
+    const files = {
+      "Shop.Api/OrdersController.cs":
+        "using Shop.Billing;\nusing System;\nnamespace Shop.Api;\npublic class OrdersController {}\n",
+      "Shop.Billing/Invoice.cs": "namespace Shop.Billing\n{\n  public class Invoice {}\n}\n",
+      "Shop.Api/Shop.Api.csproj":
+        '<Project><ItemGroup><ProjectReference Include="..\\Shop.Billing\\Shop.Billing.csproj" /></ItemGroup></Project>',
+      "Shop.Billing/Shop.Billing.csproj": "<Project />",
+    };
+    const { edges } = edgesFor(files, [
+      { id: "api", layer: "web", paths: ["Shop.Api/**"] },
+      { id: "billing", layer: "domain", paths: ["Shop.Billing/**"] },
+    ]);
+    expect(edges).toEqual({ "api->billing": 2 });
   });
 });
 
@@ -352,6 +368,24 @@ describe("symbols and endpoints", () => {
     expect(syms("api/routers.py", 'router.register(r"orders", OrderViewSet)')).toEqual(
       new Set(["endpoint|register orders"]),
     );
+  });
+
+  test("C#: public types and methods, ASP.NET endpoints", () => {
+    const syms = (lines: string[]) =>
+      new Set(
+        extractSymbols({ path: "Shop.Api/OrdersController.cs", hunks: hunk(lines.map((l) => ["+", l])) }).map(
+          (s) => `${s.kind}|${s.name}`,
+        ),
+      );
+    expect(
+      syms([
+        "public sealed partial class OrdersController : ControllerBase",
+        '    [HttpPost("refunds")]',
+        "    public async Task<IActionResult> Refund(int id)",
+        "    private void Helper()",
+        "public record OrderDto(int Id);",
+      ]),
+    ).toEqual(new Set(["class|OrdersController", "endpoint|HttpPost refunds", "method|Refund", "record|OrderDto"]));
   });
 });
 

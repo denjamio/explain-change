@@ -94,6 +94,7 @@ export const RawConfigSchema = z
             "TypeScript/Python/require specifiers owned by this component outside its paths. `*` matches anything, " +
               "`.` and `/` included: `billing.*` covers `billing.models.invoice`.",
           ).optional(),
+          namespaces: strings("C# namespaces owned by this component. `*` matches anything, `.` included.").optional(),
           constants: strings("Ruby constants owned by this component. `*` matches anything, `::` included.").optional(),
         }),
       )
@@ -146,6 +147,7 @@ export interface ComponentConfig {
   desc: string;
   paths: string[];
   imports: string[];
+  namespaces: string[];
   constants: string[];
 }
 
