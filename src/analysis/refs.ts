@@ -5,7 +5,7 @@ import { camelize, lineIndex, singularize, words } from "../core/text.ts";
  * Raw references in one source file, before they are resolved to a file and a component. Regular expressions,
  * not parsers: each one is written for the declarations that matter to a dependency graph, and tested on them.
  */
-export type RefKind = "ts" | "py" | "dj_model" | "rb_req" | "rb_rel" | "rb_const" | "cs_using" | "csproj";
+export type RefKind = "ts" | "py" | "dj_model" | "rb_req" | "rb_rel" | "rb_const" | "cs_using" | "csproj" | "sql_proc";
 
 export interface Ref {
   kind: RefKind;
@@ -20,6 +20,11 @@ export interface Extracted {
   refs: Ref[];
   /** C# namespaces the file declares. */
   namespaces: string[];
+  /** Interfaces the file declares, and those its classes implement: the ports of ports and adapters (C#, TypeScript). */
+  interfaces?: string[];
+  implements?: string[];
+  /** SQL stored procedures the file declares (CREATE PROCEDURE [dbo].[Name]). */
+  procedures?: string[];
   /** Django AppConfig.label, from apps.py. */
   djangoLabel?: string;
   /** Rails inflections: `inflect.acronym "API"` and `"html_parser" => "HTMLParser"`. */
@@ -48,13 +53,46 @@ const RB_REQUIRE_LINE = /^require(?:_relative|_dependency)?\b/;
 const ERB_BLOCK = /<%[=-]?([\s\S]*?)-?%>/g;
 const CS_USING = /^[ \t]*(?:global[ \t]+)?using[ \t]+(?:static[ \t]+)?(?:\w+[ \t]*=[ \t]*)?([A-Za-z_][\w.]*)[ \t]*;/gm;
 const CS_NS = /^[ \t]*namespace[ \t]+([A-Za-z_][\w.]*)/gm;
+// A stored procedure, by its 2-part name in a C# string: "[dbo].[Folder_DeleteByIds]" or $"[{Schema}].[…]".
+const CS_PROC = /\[(?:\{\w+\}|dbo)\]\.\[(\w+)\]/g;
+const SQL_PROC = /\bCREATE\s+(?:OR\s+ALTER\s+)?PROC(?:EDURE)?\s+(?:\[?\w+\]?\.)?\[?(\w+)\]?/gi;
+const CS_INTERFACE = /^[ \t]*(?:(?:public|internal|partial)[ \t]+)*interface[ \t]+(I[A-Z]\w*)/gm;
+// `class X : Base, IFoo` and `class X(IBar bar) : IFoo`, the primary constructor over several lines.
+const CS_BASES =
+  /^[ \t]*(?:(?:public|internal|private|protected|sealed|abstract|partial|static|file)[ \t]+)*(?:class|record)[ \t]+\w+(?:<[^>{]*>)?(?:\s*\([^)]*\))?\s*:\s*([^{;]+)/gm;
+const TS_INTERFACE = /\binterface\s+([A-Z]\w*)/g;
+const TS_IMPLEMENTS = /\bclass\s+\w+(?:<[^>{]*>)?(?:\s+extends\s+[\w.]+(?:<[^>{]*>)?)?\s+implements\s+([^{]+)\{/g;
+
+/** The names in a list of base types, without generic arguments: `Repository<A, B>, IFolderRepository`. */
+const typeNames = (list: string) =>
+  list
+    .replace(/<[^<>]*>/g, "")
+    .split(",")
+    .map((t) => t.trim().split(/\s/)[0] as string)
+    .filter(Boolean);
 const CSPROJ_REF = /<ProjectReference\s+Include\s*=\s*["']([^"']+)["']/gi;
 
 /** Ruby code without string literals and without a trailing comment. */
 const rubyCode = (line: string) => line.replace(RB_STR, "").split(" #")[0] as string;
 
-export function extractRefs(path: string, text: string | null): Extracted {
+/**
+ * The <script> blocks of a Vue or Svelte component, the rest blanked out: lines keep their numbers, so references
+ * point at the right line, and the template's markup reads as no code.
+ */
+export function scriptBlocks(text: string): string {
+  let out = "";
+  let at = 0;
+  for (const m of text.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
+    const start = (m.index as number) + m[0].indexOf(">") + 1;
+    out += text.slice(at, start).replace(/[^\n]/g, " ") + (m[1] as string);
+    at = start + (m[1] as string).length;
+  }
+  return out + text.slice(at).replace(/[^\n]/g, " ");
+}
+
+export function extractRefs(path: string, raw: string | null): Extracted {
   const lang = langOf(path);
+  const text = raw !== null && /\.(vue|svelte)$/i.test(path) ? scriptBlocks(raw) : raw;
   const out: Extracted = { refs: [], namespaces: [] };
   if (!lang || text === null) return out;
   const lineOf = lineIndex(text);
@@ -63,6 +101,8 @@ export function extractRefs(path: string, text: string | null): Extracted {
 
   if (lang === "ts") {
     for (const m of text.matchAll(TS_RE)) add("ts", m[1] as string, lineOf(m.indices?.[1]?.[0] ?? m.index));
+    out.interfaces = [...text.matchAll(TS_INTERFACE)].map((m) => m[1] as string);
+    out.implements = [...text.matchAll(TS_IMPLEMENTS)].flatMap((m) => typeNames(m[1] as string));
   } else if (lang === "py") {
     for (const m of text.matchAll(PY_IMPORT)) {
       for (const part of (m[1] as string).split(",")) {
@@ -109,6 +149,14 @@ export function extractRefs(path: string, text: string | null): Extracted {
   } else if (lang === "cs") {
     for (const m of text.matchAll(CS_USING)) add("cs_using", m[1] as string, lineOf(m.index));
     out.namespaces = [...text.matchAll(CS_NS)].map((m) => m[1] as string);
+    for (const m of text.matchAll(CS_PROC)) add("sql_proc", m[1] as string, lineOf(m.index));
+    out.interfaces = [...text.matchAll(CS_INTERFACE)].map((m) => m[1] as string);
+    // By convention a C# interface is I + a capital: the rest of the list is the base class.
+    out.implements = [...text.matchAll(CS_BASES)].flatMap((m) =>
+      typeNames(m[1] as string).filter((t) => /^I[A-Z]\w*$/.test(t)),
+    );
+  } else if (lang === "sql") {
+    out.procedures = [...text.matchAll(SQL_PROC)].map((m) => m[1] as string);
   } else if (lang === "csproj") {
     for (const m of text.matchAll(CSPROJ_REF)) add("csproj", m[1] as string, lineOf(m.index));
   }

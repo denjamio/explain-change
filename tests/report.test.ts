@@ -28,6 +28,44 @@ describe("example reports", () => {
   }
 });
 
+describe("what the map draws by default", () => {
+  const html = readFileSync(join(ROOT, "examples/real-maybe-rails-data-exports.html"), "utf8");
+  const drawn = (page: string) => {
+    let nodes: string[] = [];
+    let violations = 0;
+    smoke(page, (app) => {
+      nodes = app.querySelectorAll(".node").map((n) => n.getAttribute("data-k") ?? "");
+      violations = app.querySelectorAll(".edge.e-violation").length;
+    });
+    return { nodes, violations };
+  };
+
+  test("no neighbor only because a link gained references", () => {
+    const data = readReportData(html);
+    const countOnly = data.facts.dependencies.find(
+      (e) => e.delta === "changed" && data.facts.components.find((c) => c.id === e.to)?.delta === "unchanged",
+    );
+    expect(countOnly).toBeDefined(); // web-endpoints -> shared-kernel: 1 more reference
+    // Rendered by this script, not the one the committed example embeds.
+    const page = renderHtml(data.facts, { state: data.state, issues: data.issues, explanation: data.explanation });
+    expect(drawn(page).nodes.length).toBeGreaterThan(0);
+    expect(drawn(page).nodes.some((k) => k.includes(countOnly?.to as string))).toBe(false);
+  });
+
+  test("a rule broken before the change is not red by default", () => {
+    const data = readReportData(html);
+    const facts = structuredClone(data.facts);
+    const edge = facts.dependencies.find((e) => e.from === "web-endpoints" && e.to === "background-jobs");
+    if (!edge) throw new Error("the example lost its web-endpoints -> background-jobs link");
+    edge.violation = { rule: "forbidden: web -> async", preexisting: true };
+    const page = renderHtml(facts, { state: data.state, issues: data.issues, explanation: data.explanation });
+    expect(drawn(page).violations).toBe(0);
+    edge.violation.preexisting = false;
+    const fresh = renderHtml(facts, { state: data.state, issues: data.issues, explanation: data.explanation });
+    expect(drawn(fresh).violations).toBe(1);
+  });
+});
+
 describe("embedded data", () => {
   test("code with </script> or <!-- cannot break the page", () => {
     const data = readReportData(readFileSync(REPORTS[0] as string, "utf8"));

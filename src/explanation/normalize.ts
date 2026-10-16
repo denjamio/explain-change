@@ -1,13 +1,13 @@
 import { specRequirements } from "../analysis/openspec.ts";
 import { EXPLANATION_FIELDS, type Explanation, type NormalizedExplanation } from "../contract/explanation.ts";
 import type { Facts } from "../contract/facts.ts";
-import { compareStrings } from "../core/text.ts";
 
 /**
  * The explanation as the report reads it: optional parts filled in, lists in a stable order whatever order the
- * agent wrote them in, and each flow step checked against the code. A step is verified when the code has a
- * dependency between both components, in either direction, or when both depend on a common component (dependency
- * inversion: the application calls a port that infrastructure implements, and neither imports the other).
+ * agent wrote them in, and each flow step checked against the code. A step is verified through a port when 1 side
+ * implements an interface the other declares (dependency inversion: Core calls IFolderRepository, Dapper implements
+ * it), else when the code has a dependency between both components, in either direction. Sharing a third
+ * dependency is no evidence: in the examples it named the wrong reason 3 times in 4.
  */
 export function normalizeExplanation(e: Explanation, facts: Facts): NormalizedExplanation {
   const layerRank = new Map(facts.config.layers.map((l, i) => [l.id, i]));
@@ -16,12 +16,22 @@ export function normalizeExplanation(e: Explanation, facts: Facts): NormalizedEx
   );
   const rank = (id: string) => componentRank.get(id) ?? ([99, 999] as const);
   const linked = new Set(facts.dependencyGraph.flatMap(([a, b]) => [`${a}\0${b}`, `${b}\0${a}`]));
-  const uses = new Map<string, Set<string>>();
-  for (const [a, b] of facts.dependencyGraph) uses.set(a, (uses.get(a) ?? new Set()).add(b));
-  const verify = (from: string, to: string) => {
-    if (from === to || linked.has(`${from}\0${to}`)) return { verified: true, via: null };
-    const both = [...(uses.get(from) ?? [])].filter((x) => uses.get(to)?.has(x)).sort(compareStrings);
-    return { verified: both.length > 0, via: both[0] ?? null };
+  const ports = new Map(
+    facts.ports.flatMap((p) => [
+      [`${p.from}\0${p.to}`, p.interfaces] as const,
+      [`${p.to}\0${p.from}`, p.interfaces] as const,
+    ]),
+  );
+  // The port a step goes through: the interface its call names (IFolderRepository.DeleteManyAsync), or the only
+  // 1. With several and none named, the step is verified through a port without naming 1: a wrong name is worse.
+  const verify = (from: string, to: string, call: string) => {
+    if (from === to) return { verified: true, port: false, via: null };
+    const interfaces = ports.get(`${from}\0${to}`);
+    if (interfaces?.length) {
+      const named = interfaces.find((i) => call.includes(i)) ?? (interfaces.length === 1 ? interfaces[0] : undefined);
+      return { verified: true, port: true, via: named ?? null };
+    }
+    return { verified: linked.has(`${from}\0${to}`), port: false, via: null };
   };
   const requirementOrder = new Map(specRequirements(facts).map((r, i) => [r.id, i]));
   const normalized: NormalizedExplanation = {
@@ -33,7 +43,10 @@ export function normalizeExplanation(e: Explanation, facts: Facts): NormalizedEx
       return ra[0] - rb[0] || ra[1] - rb[1];
     }),
     decisions: e.decisions ?? [],
-    flows: (e.flows ?? []).map((fl) => ({ ...fl, steps: fl.steps.map((s) => ({ ...s, ...verify(s.from, s.to) })) })),
+    flows: (e.flows ?? []).map((fl) => ({
+      ...fl,
+      steps: fl.steps.map((s) => ({ ...s, ...verify(s.from, s.to, s.call) })),
+    })),
     dataModel: {
       entities: (e.dataModel?.entities ?? []).map((en) => ({ ...en, fields: en.fields ?? [] })),
       relations: e.dataModel?.relations ?? [],

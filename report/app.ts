@@ -80,8 +80,8 @@ const I18N = {
     lViolation: "breaks a rule",
     lKey: "key dependency",
     refs: "refs",
-    unresolved: "references not resolved",
-    unresolved1: "reference not resolved",
+    unresolved: "references in the changed files not resolved",
+    unresolved1: "reference in the changed files not resolved",
     unmapped: "changed files outside the map",
     unmapped1: "changed file outside the map",
     context: "Context",
@@ -109,7 +109,8 @@ const I18N = {
     themeDark: "dark",
     alternative: "Alternative",
     unverified: "The code has no dependency between these components",
-    viaPort: "Linked through {x}: both depend on it",
+    viaPort: "Through the port {x}: 1 side implements it",
+    viaSomePort: "Through a port: 1 side implements an interface the other declares",
     unverifiedNote: "No dependency in the code:",
     prev: "Previous",
     next: "Next",
@@ -242,8 +243,8 @@ const I18N = {
     lViolation: "rompe una regla",
     lKey: "dependencia clave",
     refs: "refs",
-    unresolved: "referencias sin resolver",
-    unresolved1: "referencia sin resolver",
+    unresolved: "referencias sin resolver en los ficheros cambiados",
+    unresolved1: "referencia sin resolver en los ficheros cambiados",
     unmapped: "archivos cambiados fuera del mapa",
     unmapped1: "archivo cambiado fuera del mapa",
     context: "Contexto",
@@ -271,7 +272,8 @@ const I18N = {
     themeDark: "oscuro",
     alternative: "Alternativa",
     unverified: "El código no tiene dependencia entre estos componentes",
-    viaPort: "Conectados a través de {x}: ambos dependen de él",
+    viaPort: "A través del puerto {x}: un lado lo implementa",
+    viaSomePort: "A través de un puerto: un lado implementa una interfaz que el otro declara",
     unverifiedNote: "Sin dependencia en el código:",
     prev: "Anterior",
     next: "Siguiente",
@@ -982,7 +984,8 @@ function buildArchitecture(
   };
   edgePaths(edges, L.pos, L).forEach((p, i) => {
     const e = p.e;
-    const k = e.violation ? "violation" : e.delta;
+    // A rule broken before this change is context: red only once the reader opens it.
+    const k = isNewViolation(e) || (e.violation && withContext) ? "violation" : e.delta;
     const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
     const tip =
       `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` +
@@ -998,8 +1001,8 @@ function buildArchitecture(
       s("path", {
         id: pid,
         d: p.d,
-        class: `edge e-${k}${e.violation?.preexisting ? " existing" : ""}`,
-        "marker-end": `url(#ar-${isKey && !e.violation ? "key" : k})`,
+        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
+        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`,
       }),
     );
     if ((isKey || e.delta === "added") && e.delta !== "removed") {
@@ -1152,7 +1155,8 @@ function buildFlow(fl: NFlow): View {
       "data-to": `p:${stp.to}`,
     });
     if (!stp.verified) g.appendChild(s("title", { text: T.unverified }));
-    else if (stp.via) g.appendChild(s("title", { text: tf("viaPort", { x: compName(stp.via) }) }));
+    else if (stp.via) g.appendChild(s("title", { text: tf("viaPort", { x: stp.via }) }));
+    else if (stp.port) g.appendChild(s("title", { text: T.viaSomePort }));
     const marker = `url(#sq-${fl.id}-${stp.delta})`;
     const pid = `fm-${fl.id}-${i}`;
     g.appendChild(
@@ -1167,7 +1171,13 @@ function buildFlow(fl: NFlow): View {
     );
     if (stp.from === stp.to) {
       g.appendChild(s("path", { id: pid, d: `M${x1},${y - 6} h38 v16 h-34`, class: "msg-line", "marker-end": marker }));
-      g.appendChild(s("text", { x: x1 + 46, y: y + 4, class: "msg-label", text: trunc(stp.call, 40) }));
+      g.appendChild(
+        s(
+          "text",
+          { x: x1 + 46, y: y + 4, class: "msg-label", text: trunc(stp.call, 40) },
+          s("title", { text: stp.call }),
+        ),
+      );
       V.geo[key] = { x: x1 - 10, y: y - 24, w: 220, h: 36 };
     } else {
       const dir = x2 > x1 ? 1 : -1;
@@ -1179,14 +1189,20 @@ function buildFlow(fl: NFlow): View {
           "marker-end": marker,
         }),
       );
+      // The label fits between the 2 lifelines (about 6.5 px a character); the full call is its tooltip.
+      const fits = Math.max(12, Math.floor(Math.abs(x2 - x1) / 6.5));
       g.appendChild(
-        s("text", {
-          x: (x1 + x2) / 2,
-          y: y - 8,
-          "text-anchor": "middle",
-          class: "msg-label",
-          text: stp.call + (stp.verified ? "" : "  ?"),
-        }),
+        s(
+          "text",
+          {
+            x: (x1 + x2) / 2,
+            y: y - 8,
+            "text-anchor": "middle",
+            class: "msg-label",
+            text: trunc(stp.call, fits) + (stp.verified ? "" : "  ?"),
+          },
+          s("title", { text: stp.call }),
+        ),
       );
       if (stp.data) g.appendChild(dataChip(stp.data, (x1 + x2) / 2, y + 17));
       V.geo[key] = { x: Math.min(x1, x2), y: y - 24, w: Math.abs(x2 - x1), h: 36 };
@@ -1568,13 +1584,20 @@ const STORY: StoryStep[] = ex?.story.length ? ex.story : autoStory();
 const storyIsAuto = !ex?.story.length;
 
 /**
- * Untouched components worth drawing by default: the change alters their link to it (a dependency added, removed or
- * changed, a broken rule, the key dependency), or the story or the requirements point at them. The rest is context,
- * one click away: it would only add boxes and gray arrows that say nothing about the change.
+ * Untouched components worth drawing by default: the change adds or removes their link to it, breaks a rule with
+ * it, or makes it the key dependency; or the story or the requirements point at them. The rest is context, one
+ * click away. A link that only gains or loses references (116 → 117) is no reason: in the surveyed reports it drew
+ * 12 of 13 neighbors. Nor is a rule the code broke before this change.
  */
 const MEANINGFUL = new Set<string>();
+const isNewViolation = (e: DependencyFacts) => Boolean(e.violation && !e.violation.preexisting);
 for (const e of facts.dependencies) {
-  if (e.delta !== "unchanged" || e.violation || keyPairs[`${e.from}>${e.to}`] !== undefined) {
+  if (
+    e.delta === "added" ||
+    e.delta === "removed" ||
+    isNewViolation(e) ||
+    keyPairs[`${e.from}>${e.to}`] !== undefined
+  ) {
     MEANINGFUL.add(e.from);
     MEANINGFUL.add(e.to);
   }
@@ -2289,7 +2312,7 @@ function renderMap(): HTMLElement {
   }
   function edgeRow(other: (e: DependencyFacts) => string) {
     return (e: DependencyFacts) => {
-      const k = e.violation ? "violation" : e.delta;
+      const k = isNewViolation(e) ? "violation" : e.delta;
       const mark: Record<string, string> = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
       return h(
         "div",

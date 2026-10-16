@@ -5,7 +5,7 @@
   "properties": {
     "version": {
       "type": "number",
-      "const": 3
+      "const": 4
     },
     "key": {
       "type": "string",
@@ -204,7 +204,7 @@
                 "call": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 50,
+                  "maxLength": 80,
                   "description": "The call as the code makes it ('Refund.create!'), or a short verb phrase."
                 },
                 "delta": {

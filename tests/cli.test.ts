@@ -300,6 +300,76 @@ describe("generated files", () => {
     for (const p of ["report.html", "app/api/client.py", "app/schema.graphql"]) expect(cats[p]).toBe("ignored");
     expect(cats["app/models/refund.rb"]).toBe("code");
   });
+
+  test("a marker at the top counts when the change is further down the file", () => {
+    // Immich's generated SDK: "DO NOT MODIFY - This file has been generated using oazapfts.", edited mid-file.
+    const r = repo();
+    const header = "/**\n * Shop\n * DO NOT MODIFY - This file has been generated using oazapfts.\n */\n";
+    const body = (extra: string) => `${header}${"export const a = 1;\n".repeat(30)}${extra}`;
+    r.write({ "sdk/client.ts": body(""), "app/models/refund.rb": "class Refund\nend\n" });
+    r.commit("sdk");
+    r.write({ "sdk/client.ts": body("export function getRefunds() {}\n") });
+    r.commit("sdk change");
+    const cats = Object.fromEntries(r.collect({ base: "HEAD~1" }).files.map((f) => [f.path, f.category]));
+    expect(cats["sdk/client.ts"]).toBe("ignored");
+  });
+});
+
+describe("next action", () => {
+  test("a team config that maps none of the changed code asks to configure", () => {
+    const r = repo(
+      '[[layers]]\nid = "domain"\n[[components]]\nid = "billing"\nlayer = "domain"\npaths = ["billing/**"]\n',
+    );
+    const out = r.json(["local", "--base", "main", "--no-open"]);
+    expect(out.out.next.action).toBe("configure");
+    expect(out.out.next.message).toContain("explain-change check");
+  });
+});
+
+describe("outline", () => {
+  test("the story starts at what the change is about; grown links into the bottom lane are no key dependency", () => {
+    const config =
+      '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n[[layers]]\nid = "shared"\n' +
+      '[[components]]\nid = "controllers"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
+      '[[components]]\nid = "settings"\nlayer = "web"\npaths = ["config/**"]\n' +
+      '[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n' +
+      '[[components]]\nid = "money"\nlayer = "shared"\npaths = ["lib/**"]\n';
+    const r = repo(config);
+    r.git("checkout", "-q", "main");
+    r.write({
+      "lib/money.rb": "class Money\nend\n",
+      "app/controllers/orders_controller.rb": "class OrdersController\n  def show\n    Money.new\n  end\nend\n",
+    });
+    r.commit("money");
+    r.git("checkout", "-q", "feature");
+    r.git("merge", "-q", "main");
+    r.write({
+      "config/locales.yml": `en:\n${"  key: value\n".repeat(200)}`,
+      "app/models/order.rb": "class Order\n  has_many :line_items\n  def refundable_total\n  end\nend\n",
+      "app/controllers/orders_controller.rb":
+        "class OrdersController\n  def show\n    Money.new\n    Money.zero\n    Order.new.refundable_total\n  end\nend\n",
+    });
+    r.commit("refundable total");
+    const { outline } = r.collect();
+    const first = outline.story.find((s) => s.view === "architecture" && s.focus.length);
+    expect(first?.focus).toEqual(["models"]); // its new public method, not 200 lines of locales
+    expect(outline.keyDependencyCandidates).toEqual([{ from: "controllers", to: "models" }]);
+  });
+});
+
+describe("unresolved references", () => {
+  test("only the changed files count", () => {
+    const r = repo();
+    r.git("checkout", "-q", "main");
+    r.write({ "app/models/legacy.rb": "require_relative 'gone'\nclass Legacy\nend\n" }); // unresolved, not changed
+    r.commit("legacy");
+    r.git("checkout", "-q", "feature");
+    r.git("merge", "-q", "main");
+    expect(r.collect().stats.unresolved).toBe(0);
+    r.write({ "app/models/refund.rb": "require_relative 'missing'\nclass Refund\nend\n" });
+    r.commit("refund");
+    expect(r.collect().stats.unresolved).toBe(1);
+  });
 });
 
 describe("determinism", () => {
@@ -335,6 +405,26 @@ describe("determinism", () => {
       '[project]\nname = "shop"\n[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n';
     const keys = [config, config.replace(/\n/g, "\r\n")].map((text) => repo(text).collect().key);
     expect(keys[0]).toBe(keys[1] as string);
+  });
+
+  test("a reference flow is pre-filled only when the change reaches its calls", () => {
+    // refund comes first: sharing the components alone would pre-fill it
+    const flows =
+      '[[flows]]\nid = "refund"\ntitle = "Refund an order"\nsteps = ["controllers -> models : Refund.create"]\n' +
+      '[[flows]]\nid = "place"\ntitle = "Place an order"\nsteps = ["controllers -> models : Order.place"]\n';
+    const r = repo(
+      '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n[[components]]\nid = "models"\nlayer = "domain"\npaths = ["app/models/**"]\n' +
+        '[[components]]\nid = "controllers"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
+        flows,
+    );
+    r.write({
+      "app/models/order.rb": "class Order\n  def place\n    save!\n  end\nend\n",
+      "app/controllers/orders_controller.rb": "class OrdersController\n  def create\n    Order.new.place\n  end\nend\n",
+    });
+    r.commit("place");
+    const ids = (draftExplanation(r.collect()).flows as { id: string }[]).map((f) => f.id);
+    expect(ids).toContain("place"); // the change edits Order and its place method
+    expect(ids).not.toContain("refund"); // it shares the components, not the calls
   });
 
   test("the same change gets the same outline and draft", () => {
@@ -565,7 +655,7 @@ describe("architecture check", () => {
         '[[components]]\nid = "orders-api"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
         '[[components]]\nid = "orders"\nlayer = "domain"\npaths = ["app/models/**"]\n',
     );
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       r.write({
         [`app/controllers/c${i}_controller.rb`]: `class C${i}Controller\n  def x = Order.new\nend\n`,
         [`app/models/m${i}.rb`]: `class M${i}\n  def y = C${i}Controller\nend\n`,
@@ -576,8 +666,33 @@ describe("architecture check", () => {
     expect(out.violations.map((v: { from: string; to: string }) => `${v.from}->${v.to}`)).toEqual([
       "orders->orders-api",
     ]);
-    expect(out.cycles).toEqual([{ a: "orders", b: "orders-api", refsAB: 3, refsBA: 3 }]);
-    expect(out.changeTogether.pairs[0]).toMatchObject({ a: "orders", b: "orders-api", commits: 3, coupling: 1 });
+    expect(out.cycles).toEqual([{ a: "orders", b: "orders-api", refsAB: 5, refsBA: 5 }]);
+    expect(out.changeTogether.pairs[0]).toMatchObject({ a: "orders", b: "orders-api", commits: 5, coupling: 1 });
+  });
+
+  test("3 commits together are chance, and [ignore] that hides migrations or ADRs is a warning", () => {
+    const r = repo(
+      '[[layers]]\nid = "web"\n[[layers]]\nid = "domain"\n' +
+        '[[components]]\nid = "orders-api"\nlayer = "web"\npaths = ["app/controllers/**"]\n' +
+        '[[components]]\nid = "orders"\nlayer = "domain"\npaths = ["app/models/**", "db/**"]\n' +
+        '[ignore]\npaths = ["db/migrate/**", "docs/**"]\n',
+    );
+    for (let i = 0; i < 3; i++) {
+      r.write({
+        [`app/controllers/c${i}_controller.rb`]: `class C${i}Controller\nend\n`,
+        [`app/models/m${i}.rb`]: `class M${i}\nend\n`,
+      });
+      r.commit(`pair ${i}`);
+    }
+    r.write({
+      "db/migrate/001_create_orders.rb": "class CreateOrders\nend\n",
+      "docs/adr/0001-orders.md": "# Orders\n",
+    });
+    r.commit("migration and adr");
+    const out = r.json(["check"]).out;
+    expect(out.changeTogether.pairs).toEqual([]);
+    expect(out.warnings.join("\n")).toContain("hides 1 migration files");
+    expect(out.warnings.join("\n")).toContain("hides 1 architecture decision records");
   });
 
   test("the glossary reaches the digest", () => {

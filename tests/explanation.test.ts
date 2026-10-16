@@ -69,6 +69,7 @@ function makeFacts(over: Partial<Facts> = {}, lang: "en" | "es" = "en"): Facts {
       { from: "b", to: "a", delta: "unchanged", baseCount: 1, headCount: 1, examples: [], violation: null },
     ],
     dependencyGraph: [["b", "a"]],
+    ports: [],
     symbols: [],
     stats: {
       files: 1,
@@ -427,13 +428,34 @@ describe("normalization", () => {
     expect(messages(e)).toEqual([]);
     expect(normalizeExplanation(e, makeFacts()).flows[0]?.steps.map((s) => s.verified)).toEqual([true, true]);
     expect(normalizeExplanation(e, makeFacts({ dependencyGraph: [] })).flows[0]?.steps[0]?.verified).toBe(false);
+    // a port b implements, though neither imports the other
     const viaPort = makeFacts({
+      dependencyGraph: [],
+      ports: [{ from: "a", to: "b", interfaces: ["IAuditLog", "IThing"] }],
+    });
+    // 2 interfaces and the call names neither: through a port, without guessing which
+    expect(normalizeExplanation(e, viaPort).flows[0]?.steps[0]).toMatchObject({
+      verified: true,
+      port: true,
+      via: null,
+    });
+    // the port the call names, when the pair has several
+    const named = {
+      ...e,
+      flows: [{ id: "f", title: "Run it", steps: [{ from: "a", to: "b", call: "IThing.Save", delta: "unchanged" }] }],
+    };
+    expect(normalizeExplanation(named as Explanation, viaPort).flows[0]?.steps[0]).toMatchObject({
+      port: true,
+      via: "IThing",
+    });
+    // a third component both use is no evidence
+    const shared = makeFacts({
       dependencyGraph: [
-        ["a", "port"],
-        ["b", "port"],
+        ["a", "kernel"],
+        ["b", "kernel"],
       ],
     });
-    expect(normalizeExplanation(e, viaPort).flows[0]?.steps[0]).toMatchObject({ verified: true, via: "port" });
+    expect(normalizeExplanation(e, shared).flows[0]?.steps[0]).toMatchObject({ verified: false, via: null });
   });
 });
 

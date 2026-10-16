@@ -6,9 +6,10 @@ import { draftConfig } from "../../config/draft.ts";
 import { detectStructure, inferConfig, structureLayers } from "../../config/infer.ts";
 import { loadConfig } from "../../config/load.ts";
 import { Mapper } from "../../config/mapper.ts";
-import { CONFIG_NAME } from "../../core/constants.ts";
+import { ADR_PATTERNS, CONFIG_NAME, MIGRATION_PATTERNS } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
 import { gitPaths } from "../../core/git.ts";
+import { matchesAny } from "../../core/glob.ts";
 import { langOf } from "../../core/lang.ts";
 import { basename, dirname } from "../../core/paths.ts";
 import { byKeys } from "../../core/text.ts";
@@ -42,8 +43,11 @@ export function check(opts: { json: boolean; history: number }): number {
   const mapper = new Mapper(config);
   const counts = new Map(config.components.map((c) => [c.id, 0]));
   const unmapped: string[] = [];
+  const hidden = { migrations: [] as string[], adrs: [] as string[] };
   for (const f of gitPaths(["ls-files"], root)) {
     const category = mapper.category(f);
+    if (category === "ignored" && matchesAny(f, MIGRATION_PATTERNS)) hidden.migrations.push(f);
+    if (category === "ignored" && matchesAny(f, ADR_PATTERNS)) hidden.adrs.push(f);
     if (category === "test" || category === "ignored" || category === "docs" || category === "migration") continue;
     const comp = mapper.component(f);
     if (comp) counts.set(comp, (counts.get(comp) ?? 0) + 1);
@@ -53,6 +57,19 @@ export function check(opts: { json: boolean; history: number }): number {
   for (const f of unmapped) folders.set(dirname(f) || ".", (folders.get(dirname(f) || ".") ?? 0) + 1);
   const topFolders = [...folders.entries()].sort(byKeys(([d, n]) => [-n, d])).slice(0, 20);
   const empty = config.components.filter((c) => !counts.get(c.id)).map((c) => c.id);
+  const warnings = [
+    ...empty.map((id) => `component '${id}' matches no files`),
+    ...(hidden.migrations.length
+      ? [
+          `[ignore] hides ${hidden.migrations.length} migration files, the data model's evidence (e.g. ${hidden.migrations[0]}): take them out of [ignore]`,
+        ]
+      : []),
+    ...(hidden.adrs.length
+      ? [
+          `[ignore] hides ${hidden.adrs.length} architecture decision records, the decisions' evidence (e.g. ${hidden.adrs[0]}): take them out of [ignore]`,
+        ]
+      : []),
+  ];
   const mapped = [...counts.values()].reduce((a, n) => a + n, 0);
   const fit = assessArchitecture(root, config, mapper, opts.history);
   if (opts.json) {
@@ -70,11 +87,11 @@ export function check(opts: { json: boolean; history: number }): number {
       violations: fit.violations,
       cycles: fit.cycles,
       changeTogether: { commits: fit.commits, pairs: fit.cochange },
-      warnings: empty.map((id) => `component '${id}' matches no files`),
+      warnings,
     });
     return 0;
   }
-  for (const id of empty) process.stderr.write(`warn: component '${id}' matches no files\n`);
+  for (const w of warnings) process.stderr.write(`warn: ${w}\n`);
   const width = Math.max(0, ...config.components.map((c) => c.id.length));
   for (const layer of config.layers) {
     console.log(layer.id);

@@ -5,7 +5,7 @@
   "properties": {
     "version": {
       "type": "number",
-      "const": 3
+      "const": 4
     },
     "tool": {
       "type": "string"
@@ -556,6 +556,33 @@
       },
       "description": "Every component dependency at the head, to verify flow steps."
     },
+    "ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "interfaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "interfaces"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Ports and adapters that touch the change: `to` implements `interfaces` that `from` declares. They verify a flow step between 2 components that do not import each other."
+    },
     "symbols": {
       "type": "array",
       "items": {
@@ -635,7 +662,7 @@
           "type": "integer",
           "minimum": -9007199254740991,
           "maximum": 9007199254740991,
-          "description": "References at the head that point inside the repository but resolve to no file."
+          "description": "References in the changed files, at the head, that point inside the repository but resolve to no file."
         },
         "newViolations": {
           "type": "integer",
@@ -1310,6 +1337,7 @@
     "components",
     "dependencies",
     "dependencyGraph",
+    "ports",
     "symbols",
     "stats",
     "notes",

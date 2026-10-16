@@ -9,6 +9,31 @@ import { changedComponents } from "./validate.ts";
 const L = LIMITS;
 const DELTA_CHOICE = `<${DELTAS.join("|")}>`;
 
+/** The names a reference step calls: `place_order`, `Product.reserve` → `Product`, `reserve`. */
+function callNames(message: string): string[] {
+  return (message.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []).filter((w) => w.length >= 4);
+}
+
+/**
+ * Whether the change touches a reference flow: every name 1 of its steps calls (`Order` and `place` for
+ * `Order.place`) is on a changed line or names the function a hunk is in. Sharing a component is not enough: in a
+ * large app every flow shares 1 with every change, and 1 word alone (`create`) matches too much.
+ */
+export function changeReaches(facts: Pick<Facts, "files">, flow: Facts["config"]["referenceFlows"][number]): boolean {
+  const touched = new Set<string>();
+  for (const f of facts.files) {
+    if (f.category === "test") continue;
+    for (const h of f.hunks) {
+      for (const w of callNames(h.header)) touched.add(w);
+      for (const [mark, line] of h.lines) if (mark !== " ") for (const w of callNames(line)) touched.add(w);
+    }
+  }
+  return flow.steps.some((s) => {
+    const names = callNames(s.message);
+    return names.length > 0 && names.every((w) => touched.has(w));
+  });
+}
+
 /**
  * The explanation.json the agent fills in: valid JSON whose ids, views, focus, code references and evidence are
  * already right. Each "<…>" is the agent's: words within the limit it states, or one of the values it lists.
@@ -56,8 +81,8 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
       trigger: fl.trigger,
       steps: fl.steps.map((s) => ({ ...s, call: s.call || call })),
     }));
-    const reference = facts.config.referenceFlows.find((fl) =>
-      fl.steps.some((s) => shown.has(s.from) || shown.has(s.to)),
+    const reference = facts.config.referenceFlows.find(
+      (fl) => fl.steps.some((s) => shown.has(s.from) || shown.has(s.to)) && changeReaches(facts, fl),
     );
     if (reference) {
       flows.unshift({

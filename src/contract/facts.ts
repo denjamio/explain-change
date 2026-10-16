@@ -136,7 +136,9 @@ export const Stats = z.object({
   testAdditions: z.int(),
   testDeletions: z.int(),
   unmapped: z.array(z.string()).describe("Changed code files no component holds."),
-  unresolved: z.int().describe("References at the head that point inside the repository but resolve to no file."),
+  unresolved: z
+    .int()
+    .describe("References in the changed files, at the head, that point inside the repository but resolve to no file."),
   newViolations: z.int(),
   codeLines: z.int().describe("Changed lines in code, config and migration files."),
   mappedLines: z.int().describe("The part of codeLines inside a component."),
@@ -253,6 +255,11 @@ export const FactsSchema = z
     dependencyGraph: z
       .array(z.tuple([z.string(), z.string()]))
       .describe("Every component dependency at the head, to verify flow steps."),
+    ports: z
+      .array(z.object({ from: z.string(), to: z.string(), interfaces: z.array(z.string()) }))
+      .describe(
+        "Ports and adapters that touch the change: `to` implements `interfaces` that `from` declares. They verify a flow step between 2 components that do not import each other.",
+      ),
     symbols: z.array(SymbolFacts),
     stats: Stats,
     notes: z.array(z.string()),

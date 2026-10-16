@@ -6,12 +6,12 @@ export const VERSION: string = pkg.version;
  * Version of the agent contract: the shape of facts.json and explanation.json. Explanations written for another
  * contract are stale.
  */
-export const CONTRACT_VERSION = 3;
+export const CONTRACT_VERSION = 4;
 /**
  * Part of the change key. Bump it when a change to the analysis (parsers, mapping, dependencies, symbols, outline)
  * can change facts.json for the same diff, so explanations written against the old analysis turn stale, not valid.
  */
-export const ANALYSIS_VERSION = 6;
+export const ANALYSIS_VERSION = 7;
 
 /** The GitHub repository: releases, issues, the published schemas and the examples site. */
 export const REPOSITORY = "denjamio/explain-change";
@@ -53,7 +53,8 @@ export const DIFF_FLAGS = [
 ];
 
 /** Markers of generated files, read from their first lines (plus `linguist-generated` in .gitattributes). */
-export const GENERATED_RE = /@generated|do not edit|auto-?generated|<meta name="generator"/i;
+export const GENERATED_RE =
+  /@generated|do not (?:edit|modify)|auto-?generated|(?:this|the) file (?:is|was|has been) (?:auto-?)?generated|<meta name="generator"/i;
 export const GENERATED_HEAD = 10;
 
 export const DEFAULT_TESTS = [
@@ -107,7 +108,16 @@ export const FRAMEWORK_CONFIG = [
   "**/asgi.py",
   "manage.py",
 ];
-export const MIGRATION_PATTERNS = ["**/migrations/**", "**/Migrations/**", "db/migrate/**", "**/db/migrate/**"];
+// DbScripts: SQL Server migration scripts, as Bitwarden's util/Migrator keeps them.
+export const MIGRATION_PATTERNS = [
+  "**/migrations/**",
+  "**/Migrations/**",
+  "db/migrate/**",
+  "**/db/migrate/**",
+  "**/DbScripts/**",
+];
+/** Architecture decision records: the evidence behind a change's decisions. */
+export const ADR_PATTERNS = ["**/adr/**", "**/adrs/**", "**/decisions/**", "**/architecture/decisions/**"];
 export const CONFIG_EXT = new Set([
   ".json",
   ".yml",

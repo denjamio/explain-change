@@ -12,7 +12,7 @@ interface FakeEvent {
   [k: string]: unknown;
 }
 
-class FakeNode {
+export class FakeNode {
   tagName: string;
   attrs: Record<string, string> = {};
   childNodes: FakeNode[] = [];
@@ -205,8 +205,8 @@ export interface SmokeResult {
   clicks: number;
 }
 
-/** Runs the report's script against its embedded data in the fake DOM. */
-export function smoke(html: string): SmokeResult {
+/** Runs the report's script against its embedded data in the fake DOM. `onReady` sees the first paint. */
+export function smoke(html: string, onReady?: (app: FakeNode) => void): SmokeResult {
   const data = /<script type="application\/json" id="ec-data">([\s\S]*?)<\/script>/.exec(html)?.[1] as string;
   const scripts = html.match(/<script>([\s\S]*?)<\/script>/g) as string[];
   const js = (scripts[scripts.length - 1] as string).replace(/^<script>/, "").replace(/<\/script>$/, "");
@@ -278,6 +278,7 @@ export function smoke(html: string): SmokeResult {
     for (let i = 0; i < 1000 && timers.length; i++) (timers.shift() as (t: number) => void)(1e9);
   };
   flush();
+  onReady?.(app);
   const ev = (type: string, extra: Record<string, unknown> = {}): FakeEvent => ({
     type,
     preventDefault() {},

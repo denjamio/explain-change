@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
+import { portLinks } from "../src/analysis/ports.ts";
 import { type Extracted, extractRefs } from "../src/analysis/refs.ts";
-import { SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
+import { loadTsConfigs, SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
 import { extractSymbols } from "../src/analysis/symbols.ts";
 import { detectStructure } from "../src/config/infer.ts";
 import { Mapper } from "../src/config/mapper.ts";
@@ -17,7 +18,7 @@ function edgesFor(files: Record<string, string>, components: Comp[], tsconfigs: 
   const extracted = new Map<string, Extracted>(Object.entries(files).map(([p, t]) => [p, extractRefs(p, t)]));
   const graph = buildGraph(extracted, new SideIndex(new Set(Object.keys(files)), mapper, tsconfigs, extracted), mapper);
   const edges = Object.fromEntries([...graph.edges].map(([k, e]) => [splitEdgeKey(k).join("->"), e.count]));
-  return { edges, unresolved: graph.unresolved };
+  return { edges, unresolved: [...graph.unresolved.values()].reduce((a, b) => a + b, 0) };
 }
 
 describe("Django", () => {
@@ -224,6 +225,96 @@ describe("TypeScript and C#", () => {
       { id: "billing", layer: "domain", paths: ["Shop.Billing/**"] },
     ]);
     expect(edges).toEqual({ "api->billing": 2 });
+  });
+
+  test("Vue and Svelte: the <script> blocks, with Vite and SvelteKit aliases", () => {
+    const files: Record<string, string> = {
+      // Chatwoot: aliases in a shared Vite file; `vue` is a package, not a folder.
+      "vite.shared.ts":
+        "export const aliases = {\n  vue: 'vue/dist/vue.esm-bundler.js',\n  dashboard: path.resolve('./app/javascript/dashboard'),\n};\n",
+      "app/javascript/dashboard/api/inbox.js": "export const getHealth = () => {};\n",
+      "app/javascript/dashboard/routes/AccountHealth.vue":
+        '<template>\n  <div>{{ import_me }}</div>\n</template>\n<script setup>\nimport { getHealth } from "dashboard/api/inbox";\nimport { ref } from "vue";\n</script>\n',
+      // Immich: SvelteKit's $lib, implicit.
+      "web/svelte.config.js": "export default { kit: {} };\n",
+      "web/src/lib/sdk.ts": "export const getLogs = () => {};\n",
+      "web/src/routes/Logs.svelte":
+        '<script lang="ts">\n  import { getLogs } from "$lib/sdk";\n  import { getWorkflowLogs } from "@shop/sdk";\n</script>\n<p>logs</p>\n',
+      // a monorepo package, imported by its name; its package.json points at a build the repository does not hold
+      "packages/sdk/package.json": '{ "name": "@shop/sdk", "main": "./build/index.js" }',
+      "packages/sdk/src/index.ts": "export const getWorkflowLogs = () => {};\n",
+    };
+    const read = (p: string) => files[p] ?? null;
+    const { edges, unresolved } = edgesFor(
+      files,
+      [
+        { id: "routes", layer: "web", paths: ["app/javascript/dashboard/routes/**", "web/src/routes/**"] },
+        { id: "api", layer: "domain", paths: ["app/javascript/dashboard/api/**", "web/src/lib/**"] },
+        { id: "sdk", layer: "domain", paths: ["packages/sdk/**"] },
+      ],
+      loadTsConfigs(Object.keys(files), read),
+    );
+    expect(edges).toEqual({ "routes->api": 2, "routes->sdk": 1 });
+    expect(unresolved).toBe(0);
+    // the template is no code: its text gives no reference, and lines keep their numbers
+    expect(
+      extractRefs("x.vue", files["app/javascript/dashboard/routes/AccountHealth.vue"] as string).refs.map((r) => [
+        r.raw,
+        r.line,
+      ]),
+    ).toEqual([
+      ["dashboard/api/inbox", 5],
+      ["vue", 6],
+    ]);
+  });
+
+  test("SQL Server: Dapper calls stored procedures by name; DbScripts are migrations", () => {
+    const files: Record<string, string> = {
+      "src/Infrastructure.Dapper/Vault/FolderRepository.cs":
+        'namespace Bit.Dapper;\npublic class FolderRepository\n{\n  void D() => Execute($"[{Schema}].[Folder_DeleteByIds]", new { Ids = ids.ToTvp("[dbo].[GuidIdArray]") });\n}\n',
+      "src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql":
+        "CREATE PROCEDURE [dbo].[Folder_DeleteByIds]\n    @Ids AS [dbo].[GuidIdArray] READONLY\nAS\nBEGIN\nEND\n",
+      // the migration script creates it too: the project's own file wins
+      "util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql":
+        "CREATE OR ALTER PROCEDURE [dbo].[Folder_DeleteByIds]\nAS\nBEGIN\nEND\nGO\n",
+    };
+    const { edges, unresolved } = edgesFor(files, [
+      { id: "dapper", layer: "adapters", paths: ["src/Infrastructure.Dapper/**"] },
+      { id: "schema", layer: "database", paths: ["src/Sql/**", "util/Migrator/**"] },
+    ]);
+    expect(edges).toEqual({ "dapper->schema": 1 }); // the procedure; [dbo].[GuidIdArray] is a table type
+    expect(unresolved).toBe(0);
+    const mapper = new Mapper(makeConfig([{ id: "schema", layer: "database", paths: ["util/**"] }]));
+    expect(mapper.category("util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql")).toBe("migration");
+  });
+
+  test("ports and adapters: who declares an interface, who implements it", () => {
+    const files: Record<string, string> = {
+      "Core/Vault/IFolderRepository.cs":
+        "namespace Bit.Core.Vault;\npublic interface IFolderRepository : IRepository<Folder, Guid>\n{\n}\n",
+      "Core/Vault/DeleteManyFoldersCommand.cs":
+        "namespace Bit.Core.Vault;\npublic class DeleteManyFoldersCommand(\n    IFolderRepository folderRepository,\n    IPushNotificationService push)\n    : IDeleteManyFoldersCommand\n{\n}\n",
+      "Dapper/FolderRepository.cs":
+        "namespace Bit.Dapper;\npublic class FolderRepository : Repository<Folder, Guid>, IFolderRepository\n{\n}\n",
+      "web/gateway.ts": "export interface EmailGateway {}\n",
+      "adapters/postmark.ts":
+        "export class PostmarkGateway extends Base<Config> implements EmailGateway, Disposable {\n}\n",
+    };
+    const extracted = new Map(Object.entries(files).map(([p, t]) => [p, extractRefs(p, t)]));
+    expect(extracted.get("Dapper/FolderRepository.cs")?.implements).toEqual(["IFolderRepository"]);
+    expect(extracted.get("Core/Vault/DeleteManyFoldersCommand.cs")?.implements).toEqual(["IDeleteManyFoldersCommand"]);
+    const mapper = new Mapper(
+      makeConfig([
+        { id: "vault", layer: "core", paths: ["Core/Vault/**"] },
+        { id: "dapper", layer: "adapters", paths: ["Dapper/**"] },
+        { id: "notifications", layer: "core", paths: ["web/**"] },
+        { id: "email", layer: "adapters", paths: ["adapters/**"] },
+      ]),
+    );
+    expect(portLinks(extracted, mapper)).toEqual([
+      { from: "notifications", to: "email", interfaces: ["EmailGateway"] },
+      { from: "vault", to: "dapper", interfaces: ["IFolderRepository"] },
+    ]);
   });
 
   test("C#: a using sees only its project and the projects it references", () => {

@@ -6,6 +6,47 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- A flow step is verified through a port when 1 side implements an interface the other declares (C# `class X :
+  IFoo`, TypeScript `implements`), named after the interface its call uses ("Through the port IFolderRepository"),
+  else by a dependency in either direction. A third component both use is no evidence any more: in the examples,
+  3 of its 4 "linked through" reasons were wrong. `facts.json` lists `ports`; the contract is version 4.
+- A flow step's `call` takes up to 80 characters, up from 50: real names such as
+  `product_variant_channel_listing_qs_select_for_update` did not fit. The flow view fits the label between its 2
+  lifelines and shows the full call as its tooltip.
+
+### Added
+- SQL Server: a stored procedure a C# string names (`[dbo].[Folder_DeleteByIds]`, `$"[{Schema}].[…]"`) links to the
+  .sql file that creates it, and `DbScripts/` folders are migrations, the data model's evidence. In Bitwarden,
+  Dapper now depends on the SQL Server schema (309 references); before, the 2 were not linked.
+- Vue and Svelte components are analyzed from their `<script>` blocks, so a Vue or Svelte UI gets its dependencies.
+  Imports resolve through bundler aliases (`vite.config`, `vite.shared`, `svelte.config`, SvelteKit's implicit
+  `$lib`) and through the repository's own packages by their package.json name (`@immich/sdk` → `packages/sdk`). In
+  Immich, the web app now depends on its SDK (322 references); before, it depended on nothing.
+- A `configure` next action: when the team's config maps none of the changed code, `local`, `pr` and `render` ask
+  to update the config instead of an explanation of an empty map. The skills say what to do with it.
+
+### Fixed
+- `check`: components change together only from 5 shared commits up, and never with the bottom lane of 3 or more
+  (the shared kernel or the platform); 3 commits gave a coupling of 1.0 by chance. It warns when `[ignore]` hides
+  migrations or architecture decision records, and the configure skill says not to ignore them. With 2 lanes the
+  bottom one is the domain, so key dependency candidates keep grown links into it.
+- The map draws a neighbor only when the change adds or removes its link, breaks a rule with it, or makes it the
+  key dependency. A link that only gained references drew 12 of 13 neighbors in the examples. A rule the code broke
+  before the change is no longer red, and no longer pulls in neighbors: it shows with the context.
+- The draft's story starts at what the change is about: components rank by the public symbols they change and the
+  dependencies they gain or lose, then by lines of code, with no config or generated lines. Before, the biggest
+  component led, often a client, a schema or an OpenAPI spec. Key dependency candidates put new dependencies first
+  and leave out grown links into the bottom lane, which every change touches.
+- "References not resolved" counts the changed files only, and says so. It counted the whole repository, so every
+  pull request of Immich showed the same 70.
+- Generated files are recognized by the first lines of the file, not of the first hunk, so a change in the middle
+  of a generated file counts too; "DO NOT MODIFY" and "this file has been generated" are markers now. Immich's
+  generated SDK no longer opened the story. `ANALYSIS_VERSION` is 7.
+- The draft pre-fills a reference flow from the config only when the change reaches its calls: every name of 1 of
+  its steps is on a changed line or names the function a hunk is in. Before, sharing 1 component was enough, and 36
+  of 40 surveyed pull requests got an unrelated flow.
+
 ## [0.3.1] - 2026-10-16
 
 ### Changed

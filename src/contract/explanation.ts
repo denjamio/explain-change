@@ -28,7 +28,7 @@ export const LIMITS = {
   "flows.title": 60,
   "flows.trigger": 60,
   "flows.steps": 12,
-  "flows.steps.call": 50,
+  "flows.steps.call": 80,
   "flows.steps.data.type": 40,
   "flows.steps.data.fields": 8,
   "flows.steps.data.fields.item": 60,
@@ -228,7 +228,13 @@ export interface NormalizedExplanation extends Omit<Explanation, "flows" | "stor
   keyDependencies: NonNullable<Explanation["keyDependencies"]>;
   decisions: NonNullable<Explanation["decisions"]>;
   flows: (Omit<ExplainedFlow, "steps"> & {
-    steps: (ExplainedFlow["steps"][number] & { verified: boolean; via: string | null })[];
+    steps: (ExplainedFlow["steps"][number] & {
+      verified: boolean;
+      /** Verified through a port: 1 side implements an interface the other declares. */
+      port: boolean;
+      /** The port's interface, when the call names it or the pair has only 1. */
+      via: string | null;
+    })[];
   })[];
   dataModel: DataModel;
   requirements: NonNullable<Explanation["requirements"]>;

@@ -19,6 +19,7 @@ command from the repository root, with `--json`. When the command is not on PATH
    - `write-explanation`: read `.explain-change/digest.md`, then replace every `"<…>"` in
      `.explain-change/explanation.json` following the digest's `## Task` rules (delete optional parts that do not
      apply; keep the ids, views, focus and code references), and run `explain-change render --json`.
+   - `configure`: none of the changed code is on the map. Do not explain it; offer to update `.explain-change.toml`.
    - `fix-explanation`: fix only the fields listed in `explanation.issues`, then run `explain-change render --json`.
    - `collect-change`: start again at step 1.
 3. Reply with the HTML path and a 2–3 line summary of what the change does. When the output's `share` is set, end

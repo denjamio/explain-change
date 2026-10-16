@@ -82,7 +82,7 @@ export function explain(opts: ExplainOptions, hosts: Hosts = createHosts()): num
     digestTokens: Math.round(digest.length / 4),
     opened,
     share: shareCommand(status.state, facts, hosts),
-    next: nextStep(status.state, report),
+    next: nextStep(status.state, report, facts),
     notes: facts.notes,
   };
   if (opts.json) printJson(result);
@@ -117,7 +117,7 @@ export function render(opts: RenderOptions, hosts: Hosts = createHosts()): numbe
     paths: { ...workPaths(work), report: opts.dryRun ? null : report },
     opened,
     share: shareCommand(status.state, facts, hosts),
-    next: nextStep(status.state, opts.dryRun ? null : report),
+    next: nextStep(status.state, opts.dryRun ? null : report, facts),
     notes: facts.notes,
   };
   if (opts.json) printJson(result);
