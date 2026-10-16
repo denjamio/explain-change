@@ -9,10 +9,11 @@
  * issues left, the agent's turns, cost and time (from `claude -p --output-format json`).
  */
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { parseArgs } from "node:util";
+import { removeTree } from "../src/core/fs.ts";
 import { buildAssets } from "./build.ts";
 import { buildScenarioRepo, GIT_ENV, scenarioNames } from "./build-examples.ts";
 
@@ -82,7 +83,7 @@ try {
     console.log(JSON.stringify(rows[rows.length - 1]));
   }
 } finally {
-  rmSync(tmp, { recursive: true, force: true });
+  removeTree(tmp);
 }
 const valid = rows.filter((r) => r.state === "valid").length;
 console.log(`\n${valid}/${rows.length} valid with ${values.model}`);

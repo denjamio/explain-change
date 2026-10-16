@@ -1,4 +1,4 @@
-import { mkdirSync, statSync } from "node:fs";
+import { mkdirSync, rmSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 /**
@@ -24,4 +24,12 @@ export function ensureDir(dir: string): void {
 
 function isDir(p: string): boolean {
   return statSync(p, { throwIfNoEntry: false })?.isDirectory() ?? false;
+}
+
+/**
+ * Deletes a folder and everything in it. Windows can hold a handle on a file for a moment after the process that
+ * used it exits (EBUSY, EPERM), so the delete retries for up to 2 seconds before it fails.
+ */
+export function removeTree(path: string): void {
+  rmSync(path, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 }

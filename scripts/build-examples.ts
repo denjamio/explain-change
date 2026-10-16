@@ -10,11 +10,11 @@
  * explain-change.toml and the agent's explanation.json.
  */
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Facts } from "../src/contract/facts.ts";
-import { ensureDir } from "../src/core/fs.ts";
+import { ensureDir, removeTree } from "../src/core/fs.ts";
 import { buildAssets } from "./build.ts";
 import { type Example, galleryHtml, readExample, SOURCE } from "./gallery.ts";
 
@@ -164,7 +164,7 @@ if (import.meta.main) {
       }
     }
   } finally {
-    rmSync(tmp, { recursive: true, force: true });
+    removeTree(tmp);
   }
   const real = realExamples()
     .filter(({ meta }) => existsSync(join(ROOT, "examples", meta.report)))
