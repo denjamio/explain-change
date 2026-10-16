@@ -22,6 +22,11 @@ All notable changes to this project are documented here. The format follows
   the web lane, is now Captain, its API, the Voice channel and the overlays, each in its lane; Bitwarden's licensed
   PAM service had no owner (155 files) and Dapper's calls to the stored procedures broke no agreed rule; Saleor's
   account API has its box, and its development seed data is ignored, as Chatwoot's and Bitwarden's already were.
+- Examples follow the configure skill's rules: Chatwoot goes from 26 boxes to 22 (campaigns into Inboxes, agent
+  notifications into Accounts, event listeners with the jobs, initializers into Platform) and Immich from 23 to 21
+  (access control into Identity, the job queues into Platform). Chatwoot, Immich and Maybe list folders and name
+  globs instead of single files; 9 files that had fallen to the shared kernel or the enterprise overlay found
+  their owner.
 
 ### Fixed
 - `check` no longer warns that `[ignore]` hides migrations when they are generated files (Entity Framework's
