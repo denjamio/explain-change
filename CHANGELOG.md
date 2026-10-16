@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-16
+
 ### Changed
 - Reports are written in English only: 1 list of refused words to keep, not 1 per language. `project.lang`
   accepts only `en`; the Spanish words, page labels and PR comment are gone.
