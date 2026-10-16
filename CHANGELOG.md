@@ -4,6 +4,76 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-10-16
+
+A rewrite in TypeScript with one contract between the CLI, the agent and the report. The analysis gives the same facts
+as 0.1.9 (checked on Rails, Django, TypeScript and C# repositories), and the agent's work becomes a draft to fill and a
+state machine to follow.
+
+### Added
+- `explanation.json` is drafted by the CLI: ids, views, focus, code references and evidence are already right; the
+  agent replaces each `"<…>"`. Placeholders left are reported once, as `placeholder`, and nothing else about them.
+- `--json` on every command, with the agent's `next.action` (`write-explanation`, `fix-explanation`,
+  `collect-change`, `done`). Issues come as `{path, code, message}` with stable codes.
+- `explain-change status`: the explanation's state and the next step, without writing anything.
+- `explain-change schema config|facts|explanation`: JSON Schemas generated from the contract, also in `schemas/`.
+- Standalone binaries for Linux, macOS and Windows (`install.sh`, `install.ps1`, `explain-change update`), and an npm
+  package (`npx explain-change`) for Node ≥ 20. No Python needed.
+- A Claude Code plugin (`/plugin marketplace add denjamio/explain-change`), and a separate
+  `explain-change-configure` skill, so configuring loads only when it is asked for.
+- `docs/CONCEPTS.md` (the vocabulary) and `docs/ARCHITECTURE.md`.
+- `explain-change check` measures how the config fits the code at HEAD: dependencies that break `[rules]` today,
+  components that depend on each other, and components that change together in the git history (`--history N`).
+- `[glossary]` in the config: the team's ubiquitous language. The digest gives it to the agent, which writes every
+  explanation with those terms.
+- The configure skill models the architecture as an architect would: the style behind the lanes, bounded contexts
+  named in domain language with a fixed suffix set, rules as decisions (debt shows apart from new violations), and
+  boundaries checked against `check`'s evidence.
+- The story outline and the flows detected from the entry points are part of `facts.json` (`outline`).
+
+### Changed
+- One vocabulary everywhere: every element of the map has a `delta` (`added`, `changed`, `removed`,
+  `unchanged`), replacing `new`/`same`/`context` and per-section status words. `context.json` is `facts.json`
+  (`context` named two things); `insight.json` is `explanation.json`; `intent` is `goal`; `hero` is
+  `keyDependencies`; `changes` is `components`; `spec` is `requirements` and `n/a` is `not-applicable`; a story
+  step's `stage` is its `view`, and the `spec` view is `requirements`; a flow step's `msg` is its `call`.
+- A dependency whose number of references changes is `changed`, drawn in blue, and counts as a key-dependency
+  candidate.
+- Unknown keys in `.explain-change.toml` are errors (a typo no longer passes silently). A component may share its id
+  with a layer only when it lives in that layer: rules name both.
+- `render` exits 1 until the explanation is valid; `render --force` and `validate` are gone (`status` replaces
+  `validate`).
+- Explanations are kept per change in `.explain-change/explanations/`.
+- The prose rules live in `src/explanation/prose/en.json` and `es.json`.
+- Big repositories are read in chunks; a change runs about twice as fast.
+- The map is a desktop workspace as tall as the window: the map and the step's code on the left, the story on the
+  right, so one step fits one screen; stepping brings it into view. One splitter sets the code's height.
+- Untouched components appear only when the change alters their link to them, or the story points at them; the
+  rest is behind a Context button.
+- The report moves only where the reader looks: the arrows of the current story step and the key dependency. The
+  rest of the map stays still, and neighbor components and unchanged dependencies are quieter.
+- The legend groups what it explains (Components · Dependencies, Steps, Entities), so "new" never names two things.
+- Each story step names its view and ends with a Next button; the last one goes back to the start.
+- A local branch with one commit is titled with that commit's message (the branch still shows above it).
+- Plainer labels: "83% of the code on the map", tooltips on Changes / After / Before, singular and plural counts.
+
+### Fixed
+- A UTF-8 byte order mark no longer hides the first line of a file: C# `using` and `namespace` lines there now count.
+- Django layouts: a package of nested apps that is also an app is one component, not two.
+- `models.py` counts as a data-model file; a leading `.` folder in a path glob (`.github/**`) is kept.
+- An HTML comment (`<!--`) in the code or the PR no longer breaks the page's embedded data.
+- Task items point at the right group when a tasks.md heading has no tasks.
+- Key-dependency labels sit beside their arrow, never over a box, and fit their text.
+
+### Upgrading from 0.1.x
+- `explain-change update` moves a 0.1 install to the binary by itself (a small `explain_change.py` answers the old
+  updater). New installs: `install.sh`, `install.ps1` or npm.
+- Explanations written with 0.1 are stale: the first run on each change drafts a new one.
+
+### Removed
+- The Python implementation, `install.py` and the root `SKILL.md`, `PROMPT.md` and
+  `CONFIGURE.md` (now in `skills/`).
+
 ## [0.1.9] - 2026-10-14
 
 Map tabs without the story-step count.
