@@ -1,6 +1,8 @@
 /** The SDD section: the OpenSpec pipeline, the requirement × component matrix and the scenarios. */
+
 import type { Requirement, Scenario, SpecChange } from "../src/contract/facts.ts";
 import { append, type Child, cap, h, trunc } from "./dom.ts";
+import { icon } from "./icons.ts";
 import {
   byCompRank,
   changeComp,
@@ -77,12 +79,12 @@ export function flowButtons(r: Requirement, sc: Scenario): HTMLElement[] {
   return (ex?.flows ?? [])
     .filter((f) => f.scenario === `${r.id}#${sc.id}`)
     .map((f) =>
-      h("button", {
-        class: "chip flow-chip",
-        title: f.title,
-        text: `▶ ${T.showFlow}`,
-        onclick: () => mapApi.showFlow?.(f.id),
-      }),
+      h(
+        "button",
+        { class: "chip flow-chip", title: f.title, onclick: () => mapApi.showFlow?.(f.id) },
+        icon("flow"),
+        T.showFlow,
+      ),
     );
 }
 // A scenario drawn as a flow: the state it starts from → the action → each outcome. Every AND/BUT line is a node of its
@@ -488,11 +490,12 @@ export function sddMatrix(): HTMLElement {
             fileLink(`${r.file}:${r.line}`, r.file.split("/").slice(-3).join("/")),
           ),
           mComps.length
-            ? h("button", {
-                class: "chip",
-                text: `◇ ${T.showOnMap}`,
-                onclick: () => mapApi.focus?.("architecture", mComps),
-              })
+            ? h(
+                "button",
+                { class: "chip", onclick: () => mapApi.focus?.("architecture", mComps) },
+                icon("locate"),
+                T.showOnMap,
+              )
             : null,
         ),
       ),

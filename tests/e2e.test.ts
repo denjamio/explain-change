@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { buildScenario, scenarioNames } from "../scripts/build-examples.ts";
 import type { Facts } from "../src/contract/facts.ts";
 import { removeTree } from "../src/core/fs.ts";
-import { smoke } from "./dom.ts";
+import { type FakeNode, smoke } from "./dom.ts";
 import { tempDir } from "./helpers.ts";
 
 /** Every scenario built twice, from scratch, in two folders: the pages must be byte-identical. */
@@ -84,5 +84,26 @@ describe("end to end", () => {
       expect(out.elements).toBeGreaterThan(100);
       expect(out.clicks).toBeGreaterThan(5);
     }
+  });
+
+  test("a component on the map says how it meets its requirements: implemented / mapped, colored by the worst status", () => {
+    const badges: { cls: string; text: string }[] = [];
+    const walk = (n: FakeNode, f: (n: FakeNode) => void) => {
+      f(n);
+      for (const c of n.childNodes) walk(c, f);
+    };
+    const html = readFileSync(join(runs[0]?.dir as string, "03-orders-django-openspec.html"), "utf8");
+    smoke(html, (app) => {
+      // the story opens on another view: show the architecture, then read its boxes
+      walk(app, (n) => {
+        if (n.attrs["data-view"] === "architecture") n.dispatchEvent({ type: "click", target: n });
+      });
+      walk(app, (n) => {
+        if (n.attrs.class?.startsWith("req-badge")) badges.push({ cls: n.attrs.class, text: n.textContent });
+      });
+    });
+    expect(badges.length).toBeGreaterThan(0);
+    for (const b of badges) expect(b.text).toMatch(/requirements? implemented.*\d+\/\d+$/);
+    expect(new Set(badges.map((b) => b.cls))).toEqual(new Set(["req-badge rs-implemented"])); // all 4 implemented
   });
 });

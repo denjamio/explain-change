@@ -1,6 +1,8 @@
 /** Pieces every section draws with: file links, section shells, legend items, figures, and the map's handle. */
+
 import type { Delta } from "../src/contract/facts.ts";
 import { type Child, h } from "./dom.ts";
+import { icon } from "./icons.ts";
 import { prFileUrl } from "./model.ts";
 export function onOpen<E extends Element>(el: E, path: string): E {
   const url = prFileUrl(path);
@@ -33,6 +35,7 @@ export function sectionShell(id: string, title: string, body: Child, lead?: stri
 }
 export function legendItem(kind: string, color: string, label: string): HTMLElement {
   if (kind === "swatch") return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
+  if (kind === "spec") return h("span", null, icon("spec"), label);
   return h(
     "span",
     null,

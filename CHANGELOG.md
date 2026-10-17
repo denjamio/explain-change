@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- A component on the map says how it meets its OpenSpec requirements: the spec icon (a page with a check) and
+  implemented / mapped (`2/3`), amber when one is partial and red when one is missing, with a tooltip and an entry in the legend. A click
+  opens the requirements view. It replaces `◆ 3`, a count with no meaning on the page.
+- The report draws its own line icons (`report/icons.ts`), 1 meaning each: *Show on the map* has a crosshair,
+  *Show flow* its call arrows, and each story step the icon of the view it moves to. The diamonds `◇`, which meant
+  nothing, are gone.
+
 ## [0.8.0] - 2026-10-17
 
 ### Added
