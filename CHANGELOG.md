@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-17
+
 ### Changed
 - The eval's judge asks 2 questions in 2 calls: the decisions with the prompt of 0.8.2, so `grounded` compares
   across versions, and the statements apart (`faithful`). An unreadable answer leaves only its own measure out.
