@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-17
+
 ### Added
 - `docs/LIMITATIONS.md`: the languages the analysis reads, what regular expressions miss, the limits of detected
   flows, large repositories, the validator and the hosts.
