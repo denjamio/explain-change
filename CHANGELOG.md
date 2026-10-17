@@ -25,8 +25,25 @@ All notable changes to this project are documented here. The format follows
 - `--max-cost USD` stops starting runs past the cost; `--baseline` also lists the graders an iteration fixed or
   broke.
 - The summary lists the issues of each run's first render, most often first: what makes the agent render again.
+- Each eval run records its tool calls in order (`tools`, with the size of each input and result), the prompt
+  tokens read from and written to the cache, and the refused words behind a first render's issues: where the turns
+  and the tokens go.
+- `docs/EVALS.md`: the eval's graders, splits, improvement loop, options and the judge's calibration against sonnet.
 
 ### Changed
+- `local` and `pr` no longer write the draft to `explanation.json`: it ends `digest.md` (and is in `draft.json`),
+  and the agent writes `explanation.json` in 1 call. An agent no longer spends a turn reading a file it already has,
+  since an existing file must be read before it is overwritten. The explanation is `missing` until then.
+- The digest says how to read a source file at the head of a PR (`git show <head>:<path>`): the checkout can be
+  another commit, and a failed read cost a turn.
+- Counts in words (*two … twelve*) are no longer refused: the page writes them as digits. The refusal made most
+  eval runs render twice.
+- Each placeholder states its limit in words too (`≤160 chars, ~22 words`): a story body or heading over its limit
+  was the commonest cause of a second render.
+- The skill asks for the digest and the fixes in as few messages as possible.
+- Together they cut the agent's prompt tokens by 23% and its turns by a third, at the same score: on the train
+  split (haiku, 1 run) 231k → 177k tokens per run, 10.8 → 8 turns, score 0.88 → 0.88; on the test split (2 runs)
+  210k → 161k tokens, 11.6 → 7.6 turns, score 0.82 → 0.83, cost per run −14%.
 - The judge's calls are lean (no tools, MCP servers, skills or settings; a 1-line system prompt): about 600 tokens
   of overhead per call instead of 20k+. Haiku stays the default judge.
 - The agent under test runs with no MCP server and, unless `--discover`, no other skill: each run is isolated from

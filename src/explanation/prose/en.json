@@ -1,5 +1,5 @@
 {
-  "$comment": "Words the validator refuses in the prose, grouped by why; each message says what to write instead. A trailing * also refuses every form of the word (leverag* = leverage, leveraged, leveraging…). The digest prints these lists as they are. Code names are exempt: they are checked against the change.",
+  "$comment": "Words the validator refuses in the prose, grouped by why; each message says what to write instead. A trailing * also refuses every form of the word (leverag* = leverage, leveraged, leveraging…). The digest prints these lists as they are. Code names are exempt: they are checked against the change. Numbers in words (two … twelve) are not refused: the report writes them as digits.",
   "refused": [
     {
       "why": "marketing words; say what happens",
@@ -26,14 +26,13 @@
       "why": "future or modal; say what the code does now, in the present",
       "words": ["could", "couldn't", "might", "should", "shouldn't", "will", "won't", "would", "wouldn't"]
     },
-    { "why": "filler; remove it", "words": ["actually", "basically", "just", "obviously", "really", "simply"] },
+    {
+      "why": "filler; remove it",
+      "words": ["actually", "basically", "just", "obviously", "really", "simply"]
+    },
     {
       "why": "a judgement; say the effect instead",
       "words": ["better", "cleaner", "elegant*", "nicer", "simpler"]
-    },
-    {
-      "why": "a number in words; write digits",
-      "words": ["two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"]
     }
   ]
 }

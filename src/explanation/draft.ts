@@ -39,17 +39,23 @@ export function changeReaches(facts: Pick<Facts, "files">, flow: Facts["config"]
  * already right. Each "<…>" is the agent's: words within the limit it states, or one of the values it lists.
  * Optional parts say so: fill them or delete them.
  */
+/**
+ * A placeholder's limit, in characters and in words: an agent writes to a word count more closely than to a character
+ * count (in the evals, a story body over its limit cost a round of fixes in most runs). About 7 characters a word.
+ */
+const size = (chars: number) => `≤${chars} chars, ~${Math.floor(chars / 7)} words`;
+
 export function draftExplanation(facts: Facts): Record<string, unknown> {
   const { outline } = facts;
   const out: Record<string, unknown> = {
     version: CONTRACT_VERSION,
     key: facts.key,
     lang: facts.config.lang,
-    tldr: `<≤${L.tldr} chars: what changes and its effect>`,
-    goal: `<≤${L.goal} chars: the need or problem behind it, not a repeat of tldr>`,
+    tldr: `<${size(L.tldr)}: what changes and its effect>`,
+    goal: `<${size(L.goal)}: the need or problem behind it, not a repeat of tldr>`,
     story: outline.story.map((s) => ({
-      heading: `<≤${L["story.heading"]}, on ${s.about}: the thing + what happened to it>`,
-      body: `<≤${L["story.body"]}: what behaves differently now>`,
+      heading: `<${size(L["story.heading"])}, on ${s.about}: the thing + what happened to it>`,
+      body: `<${size(L["story.body"])}: what behaves differently now>`,
       view: s.view,
       focus: s.view === "data" ? ["<entity-id>"] : s.focus,
       ...(s.code ? { code: s.code } : {}),
@@ -57,25 +63,25 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
   };
   const candidate = outline.keyDependencyCandidates[0];
   if (candidate) {
-    out.keyDependencies = [{ ...candidate, label: `<≤${L["keyDependencies.label"]}, optional>` }];
+    out.keyDependencies = [{ ...candidate, label: `<${size(L["keyDependencies.label"])}, optional>` }];
   }
   out.components = changedComponents(facts).map((id) => ({
     id,
-    summary: `<≤${L["components.summary"]}: what it now does differently>`,
+    summary: `<${size(L["components.summary"])}: what it now does differently>`,
   }));
   out.decisions = [
     {
-      title: `<≤${L["decisions.title"]}: the choice>`,
-      why: `<≤${L["decisions.why"]}: why>`,
+      title: `<${size(L["decisions.title"])}: the choice>`,
+      why: `<${size(L["decisions.why"])}: why>`,
       basis: `<${decisionBases(facts).join("|")}>`,
-      alternative: `<≤${L["decisions.alternative"]}: the main alternative, optional>`,
+      alternative: `<${size(L["decisions.alternative"])}: the main alternative, optional>`,
       evidence: "<file:line inside a hunk, optional>",
     },
   ];
   if (facts.components.length >= 2) {
     const shown = new Set(facts.components.map((c) => c.id));
-    const title = `<≤${L["flows.title"]}: the action, verb + object>`;
-    const call = `<≤${L["flows.steps.call"]}: the call>`;
+    const title = `<${size(L["flows.title"])}: the action, verb + object>`;
+    const call = `<${size(L["flows.steps.call"])}: the call>`;
     const flows: Record<string, unknown>[] = outline.flows.map((fl) => ({
       id: fl.id,
       title,
@@ -96,7 +102,7 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
       flows.push({
         id: "<kebab-id>",
         title,
-        trigger: `<≤${L["flows.trigger"]}: the code that starts it>`,
+        trigger: `<${size(L["flows.trigger"])}: the code that starts it>`,
         steps: [
           {
             from: "<component-id>",
@@ -120,7 +126,7 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
       entities: [
         {
           id: "<kebab-id>",
-          name: `<≤${L["dataModel.entities.name"]}: the model or table>`,
+          name: `<${size(L["dataModel.entities.name"])}: the model or table>`,
           delta: DELTA_CHOICE,
           component: dataFile.component ?? "<component-id>",
           fields: ["<+email: string>"],
@@ -135,7 +141,7 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
     status: `<${REQUIREMENT_STATUSES.join("|")}>`,
     components: ["<component-id>"],
     tests: ["<path[:line] of a test, optional>"],
-    note: `<≤${L["requirements.note"]}: required for partial and missing, else optional>`,
+    note: `<${size(L["requirements.note"])}: required for partial and missing, else optional>`,
   }));
   if (requirements.length) out.requirements = requirements;
   return out;

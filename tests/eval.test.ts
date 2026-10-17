@@ -100,10 +100,16 @@ describe("eval metrics", () => {
       costUsd: 0.02,
       tokensIn: 1000,
       tokensOut: 300,
+      tokensCacheRead: 900,
+      tokensCacheWrite: 90,
       renders: 2,
       sourceReads: 2,
       skills: ["explain-change"],
       firstIssues: ["sentence-too-long story[].body", "placeholder tldr"],
+      tools: expect.arrayContaining([
+        expect.stringMatching(/^Read:digest\.md \(\d+\)$/),
+        expect.stringMatching(/^Bash:explain-change render --json \(\d+→\d+\)$/),
+      ]),
     });
     expect(readTranscript("")).toMatchObject({ turns: null, tokensIn: null, renders: 0, skills: [] });
   });

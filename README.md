@@ -106,8 +106,8 @@ flowchart LR
 ```
 
 1. **Collect**: the CLI reads the diff, maps files to components, resolves dependencies, checks your rules and
-   outlines the story. It writes `facts.json`, a budgeted `digest.md` and an `explanation.json` draft.
-2. **Explain**: the agent replaces each `"<…>"` in the draft, reading the digest.
+   outlines the story. It writes `facts.json` and a budgeted `digest.md` that ends with the explanation's draft.
+2. **Explain**: the agent reads the digest and writes `explanation.json`: the draft with each `"<…>"` replaced.
 3. **Render**: the CLI validates the explanation (exit 1 with precise `{path, code, message}` issues until it is
    valid) and writes the page.
 
@@ -126,7 +126,7 @@ misread. Its restricted dictionary is left out on purpose: in a code change, the
 | Present tense: what the code does now | **Enforced**: *will, would, could, might, should* (and *won't*…) are refused. |
 | The effect, not a judgement | **Enforced**: *better, cleaner, elegant…* are refused; say what changes instead. |
 | No marketing words, no filler | **Enforced**: *leverage, utilize, seamless…* in every form (*leveraged, utilizing*) and *basically, simply, just…* are refused. |
-| Numbers as digits | **Enforced**: *two, three…* are refused; write *2, 3*. A single thing takes *a* (*a ZIP file*, not *1 ZIP file*): guidance. |
+| Numbers as digits | **Applied**: the page writes *two, three…* as *2, 3* (a refusal only cost the agent a round of fixes). A single thing takes *a* (*a ZIP file*, not *1 ZIP file*): guidance. |
 | Code names exactly as in the code | **Enforced**: a `snake_case`, `CamelCase`, `Module::Name` or `obj.method()` that does not exist at the head of the change is rejected. Code names are exempt from the word rules: `ensure_admin` is not the word *ensure*. |
 | Active voice | **Enforced** for the passive with its agent: *is called by the job* is refused; write *the job calls it*. *By* for a manner (*sorted by date*, *off by default*) passes. |
 | Simple verbs (*adds, sends, stores, calls, checks*), one word per thing, no idioms | **Guidance**: written in the digest the agent reads. |
@@ -310,24 +310,10 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
 - **Examples are real**: every published example and every eval run is a real pull request of an open-source product,
   asked for by its URL. The scenarios in `examples/scenarios/` are offline test fixtures (determinism, reference
   resolution, an inferred config, OpenSpec parsing), never published or evaluated unless named.
-- **Evals** (`bun run eval`, designed after `claude plugin eval` and skill-creator): a real agent (haiku) explains
-  each real PR, asked for by its URL as a user does, and pass/fail graders check what it wrote; `score` is the share
-  that pass. **Structure** graders are deterministic, against the facts (the story lights at least 80% of the
-  changed code, the key dependency is one the change touches, decision evidence points into the change, flow steps
-  exist in the code, no field repeats another). **Content** graders are each PR's `assertions.json`: what any good
-  explanation of it says, written once by a model from the PR's diff and description, never from the tool's output
-  (`bun scripts/eval-assertions.ts`; review them, delete a wrong one, keep them stable). **Prose** is a rubric of
-  PASS/FAIL conditions and **grounded** checks each decision's why against its source; the judge (`--judge`, haiku)
-  makes 2 short calls per run. The summary lists the failing graders first, with their evidence. The PRs are split
-  (`real.json` `eval`): an improvement loop runs `--split train` (the default) and reads its failures, and keeps a
-  change only when `--split test` does not drop. `--runs N` repeats each PR; `--out` keeps every run; `--baseline`
-  compares with an earlier `--out` (a drop past the noise fails, and the graders fixed or broken are listed);
-  `--compare` asks the judge, blind and in both orders, which of 2 evals' explanations serves a reviewer better;
-  `--rejudge` grades saved explanations again with no agent; `--max-cost` caps the spend. `--calibrate` is the
-  meta-eval: it grades each committed explanation and its mutants (known defects) and reports which defects the
-  graders catch: a grader that catches none cannot move when the agent improves. Also reported, not scored: turns,
-  tokens, cost, `render` calls, source reads, and the F1 of the structure against the committed explanation
-  (`fidelity`, `draft`, `lift`), a regression check. A quick loop eval (`--split train`, 1 run) costs about $0.10–0.15.
+- **Evals** (`bun run eval`): a real agent (haiku) explains each real PR by its URL, and pass/fail graders score
+  what it wrote: structure against the facts, content against each PR's independent `assertions.json`, a prose rubric
+  and whether each decision's why is grounded in its source. Splits, the improvement loop, the meta-eval and every
+  option: [docs/EVALS.md](docs/EVALS.md).
 - **Versions**: bump `ANALYSIS_VERSION` (`src/core/constants.ts`) when the analysis can produce different facts for
   the same diff, and `CONTRACT_VERSION` when `facts.json` or `explanation.json` change shape. Changes go in
   [CHANGELOG.md](CHANGELOG.md).

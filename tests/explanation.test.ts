@@ -5,6 +5,7 @@ import type { Explanation } from "../src/contract/explanation.ts";
 import type { Facts } from "../src/contract/facts.ts";
 import { CONTRACT_VERSION } from "../src/core/constants.ts";
 import { normalizeExplanation } from "../src/explanation/normalize.ts";
+import { digits } from "../src/explanation/prose.ts";
 import { loadExplanation, prepareExplanation } from "../src/explanation/store.ts";
 import { formatIssue, validateExplanation } from "../src/explanation/validate.ts";
 import { tempDir } from "./helpers.ts";
@@ -286,7 +287,7 @@ describe("validation", () => {
     expect(errs).toContain("goal: leverage: marketing words");
     expect(messages(valid({ tldr: "Short one. ".repeat(6) }))).toEqual([]);
     errs = joined(valid({ tldr: "It will retry two times.", goal: "Just better errors." }));
-    expect(errs).toContain("tldr: two: a number in words; write digits");
+    expect(errs).not.toContain("two"); // counts in words pass: the page writes them as digits
     expect(errs).toContain("tldr: will: future or modal");
     expect(errs).toContain("goal: just: filler");
     expect(errs).toContain("goal: better: a judgement");
@@ -295,6 +296,21 @@ describe("validation", () => {
     expect(errs).toContain("goal: ensure: marketing words");
     expect(errs).toContain("goal: won't: future or modal");
     expect(messages(valid({ tldr: "It adjusts the ensemble.", goal: "Justify the willow." }))).toEqual([]);
+  });
+
+  test("prose: the page writes counts as digits, never inside code names or ids", () => {
+    expect(digits("Three files, two-step, `two` two_factor, twofold.")).toBe(
+      "3 files, 2-step, `two` two_factor, twofold.",
+    );
+    const e = normalizeExplanation(
+      valid({
+        tldr: "It sends two mails.",
+        components: [{ id: "models", summary: "Stores four rows." }],
+      }) as Explanation,
+      makeFacts(),
+    );
+    expect(e.tldr).toBe("It sends 2 mails.");
+    expect(e.components[0]?.summary).toBe("Stores 4 rows.");
   });
 
   test("prose: code names are exempt from the word rules; an abbreviation does not end a sentence", () => {
@@ -523,11 +539,12 @@ describe("explanation store", () => {
   test("a new change gets a draft; going back to an explained change restores it", () => {
     const work = tempDir();
     expect(prepareExplanation(work, facts("a"))).toBe("drafted");
-    expect(loadExplanation(work, facts("a"), null).state).toBe("draft");
+    expect(loadExplanation(work, facts("a"), null).state).toBe("missing"); // the agent writes it from the draft
+    expect(JSON.parse(readFileSync(join(work, "draft.json"), "utf8")).key).toBe("a");
     write(work, valid({ key: "a" }));
     expect(loadExplanation(work, facts("a"), null).state).toBe("valid");
     expect(prepareExplanation(work, facts("b"))).toBe("drafted"); // another change
-    expect(read(work).key).toBe("b");
+    expect(existsSync(join(work, "explanation.json"))).toBe(false);
     write(work, valid({ key: "b", tldr: "B" }));
     expect(loadExplanation(work, facts("b"), null).state).toBe("valid");
     expect(prepareExplanation(work, facts("a"))).toBe("restored"); // back to A: no agent needed
