@@ -78,6 +78,7 @@ describe("eval metrics", () => {
   test("spread and argv", () => {
     expect(spread([1, 3, "x", null])).toBe("2 ± 1");
     expect(spread([0.5])).toBe("0.5");
+    expect(spread([1000, 2001])).toBe("1501 ± 501");
     expect(spread([])).toBeNull();
     expect(argv("  claude   -p ")).toEqual(["claude", "-p"]);
   });

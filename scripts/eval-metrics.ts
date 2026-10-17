@@ -146,7 +146,8 @@ export function spread(xs: unknown[]): string | null {
   if (!n.length) return null;
   const m = mean(n);
   const sd = Math.sqrt(mean(n.map((x) => (x - m) ** 2)));
-  return n.length > 1 ? `${round(m)} ± ${round(sd)}` : String(round(m));
+  const r = Math.abs(m) >= 100 ? Math.round : round; // token counts read as whole numbers
+  return n.length > 1 ? `${r(m)} ± ${r(sd)}` : String(r(m));
 }
 
 /** An agent command line as argv: words split on any run of spaces. */
