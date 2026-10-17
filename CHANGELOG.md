@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-10-17
+
 ### Added
 - `bun run eval -- --rejudge results.json --judge MODEL` judges the explanations an `--out` file kept again, with no
   agent: a change to the judge is measured on the same explanations.
