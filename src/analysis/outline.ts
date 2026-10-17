@@ -177,6 +177,31 @@ const REWRITE_MIN_LINES = 50;
 const REWRITE_SHARE = 0.3;
 
 /**
+ * How many steps the draft's story has, the overview included, from the lines of code the change rewrites: a small
+ * change reads in 4 steps, a medium one in 6, a large one in up to LIMITS.story. The agent deletes a step that says
+ * nothing new, but a draft that is already the right size costs no tokens to trim.
+ */
+export function storyBudget(churn: number): number {
+  if (churn < SMALL_CHANGE_LINES) return 4;
+  if (churn < MEDIUM_CHANGE_LINES) return 6;
+  return LIMITS.story;
+}
+const SMALL_CHANGE_LINES = 150;
+const MEDIUM_CHANGE_LINES = 600;
+
+/** The `n` items with the lowest priority, in their own order (a tie keeps the earlier one). */
+function keepFirst<T extends { priority: number }>(items: T[], n: number): T[] {
+  const kept = new Set(
+    items
+      .map((x, i) => ({ x, i }))
+      .sort(byKeys(({ x, i }) => [x.priority, i]))
+      .slice(0, Math.max(0, n))
+      .map(({ i }) => i),
+  );
+  return items.filter((_, i) => kept.has(i));
+}
+
+/**
  * Where a component's lane puts it in the story: 0 for the inner lanes, 1 for the entry lane (the top one), 2 for
  * the bottom one with 3 lanes or more (the shared kernel or the platform; with 2, the bottom lane is the domain).
  */
@@ -330,10 +355,12 @@ export function outline(facts: FactsCore): Outline {
   // Steps name components as the team does: the draft's headings start from these words.
   const names = new Map(facts.config.components.map((c) => [c.id, c.name]));
   const name = (id: string) => names.get(id) ?? id;
-  const story: Outline["story"] = [];
+  // Each step with its priority: when the change is small, the budget keeps the lowest numbers (see storyBudget).
+  const story: (Outline["story"][number] & { priority: number })[] = [];
   for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
     const file = locationFile(e.examples[0] ?? "");
     story.push({
+      priority: 0,
       about: `${name(e.from)} now depends on ${name(e.to)} (${e.violation?.rule})`,
       view: "architecture",
       focus: [e.from, e.to],
@@ -362,8 +389,10 @@ export function outline(facts: FactsCore): Outline {
     }))
     .sort(byKeys((x) => [x.weight > 0 ? lane(x.c.id) : 3, -x.weight, -x.code, x.c.id]));
   const weighted = ranked.filter((x) => x.weight > 0);
-  for (const { c } of (weighted.length ? weighted : ranked.slice(0, 1)).slice(0, Math.max(0, 4 - story.length))) {
+  const picked = (weighted.length ? weighted : ranked.slice(0, 1)).slice(0, Math.max(0, 4 - story.length));
+  for (const [i, { c }] of picked.entries()) {
     story.push({
+      priority: i === 0 ? 1 : 5 + i,
       about: `${name(c.id)} ${c.delta}`,
       view: "architecture",
       focus: [c.id],
@@ -374,6 +403,7 @@ export function outline(facts: FactsCore): Outline {
   const firstFlow = flows[0];
   if (firstFlow) {
     story.push({
+      priority: 3,
       about: `what happens when ${firstFlow.trigger} runs`,
       view: `flow:${firstFlow.id}`,
       focus: [],
@@ -382,11 +412,18 @@ export function outline(facts: FactsCore): Outline {
   }
   const data = dataFiles(facts);
   if (data.length) {
-    story.push({ about: "the data model", view: "data", focus: [], code: bestHunk(data.slice(0, 1), ctx) });
+    story.push({
+      priority: 4,
+      about: "the data model",
+      view: "data",
+      focus: [],
+      code: bestHunk(data.slice(0, 1), ctx),
+    });
   }
   const reqs = mappableRequirements(facts);
   if (reqs.length) {
     story.push({
+      priority: 2,
       about: "the requirements the code meets",
       view: "requirements",
       focus: reqs.slice(0, 3).map((r) => r.id),
@@ -395,7 +432,7 @@ export function outline(facts: FactsCore): Outline {
   }
   return {
     story: [
-      ...story.slice(0, LIMITS.story - 1),
+      ...keepFirst(story, storyBudget(churn) - 1).map(({ priority: _, ...step }) => step),
       { about: "overview: the whole change in one step", view: "architecture", focus: [], code: null },
     ],
     flows,

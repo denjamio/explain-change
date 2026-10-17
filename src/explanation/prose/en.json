@@ -2,7 +2,7 @@
   "$comment": "Words the validator refuses in the prose, grouped by why; each message says what to write instead. A trailing * also refuses every form of the word (leverag* = leverage, leveraged, leveraging…). The digest prints these lists as they are. Code names are exempt: they are checked against the change.",
   "refused": [
     {
-      "why": "marketing words; say what actually happens",
+      "why": "marketing words; say what happens",
       "words": [
         "comprehensive*",
         "crucial*",
@@ -14,10 +14,7 @@
         "holistic*",
         "in order to",
         "leverag*",
-        "orchestrate",
-        "orchestrated",
-        "orchestrates",
-        "orchestrating",
+        "orchestrat*",
         "robust*",
         "seamless*",
         "streamlin*",

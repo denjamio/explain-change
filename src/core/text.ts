@@ -138,3 +138,6 @@ export function words(text: string): string[] {
 export function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 }
+
+/** A count and its noun, singular for 1: `plural(1, "file")` = "1 file", `plural(3, "file")` = "3 files". */
+export const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? "" : "s"}`;

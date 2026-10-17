@@ -2,7 +2,7 @@
  * Evaluates the skill end to end: a real agent explains each example, and the result is measured. Costs tokens.
  *
  *   bun scripts/eval.ts [--model haiku|sonnet|opus] [--agent "claude -p"] [--runs N] [--judge MODEL] [--discover]
- *                       [--out results.json] [example…]
+ *                       [--out results.json] [--baseline results.json] [example…]
  *
  * The examples are the real PRs (examples/real/<name>), each asked for by its GitHub URL, as a user does (needs
  * the network and `gh`). A test fixture (examples/scenarios/<name>, asked as "explain my changes") runs only by
@@ -25,8 +25,12 @@
  * --runs N explains each example N times and reports the mean and the standard deviation: 1 run of an agent is a
  * sample, not a score. --judge MODEL asks a second agent, per decision, whether the source its basis names (the PR
  * description, the spec, the code at the evidence) states its why; `grounded` is the share it confirms, and
- * `inferred` the share the agent labelled as its own reading. A judge whose answer cannot be read is counted, not
- * hidden. --out writes every run and the summary as JSON, to compare a version with the last one.
+ * `inferred` the share the agent labelled as its own reading. In the same call it checks each statement (tldr, goal,
+ * story bodies, component summaries) against the digest: `faithful` is the share the digest shows, so prose that
+ * names what the change does not contain scores less. A judge whose answer cannot be read is counted, not hidden.
+ * --out writes every run and the summary as JSON; --baseline reads such a file and compares the measures with it
+ * (scripts/eval-metrics.ts compareRuns): a mean that drops by more than the noise of either side fails the eval.
+ * Use --runs 3 or more for a comparison: with 1 run there is no noise to measure.
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -48,7 +52,7 @@ import { removeTree } from "../src/core/fs.ts";
 import { draftExplanation } from "../src/explanation/draft.ts";
 import { buildAssets } from "./build.ts";
 import { exampleTargets, GIT_ENV } from "./build-examples.ts";
-import { argv, fidelity, lift, readTranscript, round, spread } from "./eval-metrics.ts";
+import { argv, compareRuns, fidelity, lift, readTranscript, round, spread } from "./eval-metrics.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const { values, positionals } = parseArgs({
@@ -60,6 +64,7 @@ const { values, positionals } = parseArgs({
     judge: { type: "string" },
     discover: { type: "boolean", default: false },
     out: { type: "string" },
+    baseline: { type: "string" },
   },
   allowPositionals: true,
 });
@@ -110,21 +115,35 @@ function excerpt(repo: string, location: string): string {
   }
 }
 
+/** The statements of an explanation the judge checks against the digest: tldr, goal, story bodies, summaries. */
+function statements(ex: Explanation): string[] {
+  return [
+    ex.tldr,
+    ex.goal,
+    ...(ex.story ?? []).map((s) => s.body),
+    ...(ex.components ?? []).map((c) => c.summary),
+  ].filter((t): t is string => typeof t === "string" && t.trim() !== "" && !t.includes("<"));
+}
+
 /**
- * Asks the judge, for each decision with a basis other than inferred, whether its source states the why. The
- * source is the PR description (pr), the OpenSpec section of the digest (spec) or the code at the evidence (code).
- * `judgeError` is true when its answer cannot be read: that run has no `grounded`, and the summary counts it.
+ * 1 call to the judge per run, with 2 lists. Decisions with a basis other than inferred: does the source it names
+ * state the why (the PR description, the OpenSpec section of the digest, the code at the evidence)? Statements
+ * (tldr, goal, story, component summaries): do the digest's facts and hunks show them? `grounded` and `faithful`
+ * are the shares it confirms. `judgeError` is true when its answer cannot be read: that run has neither, and the
+ * summary counts it.
  */
 function judge(
   repo: string,
   ex: Explanation | null,
   model: string,
-): { grounded: number | null; inferred: number | null; judgeError: boolean } {
+): { grounded: number | null; inferred: number | null; faithful: number | null; judgeError: boolean } {
   const decisions = ex?.decisions ?? [];
-  if (!decisions.length) return { grounded: null, inferred: null, judgeError: false };
-  const inferred = round(decisions.filter((d) => d.basis === "inferred").length / decisions.length);
+  const inferred = decisions.length
+    ? round(decisions.filter((d) => d.basis === "inferred").length / decisions.length)
+    : null;
   const claims = decisions.filter((d) => d.basis !== "inferred");
-  if (!claims.length) return { grounded: null, inferred, judgeError: false };
+  const said = ex ? statements(ex) : [];
+  if (!claims.length && !said.length) return { grounded: null, inferred, faithful: null, judgeError: false };
   const digest = readFileSync(join(repo, ".explain-change", "digest.md"), "utf8");
   const items = claims.map((d, i) => ({
     i,
@@ -134,25 +153,46 @@ function judge(
     source: d.basis === "code" && d.evidence ? excerpt(repo, d.evidence) : null,
   }));
   const ask =
-    "You check claims, nothing else. For each decision below, say whether its source states or directly shows " +
-    "its why. Sources: basis pr = the PR description in the digest; spec = the OpenSpec part of the digest; code = " +
-    "the excerpt given with it. A why the source does not support is false, even when it is plausible. Answer " +
-    'only with JSON: [{"i": 0, "supported": true}, …].\n\n<digest>\n' +
+    "You check claims, nothing else. A claim the source does not support is false, even when it is plausible.\n" +
+    "1. For each decision, say whether its source states or directly shows its why. Sources: basis pr = the PR " +
+    "description in the digest; spec = the OpenSpec part of the digest; code = the excerpt given with it.\n" +
+    "2. For each statement, say whether the digest (its facts and hunks) shows it. A statement that names " +
+    "something the digest does not contain, or says it behaves otherwise, is false.\n" +
+    'Answer only with JSON: {"decisions": [{"i": 0, "supported": true}, …], "statements": [{"i": 0, ' +
+    '"supported": true}, …]}.\n\n<digest>\n' +
     digest +
     "\n</digest>\n\n<decisions>\n" +
     JSON.stringify(items, null, 1) +
-    "\n</decisions>";
+    "\n</decisions>\n\n<statements>\n" +
+    JSON.stringify(
+      said.map((text, i) => ({ i, text })),
+      null,
+      1,
+    ) +
+    "\n</statements>";
   const run = spawnSync(agentCmd, [...agentArgs, ask, "--model", model, "--output-format", "json"], {
     encoding: "utf8",
     timeout: 5 * 60_000,
   });
   try {
     const text = String(JSON.parse(run.stdout).result ?? "");
-    const verdicts = JSON.parse(text.slice(text.indexOf("["), text.lastIndexOf("]") + 1)) as { supported: boolean }[];
-    if (verdicts.length !== claims.length) throw new Error("a verdict per claim");
-    return { grounded: round(verdicts.filter((v) => v.supported).length / claims.length), inferred, judgeError: false };
+    const answer = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)) as Record<
+      "decisions" | "statements",
+      { supported: boolean }[]
+    >;
+    const share = (verdicts: { supported: boolean }[] | undefined, n: number) => {
+      if (!n) return null;
+      if (verdicts?.length !== n) throw new Error("a verdict per claim");
+      return round(verdicts.filter((v) => v.supported).length / n);
+    };
+    return {
+      grounded: share(answer.decisions, claims.length),
+      inferred,
+      faithful: share(answer.statements, said.length),
+      judgeError: false,
+    };
   } catch {
-    return { grounded: null, inferred, judgeError: true };
+    return { grounded: null, inferred, faithful: null, judgeError: true };
   }
 }
 
@@ -242,7 +282,9 @@ const summary = {
   digest: stat("digest"),
   costUsd: round(cost.reduce((a, b) => a + b, 0)),
   ...(values.discover ? { skillLoaded: rows.filter((r) => r.skill).length } : {}),
-  ...(values.judge ? { grounded: stat("grounded"), inferred: stat("inferred"), judgeErrors } : {}),
+  ...(values.judge
+    ? { grounded: stat("grounded"), faithful: stat("faithful"), inferred: stat("inferred"), judgeErrors }
+    : {}),
 };
 
 if (runs > 1) {
@@ -250,7 +292,7 @@ if (runs > 1) {
   for (const name of [...new Set(rows.map((r) => r.example as string))]) {
     const own = rows.filter((r) => r.example === name);
     const valids = own.filter((r) => r.state === "valid").length;
-    const grounded = values.judge ? `, grounded ${stat("grounded", own)}` : "";
+    const grounded = values.judge ? `, grounded ${stat("grounded", own)}, faithful ${stat("faithful", own)}` : "";
     console.log(
       `  ${name}: ${valids}/${own.length} valid, fidelity ${stat("fidelity", own)} (draft ${stat("draft", own)}, ` +
         `lift ${stat("lift", own)}), renders ${stat("renders", own)}, turns ${stat("turns", own)}, ` +
@@ -265,7 +307,7 @@ console.log(
     `renders ${summary.renders}, source reads ${summary.sourceReads}; ` +
     `tokens in ${summary.tokensIn}, out ${summary.tokensOut}, digest ${summary.digest} chars; cost $${summary.costUsd}` +
     (values.judge
-      ? `; grounded ${summary.grounded}, inferred ${summary.inferred} (judge ${values.judge}` +
+      ? `; grounded ${summary.grounded}, faithful ${summary.faithful}, inferred ${summary.inferred} (judge ${values.judge}` +
         `${judgeErrors ? `, ${judgeErrors}/${judged.length} answers unreadable` : ""})`
       : ""),
 );
@@ -273,4 +315,15 @@ if (values.out) {
   const options = { model: values.model, runs, discover: values.discover, judge: values.judge ?? null };
   writeFileSync(values.out, `${JSON.stringify({ options, summary, rows }, null, 2)}\n`);
 }
-process.exitCode = valid === rows.length ? 0 : 1;
+let regressed = false;
+if (values.baseline) {
+  const before = JSON.parse(readFileSync(values.baseline as string, "utf8")) as { rows: Record<string, unknown>[] };
+  console.log(`\nagainst ${values.baseline}:`);
+  for (const c of compareRuns(before.rows, rows)) {
+    regressed ||= c.regressed;
+    console.log(
+      `  ${c.measure}: ${c.before} → ${c.now} (${c.delta >= 0 ? "+" : ""}${c.delta})${c.regressed ? "  REGRESSED" : ""}`,
+    );
+  }
+}
+process.exitCode = valid === rows.length && !regressed ? 0 : 1;

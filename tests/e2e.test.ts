@@ -1,9 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildScenario, scenarioNames } from "../scripts/build-examples.ts";
+import { buildScenario, SCENARIOS_DIR, scenarioNames } from "../scripts/build-examples.ts";
+import { fidelity } from "../scripts/eval-metrics.ts";
+import type { Explanation } from "../src/contract/explanation.ts";
 import type { Facts } from "../src/contract/facts.ts";
 import { removeTree } from "../src/core/fs.ts";
+import { draftExplanation } from "../src/explanation/draft.ts";
 import { type FakeNode, smoke } from "./dom.ts";
 import { tempDir } from "./helpers.ts";
 
@@ -37,6 +40,17 @@ describe("end to end", () => {
       expect(readFileSync(join(runs[0]?.dir as string, `${name}.html`))).toEqual(
         readFileSync(join(runs[1]?.dir as string, `${name}.html`)),
       );
+    }
+  });
+
+  test("the draft keeps its fidelity to the reference explanations (the eval's baseline, with no agent)", () => {
+    // The draft's F1 against each committed explanation: what an agent that changes nothing scores. A change to the
+    // outline or the draft that lowers it fails here; one that raises it updates these numbers.
+    const floor: Record<string, number> = { "01-marketplace-rails-refunds": 0.42, "03-orders-django-openspec": 0.15 };
+    for (const [name, min] of Object.entries(floor)) {
+      const reference = JSON.parse(readFileSync(join(SCENARIOS_DIR, name, "explanation.json"), "utf8")) as Explanation;
+      const draft = draftExplanation(facts(name)) as unknown as Explanation;
+      expect(fidelity(reference, draft).fidelity ?? 0).toBeGreaterThanOrEqual(min);
     }
   });
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 import { installSkill, SKILLS, skillRoots } from "../src/cli/commands/install.ts";
 import { assetName, verifyAsset } from "../src/cli/commands/update.ts";
 import { expectedSum, formatSums, sha256 } from "../src/core/checksum.ts";
@@ -17,6 +17,15 @@ describe("skill install", () => {
     expect(installSkill(dest, files, { force: false, linkFrom: null })).toBe("up-to-date");
     writeFileSync(join(dest, ".explain-change-install"), "0.0.1\n");
     expect(installSkill(dest, files, { force: false, linkFrom: null })).toBe("installed");
+  });
+
+  test("writes a skill's references in their folder", () => {
+    const dest = join(tempDir(), "explain-change-configure");
+    const configure = SKILLS["explain-change-configure"] as Record<string, string>;
+    expect(installSkill(dest, configure, { force: false, linkFrom: null })).toBe("installed");
+    expect(readFileSync(join(dest, "references", "components.md"), "utf8")).toBe(
+      configure["references/components.md"] as string,
+    );
   });
 
   test("a folder this tool did not write needs --force", () => {
@@ -42,6 +51,18 @@ describe("skill install", () => {
     for (const [name, skill] of Object.entries(SKILLS)) {
       for (const [file, text] of Object.entries(skill))
         expect(text).toBe(readFileSync(join(ROOT, "skills", name, file), "utf8"));
+    }
+    // Every file of a skill folder, references included: a file the CLI does not carry is missing for its users.
+    for (const name of Object.keys(SKILLS)) {
+      const onDisk = readdirSync(join(ROOT, "skills", name), { recursive: true, withFileTypes: true })
+        .filter((d) => d.isFile())
+        .map((d) =>
+          relative(join(ROOT, "skills", name), join(d.parentPath, d.name))
+            .split(sep)
+            .join("/"),
+        )
+        .sort();
+      expect(Object.keys(SKILLS[name] as Record<string, string>).sort()).toEqual(onDisk);
     }
     expect(skillRoots("h")).toEqual([join("h", ".agents", "skills"), join("h", ".claude", "skills")]);
   });

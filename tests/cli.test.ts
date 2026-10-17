@@ -370,8 +370,11 @@ describe("outline", () => {
       "lib/money.rb": "class Money\n  def zero\n  end\nend\n",
     });
     r.commit("orders");
-    const story = r.collect().outline.story.filter((s) => s.view === "architecture" && s.focus.length);
-    expect(story.map((s) => s.focus[0])).toEqual(["orders", "orders-api", "money"]);
+    const full = r.collect().outline.story;
+    const story = full.filter((s) => s.view === "architecture" && s.focus.length);
+    // A small change gets 4 steps: the headline component, the flow, the next component, the overview.
+    expect(full.length).toBe(4);
+    expect(story.map((s) => s.focus[0])).toEqual(["orders", "orders-api"]);
 
     r.write({
       "db/migrate/002_add_note_to_orders.rb": "class AddNoteToOrders\n  def change\n  end\nend\n",
