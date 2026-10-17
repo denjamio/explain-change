@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `bun run eval -- --rejudge results.json --judge MODEL` judges the explanations an `--out` file kept again, with no
+  agent: a change to the judge is measured on the same explanations.
+
+### Changed
+- The judge gets each decision's source in full: the PR description (the digest cuts it short) and the OpenSpec
+  proposal and design (the digest lists the design decisions by title only). `grounded` does not compare with
+  earlier versions.
+
+### Fixed
+- The judge read a `code` decision's evidence from the working tree, which for a real PR is its base: a file the PR
+  adds was an empty excerpt, and the judge accepted the why with no source. It now reads the head of the change.
+  `grounded` before 0.9.2 is inflated for `code` decisions on new files.
+
 ## [0.9.1] - 2026-10-17
 
 ### Changed
