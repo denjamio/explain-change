@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-10-17
+
 ### Added
 - The eval scores the draft the CLI wrote against the reference (`draft`) and reports `lift`, what the agent adds to
   it: the draft already holds the outline's focus, key dependency and flows, so the fidelity alone partly measured
