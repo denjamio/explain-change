@@ -1,0 +1,280 @@
+/*
+ * The flow view: a sequence over real components whose steps travel in order, the data on each step, and the notes below it.
+ */
+
+import { h, MONO, r1, s, textWidth, trunc } from "./dom.ts";
+import {
+  byCompRank,
+  cfg,
+  changeComp,
+  compById,
+  compName,
+  layerName,
+  type NFlow,
+  type NStep,
+  reqById,
+} from "./model.ts";
+import { scenarioStrip } from "./sdd.ts";
+import { markers, newView } from "./svg-view.ts";
+import { FIELD_MARK, fieldDelta, fieldText, type View } from "./ui.ts";
+import { T, tf } from "./words.ts";
+
+// ── Data flow: a sequence over real components, steps travel in order ──
+export function buildFlow(fl: NFlow): View {
+  const parts: string[] = [];
+  for (const x of fl.steps) for (const p of [x.from, x.to]) if (!parts.includes(p)) parts.push(p);
+  parts.sort(byCompRank);
+  const hasData = fl.steps.some((x) => x.data);
+  const COL = 220;
+  const HEAD = 58;
+  const ROW = hasData ? 66 : 50;
+  const TOP = 20;
+  const W = Math.max(720, parts.length * COL + 40);
+  const H = TOP + HEAD + 26 + fl.steps.length * ROW + 16;
+  const V = newView(`flow:${fl.id}`, W, H);
+  const svg = V.svg;
+  const x: Record<string, number> = {};
+  const offset = (W - parts.length * COL) / 2;
+  parts.forEach((p, i) => {
+    x[p] = offset + i * COL + COL / 2;
+  });
+  markers(svg, `sq-${fl.id}-`, ["unchanged", "added", "changed", "removed"]);
+  for (const p of parts) {
+    const c = compById[p];
+    const delta = changeComp[p]?.delta ?? "unchanged";
+    const px = x[p] as number;
+    const box = { x: px - COL / 2 + 12, y: TOP, w: COL - 24, h: HEAD - 8 };
+    V.geo[`p:${p}`] = box;
+    svg.appendChild(
+      s("line", {
+        x1: px,
+        y1: TOP + HEAD - 8,
+        x2: px,
+        y2: H - 8,
+        class: "lifeline",
+        "data-a": `p:${p}`,
+        "data-b": `p:${p}`,
+      }),
+    );
+    svg.appendChild(
+      s(
+        "g",
+        { class: `head st-${delta}`, "data-k": `p:${p}` },
+        s("rect", { x: box.x, y: box.y, width: box.w, height: box.h, rx: 11 }),
+        s("text", { x: px, y: TOP + 21, "text-anchor": "middle", class: "name", text: trunc(c ? c.name : p, 21) }),
+        s("text", { x: px, y: TOP + 37, "text-anchor": "middle", class: "layer", text: trunc(layerName(p), 24) }),
+      ),
+    );
+  }
+  const n = fl.steps.length;
+  const per = 0.9;
+  const total = n * per + 1.2;
+  fl.steps.forEach((stp, i) => {
+    const y = TOP + HEAD + 30 + i * ROW;
+    const x1 = x[stp.from] as number;
+    const x2 = x[stp.to] as number;
+    const key = `#${i + 1}`;
+    const g = s("g", {
+      class: `msg st-${stp.delta}${stp.verified ? "" : " unverified"}`,
+      "data-k": key,
+      "data-from": `p:${stp.from}`,
+      "data-to": `p:${stp.to}`,
+    });
+    if (!stp.verified) g.appendChild(s("title", { text: T.unverified }));
+    else if (stp.via) g.appendChild(s("title", { text: tf("viaPort", { x: stp.via }) }));
+    else if (stp.port) g.appendChild(s("title", { text: T.viaSomePort }));
+    const marker = `url(#sq-${fl.id}-${stp.delta})`;
+    const pid = `fm-${fl.id}-${i}`;
+    g.appendChild(
+      s("rect", {
+        x: Math.min(x1, x2) - 14,
+        y: y - 24,
+        width: Math.max(Math.abs(x2 - x1), 60) + 28,
+        height: 36,
+        rx: 8,
+        class: "msg-bg",
+      }),
+    );
+    if (stp.from === stp.to) {
+      g.appendChild(s("path", { id: pid, d: `M${x1},${y - 6} h38 v16 h-34`, class: "msg-line", "marker-end": marker }));
+      g.appendChild(
+        s(
+          "text",
+          { x: x1 + 46, y: y + 4, class: "msg-label", text: trunc(stp.call, 40) },
+          s("title", { text: stp.call }),
+        ),
+      );
+      V.geo[key] = { x: x1 - 10, y: y - 24, w: 220, h: 36 };
+    } else {
+      const dir = x2 > x1 ? 1 : -1;
+      g.appendChild(
+        s("path", {
+          id: pid,
+          d: `M${x1 + dir * 4},${y} L${x2 - dir * 6},${y}`,
+          class: "msg-line",
+          "marker-end": marker,
+        }),
+      );
+      // The label fits between the 2 lifelines (about 6.5 px a character); the full call is its tooltip.
+      const fits = Math.max(12, Math.floor(Math.abs(x2 - x1) / 6.5));
+      g.appendChild(
+        s(
+          "text",
+          {
+            x: (x1 + x2) / 2,
+            y: y - 8,
+            "text-anchor": "middle",
+            class: "msg-label",
+            text: trunc(stp.call, fits) + (stp.verified ? "" : "  ?"),
+          },
+          s("title", { text: stp.call }),
+        ),
+      );
+      if (stp.data) g.appendChild(dataChip(stp.data, (x1 + x2) / 2, y + 17));
+      V.geo[key] = { x: Math.min(x1, x2), y: y - 24, w: Math.abs(x2 - x1), h: 36 };
+    }
+    const bx = x1 - (x2 >= x1 ? 1 : -1) * 16;
+    g.appendChild(
+      s(
+        "g",
+        { class: "step-badge" },
+        s("circle", { cx: bx, cy: y, r: 9 }),
+        s("text", { x: bx, y: y + 3.5, "text-anchor": "middle", text: String(i + 1) }),
+      ),
+    );
+    if (stp.delta !== "removed") {
+      // One dot per step, each starting when the previous one lands: the sequence plays in call order, then loops.
+      const a = r1((i * per) / total);
+      const b = r1((i * per + per * 0.8) / total);
+      g.appendChild(
+        s(
+          "circle",
+          { r: 4, class: "pulse", opacity: "0" },
+          s(
+            "animateMotion",
+            {
+              dur: `${r1(total)}s`,
+              repeatCount: "indefinite",
+              calcMode: "linear",
+              keyPoints: "0;0;1;1",
+              keyTimes: `0;${a};${b};1`,
+            },
+            s("mpath", { href: `#${pid}` }),
+          ),
+          s("animate", {
+            attributeName: "opacity",
+            dur: `${r1(total)}s`,
+            repeatCount: "indefinite",
+            calcMode: "discrete",
+            values: "0;1;0",
+            keyTimes: `0;${a};${b}`,
+          }),
+        ),
+      );
+    }
+    svg.appendChild(g);
+  });
+  V.keyOf = (id) => (/^#\d+$/.test(id) ? id : `p:${id}`);
+  V.expand = (set) => {
+    const msgs = Object.keys(set).filter((k) => k.charAt(0) === "#");
+    const heads = Object.keys(set).filter((k) => k.slice(0, 2) === "p:");
+    fl.steps.forEach((stp, i) => {
+      if (!msgs.length && (set[`p:${stp.from}`] || set[`p:${stp.to}`]) && heads.length) set[`#${i + 1}`] = true;
+    });
+    fl.steps.forEach((stp, i) => {
+      if (set[`#${i + 1}`]) {
+        set[`p:${stp.from}`] = true;
+        set[`p:${stp.to}`] = true;
+      }
+    });
+    return set;
+  };
+  return V;
+}
+
+/** The kind of change a field line describes: "+email" added, "-fax" removed, "~total" changed, "id" unchanged. */
+
+// What travels on a step: "Order { +email ~total −fax }", colored per field change.
+export function dataChip(data: NonNullable<NStep["data"]>, cx: number, y: number): SVGElement {
+  const fields = data.fields ?? [];
+  let shown = fields.filter((f) => fieldDelta(f) !== "unchanged");
+  if (!shown.length) shown = fields.slice(0, 3);
+  const parts: { t: string; k: string }[] = [
+    { t: data.type, k: "type" },
+    ...(shown.length ? [{ t: " {", k: "p" }] : []),
+    ...shown.slice(0, 4).map((f, i) => {
+      const k = fieldDelta(f);
+      return { t: (i ? "  " : " ") + FIELD_MARK[k] + (fieldText(f).split(":")[0] as string).trim(), k };
+    }),
+    ...(shown.length > 4 ? [{ t: " …", k: "p" }] : []),
+    ...(shown.length ? [{ t: " }", k: "p" }] : []),
+  ];
+  const w = Math.ceil(textWidth(parts.map((p) => p.t).join(""), "11px", MONO)) + 20;
+  const g = s(
+    "g",
+    { class: "data-chip" },
+    s("title", { text: `${data.type}\n${fields.join("\n")}` }),
+    s("rect", { x: r1(cx - w / 2), y: y - 13, width: r1(w), height: 20, rx: 6 }),
+  );
+  const text = s("text", { x: r1(cx), y: y + 1, "text-anchor": "middle" });
+  for (const p of parts) text.appendChild(s("tspan", { class: `dk-${p.k}`, text: p.t }));
+  g.appendChild(text);
+  return g;
+}
+
+export function flowNotes(fl: NFlow): HTMLElement[] {
+  const out: HTMLElement[] = [];
+  if (fl.trigger)
+    out.push(h("span", { class: "flow-trigger" }, h("b", { text: `${T.startsAt} ` }), h("code", { text: fl.trigger })));
+  const ref = cfg.referenceFlows.find((f) => f.id === fl.id);
+  if (fl.scenario) {
+    const [rid, sid] = fl.scenario.split("#");
+    const r = reqById[rid as string];
+    const sc = r?.scenarios.find((x) => x.id === sid);
+    if (r && sc) out.push(scenarioStrip(r, sc, true));
+  }
+  if (ref) {
+    const diff = (a: { from: string; to: string }[], b: { from: string; to: string }[]) => {
+      const pool = b.map((x) => `${x.from}>${x.to}`);
+      return a.filter((x) => {
+        const i = pool.indexOf(`${x.from}>${x.to}`);
+        if (i < 0) return true;
+        pool.splice(i, 1);
+        return false;
+      });
+    };
+    const extra = diff(fl.steps, ref.steps);
+    const missing = diff(ref.steps, fl.steps) as typeof ref.steps;
+    out.push(
+      h(
+        "span",
+        { class: "muted" },
+        h("b", { text: `${T.vsReference} “${ref.title || ref.id}”: ` }),
+        !extra.length && !missing.length
+          ? T.matchesReference
+          : [
+              extra.length ? `${extra.length} ${T.extraSteps}` : "",
+              extra.length && missing.length ? " · " : "",
+              missing.length
+                ? `${missing.length} ${T.missingSteps} (${missing
+                    .map((x) => `${compName(x.from)}→${compName(x.to)}${x.message ? `: ${x.message}` : ""}`)
+                    .join("; ")})`
+                : "",
+            ],
+      ),
+    );
+  }
+  const unverified = fl.steps.filter((x) => !x.verified);
+  if (unverified.length) {
+    out.push(
+      h(
+        "span",
+        { class: "warn-text" },
+        `? ${T.unverifiedNote} ${unverified.map((x) => `${compName(x.from)} → ${compName(x.to)}`).join(", ")}`,
+      ),
+    );
+  }
+  return out;
+}
+
+// ═════════════════════════════ sections below the map ═════════════════════════════

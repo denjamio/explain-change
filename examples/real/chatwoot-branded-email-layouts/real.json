@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/chatwoot/chatwoot.git",
-  "commit": "c420edce58f03b1f3d43932dcea968991935c89e",
+  "pr": 14936,
+  "head": "6a03204e9eb751ea00dfa7e38669c30fdb0412c8",
+  "base": "f948b0b8d90c147e1cda7c60f96a4cd6af4ebc3e",
   "report": "real-chatwoot-rails-branded-email-layouts.html",
   "project": "Chatwoot",
   "title": "Branded e-mail layouts (#14936)",

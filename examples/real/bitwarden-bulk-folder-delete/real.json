@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/bitwarden/server.git",
-  "commit": "e93b962371d80964556f5590c6615f5160a437a1",
+  "pr": 8157,
+  "head": "0d8e0470c0453c0ca568f4a7187cf5787a46d96a",
+  "base": "643e3aa631e3a7f238c9084ed20657334ff07993",
   "report": "real-bitwarden-dotnet-bulk-folder-delete.html",
   "project": "Bitwarden",
   "title": "Bulk folder delete (#8157)",

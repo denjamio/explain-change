@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/maybe-finance/maybe.git",
-  "commit": "10ce2c8e23b4695030982351f5bf09d5a6e4e803",
+  "pr": 2356,
+  "head": "31c0578ea934f80668edde597adc531ecfb56965",
+  "base": "dab693d74f5c2a70f914119a9235f28c7fb9264e",
   "report": "real-maybe-rails-balance-sheet-cache.html",
   "project": "maybe",
   "title": "Balance sheet cache layer (#2356)",

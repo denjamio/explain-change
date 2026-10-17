@@ -9,7 +9,7 @@ git diff / Azure DevOps PR + .explain-change.toml
         │  explain-change local | pr
         ▼
 facts.json         the change, analyzed: files, components, dependencies, rules, symbols, OpenSpec, outline
-digest.md          ≈2–4k tokens for the agent: the facts, the best hunks, the rules of the task
+digest.md          ≈4–5k tokens for the agent on a real PR: the facts, the best hunks, the rules of the task
 explanation.json   a draft: ids, views, focus, code references already right; "<…>" for the agent's words
         │  the agent fills explanation.json
         ▼  explain-change render
@@ -21,7 +21,7 @@ out/<branch>.html  one self-contained page: the report script, its styles and th
 
 The contract lives in `src/contract/` as zod schemas, the single source of truth for:
 
-- the TypeScript types the CLI and the report script share (`report/app.ts` imports them),
+- the TypeScript types the CLI and the report script share (the `report/` modules import them),
 - the JSON Schemas in `schemas/` (generated; a test fails when they are stale),
 - the limits and enums the validator enforces and the digest's `## Task` states (`LIMITS`, `ENUMS`).
 
@@ -43,7 +43,7 @@ Each folder depends only on the ones above it:
 | `src/digest` | `digest.md` from the facts and the contract. |
 | `src/report` | The page: excerpts, the embedded data, the assets built from `report/`. |
 | `src/cli` | Commands, `--json` output, the work folder, the browser, skill install and self-update. |
-| `report/` | The report script, typed against the contract: `app.ts` (the header, the map's views and story, the sections below it), `camera.ts` (pan, zoom and flights), `inspector.ts` (what a component or an entity shows), `code.ts` (code excerpts), `sdd.ts` (the OpenSpec section), `model.ts` (the embedded data and its lookups), `ui.ts`, `dom.ts` and `words.ts` (shared pieces and the page's words); its styles and its HTML shell. |
+| `report/` | The report script, typed against the contract: `app.ts` (the page shell), `header.ts`, `map.ts` (the map, its tabs, camera and story cards), `story.ts` (the views and the story they walk), `arch.ts`, `flow.ts` and `data-view.ts` (the 3 views, drawn on `svg-view.ts`), `sections.ts` (decisions and changes), `camera.ts` (pan, zoom and flights), `inspector.ts` (what a component or an entity shows), `code.ts` (code excerpts), `sdd.ts` (the OpenSpec section), `model.ts` (the embedded data and its lookups), `ui.ts`, `dom.ts` and `words.ts` (shared pieces and the page's words); its styles and its HTML shell. |
 | `skills/` | The agent skills the CLI installs and the Claude Code plugin ships. |
 
 ## Hosts
@@ -70,8 +70,10 @@ Where PRs live, as ports and adapters:
 - The report script is bundled without minification by a pinned Bun, so a release renders the same bytes everywhere.
 - The validator reads code names at the head of the change (`git grep` and `git cat-file` at its commit), never the
   checkout, which may be another branch than the PR; only `--include-uncommitted` reads the working tree.
-- Tests build every scenario twice from scratch and require byte-identical pages; the real examples rebuild from
-  their upstream commit with `bun run examples -- --real`.
+- Tests build every scenario (offline fixtures, never published) twice from scratch and require byte-identical
+  pages. The published examples are real PRs only: they rebuild from their GitHub PR with
+  `bun run examples -- --real`, through `explain-change pr <url>` as a user runs it, and a build stops when GitHub
+  gives the PR another head or merge base than `real.json` records.
 
 ## Analysis
 

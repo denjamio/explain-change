@@ -1,0 +1,207 @@
+{
+  "tldr": "Links and the sidebar now carry only the namespace to a new screen, and keep every param on the same screen. The dashboard writes the active namespace into the URL after the API accepts it.",
+  "goal": "Stop page-local params from following the user, and keep the namespace in the URL, so a refresh or a shared link opens the same namespace.",
+  "story": [
+    {
+      "heading": "buildScopedPath added: 1 rule for every in-app link",
+      "body": "A new screen gets the namespace and the params the target names. The same screen keeps all params. It replaces 4 copies of merge-all.",
+      "view": "architecture",
+      "focus": [
+        "navigation"
+      ],
+      "code": "services/ark-dashboard/ark-dashboard/lib/utils/param-scope.ts:1-26"
+    },
+    {
+      "heading": "Namespaces now writes the namespace back to the URL",
+      "body": "After /v1/context answers, NamespaceProvider puts the namespace in the URL with replaceState. An unreachable namespace becomes the one in use.",
+      "view": "architecture",
+      "focus": [
+        "namespaces"
+      ],
+      "code": "services/ark-dashboard/ark-dashboard/providers/NamespaceProvider.tsx:149-160"
+    },
+    {
+      "heading": "The write-back keeps the screen loaded",
+      "body": "useGetContext seeds the cache key of the resolved namespace. NamespaceProvider holds the last resolved state, so the loading gate stays closed.",
+      "view": "architecture",
+      "focus": [
+        "namespaces"
+      ],
+      "code": "services/ark-dashboard/ark-dashboard/lib/services/namespaces-hooks.ts:18-43"
+    },
+    {
+      "heading": "Back to sessions now keeps only the namespace",
+      "body": "The session page calls push from useNamespacedNavigation. The params of the conversation stay on the session page.",
+      "view": "architecture",
+      "focus": [
+        "dashboard-pages",
+        "navigation"
+      ],
+      "code": "services/ark-dashboard/ark-dashboard/app/(dashboard)/sessions/[session_id]/page.tsx:45-52"
+    },
+    {
+      "heading": "8 requirements of url-param-scoping, all met",
+      "body": "Navigation implements the 4 param rules. Namespaces implements the 4 rules for the namespace in the URL. Unit tests cover each scenario.",
+      "view": "requirements",
+      "focus": [
+        "url-param-scoping/app-scoped-parameters-survive-navigation",
+        "url-param-scoping/the-active-namespace-is-present-in-the-url"
+      ]
+    },
+    {
+      "heading": "The whole change",
+      "body": "Navigation decides which params follow the user. Namespaces keeps the URL and the namespace in use the same. The change stays inside the dashboard.",
+      "view": "architecture",
+      "focus": []
+    }
+  ],
+  "keyDependencies": [
+    {
+      "from": "dashboard-pages",
+      "to": "navigation",
+      "label": "scoped push"
+    }
+  ],
+  "components": [
+    {
+      "id": "dashboard-pages",
+      "summary": "The session page goes back to the session history with the namespace only, not with the params of the conversation."
+    },
+    {
+      "id": "navigation",
+      "summary": "NamespacedLink, useNamespacedNavigation and the sidebar call buildScopedPath; only namespace follows the user to a new screen."
+    },
+    {
+      "id": "namespaces",
+      "summary": "NamespaceProvider derives the namespace in render, writes it to the URL and drops setNamespace, createNamespace and availableNamespaces."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "An allowlist of app-scoped params, not a denylist",
+      "why": "The app reads 25 params and only namespace is app-scoped. A new param that nobody classifies stays page-local, so it cannot leak.",
+      "basis": "spec",
+      "alternative": "Use the denylist of session-params.ts for the whole app.",
+      "evidence": "services/ark-dashboard/ark-dashboard/lib/utils/param-scope.ts:1"
+    },
+    {
+      "title": "Scope by pathname, not by a declaration per screen",
+      "why": "The same pathname means the same screen, which owns its params. No screen needs a config, and a target can name a param it needs.",
+      "basis": "spec",
+      "alternative": "A registry that maps each route to the params it holds.",
+      "evidence": "services/ark-dashboard/ark-dashboard/lib/utils/param-scope.ts:10-11"
+    },
+    {
+      "title": "replaceState with a query-only URL, not router.replace",
+      "why": "router.replace makes a server round trip and can fetch twice on mount. A bare query keeps the base path that usePathname() does not include.",
+      "basis": "spec",
+      "alternative": "router.replace with the pathname from usePathname().",
+      "evidence": "services/ark-dashboard/ark-dashboard/providers/NamespaceProvider.tsx:157-159"
+    },
+    {
+      "title": "Derive the namespace in render",
+      "why": "A useState('default') seed sent a request for the wrong namespace first. The state now comes from the /v1/context answer or its error.",
+      "basis": "spec",
+      "alternative": "Keep the namespace in useState and sync it in an effect.",
+      "evidence": "services/ark-dashboard/ark-dashboard/providers/NamespaceProvider.tsx:60-95"
+    },
+    {
+      "title": "Seed the context cache for the resolved namespace",
+      "why": "The write-back selects a new query key. The seed serves it from the response in hand, so /v1/context is not fetched twice.",
+      "basis": "code",
+      "alternative": "Let the new key fetch and show the loading gate again.",
+      "evidence": "services/ark-dashboard/ark-dashboard/lib/services/namespaces-hooks.ts:31-40"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "url-param-scoping/app-scoped-parameters-survive-navigation",
+      "status": "implemented",
+      "components": [
+        "navigation"
+      ],
+      "tests": [
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/lib/hooks/use-namespaced-navigation.test.tsx:26",
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/components/namespaced-link.test.tsx:21"
+      ]
+    },
+    {
+      "id": "url-param-scoping/page-local-parameters-are-dropped-when-leaving-a-screen",
+      "status": "implemented",
+      "components": [
+        "navigation",
+        "dashboard-pages"
+      ],
+      "tests": [
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/lib/utils/param-scope.test.ts:22",
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/lib/hooks/use-namespaced-navigation.test.tsx:44"
+      ]
+    },
+    {
+      "id": "url-param-scoping/a-destination-may-request-parameters-explicitly",
+      "status": "implemented",
+      "components": [
+        "navigation"
+      ],
+      "tests": [
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/lib/utils/param-scope.test.ts:32",
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/lib/utils/param-scope.test.ts:54"
+      ]
+    },
+    {
+      "id": "url-param-scoping/screen-owned-parameters-survive-navigation-within-the-same-s",
+      "status": "implemented",
+      "components": [
+        "navigation"
+      ],
+      "tests": [
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/lib/utils/param-scope.test.ts:12",
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/lib/hooks/use-namespaced-navigation.test.tsx:57"
+      ]
+    },
+    {
+      "id": "url-param-scoping/the-active-namespace-is-present-in-the-url",
+      "status": "implemented",
+      "components": [
+        "namespaces"
+      ],
+      "tests": [
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/providers/namespace-provider.test.tsx:313",
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/providers/namespace-provider.test.tsx:434"
+      ]
+    },
+    {
+      "id": "url-param-scoping/an-unreachable-namespace-is-corrected-in-the-url",
+      "status": "implemented",
+      "components": [
+        "namespaces"
+      ],
+      "tests": [
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/providers/namespace-provider.test.tsx:402",
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/providers/namespace-provider.test.tsx:460"
+      ]
+    },
+    {
+      "id": "url-param-scoping/namespace-synchronisation-does-not-disrupt-browser-history",
+      "status": "implemented",
+      "components": [
+        "namespaces"
+      ],
+      "tests": [
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/providers/namespace-provider.test.tsx:379",
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/providers/namespace-provider.test.tsx:359"
+      ]
+    },
+    {
+      "id": "url-param-scoping/namespace-synchronisation-does-not-interrupt-the-screen",
+      "status": "implemented",
+      "components": [
+        "namespaces"
+      ],
+      "tests": [
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/providers/namespace-provider.test.tsx:522",
+        "services/ark-dashboard/ark-dashboard/__tests__/unit/lib/services/namespaces-hooks.test.tsx:71"
+      ]
+    }
+  ]
+}

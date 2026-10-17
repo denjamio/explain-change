@@ -1,0 +1,164 @@
+# Ark: a Kubernetes operator that runs agents, teams and queries, with an API, a broker, CLIs and a web dashboard.
+# The dashboard is drawn in detail (its pages, UI, state and client); the rest of the monorepo is 1 box per service.
+
+[project]
+name = "Ark"
+direction = "Layered per service. In the dashboard, pages compose UI components; components read state from providers and hooks; hooks call the resource client. The namespace is part of every URL, never stored elsewhere."
+
+[[layers]]
+id = "entry"
+name = "Entry points"
+
+[[layers]]
+id = "ui"
+name = "Dashboard UI"
+
+[[layers]]
+id = "state"
+name = "Dashboard state"
+
+[[layers]]
+id = "control"
+name = "Control plane"
+
+[[layers]]
+id = "platform"
+name = "Platform"
+
+[rules]
+allow = [
+  "entry -> ui",
+  "entry -> state",
+  "entry -> platform",
+  "ui -> state",
+  "ui -> platform",
+  "state -> platform",
+  "control -> platform",
+]
+same_layer = true
+
+[[components]]
+id = "dashboard-pages"
+name = "Dashboard pages"
+layer = "entry"
+paths = ["services/ark-dashboard/ark-dashboard/app/**", "services/ark-dashboard/ark-dashboard/middleware.ts"]
+desc = "Owns the routes of the dashboard; each page composes the UI of 1 resource kind."
+
+[[components]]
+id = "ark-api"
+name = "Ark API"
+layer = "entry"
+paths = ["services/ark-api/**", "services/localhost-gateway/**"]
+desc = "Owns the REST API over the cluster's resources, with streaming and the broker link."
+
+[[components]]
+id = "clis"
+name = "CLIs"
+layer = "entry"
+paths = ["tools/**"]
+desc = "Owns ark-cli and fark, the command lines over the same resources."
+
+[[components]]
+id = "landing-page"
+name = "Landing page"
+layer = "entry"
+paths = ["services/ark-landing-page/**"]
+desc = "Owns the public landing page and its demo sign-in."
+
+[[components]]
+id = "navigation"
+name = "Navigation"
+layer = "ui"
+paths = ["services/ark-dashboard/ark-dashboard/components/namespaced-link*", "services/ark-dashboard/ark-dashboard/components/navigation-tracker*", "services/ark-dashboard/ark-dashboard/components/app-sidebar*", "services/ark-dashboard/ark-dashboard/lib/hooks/use-namespaced-navigation*", "services/ark-dashboard/ark-dashboard/lib/utils/param-scope*", "services/ark-dashboard/ark-dashboard/lib/utils/session-params*"]
+desc = "Owns in-app links and the sidebar; which URL params follow the user to the next screen."
+
+[[components]]
+id = "dashboard-ui"
+name = "Dashboard UI"
+layer = "ui"
+paths = ["services/ark-dashboard/ark-dashboard/components/**"]
+desc = "Owns the forms, tables, editors and chat of each resource kind."
+
+[[components]]
+id = "namespaces"
+name = "Namespaces"
+layer = "state"
+paths = ["services/ark-dashboard/ark-dashboard/providers/NamespaceProvider*", "services/ark-dashboard/ark-dashboard/lib/services/namespaces*"]
+desc = "Owns the active namespace: what the URL asks for, what the API accepts, and the scope of every request."
+
+[[components]]
+id = "dashboard-state"
+name = "Dashboard state"
+layer = "state"
+paths = ["services/ark-dashboard/ark-dashboard/providers/**", "services/ark-dashboard/ark-dashboard/atoms/**", "services/ark-dashboard/ark-dashboard/hooks/**", "services/ark-dashboard/ark-dashboard/lib/hooks/**", "services/ark-dashboard/ark-dashboard/lib/chat-context.tsx", "services/ark-dashboard/ark-dashboard/lib/chat-events.ts"]
+desc = "Owns client state: providers, atoms and the hooks that read and change resources."
+
+[[components]]
+id = "resource-client"
+name = "Resource client"
+layer = "state"
+paths = ["services/ark-dashboard/ark-dashboard/lib/services/**", "services/ark-dashboard/ark-dashboard/lib/api/**", "services/ark-dashboard/ark-dashboard/lib/broker/**"]
+desc = "Owns the calls from the dashboard to Ark API, typed with the generated types."
+
+[[components]]
+id = "controller"
+name = "Controller"
+layer = "control"
+paths = ["ark/**"]
+desc = "Owns the CRDs (Agent, Team, Query, Model, MCPServer) and their reconciliation, and dispatches queries."
+
+[[components]]
+id = "executors"
+name = "Executors"
+layer = "control"
+paths = ["ark/executors/**"]
+desc = "Owns the default completions executor that runs a query for the controller over A2A."
+
+[[components]]
+id = "broker"
+name = "Broker"
+layer = "control"
+paths = ["services/ark-broker/**"]
+desc = "Owns the in-memory event bus for messages, chunks, traces and sessions."
+
+[[components]]
+id = "mcp-services"
+name = "MCP services"
+layer = "control"
+paths = ["services/ark-mcp/**", "services/kubernetes-mcp-server/**", "services/argo-workflows/**"]
+desc = "Owns the MCP server hosts and the workflow tools that agents call."
+
+[[components]]
+id = "dashboard-platform"
+name = "Dashboard platform"
+layer = "platform"
+paths = ["services/ark-dashboard/ark-dashboard/lib/**", "services/ark-dashboard/ark-dashboard/auth.ts", "services/ark-dashboard/ark-dashboard/next.config.ts"]
+desc = "Owns auth, analytics, constants, types and shared helpers of the dashboard."
+
+[[components]]
+id = "sdk"
+name = "SDK"
+layer = "platform"
+paths = ["lib/ark-sdk/**"]
+desc = "Owns the Python SDK generated from the CRDs and the executor interfaces."
+
+[[components]]
+id = "deployment"
+name = "Deployment"
+layer = "platform"
+paths = ["charts/**", "infrastructure/**", "scripts/**", "templates/**", "devspace.yaml", "Makefile", "*.mk"]
+desc = "Owns the Helm charts, the cluster setup and the build scripts."
+
+[glossary]
+namespace = "The Kubernetes namespace a user works in; every resource the dashboard shows belongs to 1 namespace."
+"app-scoped param" = "A URL query param that follows the user to every screen; only namespace is one."
+"page-local param" = "A URL query param that belongs to 1 screen, such as a form prefill or a filter."
+"write-back" = "The step that puts the resolved namespace into the URL after the API accepts it."
+"base path" = "The URL prefix of a per-tenant deployment (ARK_DASHBOARD_BASE_PATH)."
+agent = "A resource that answers queries with a model and tools."
+team = "A resource that runs several agents together on a query."
+query = "A resource that asks an agent or a team for an answer."
+session = "The conversation that groups the queries of a chat."
+
+[ignore]
+paths = ["docs/**", "samples/**", "examples/**", "images/**", "services/ark-dashboard/ark-dashboard/public/**", "services/ark-dashboard/ark-dashboard/lib/api/generated/**"]

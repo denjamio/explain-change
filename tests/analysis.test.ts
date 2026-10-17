@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
-import { keyDependencyCandidates } from "../src/analysis/outline.ts";
+import { hunkScore, keyDependencyCandidates } from "../src/analysis/outline.ts";
 import { portLinks } from "../src/analysis/ports.ts";
 import { type Extracted, extractRefs } from "../src/analysis/refs.ts";
 import { loadTsConfigs, SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
 import { extractSymbols } from "../src/analysis/symbols.ts";
 import { detectStructure } from "../src/config/infer.ts";
 import { Mapper } from "../src/config/mapper.ts";
-import type { DiffLine } from "../src/contract/facts.ts";
+import type { DiffLine, FileFacts, Hunk } from "../src/contract/facts.ts";
 import { makeConfig } from "./helpers.ts";
 
 type Comp = Parameters<typeof makeConfig>[0][number];
@@ -609,5 +609,51 @@ Orders SHALL carry an email.
       ["c/c", "ADDED"],
       ["c/b", "REMOVED"],
     ]);
+  });
+});
+
+describe("hunk scores", () => {
+  const hunk = (newStart: number, lines: DiffLine[]): Hunk =>
+    ({ oldStart: newStart, oldLines: 0, newStart, newLines: lines.length, header: "", lines }) as Hunk;
+  const file = (path: string, hunks: Hunk[]): FileFacts =>
+    ({ path, category: "code", component: "orders", delta: "changed", hunks }) as unknown as FileFacts;
+  const ctx = {
+    symbolLines: new Set(["notifications/apps.py\x002", "orders/services.py\x0020"]),
+    crossFiles: new Set(["orders/services.py"]),
+    crossLines: new Set(["orders/services.py\x0031"]),
+  };
+
+  test("the hunk that holds the reference beats an import of it; framework wiring shows least", () => {
+    const imports = hunk(3, [["+", "from notifications.tasks import send_order_confirmation"]]);
+    const call = hunk(30, [
+      [" ", "    order.save()"],
+      ["+", "    transaction.on_commit(lambda: send_order_confirmation.delay(order.id))"],
+    ]);
+    const symbol = hunk(20, [["+", "def mark_order_paid(order):"]]);
+    const services = file("orders/services.py", [imports, call, symbol]);
+    const wiring = file("notifications/apps.py", [
+      hunk(1, [
+        ["+", "class NotificationsConfig(AppConfig):"],
+        ["+", "    name = 'notifications'"],
+      ]),
+    ]);
+    expect(hunkScore(services, imports, ctx)).toBe(1);
+    expect(hunkScore(services, call, ctx)).toBe(5); // code in a component + the reference
+    expect(hunkScore(services, symbol, ctx)).toBe(7); // + a public symbol, in a file with references
+    expect(hunkScore(wiring, wiring.hunks[0] as Hunk, ctx)).toBe(1);
+  });
+
+  test("a hunk that uses a name the change imports holds the reference, though the example points at the import", () => {
+    const imports = hunk(5, [["+", "from notifications.tasks import send_order_confirmation"]]);
+    const store = hunk(19, [["+", "        contact_email=customer.email,"]]);
+    const queue = hunk(33, [["+", "    transaction.on_commit(lambda: send_order_confirmation.delay(order.id))"]]);
+    const services = file("orders/services.py", [imports, store, queue]);
+    const onImport = {
+      symbolLines: new Set<string>(),
+      crossFiles: new Set(["orders/services.py"]),
+      crossLines: new Set(["orders/services.py\x005"]),
+    };
+    expect(hunkScore(services, queue, onImport)).toBe(5);
+    expect(hunkScore(services, store, onImport)).toBe(4);
   });
 });

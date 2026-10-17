@@ -39,7 +39,7 @@ makes sense.
 | 🎬 **A guided story** | 2–8 steps walk through the change: each moves the map to what changed and shows the code. |
 | 📖 **Explains, never reviews** | Short, present-tense sentences in the style of [Simplified Technical English](#plain-prose-you-can-check-asd-ste100), checked before the page renders. No bug hunting or style opinions: that is your reviewer's job. |
 | 📦 **One offline file** | A single HTML page, light and dark mode, carrying only the code it shows. |
-| 🎯 **Deterministic and cheap** | The CLI computes every fact: the same change gives a byte-identical page. The agent reads a 2–4k-token digest, never the full diff. |
+| 🎯 **Deterministic and cheap** | The CLI computes every fact: the same change gives a byte-identical page. The agent reads a digest of about 4–5k tokens for a real PR (less for a small change), never the full diff. |
 
 ## Quick start
 
@@ -185,7 +185,7 @@ silently.
 | `project.lang` | Report language: `en`, the default and, for now, the only one. |
 | `project.base` | Default base for `local`. |
 | `project.names` | Product and library names written like code (`FastAPI`, `NestJS`) that the prose may use: the validator does not look for them in the change. |
-| `project.budget` | Digest size in characters (2000–100000, default 12000 ≈ 3k tokens). The overview and the task always fit, so a large change can go past it. `--budget` overrides it. |
+| `project.budget` | Digest size in characters (2000–100000, default 12000). The task always fits; the overview gets shorter (fewer symbols, files by component) until the key hunks have 35% of the budget, so a large change goes past it by the task and the shortest overview: about 16–20k characters (4–5k tokens) on real PRs. `--budget` overrides it. |
 | `project.host` | Where the PRs live: `azure-devops` or `github` (default: the host of the remotes, else Azure DevOps). `--host` overrides it; a PR URL names its own. |
 | `[[layers]]` | Map lanes, top to bottom in the listed order (entry points first, core last). The order does not decide what may depend on what: `[rules]` does. |
 | `[rules] allow` | Allowed dependency directions (`"a -> b"`, layer or component ids). When present, any other edge between layers is a violation. |
@@ -290,10 +290,9 @@ bun install
 bun run check                 # typecheck, lint and the tests
 bun run dev -- local          # the CLI from source (any command)
 bun run install:dev           # this checkout as `explain-change` in ~/.local/bin, skills linked to skills/
-bun run examples              # rebuild examples/ after changing the report or the analysis (CI checks it)
-bun run examples -- --real    # also rebuild the 10 real pull requests (clones them at their commit)
+bun run examples -- --real    # rebuild the 11 real pull requests in examples/ (`explain-change pr <url>`: network and gh)
 bun run smoke                 # compile the binary for this machine and run it on a temporary repository
-bun run eval -- --model haiku # a real agent explains each scenario with the skill (costs tokens; --real: the PRs too)
+bun run eval -- --model haiku # a real agent explains each real PR by its URL, with the skill (costs tokens)
 bun scripts/example-work.ts open <example> <dir>   # rewrite an example's explanation with the current tool, then: save
 ```
 
@@ -307,7 +306,11 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
 - **Examples follow the tool**: after any change to the analysis, the outline, the draft or the rules, rewrite the
   examples' explanations with the current tool (`scripts/example-work.ts open`, fill the draft, `save`) and rebuild
   them with `bun run examples -- --real`. They are what the current version produces, and the eval's references.
-- **Evals**: after changing the skills or the digest's rules, run the eval (`--real` adds the 10 PRs). It reports,
+- **Examples are real**: every published example and every eval run is a real pull request of an open-source product,
+  asked for by its URL. The scenarios in `examples/scenarios/` are offline test fixtures (determinism, reference
+  resolution, an inferred config, OpenSpec parsing), never published or evaluated unless named.
+- **Evals**: after changing the skills or the digest's rules, run the eval: the 11 PRs, each asked for by its URL, as a
+  user does. It reports,
   per example, whether the agent reached a valid explanation, with its turns, cost and time, and its fidelity to
   the committed explanation: the F1 (precision and recall) of key dependencies, flow edges, the components the
   story lights and the files the decisions cite. `--runs N` repeats each example and reports mean ± standard

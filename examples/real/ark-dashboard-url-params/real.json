@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/mckinsey/agents-at-scale-ark.git",
+  "pr": 3147,
+  "head": "62a4cdc8947d54339ce98f2d05b15a1de9a915af",
+  "base": "1ad7a7ac120fc85930d71aa8386042e6c0352663",
+  "report": "real-ark-ts-dashboard-url-params.html",
+  "project": "Ark",
+  "title": "Dashboard URL params per page (#3147)",
+  "stack": "TypeScript \u00b7 OpenSpec",
+  "shows": "A spec-driven PR: an OpenSpec change archived into the main spec, its 8 requirements mapped to code and tests, and decisions taken from its design."
+}

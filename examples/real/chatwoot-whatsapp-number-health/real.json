@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/chatwoot/chatwoot.git",
-  "commit": "d644c207f021cac7e692bac8a1c32492af350846",
+  "pr": 15100,
+  "head": "fd045f8ac052788058dba1a09336821bd44f436d",
+  "base": "1bff2d86edc2c146e6041bfbb9abd726c361b028",
   "report": "real-chatwoot-rails-whatsapp-number-health.html",
   "project": "Chatwoot",
   "title": "WhatsApp number health (#15100)",

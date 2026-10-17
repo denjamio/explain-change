@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/immich-app/immich.git",
-  "commit": "447cc40a509e22fa34fed76d14552cd48be128e5",
+  "pr": 29878,
+  "head": "e3f15ce8426a803035335fde34cc69c563ceafd5",
+  "base": "35c2a90fcacd98f3135319152aef27ef88ddaf46",
   "report": "real-immich-ts-workflow-logging.html",
   "project": "Immich",
   "title": "Workflow logging (#29878)",

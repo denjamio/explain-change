@@ -102,8 +102,8 @@
     },
     {
       "title": "A typed ApiError with Meta's code",
-      "why": "Code 190 marks an authorization error. The page then guides the admin to reconnect, without Meta's technical codes.",
-      "basis": "inferred",
+      "why": "Code 190 marks an authorization error. The page then sends the admin to the Configuration flow and shows no Meta error code.",
+      "basis": "pr",
       "alternative": "Raise a string error with the response body.",
       "evidence": "app/services/whatsapp/health_service.rb:2-16"
     }

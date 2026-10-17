@@ -1,14 +1,15 @@
 /**
  * Evaluates the skill end to end: a real agent explains each example, and the result is measured. Costs tokens.
  *
- *   bun scripts/eval.ts [--model haiku|sonnet|opus] [--agent "claude -p"] [--real] [--runs N] [--judge MODEL] [example…]
+ *   bun scripts/eval.ts [--model haiku|sonnet|opus] [--agent "claude -p"] [--runs N] [--judge MODEL] [example…]
  *
- * The examples are the scenarios (examples/scenarios/<name>) and, with --real or by name, the real PRs
- * (examples/real/<name>, cloned: needs the network). For each one: its git repository is built in a temp folder, `explain-change` (this
- * checkout) is put on PATH, and the agent gets the user's request plus skills/explain-change/SKILL.md (the skill
- * itself, without its front matter). Then `explain-change status --json` says whether the explanation is valid.
+ * The examples are the real PRs (examples/real/<name>), each asked for by its GitHub URL, as a user does (needs
+ * the network and `gh`). A test fixture (examples/scenarios/<name>, asked as "explain my changes") runs only by
+ * name. For each one: its git repository is built in a temp folder, `explain-change` (this checkout) is put on
+ * PATH, and the agent gets the user's request plus skills/explain-change/SKILL.md (the skill itself, without its
+ * front matter). Then `explain-change status --json` says whether the explanation is valid.
  * Reported per example: the final state, the issues left, the agent's turns, cost and time (from
- * `claude -p --output-format json`), and its fidelity to the scenario's reference explanation (fidelity()). The
+ * `claude -p --output-format json`), and its fidelity to the example's committed explanation (fidelity()). The
  * references are the committed explanations: rewrite them with the current tool (scripts/example-work.ts) first.
  *
  * --runs N explains each example N times and reports the mean and the standard deviation: 1 run of an agent is a
@@ -32,18 +33,11 @@ const { values, positionals } = parseArgs({
   options: {
     model: { type: "string", default: "sonnet" },
     agent: { type: "string", default: "claude -p" },
-    real: { type: "boolean", default: false },
     runs: { type: "string", default: "1" },
     judge: { type: "string" },
   },
   allowPositionals: true,
 });
-/** What the user asks: the branch for a scenario, the last commit for a real PR. */
-const request = (base: string) =>
-  base === "main"
-    ? "Explain the changes of this branch with explain-change."
-    : `Explain the last commit with explain-change (its base is ${base}).`;
-
 await buildAssets();
 const tmp = mkdtempSync(join(tmpdir(), "explain-change-eval-"));
 const bin = join(tmp, "bin");
@@ -173,7 +167,7 @@ const runs = Math.max(1, Number(values.runs) || 1);
 const rows: Record<string, unknown>[] = [];
 try {
   const targets = exampleTargets().filter((t) =>
-    positionals.length ? positionals.includes(t.name) : t.kind === "scenario" || values.real,
+    positionals.length ? positionals.includes(t.name) : t.kind === "real",
   );
   for (const target of targets) {
     for (let r = 1; r <= runs; r++) {
@@ -187,7 +181,7 @@ try {
         cmd as string,
         [
           ...args,
-          request(target.base),
+          target.request,
           "--model",
           values.model as string,
           "--output-format",

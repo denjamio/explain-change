@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/saleor/saleor.git",
-  "commit": "3dd4bf79a46132ed2f8e6225a9863f5ef8dc243b",
+  "pr": 19920,
+  "head": "3e247353d7116a4f296c75f4ecffbd145e0cd54f",
+  "base": "dfa97c976418c4760ffd63d34b5e13698dfd85e8",
   "report": "real-saleor-django-webhook-payload-generation.html",
   "project": "Saleor",
   "title": "Per-webhook payload generation (#19920)",

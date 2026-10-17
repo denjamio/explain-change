@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/bitwarden/server.git",
-  "commit": "c30db9c7efc892796a72984d8e058b8801b0dd92",
+  "pr": 8283,
+  "head": "37120870d1a9f7a8befef6927e647e23aa76f6c4",
+  "base": "882358afcc66806c582055dd0610460f4678fa3e",
   "report": "real-bitwarden-dotnet-invite-staged-users.html",
   "project": "Bitwarden",
   "title": "Invite staged users (#8283)",

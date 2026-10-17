@@ -6,6 +6,39 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- A real spec-driven example: Ark's dashboard PR #3147 (mckinsey/agents-at-scale-ark, TypeScript), which archives
+  its OpenSpec change into the main spec. Its 8 requirements map to the code and the tests, and 4 of its 5
+  decisions come from the change's design (`spec`).
+
+### Changed
+- Every published example and every eval run is a real pull request. The synthetic OpenSpec scenario leaves the
+  gallery, where Ark #3147 takes its place; the scenarios stay as offline test fixtures. `bun run eval` explains the
+  real PRs by default (no `--real`); a fixture runs only by name.
+- The real examples and the eval go through `explain-change pr <url>`, as a user does: the PR's own diff (its head
+  against its merge base, not the squash commit), its title and its description. 3 of the 10 PRs had another merge
+  base than the squash commit's parent. The eval asks the agent "Explain <PR URL>"; the scenarios stay "explain my
+  changes". `real.json` records the PR, its head and its merge base, and a build stops when GitHub gives others.
+- With a PR description, 8 decisions of the examples now state `pr` as their basis: the description says their
+  why. The examples' 59 decisions: 21 `code`, 9 `spec`, 8 `pr`, 21 `inferred`.
+- The digest quotes the PR description's words, not its markup (template comments, code blocks, images, HTML and
+  link targets go), up to 1200 characters, up from 600.
+- The digest holds its budget better: the overview gets shorter (10 or 20 symbols, files by component) until the
+  key hunks have 35% of the budget, and the list of hunks not shown names only hunks worth reading. On the real PRs
+  it is 4–5k tokens; the docs said 2–4k.
+- Key hunks: a hunk of imports only, or of a file a framework asks for (`apps.py`, `__init__.py`, assembly
+  attributes), ranks last; the hunk that holds a new dependency's reference ranks above the rest of its file. In the
+  OpenSpec scenario, the hunk that queues the confirmation email replaces Django's `AppConfig`.
+- The outline gives a story step to a component that rewrites at least 50 lines and 30% of the change's code, even
+  with no new symbol: a refactor inside existing functions (Ark's `NamespaceProvider`) is no longer left to the
+  overview. The analysis is version 11.
+- The report script's map, views, story and sections leave `app.ts` for their own modules (`map.ts`, `story.ts`,
+  `arch.ts`, `flow.ts`, `data-view.ts`, `header.ts`, `sections.ts`); every example renders the same DOM.
+
+### Fixed
+- `explain-change pr` on a PR merged with a merge commit explained an empty diff: its head is already in the
+  target, so its merge base was its own head. It now compares the head with the target before the merge commit.
+
 ## [0.7.0] - 2026-10-17
 
 ### Added

@@ -6,7 +6,7 @@
  *                                                      and the committed explanation as .explain-change/reference.json
  *   bun scripts/example-work.ts save <example> <dir>   validates <dir>'s explanation with `render` and, when it is
  *                                                      valid, writes it back to the example
- *   bun scripts/example-work.ts list                   the examples, scenarios first
+ *   bun scripts/example-work.ts list                   the examples (the real PRs, then the test fixtures)
  *
  * Then `bun run examples -- --real` rebuilds the pages. Run it after any change to the outline, the draft or the
  * rules: the examples show what the current version produces, and `bun run eval` scores agents against them.
@@ -62,7 +62,7 @@ if (command === "open") {
   await buildAssets();
   ensureDir(dir);
   const repo = target.build(dir);
-  const p = cli(["local", "--base", target.base], repo);
+  const p = cli(target.args, repo);
   if (p.status !== 0) throw new Error(p.stdout + p.stderr);
   if (existsSync(target.explanation))
     writeFileSync(join(repo, ".explain-change", "reference.json"), readFileSync(target.explanation));
