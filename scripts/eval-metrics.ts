@@ -77,10 +77,12 @@ export interface Transcript {
   tokensOut: number | null;
   /** `explain-change render` calls: 1 is a first-time valid explanation, each more is a round of fixes. */
   renders: number;
-  /** Files the agent read outside the work folder: the digest is meant to be enough. */
+  /** Reads of the sources outside the work folder (Read, or a shell command): the digest is meant to be enough. */
   sourceReads: number;
   /** The skills the agent loaded with the Skill tool, in order. */
   skills: string[];
+  /** The issues the first render reported, numbers and quotes left out: what made the agent render again. */
+  firstIssues: string[];
 }
 
 interface Usage {
@@ -91,6 +93,9 @@ interface Usage {
 }
 interface Block {
   type?: string;
+  id?: string;
+  tool_use_id?: string;
+  content?: string | { type?: string; text?: string }[];
   name?: string;
   input?: { command?: string; file_path?: string; skill?: string };
 }
@@ -105,7 +110,10 @@ export function readTranscript(stdout: string): Transcript {
     renders: 0,
     sourceReads: 0,
     skills: [],
+    firstIssues: [],
   };
+  let firstRender: string | undefined;
+  let firstSeen = false;
   for (const line of stdout.split("\n")) {
     let event: {
       type?: string;
@@ -123,11 +131,23 @@ export function readTranscript(stdout: string): Transcript {
       for (const block of event.message?.content ?? []) {
         if (block.type !== "tool_use") continue;
         const input = block.input ?? {};
-        if (block.name === "Bash" && /\bexplain-change\s+render\b/.test(input.command ?? "")) out.renders++;
+        if (block.name === "Bash" && /\bexplain-change\s+render\b/.test(input.command ?? "")) {
+          out.renders++;
+          firstRender ??= block.id;
+        }
         if (block.name === "Read" && input.file_path && !/(^|[\\/])\.explain-change[\\/]/.test(input.file_path))
           out.sourceReads++;
+        // Read-only shell commands (sed, grep, git show) run without a permission: they read the sources too.
+        if (block.name === "Bash" && !/^\s*(cd \S+ && )?explain-change\b/.test(input.command ?? "")) out.sourceReads++;
         if (block.name === "Skill" && input.skill) out.skills.push(input.skill);
       }
+    } else if (event.type === "user" && firstRender && !firstSeen) {
+      const result = (event.message?.content ?? []).find((b) => b.tool_use_id === firstRender);
+      if (!result) continue;
+      firstSeen = true;
+      const text =
+        typeof result.content === "string" ? result.content : (result.content ?? []).map((c) => c.text).join("\n");
+      out.firstIssues = issueKinds(text);
     } else if (event.type === "result") {
       const u = event.usage ?? {};
       out.turns = event.num_turns ?? null;
@@ -138,6 +158,18 @@ export function readTranscript(stdout: string): Transcript {
     }
   }
   return out;
+}
+
+/**
+ * The kinds of the issues in a render's JSON output: each issue's code and path, indexes left out. Read object by
+ * object, so an output the agent cut short (`| head`) still gives the issues it shows.
+ */
+export function issueKinds(text: string): string[] {
+  return [...text.matchAll(/\{[^{}]*"code":[^{}]*\}/g)].map(([o]) => {
+    const code = /"code":\s*"([^"]*)"/.exec(o)?.[1];
+    const path = /"path":\s*"([^"]*)"/.exec(o)?.[1] ?? "";
+    return `${code} ${path.replace(/\[\d+\]/g, "[]")}`.trim();
+  });
 }
 
 /** "mean ± sd" of the numbers in `xs`, or null when there are none. */

@@ -63,16 +63,30 @@ describe("eval metrics", () => {
   });
 
   test("the transcript gives turns, tokens, renders, source reads and the skills loaded", () => {
-    const tool = (name: string, input: Record<string, string>) =>
-      JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name, input }] } });
+    const tool = (name: string, input: Record<string, string>, id?: string) =>
+      JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", id, name, input }] } });
+    const issues = [
+      { code: "sentence-too-long", path: "story[2].body", message: "…" },
+      { code: "placeholder", path: "tldr", message: "…" },
+    ];
+    const result = (id: string, issues: unknown[]) =>
+      JSON.stringify({
+        type: "user",
+        message: {
+          content: [{ type: "tool_result", tool_use_id: id, content: JSON.stringify({ explanation: { issues } }) }],
+        },
+      });
     const stdout = [
       JSON.stringify({ type: "system", subtype: "init" }),
       tool("Skill", { skill: "explain-change" }),
       tool("Bash", { command: "explain-change pr https://github.com/o/r/pull/1 --json" }),
       tool("Read", { file_path: "/tmp/r/.explain-change/digest.md" }),
       tool("Read", { file_path: "/tmp/r/app/models/order.rb" }),
-      tool("Bash", { command: "explain-change render --json" }),
-      tool("Bash", { command: "cd /tmp/r && explain-change  render --json" }),
+      tool("Bash", { command: "git show abc:app/models/order.rb | sed -n 1,40p" }),
+      tool("Bash", { command: "explain-change render --json" }, "r1"),
+      result("r1", issues),
+      tool("Bash", { command: "cd /tmp/r && explain-change  render --json" }, "r2"),
+      result("r2", []),
       "not json",
       JSON.stringify({
         type: "result",
@@ -87,8 +101,9 @@ describe("eval metrics", () => {
       tokensIn: 1000,
       tokensOut: 300,
       renders: 2,
-      sourceReads: 1,
+      sourceReads: 2,
       skills: ["explain-change"],
+      firstIssues: ["sentence-too-long story[].body", "placeholder tldr"],
     });
     expect(readTranscript("")).toMatchObject({ turns: null, tokensIn: null, renders: 0, skills: [] });
   });
