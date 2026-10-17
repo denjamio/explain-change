@@ -379,15 +379,18 @@ function report(): void {
 
   let regressed = false;
   if (values.baseline) {
-    const before = JSON.parse(readFileSync(values.baseline, "utf8")) as { rows: Row[] };
-    console.log(`\nagainst ${values.baseline}:`);
-    for (const c of compareRuns(before.rows, rows)) {
+    const examples = new Set(rows.map((r) => r.example));
+    const before = (JSON.parse(readFileSync(values.baseline, "utf8")) as { rows: Row[] }).rows.filter((r) =>
+      examples.has(r.example),
+    );
+    console.log(`\nagainst ${values.baseline} (the same ${examples.size} examples):`);
+    for (const c of compareRuns(before, rows)) {
       regressed ||= c.regressed;
       console.log(
         `  ${c.measure}: ${c.before} → ${c.now} (${c.delta >= 0 ? "+" : ""}${c.delta})${c.regressed ? "  REGRESSED" : ""}`,
       );
     }
-    const { fixed, broke } = graderChanges(graderStats(before.rows), graderStats(rows));
+    const { fixed, broke } = graderChanges(graderStats(before), graderStats(rows));
     for (const [label, list] of [
       ["fixed", fixed],
       ["broke", broke],
