@@ -115,6 +115,8 @@ export interface RealMeta {
   title: string;
   stack: string;
   shows: string;
+  /** The eval's split: `train` (the default) feeds an improvement loop, `test` only scores it. */
+  eval?: "train" | "test";
 }
 
 export const realExamples = () =>
@@ -204,6 +206,8 @@ export interface ExampleTarget {
   explanation: string;
   /** Builds its repository under `tmp`; returns its path. */
   build: (tmp: string) => string;
+  /** The eval's split (real.json `eval`); a scenario is in neither. */
+  split: "train" | "test" | null;
 }
 
 export function exampleTargets(): ExampleTarget[] {
@@ -215,6 +219,7 @@ export function exampleTargets(): ExampleTarget[] {
       args: ["local", "--base", "main"],
       explanation: join(SCENARIOS_DIR, name, "explanation.json"),
       build: (tmp: string) => buildScenarioRepo(name, tmp),
+      split: null,
     })),
     ...realExamples().map(({ name, meta }) => ({
       name,
@@ -223,6 +228,7 @@ export function exampleTargets(): ExampleTarget[] {
       args: ["pr", prUrl(meta)],
       explanation: join(REAL_DIR, name, "explanation.json"),
       build: (tmp: string) => buildRealRepo(name, meta, tmp),
+      split: meta.eval ?? "train",
     })),
   ];
 }

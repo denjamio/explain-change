@@ -293,7 +293,7 @@ bun run dev -- local          # the CLI from source (any command)
 bun run install:dev           # this checkout as `explain-change` in ~/.local/bin, skills linked to skills/
 bun run examples -- --real    # rebuild the 11 real pull requests in examples/ (`explain-change pr <url>`: network and gh)
 bun run smoke                 # compile the binary for this machine and run it on a temporary repository
-bun run eval                  # a real agent (haiku) explains each real PR by its URL, with the skill (costs tokens)
+bun run eval                  # a real agent (haiku) explains the train PRs by their URL; graders score it (costs tokens)
 bun scripts/example-work.ts open <example> <dir>   # rewrite an example's explanation with the current tool, then: save
 ```
 
@@ -310,23 +310,24 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
 - **Examples are real**: every published example and every eval run is a real pull request of an open-source product,
   asked for by its URL. The scenarios in `examples/scenarios/` are offline test fixtures (determinism, reference
   resolution, an inferred config, OpenSpec parsing), never published or evaluated unless named.
-- **Evals**: after changing the skills or the digest's rules, run the eval: the 11 PRs, each asked for by its URL, as a
-  user does (`--model`, haiku by default). It reports, per run, whether the agent reached a valid explanation, its
-  turns, cost, time and tokens, how many times it ran `render` (1 = valid at the first try) and the source files it
-  read beside the digest. Fidelity is the F1 (precision and recall) of key dependencies, flow edges, the components
-  the story lights and the files the decisions cite, against the committed explanation. The draft already holds the
-  outline's focus, key dependency and flows, so the eval scores the draft too (`draft`: what an agent that changes
-  nothing gets) and reports `lift`, what the agent adds to it. `--runs N` repeats each example and reports mean ±
-  standard deviation; `--judge haiku` asks a second agent whether each decision's source states its why
-  (`grounded`; it gets the full PR description, the OpenSpec proposal and design, and the code at the head) and,
-  in a 2nd call, whether the digest shows each statement of the prose (`faithful`); it reports
-  the share the agent labelled `inferred`, and counts the answers it cannot read.
-  `--discover` installs the skills in the repository's `.claude/skills` instead of giving SKILL.md to the agent, and
-  reports whether the agent loaded explain-change from its description alone. `--out results.json` keeps every run
-  and the summary; `--baseline results.json` compares a new eval with it and fails when a mean drops by more than
-  the noise (2 standard errors of the difference, at least 0.1; use `--runs 3` or more). With no agent, the tests
-  check the draft's fidelity to the scenarios' explanations, and `bun run examples -- --real` prints it for each
-  real PR. `--rejudge results.json --judge haiku` judges the explanations an `--out` file kept again, with no agent.
+- **Evals** (`bun run eval`, designed after `claude plugin eval` and skill-creator): a real agent (haiku) explains
+  each real PR, asked for by its URL as a user does, and pass/fail graders check what it wrote; `score` is the share
+  that pass. **Structure** graders are deterministic, against the facts (the story lights at least 80% of the
+  changed code, the key dependency is one the change touches, decision evidence points into the change, flow steps
+  exist in the code, no field repeats another). **Content** graders are each PR's `assertions.json`: what any good
+  explanation of it says, written once by a model from the PR's diff and description, never from the tool's output
+  (`bun scripts/eval-assertions.ts`; review them, delete a wrong one, keep them stable). **Prose** is a rubric of
+  PASS/FAIL conditions and **grounded** checks each decision's why against its source; the judge (`--judge`, haiku)
+  makes 2 short calls per run. The summary lists the failing graders first, with their evidence. The PRs are split
+  (`real.json` `eval`): an improvement loop runs `--split train` (the default) and reads its failures, and keeps a
+  change only when `--split test` does not drop. `--runs N` repeats each PR; `--out` keeps every run; `--baseline`
+  compares with an earlier `--out` (a drop past the noise fails, and the graders fixed or broken are listed);
+  `--compare` asks the judge, blind and in both orders, which of 2 evals' explanations serves a reviewer better;
+  `--rejudge` grades saved explanations again with no agent; `--max-cost` caps the spend. `--calibrate` is the
+  meta-eval: it grades each committed explanation and its mutants (known defects) and reports which defects the
+  graders catch: a grader that catches none cannot move when the agent improves. Also reported, not scored: turns,
+  tokens, cost, `render` calls, source reads, and the F1 of the structure against the committed explanation
+  (`fidelity`, `draft`, `lift`), a regression check. A quick loop eval (`--split train`, 1 run) costs about $0.10–0.15.
 - **Versions**: bump `ANALYSIS_VERSION` (`src/core/constants.ts`) when the analysis can produce different facts for
   the same diff, and `CONTRACT_VERSION` when `facts.json` or `explanation.json` change shape. Changes go in
   [CHANGELOG.md](CHANGELOG.md).

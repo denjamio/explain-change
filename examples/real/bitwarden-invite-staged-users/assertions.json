@@ -1,0 +1,87 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "37120870d1a9f7a8befef6927e647e23aa76f6c4"
+  },
+  "assertions": [
+    {
+      "id": "row-action-endpoint",
+      "kind": "llm",
+      "text": "Says that the PR adds a new send-invite API endpoint, backing the members-grid row action, that invites staged members by organization user id without changing their access."
+    },
+    {
+      "id": "staged-to-invited",
+      "kind": "llm",
+      "text": "Says that inviting a staged member moves their existing row to Invited status and emails them an invitation."
+    },
+    {
+      "id": "invite-dialog-promotes-staged",
+      "kind": "llm",
+      "text": "Says that OrganizationService's existing email-based invite path now detects staged members by email and promotes their existing rows in place instead of creating duplicates."
+    },
+    {
+      "id": "why-email-keyed",
+      "kind": "llm",
+      "text": "Says that the configurable invite dialog stays email-keyed because a staged member cannot be told apart from a new user by email alone, so the row action is separate."
+    },
+    {
+      "id": "seats-staged-cost",
+      "kind": "llm",
+      "text": "Says that staged members hold no seat until invited, so inviting them counts toward Password Manager seat needs and may autoscale the subscription."
+    },
+    {
+      "id": "per-member-results",
+      "kind": "llm",
+      "text": "Says that the row-action command skips missing, other-organization or non-staged members and reports each individually, while seat expansion failure rejects the whole request."
+    },
+    {
+      "id": "not-new-rows",
+      "kind": "llm",
+      "text": "Does not claim that inviting a staged user deletes and recreates the organization user, since the row keeps its Id and ExternalId."
+    },
+    {
+      "id": "not-row-action-config",
+      "kind": "llm",
+      "text": "Does not claim that the new send-invite row action lets admins set role, collections or groups; that is done through the invite dialog."
+    },
+    {
+      "id": "mention-command",
+      "kind": "mentions",
+      "text": "names the new command for inviting staged users",
+      "any": [
+        "InviteStagedOrganizationUsersCommand",
+        "IInviteStagedOrganizationUsersCommand",
+        "invite staged command"
+      ]
+    },
+    {
+      "id": "mention-repo-method",
+      "kind": "mentions",
+      "text": "names the new batch repository lookup by emails",
+      "any": [
+        "GetManyByOrganizationEmailsAsync",
+        "OrganizationUser_ReadManyByOrganizationIdEmails"
+      ]
+    },
+    {
+      "id": "mention-staged-status",
+      "kind": "mentions",
+      "text": "names the Staged organization user status",
+      "any": [
+        "Staged",
+        "OrganizationUserStatusType.Staged",
+        "staged"
+      ]
+    },
+    {
+      "id": "mention-org-service",
+      "kind": "mentions",
+      "text": "names the modified service for email-based invites",
+      "any": [
+        "OrganizationService",
+        "SaveUsersSendInvitesAsync"
+      ]
+    }
+  ]
+}

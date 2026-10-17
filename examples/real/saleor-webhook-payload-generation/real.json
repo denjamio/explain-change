@@ -7,5 +7,6 @@
   "project": "Saleor",
   "title": "Per-webhook payload generation (#19920)",
   "stack": "Django",
-  "shows": "An opt-out from deferred webhook payloads across the API, the app manifest and the async transport, with its ADR."
+  "shows": "An opt-out from deferred webhook payloads across the API, the app manifest and the async transport, with its ADR.",
+  "eval": "test"
 }

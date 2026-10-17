@@ -1,0 +1,63 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "3e247353d7116a4f296c75f4ecffbd145e0cd54f"
+  },
+  "assertions": [
+    {
+      "id": "per-webhook-opt-out",
+      "kind": "llm",
+      "text": "Says that each webhook gets a payloadGeneration setting, DEFERRED by default or IMMEDIATE, letting it opt out of deferred payload generation."
+    },
+    {
+      "id": "immediate-built-by-trigger",
+      "kind": "llm",
+      "text": "Says that an IMMEDIATE webhook on a deferrable event has its subscription payload built right away by whatever triggered the event, rather than in the deferred background task."
+    },
+    {
+      "id": "motivation-consecutive-state",
+      "kind": "llm",
+      "text": "Says that deferred payloads reflect object state when the task runs, so consumers needing the state as written by each request, like sequential metadata updates, need IMMEDIATE."
+    },
+    {
+      "id": "cost-tradeoff",
+      "kind": "llm",
+      "text": "Says that IMMEDIATE webhooks pay the payload-building cost in the triggering request or task, slowing it, while deferred keeps latency low."
+    },
+    {
+      "id": "settable-surfaces",
+      "kind": "llm",
+      "text": "Says that payloadGeneration can be set through the webhook create and update GraphQL mutations and through the app manifest, and is exposed on the Webhook type."
+    },
+    {
+      "id": "no-all-immediate",
+      "kind": "llm",
+      "text": "Does not claim that IMMEDIATE makes every async webhook or event build its payload inline, or that the default behavior of existing webhooks changed."
+    },
+    {
+      "id": "no-retroactive",
+      "kind": "llm",
+      "text": "Does not claim that changing payloadGeneration alters the payload generation of deliveries or deferred tasks that already exist."
+    },
+    {
+      "id": "m-enum",
+      "kind": "mentions",
+      "text": "names the setting field",
+      "any": [
+        "payloadGeneration",
+        "payload_generation"
+      ]
+    },
+    {
+      "id": "m-deferred-task",
+      "kind": "mentions",
+      "text": "names the deferred payload task",
+      "any": [
+        "generate_deferred_payloads",
+        "deferred payload",
+        "is_deferred_payload"
+      ]
+    }
+  ]
+}

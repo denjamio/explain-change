@@ -7,5 +7,6 @@
   "project": "maybe",
   "title": "Balance sheet cache layer (#2356)",
   "stack": "Ruby on Rails",
-  "shows": "Cache invalidation by design: sync transitions touch 2 family timestamps that key the balance sheet, sync status and sparkline caches."
+  "shows": "Cache invalidation by design: sync transitions touch 2 family timestamps that key the balance sheet, sync status and sparkline caches.",
+  "eval": "test"
 }

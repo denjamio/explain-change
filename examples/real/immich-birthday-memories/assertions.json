@@ -1,0 +1,69 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "043caa0bcac81968687fd252d6958bce852867de"
+  },
+  "assertions": [
+    {
+      "id": "what-it-does",
+      "kind": "llm",
+      "text": "Says that the PR adds birthday memories: generated for named people with a birth date, shown to the owner in the three days leading up to the birthday."
+    },
+    {
+      "id": "generation-job",
+      "kind": "llm",
+      "text": "Says that birthday memories are created in the existing scheduled memory-creation job in MemoryService, alongside the on-this-day memories for each user."
+    },
+    {
+      "id": "asset-selection",
+      "kind": "llm",
+      "text": "Says that assets are those showing the person's visible face taken on the birthday date in earlier years, newest first, capped at 25 per memory."
+    },
+    {
+      "id": "budget-split",
+      "kind": "llm",
+      "text": "Says that the 25-asset budget is divided evenly across birthday years (up to 5 per year), taking the newest assets of each year."
+    },
+    {
+      "id": "leap-day",
+      "kind": "llm",
+      "text": "Says that people born on February 29 are celebrated on February 28 in non-leap years."
+    },
+    {
+      "id": "data-model",
+      "kind": "llm",
+      "text": "Says that the memory data DTO is generalized from the on-this-day shape to include optional person id and person name, with a Birthday memory type added."
+    },
+    {
+      "id": "no-false-eligibility",
+      "kind": "llm",
+      "text": "Does not claim that hidden people, unnamed people, or people without a birth date get birthday memories."
+    },
+    {
+      "id": "no-false-db-change",
+      "kind": "llm",
+      "text": "Does not claim that the PR adds a new database table or migration for birthday memories."
+    },
+    {
+      "id": "m-type",
+      "kind": "mentions",
+      "text": "names the new memory type",
+      "any": [
+        "MemoryType.Birthday",
+        "Birthday",
+        "birthday"
+      ]
+    },
+    {
+      "id": "m-service",
+      "kind": "mentions",
+      "text": "names the service that creates the memories",
+      "any": [
+        "MemoryService",
+        "createBirthdayMemories",
+        "memory service"
+      ]
+    }
+  ]
+}

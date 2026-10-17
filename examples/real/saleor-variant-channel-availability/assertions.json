@@ -1,0 +1,77 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "ec58d5d230185096b8dc98d38a4bdc30459c1730"
+  },
+  "assertions": [
+    {
+      "id": "hide-variant-per-channel",
+      "kind": "llm",
+      "text": "Says that the change lets staff hide a product variant in a single channel via a flag, without deleting the listing or its prices."
+    },
+    {
+      "id": "unavailable-treated-as-missing",
+      "kind": "llm",
+      "text": "Says that a listing flagged unavailable is treated as if it did not exist for customers, e.g. availability, price range, checkout and order lines, promotions."
+    },
+    {
+      "id": "new-model-field",
+      "kind": "llm",
+      "text": "Says that a non-nullable boolean is_available_for_purchase, defaulting to true, is added to ProductVariantChannelListing, with a migration."
+    },
+    {
+      "id": "dedicated-mutation",
+      "kind": "llm",
+      "text": "Says that a new mutation toggles availability for several channels of one variant, identified by ID or SKU, and requires manage-products permission."
+    },
+    {
+      "id": "central-sellable-definition",
+      "kind": "llm",
+      "text": "Says that sellability is centralized, as a queryset filter and an in-Python property, requiring both a price and the availability flag, replacing scattered price-not-null checks."
+    },
+    {
+      "id": "default-true-on-create",
+      "kind": "llm",
+      "text": "Says that new listings created without the flag, or with null, default to available, while updates that omit it keep the stored value."
+    },
+    {
+      "id": "not-delete-listing",
+      "kind": "llm",
+      "text": "Does not claim that setting the flag to false deletes the channel listing or clears its price."
+    },
+    {
+      "id": "not-new-in-main-only",
+      "kind": "llm",
+      "text": "Does not claim that the toggle mutation is the only way to set the flag; bulk create, bulk update and the listing update input also accept it."
+    },
+    {
+      "id": "mention-field",
+      "kind": "mentions",
+      "text": "names the new model field",
+      "any": [
+        "is_available_for_purchase",
+        "isAvailableForPurchase"
+      ]
+    },
+    {
+      "id": "mention-mutation",
+      "kind": "mentions",
+      "text": "names the new mutation",
+      "any": [
+        "productVariantChannelListingAvailabilityUpdate",
+        "ProductVariantChannelListingAvailabilityUpdate"
+      ]
+    },
+    {
+      "id": "mention-sellable",
+      "kind": "mentions",
+      "text": "names the sellable helper",
+      "any": [
+        "sellable",
+        "is_sellable",
+        "sellable_listing_q"
+      ]
+    }
+  ]
+}

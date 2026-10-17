@@ -7,5 +7,6 @@
   "project": "Bitwarden",
   "title": "Invite staged users (#8283)",
   "stack": "C# / .NET",
-  "shows": "A bulk command with per-member results, seat reservation with rollback, and a new read on both repository adapters."
+  "shows": "A bulk command with per-member results, seat reservation with rollback, and a new read on both repository adapters.",
+  "eval": "test"
 }

@@ -7,5 +7,6 @@
   "project": "Chatwoot",
   "title": "Branded e-mail layouts (#14936)",
   "stack": "Ruby on Rails",
-  "shows": "Per-inbox Liquid layouts: a 3-scope template lookup in the view resolver, partial unique indexes and a feature flag."
+  "shows": "Per-inbox Liquid layouts: a 3-scope template lookup in the view resolver, partial unique indexes and a feature flag.",
+  "eval": "test"
 }

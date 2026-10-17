@@ -1,0 +1,81 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "31c0578ea934f80668edde597adc531ecfb56965"
+  },
+  "assertions": [
+    {
+      "id": "nonblocking-sync-ui",
+      "kind": "llm",
+      "text": "Says that blocking loader placeholders for syncing accounts were replaced by small non-blocking sync indicators, so existing, possibly slightly outdated data is shown immediately."
+    },
+    {
+      "id": "why-nonblocking",
+      "kind": "llm",
+      "text": "Says that the old blocking pattern looked like a stuck loader when queues were slow or a family had many accounts, which motivated the change."
+    },
+    {
+      "id": "family-timestamps-cache-keys",
+      "kind": "llm",
+      "text": "Says that Sync updates new family timestamps (latest sync activity and latest sync completed) which serve as inputs to cache keys, delegating cache busting to the background sync."
+    },
+    {
+      "id": "account-totals-cache",
+      "kind": "llm",
+      "text": "Says that BalanceSheet::AccountTotals caches the account groups query with currency conversion and only refetches when a sync completes and changes balance data."
+    },
+    {
+      "id": "sync-status-monitor",
+      "kind": "llm",
+      "text": "Says that BalanceSheet::SyncStatusMonitor caches the set of syncing account ids, invalidated on sync events, avoiding an is-syncing query on every page load."
+    },
+    {
+      "id": "value-objects-refactor",
+      "kind": "llm",
+      "text": "Says that BalanceSheet was split into smaller classes and value objects such as ClassificationGroup and AccountGroup, which hold totals, weights and syncing state."
+    },
+    {
+      "id": "http-conditional-sparklines",
+      "kind": "llm",
+      "text": "Says that sparkline endpoints now use HTTP conditional GET (ETag/last-modified, 304) keyed on the family's last completed sync."
+    },
+    {
+      "id": "no-false-blocking-kept",
+      "kind": "llm",
+      "text": "Does not claim that the sync indicators still hide or replace balances and charts while an account is syncing."
+    },
+    {
+      "id": "no-false-per-load-query",
+      "kind": "llm",
+      "text": "Does not claim that syncing status is still computed by a database query on every page load or invalidated by entry updates."
+    },
+    {
+      "id": "mention-account-totals",
+      "kind": "mentions",
+      "text": "names the cached account totals class",
+      "any": [
+        "BalanceSheet::AccountTotals",
+        "AccountTotals"
+      ]
+    },
+    {
+      "id": "mention-sync-monitor",
+      "kind": "mentions",
+      "text": "names the sync status monitor class",
+      "any": [
+        "BalanceSheet::SyncStatusMonitor",
+        "SyncStatusMonitor"
+      ]
+    },
+    {
+      "id": "mention-timestamp",
+      "kind": "mentions",
+      "text": "names a new family timestamp column",
+      "any": [
+        "latest_sync_activity_at",
+        "latest_sync_completed_at"
+      ]
+    }
+  ]
+}

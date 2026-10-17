@@ -1,0 +1,89 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "6a03204e9eb751ea00dfa7e38669c30fdb0412c8"
+  },
+  "assertions": [
+    {
+      "id": "what-it-does",
+      "kind": "llm",
+      "text": "Says that admins can configure a Liquid HTML branded layout, wrapping content via content_for_layout, which outbound email inbox replies and transcripts are rendered through."
+    },
+    {
+      "id": "scope-fallback",
+      "kind": "llm",
+      "text": "Says that layout resolution falls back from the inbox-specific layout to the account-level layout, and then to the installation default."
+    },
+    {
+      "id": "feature-flag",
+      "kind": "llm",
+      "text": "Says that the feature is gated by the account feature flag branded_email_templates, disabled by default, and layout updates are rejected when it is off."
+    },
+    {
+      "id": "data-model",
+      "kind": "llm",
+      "text": "Says that layouts are stored in the existing EmailTemplate table, which gains an inbox_id column so templates can be scoped to an inbox."
+    },
+    {
+      "id": "unique-indexes",
+      "kind": "llm",
+      "text": "Says that the migration replaces the old name/account uniqueness with separate unique indexes for installation, account and inbox scopes."
+    },
+    {
+      "id": "api-endpoints",
+      "kind": "llm",
+      "text": "Says that the layouts are managed only through the API: an admin-only account branded_email_layout endpoint and a branded_email_layout param on inbox update."
+    },
+    {
+      "id": "resolver-current-inbox",
+      "kind": "llm",
+      "text": "Says that the mailer sets Current.inbox and the DB template resolver uses it to pick the inbox layout for email inboxes."
+    },
+    {
+      "id": "not-ui",
+      "kind": "llm",
+      "text": "Does not claim that the change adds a dashboard UI for editing layouts or that it applies to non-email channels' inbox-level overrides."
+    },
+    {
+      "id": "not-default-on",
+      "kind": "llm",
+      "text": "Does not claim that the branded layout is enabled for all accounts by default or that a blank value is stored as an empty layout."
+    },
+    {
+      "id": "m-model",
+      "kind": "mentions",
+      "text": "names the template model",
+      "any": [
+        "EmailTemplate",
+        "email_templates",
+        "email template"
+      ]
+    },
+    {
+      "id": "m-flag",
+      "kind": "mentions",
+      "text": "names the feature flag",
+      "any": [
+        "branded_email_templates"
+      ]
+    },
+    {
+      "id": "m-slot",
+      "kind": "mentions",
+      "text": "names the Liquid content placeholder",
+      "any": [
+        "content_for_layout"
+      ]
+    },
+    {
+      "id": "m-resolver",
+      "kind": "mentions",
+      "text": "names the template resolver",
+      "any": [
+        "DbResolverService",
+        "resolver"
+      ]
+    }
+  ]
+}
