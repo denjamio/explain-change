@@ -55,7 +55,13 @@ export function askModel(command: string, model: string, prompt: string, system 
   }
 }
 
-/** The lines a location points at, at the head of the change (the clone of a PR stays on its base). */
+/** At most this many lines of code reach the judge for 1 piece of evidence. */
+const EXCERPT_LINES = 80;
+
+/**
+ * The lines a location points at, at the head of the change (the clone of a PR stays on its base), with the hunk
+ * around them: a why lives in the change around the line, not on the line alone. At most EXCERPT_LINES.
+ */
 export function excerpt(repo: string, facts: Facts, location: string): string {
   const m = /^(.+):(\d+)(?:-(\d+))?$/.exec(location);
   if (!m) return "";
@@ -66,9 +72,19 @@ export function excerpt(repo: string, facts: Facts, location: string): string {
   });
   if (show.status !== 0) return "";
   const lines = show.stdout.split("\n");
-  const a = Number(m[2]);
-  const b = Math.min(Number(m[3] ?? m[2]), a + 40);
-  return lines.slice(Math.max(a - 3, 0), b + 2).join("\n");
+  const from = Number(m[2]);
+  const to = Number(m[3] ?? m[2]);
+  const hunk = facts.files
+    .find((f) => f.path === m[1])
+    ?.hunks.find((h) => h.newStart <= to && from < h.newStart + h.newLines);
+  let a = Math.max(Math.min(from, hunk?.newStart ?? from) - 3, 1);
+  let b = Math.max(to, hunk ? hunk.newStart + hunk.newLines - 1 : to) + 3;
+  if (b - a + 1 > EXCERPT_LINES) {
+    // Too long: the window around the evidence itself.
+    a = Math.max(Math.round((from + to) / 2) - EXCERPT_LINES / 2, a);
+    b = a + EXCERPT_LINES - 1;
+  }
+  return lines.slice(a - 1, b).join("\n");
 }
 
 /** At most this many characters of each source the judge reads: the PR description, the OpenSpec documents. */
