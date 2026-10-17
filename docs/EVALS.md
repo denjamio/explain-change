@@ -46,6 +46,14 @@ that a 1-page explanation need not meet; regenerate (`--force`) only an assertio
 story that skips a component, evidence outside the change or a basis that its source does not state) and reports
 which graders catch which defect. A grader that catches nothing cannot move when the agent improves.
 
+### The judge
+
+Haiku stays the judge. Its calls are the eval's cheapest part, and the loop compares 2 runs graded the same way.
+Graded by sonnet instead (`--rejudge baseline-4.json --judge sonnet`, 2026-10-18; $0.34 against $0.03), the same
+11 explanations scored 0.78 against 0.85: prose and grounded within 0.04, content 0.71 against 0.87. Sonnet fails
+an assertion when one of its clauses is missing ("…and the request returns at once with a notice"); haiku passes it
+on the main point. Neither is wrong: the assertions are compound. Use sonnet to check a release, not in the loop.
+
 ## Reported, not scored
 
 Turns, cost, tokens in and out, `render` calls (and the issues of the first render: what makes the agent render
