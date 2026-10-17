@@ -48,7 +48,7 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
     tldr: `<≤${L.tldr} chars: what changes and its effect>`,
     goal: `<≤${L.goal} chars: the need or problem behind it, not a repeat of tldr>`,
     story: outline.story.map((s) => ({
-      heading: `<≤${L["story.heading"]}: ${s.about}>`,
+      heading: `<≤${L["story.heading"]}, on ${s.about}: the thing + what happened to it>`,
       body: `<≤${L["story.body"]}: what behaves differently now>`,
       view: s.view,
       focus: s.view === "data" ? ["<entity-id>"] : s.focus,

@@ -15,9 +15,12 @@ import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Explanation } from "../src/contract/explanation.ts";
 import type { Facts } from "../src/contract/facts.ts";
 import { ensureDir, removeTree } from "../src/core/fs.ts";
+import { draftExplanation } from "../src/explanation/draft.ts";
 import { buildAssets } from "./build.ts";
+import { fidelity } from "./eval-metrics.ts";
 import { galleryHtml, readExample, SOURCE } from "./gallery.ts";
 
 const ROOT = join(import.meta.dir, "..");
@@ -160,8 +163,11 @@ export function buildRealRepo(name: string, meta: RealMeta, tmp: string): string
   return repo;
 }
 
-/** `explain-change pr <url>` in a clone of the PR's repository, then its explanation rendered. */
-function buildReal(name: string, meta: RealMeta, tmp: string): void {
+/**
+ * `explain-change pr <url>` in a clone of the PR's repository, then its explanation rendered. Returns the draft's
+ * fidelity to that explanation: what the eval's `draft` scores for this example, with no agent.
+ */
+function buildReal(name: string, meta: RealMeta, tmp: string): number | null {
   const repo = buildRealRepo(name, meta, tmp);
   const out = join(ROOT, "examples", meta.report);
   sh(["bun", CLI, "pr", prUrl(meta), "--no-open", "--out", out, "--json"], repo);
@@ -183,6 +189,7 @@ function buildReal(name: string, meta: RealMeta, tmp: string): void {
     encoding: "utf8",
   });
   if (p.status !== 0) throw new Error(`${name}: explanation rejected\n${p.stdout}${p.stderr}`);
+  return fidelity(body as Explanation, draftExplanation(facts) as unknown as Explanation).fidelity;
 }
 
 /** Every example an agent explains: the scenarios (a branch against main) and the real PRs (by their URL). */
@@ -226,8 +233,8 @@ if (import.meta.main) {
   try {
     if (process.argv.includes("--real")) {
       for (const { name, meta } of realExamples()) {
-        buildReal(name, meta, tmp);
-        console.log(`${meta.report}: rebuilt from ${prUrl(meta)}`);
+        const draft = buildReal(name, meta, tmp);
+        console.log(`${meta.report}: rebuilt from ${prUrl(meta)} (draft fidelity ${draft ?? "n/a"})`);
       }
     }
   } finally {

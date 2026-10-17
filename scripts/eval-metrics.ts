@@ -150,5 +150,49 @@ export function spread(xs: unknown[]): string | null {
   return n.length > 1 ? `${r(m)} ± ${r(sd)}` : String(r(m));
 }
 
+/** The measures --baseline compares: higher is better for each. */
+export const COMPARED = ["fidelity", "lift", "grounded", "faithful"] as const;
+
+export interface Comparison {
+  measure: string;
+  before: number;
+  now: number;
+  delta: number;
+  /** The mean dropped by more than the noise: the larger standard deviation of the 2 sides, at least NOISE_FLOOR. */
+  regressed: boolean;
+}
+const NOISE_FLOOR = 0.05;
+
+/** Compares 2 evals run by run: the valid share and each measure both have. */
+export function compareRuns(before: Record<string, unknown>[], now: Record<string, unknown>[]): Comparison[] {
+  const nums = (rows: Record<string, unknown>[], k: string) =>
+    rows.map((r) => r[k]).filter((v): v is number => typeof v === "number");
+  const sd = (xs: number[]) => {
+    const m = mean(xs);
+    return Math.sqrt(mean(xs.map((x) => (x - m) ** 2)));
+  };
+  const validShare = (rows: Record<string, unknown>[]) =>
+    rows.length ? rows.filter((r) => r.state === "valid").length / rows.length : 0;
+  const out: Comparison[] = [];
+  const b = validShare(before);
+  const n = validShare(now);
+  out.push({ measure: "valid", before: round(b), now: round(n), delta: round(n - b), regressed: n < b });
+  for (const k of COMPARED) {
+    const xb = nums(before, k);
+    const xn = nums(now, k);
+    if (!xb.length || !xn.length) continue;
+    const delta = mean(xn) - mean(xb);
+    const noise = Math.max(sd(xb), sd(xn), NOISE_FLOOR);
+    out.push({
+      measure: k,
+      before: round(mean(xb)),
+      now: round(mean(xn)),
+      delta: round(delta),
+      regressed: -delta > noise,
+    });
+  }
+  return out;
+}
+
 /** An agent command line as argv: words split on any run of spaces. */
 export const argv = (command: string): string[] => command.trim().split(/\s+/).filter(Boolean);

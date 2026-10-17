@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
-import { hunkScore, keyDependencyCandidates } from "../src/analysis/outline.ts";
+import { hunkScore, keyDependencyCandidates, storyBudget } from "../src/analysis/outline.ts";
 import { portLinks } from "../src/analysis/ports.ts";
 import { type Extracted, extractRefs } from "../src/analysis/refs.ts";
 import { loadTsConfigs, SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
@@ -655,5 +655,11 @@ describe("hunk scores", () => {
     };
     expect(hunkScore(services, queue, onImport)).toBe(5);
     expect(hunkScore(services, store, onImport)).toBe(4);
+  });
+});
+
+describe("storyBudget", () => {
+  test("the draft's story grows with the lines of code the change rewrites", () => {
+    expect([0, 149, 150, 599, 600, 5000].map(storyBudget)).toEqual([4, 4, 6, 6, 8, 8]);
   });
 });

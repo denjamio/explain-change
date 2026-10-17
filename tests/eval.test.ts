@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { exampleTargets } from "../scripts/build-examples.ts";
-import { argv, f1, fidelity, items, lift, readTranscript, spread } from "../scripts/eval-metrics.ts";
+import { argv, compareRuns, f1, fidelity, items, lift, readTranscript, spread } from "../scripts/eval-metrics.ts";
 import type { Explanation } from "../src/contract/explanation.ts";
 import type { Facts } from "../src/contract/facts.ts";
 import { removeTree } from "../src/core/fs.ts";
@@ -103,5 +103,15 @@ describe("eval metrics", () => {
     } finally {
       removeTree(tmp);
     }
+  });
+
+  test("a baseline comparison fails a drop larger than the noise, never a drop inside it", () => {
+    const run = (fidelity: number, state = "valid") => ({ state, fidelity, lift: fidelity - 0.5 });
+    const before = [run(0.7), run(0.8)];
+    const by = (rows: Record<string, unknown>[]) =>
+      Object.fromEntries(compareRuns(before, rows).map((c) => [c.measure, c.regressed]));
+    expect(by([run(0.72), run(0.76)])).toEqual({ valid: false, fidelity: false, lift: false });
+    expect(by([run(0.5), run(0.52)])).toEqual({ valid: false, fidelity: true, lift: true });
+    expect(by([run(0.75), run(0.75, "invalid")]).valid).toBe(true);
   });
 });

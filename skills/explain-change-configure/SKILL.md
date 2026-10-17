@@ -38,7 +38,7 @@ The draft from `init` comes from folders. Folders are not architecture: expect t
 
 ## 2. Layers: the architecture style, not the folder kinds
 
-Identify the style the code actually follows, and draw its lanes with its own words, entry points on top:
+Identify the style the code follows, and draw its lanes with its own words, entry points on top:
 
 - **Layered** (Rails/Django default): web → application → domain → infrastructure.
 - **Hexagonal / clean**: adapters in (HTTP, jobs, CLI) → application (use cases) → domain; adapters out
@@ -51,74 +51,24 @@ Identify the style the code actually follows, and draw its lanes with its own wo
 
 ## 3. Components: bounded contexts and capabilities, in domain language
 
-A component is a unit of ownership a reviewer names in one word of the domain. Aim for 8–20. The map draws only
-what a change touches, so a quiet box costs nothing on the page; what a box costs is keeping its paths right.
+A component is a unit of ownership a reviewer names in one word of the domain. Aim for 8–20. Domain first: each
+bounded context or business capability is a box (Orders, Billing, Refunds), never a framework artifact
+("Controllers", "Models", "Services") and never a dumping ground ("common", "utils"). Name a context's parts with a
+fixed suffix set (`Orders`, `Orders API`, `Orders jobs`, `Payment gateway`).
 
-- **Domain first.** Each bounded context or business capability is a component: Orders, Billing, Refunds,
-  Catalog, Identity. Split a context across lanes only where the code separates it, and then name the parts with a
-  fixed suffix set:
-  - `<Context>` for its domain core (entities, aggregates, rules): **Orders**
-  - `<Context> API` / `<Context> UI` for its entry points: **Orders API**
-  - `<Context> jobs` for its background work: **Orders jobs**
-  - `<Capability> adapter` or the provider's role for an outbound integration: **Payment gateway**, **Email delivery**
-- **Never a framework artifact as a name**: no "Controllers", "Models", "Services", "Helpers", "Serializers",
-  "Mailers" boxes. When the code is organized by artifact (all models in `app/models`), group by the domain concept
-  anyway: `paths` take globs, and the most specific one wins (`app/models/order.rb`, `app/models/order/**`).
-  A technical component exists only for a real cross-cutting capability, named by what it does: **Web UI** (views,
-  assets, JS), **Persistence**, **Messaging**, **Observability**.
-- **No dumping grounds.** "common", "shared", "utils", "core", "misc" hide coupling. If a shared kernel exists, call it
-  **Shared kernel**, keep it to value objects and ids, and say so in `desc`.
-- **Granularity.** Split when two parts have different aggregates, lifecycles or owners; merge when they always
-  change together (step 6 measures it). A component with 0 files is wrong; one with far more files than the rest
-  usually hides several contexts. Apply the same rules to every box:
-  - A context or a team the code names keeps its box, however quiet (Bitwarden's teams in CODEOWNERS, Saleor's
-    Django apps, an enterprise edition).
-  - A part that rarely changes (`check` lists them) and belongs to a context merges into it: campaigns into the
-    inboxes they send from, a permission helper into identity. Never merge 2 unrelated contexts to save a box.
-  - Framework configuration (`config/`, Rails initializers, settings) belongs to **Platform**; a composition root
-    written as code (`app.module.ts`, a SharedWeb project) keeps its box in the entry lane.
-  - Past 20 boxes, every box must be a context or a team the code names.
-- **Fields.**
-  - `id`: kebab-case of the name (`orders-api`), stable: rules, flows and explanations reference it.
-  - `name`: the domain noun, ≤ 20 characters, in English, singular or plural as the
-    team says it, the same style for every box.
-  - `desc`: one sentence, "Owns <aggregates or data>; <what it guarantees or decides>": *Owns Order and LineItem; an
-    order's total and what can still be refunded.*
-  - `paths` decide ownership; `constants` (Ruby), `imports` (Python, TypeScript) and `namespaces` (C#) only for code
-    owned outside them. A component may share its id with a layer only when it lives in that layer.
-  - Write `paths` as folders (`app/services/conversations/**`) and name globs: `app/models/conversation**` owns
-    `conversation.rb`, `conversation_*.rb` and `conversation/`. They keep up with new files; a single file does not,
-    and a new file next to it silently falls to another component, usually the shared kernel. List a single file
-    only when no name groups it (Rails delegated types such as `loan.rb`, `vehicle.rb`).
+Before you write the `[[components]]`, read [references/components.md](references/components.md): the naming
+suffixes, granularity (when to split and merge), what each field holds and how to write `paths` that keep up with new
+files.
 
-## 4. Rules: the dependency rule as an architecture decision
+## 4–5. Rules and language
 
-- Encode the rule the team agrees on, **even when today's code breaks it**: the map draws pre-existing violations
-  apart (dashed), and each change's new ones in red. That is the signal to track, change by change.
-- Layered: allow each lane to depend on the ones below it (`web -> application`, `application -> domain`, …).
-  Hexagonal: everything points at the domain; the domain depends on nothing outside it
-  (`forbid = ["domain -> infrastructure"]`), adapters may depend on the domain (`infrastructure -> domain`).
-- Between contexts, prefer `forbid` for the boundaries that matter (`orders -> billing` when Orders must call Billing
-  through its API): a short list of meaningful red lines beats a long one nobody reads.
-- Copy rules the team already enforces (packwerk, import-linter…) as they are. With no agreed rule, leave `allow`
-  out and say so: invented rules only paint the map red.
+- `[rules]`: encode the dependency rule the team agrees on, even when today's code breaks it; copy rules the team
+  already enforces (packwerk, import-linter…) as they are; with no agreed rule, leave `allow` out.
+- `[glossary]` (5–20 terms), `project.direction` (1–2 sentences: the style and its rule), `[[flows]]` (1–3 use cases
+  titled as a command on a domain object), and `project.names` / `project.host` only when needed.
 
-## 5. Language: glossary, direction and flows
-
-- `[glossary]`: 5–20 terms of the domain, each with a one-line definition, as the business uses them
-  (`refund = "Money returned to a customer for an order, in part or in full"`). One term per concept: when the code
-  has two words for one thing (`purchase`, `order`), pick the team's word and note the other in its definition.
-  Component names, flow titles and every explanation use these terms.
-- `project.direction`: 1–2 sentences naming the style and the dependency rule, and the target when the code is
-  moving toward one: *Hexagonal: use cases in app/services own the business flow; models hold the rules; adapters
-  in app/clients implement the gateways. New logic leaves controllers and callbacks.*
-- `[[flows]]`: 1–3 use cases the business runs on, titled as a command on a domain object (**Place an order**,
-  **Refund an order**), with their steps as `"component -> component : call"`. A change that touches one is
-  compared with it.
-- `project.names`: only product or library names written like code (`FastAPI`, `NestJS`) that explanations name
-  and the code never spells out; the validator otherwise asks for them in the change.
-- `project.host`: only when the remotes do not tell where the PRs live (a mirror on both hosts, or none): `azure-devops`
-  or `github`. Leave it out otherwise; the remotes decide.
+Before you write them, read [references/rules-and-language.md](references/rules-and-language.md): the rule per
+architecture style, how to word each glossary term, and when `names` and `host` apply.
 
 `explain-change schema config` prints the full JSON Schema of the file.
 
@@ -128,27 +78,16 @@ what a change touches, so a quiet box costs nothing on the page; what a box cost
 explain-change check      # --history N reads more commits for "change together"
 ```
 
-`check` measures how the config fits the code at HEAD:
-- **Dependencies that break `[rules]` today**: real debt or a wrong rule. Keep the rule and accept the dashed lines
-  when it is debt; fix the rule or the component when the code is right.
-- **Components that depend on each other** (A ↔ B): usually one context split in two, or a missing boundary (an
-  interface, an event). Merge them, or keep them and name the cycle in `direction` as debt.
-- **Components that change together** (share of commits): above ~70% between two domain components, they are one
-  context for the team; merge them. Between a context's parts across lanes (Orders API + Orders) it is expected.
-- **Components that rarely change**: a context or a team keeps its box; a part of a context merges into it (step 3).
-- **Components that list single files**: replace them with folders and name globs where a name groups them.
-- **Unmapped folders**: give them an owner or add them to `[ignore]`. Never ignore migrations or architecture
-  decision records: they are the evidence for the data model and the decisions. `check` warns when `[ignore]` hides
-  them.
-
-Then explain 2–3 recent PRs:
+`check` reports the dependencies that break `[rules]` today, the components that depend on each other, the ones that
+change together or rarely change, the components that list single files and the unmapped folders. Read
+[references/check.md](references/check.md) for what each finding means and what to change, then explain 2–3 recent
+PRs:
 
 ```bash
 explain-change local --base <merge base of a recent merged PR> --json   # or: explain-change pr <id> --json
 ```
 
 A good model shows a typical PR as 3–8 boxes the author would name the same way, with arrows that mean something.
-When a PR spreads over many tiny boxes, merge them; when one box hides the point of the change, split it.
 
 ## 7. Hand it over
 

@@ -6,6 +6,32 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `docs/LIMITATIONS.md`: the languages the analysis reads, what regular expressions miss, the limits of detected
+  flows, large repositories, the validator and the hosts.
+- The eval's judge also checks the prose (tldr, goal, story, component summaries) against the digest in the same
+  call: `faithful` is the share the digest shows.
+- `bun run eval -- --baseline results.json` compares an eval with an earlier `--out` file and fails when the valid
+  share drops, or a mean of fidelity, lift, grounded or faithful drops by more than the noise of either side.
+- With no agent: a test keeps the draft's fidelity to the scenarios' explanations from dropping, and
+  `bun run examples -- --real` prints the draft's fidelity for each real PR.
+
+### Changed
+- The draft's story is sized to the change: 4 steps under 150 lines of code, 6 under 600, up to 8 above. The steps
+  that stay are, in order of priority, rule violations, the headline component, the requirements, the flow, the data
+  model and the other components; the overview closes it. A small change used to get up to 8 steps to trim.
+- A story heading's placeholder names what the step is about without proposing the heading (`Orders changed`), and
+  the digest asks for the thing and what happened to it, not a delta alone.
+- The `explain-change-configure` skill keeps its detail in `references/` (components, rules and language, `check`),
+  read at the step that needs it: SKILL.md is half its size. `explain-change install` writes the references.
+- `ANALYSIS_VERSION` 12: the outline changes.
+
+### Fixed
+- The digest put the change line and the PR description inside the glossary when the config has one: they are now
+  under `## Change`.
+- The digest says "1 hunk", "1 commit", "1 file".
+- The refused-word list said "actually", a word it refuses; `orchestrat*` replaces its 4 forms.
+
 ## [0.8.2] - 2026-10-17
 
 ### Added

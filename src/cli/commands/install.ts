@@ -4,15 +4,29 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import prompt from "../../../skills/explain-change/PROMPT.md" with { type: "text" };
 import skill from "../../../skills/explain-change/SKILL.md" with { type: "text" };
+import configureCheck from "../../../skills/explain-change-configure/references/check.md" with { type: "text" };
+import configureComponents from "../../../skills/explain-change-configure/references/components.md" with {
+  type: "text",
+};
+import configureRules from "../../../skills/explain-change-configure/references/rules-and-language.md" with {
+  type: "text",
+};
 import configureSkill from "../../../skills/explain-change-configure/SKILL.md" with { type: "text" };
 import { VERSION } from "../../core/constants.ts";
 import { ensureDir } from "../../core/fs.ts";
 import { printJson } from "../output.ts";
 
-/** The skills the CLI carries: folder name → files. Agents with skill support find them in ~/.agents/skills and ~/.claude/skills. */
+/**
+ * The skills the CLI carries: folder name → files (a path may hold a folder: `references/check.md`). The configure
+ * skill keeps its detail in references/, read only at the step that needs it. Agents with skill support find them in ~/.agents/skills and ~/.claude/skills. */
 export const SKILLS: Record<string, Record<string, string>> = {
   "explain-change": { "SKILL.md": skill, "PROMPT.md": prompt },
-  "explain-change-configure": { "SKILL.md": configureSkill },
+  "explain-change-configure": {
+    "SKILL.md": configureSkill,
+    "references/check.md": configureCheck,
+    "references/components.md": configureComponents,
+    "references/rules-and-language.md": configureRules,
+  },
 };
 const MARKER = ".explain-change-install"; // marks a folder this tool wrote, so a later install may replace it
 
@@ -59,6 +73,7 @@ export function installSkill(
   rmSync(dest, { recursive: true, force: true }); // removes links, never what they point to
   ensureDir(dest);
   for (const [name, text] of Object.entries(files)) {
+    ensureDir(dirname(join(dest, name)));
     if (opts.linkFrom) symlinkSync(join(opts.linkFrom, name), join(dest, name));
     else writeFileSync(join(dest, name), text, "utf8");
   }

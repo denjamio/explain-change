@@ -4,7 +4,7 @@ import { LIMITS, REQUIREMENT_STATUSES, STORY_MIN } from "../contract/explanation
 import type { Facts, FileFacts, Hunk } from "../contract/facts.ts";
 import { DELTAS } from "../contract/facts.ts";
 import { CONFIG_NAME, FILES, WORK_DIR } from "../core/constants.ts";
-import { byKeys, cpLength, cpSlice, truncate } from "../core/text.ts";
+import { byKeys, cpLength, cpSlice, plural, truncate } from "../core/text.ts";
 import { proseRules } from "../explanation/prose.ts";
 import { decisionBases, explainableComponents } from "../explanation/validate.ts";
 
@@ -61,8 +61,8 @@ function overview(f: Facts, tight: Tightness): string {
     );
   }
   out.push(
-    `Change: ${source.title} (${source.kind}${source.includeUncommitted ? ", with uncommitted work" : ""}) ` +
-      `${source.mergeBase.slice(0, 8)}..${source.headSha.slice(0, 8)}, ${source.commits} commits, ${stats.files} files, ` +
+    `\n## Change\n${source.title} (${source.kind}${source.includeUncommitted ? ", with uncommitted work" : ""}) ` +
+      `${source.mergeBase.slice(0, 8)}..${source.headSha.slice(0, 8)}, ${plural(source.commits, "commit")}, ${plural(stats.files, "file")}, ` +
       `+${stats.additions} -${stats.deletions} (tests +${stats.testAdditions} -${stats.testDeletions})`,
   );
   const description = quotedDescription(source.description);
@@ -227,9 +227,9 @@ function keyHunks(f: Facts, room: number): string {
   let out = `\n## Key hunks (best first: public symbols > dependency changes > config and migrations)\n${chosen.map((c) => c.block).join("\n")}`;
   if (skipped.length || unread) {
     const list = skipped.length
-      ? `${skipped.length} hunks: ${skipped.slice(0, 30).join(", ")}${skipped.length > 30 ? " …" : ""}`
+      ? `${plural(skipped.length, "hunk")}: ${skipped.slice(0, 30).join(", ")}${skipped.length > 30 ? " …" : ""}`
       : "";
-    const rest = unread ? `${unread} hunks of tests, docs or generated files` : "";
+    const rest = unread ? `${plural(unread, "hunk")} of tests, docs or generated files` : "";
     out += `\n\n(Not shown, ${[list, rest].filter(Boolean).join("; ")})`;
   }
   return out;
@@ -270,8 +270,9 @@ export function task(f: Facts): string {
     `- tldr: what changes and its effect. goal: the need behind it, not a repeat of tldr.`,
     `- story (${STORY_MIN}-${LIMITS.story} steps): a tour of the map, outlined from the facts: inner lanes, then entry ` +
       "points, then the bottom lane. Keep that order unless the hunks show another headline; drop or merge a step that " +
-      "says nothing new (a small change needs 3-4). heading: the thing + what happened to it (added, removed, now, " +
-      "moved, replaced). body: what behaves differently now (numbers when they matter), not the code. " +
+      `says nothing new (the draft has ${f.outline.story.length}, sized to the change). heading: the thing + what happened ` +
+      "to it (added, removed, now, moved, replaced), in your words, not a delta alone ('Orders changed'). " +
+      "body: what behaves differently now (numbers when they matter), not the code. " +
       `view = ${views}; focus = 1-3 ids on that view (${focusIds}), none for the overview.`,
     "- components: one line per changed component: what it now does differently (behavior, not file names).",
     `- decisions (0-${LIMITS.decisions}): the design choices that explain why it is built this way: what was chosen, why, ` +
