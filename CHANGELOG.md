@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-17
+
 ### Added
 - A real spec-driven example: Ark's dashboard PR #3147 (mckinsey/agents-at-scale-ark, TypeScript), which archives
   its OpenSpec change into the main spec. Its 8 requirements map to the code and the tests, and 4 of its 5
