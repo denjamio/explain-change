@@ -111,6 +111,7 @@ describe("eval metrics", () => {
     const by = (rows: Record<string, unknown>[]) =>
       Object.fromEntries(compareRuns(before, rows).map((c) => [c.measure, c.regressed]));
     expect(by([run(0.72), run(0.76)])).toEqual({ valid: false, fidelity: false, lift: false });
+    expect(by([run(0.69), run(0.69)]).fidelity).toBe(false); // -0.06: the noise of 2 evals of the same code
     expect(by([run(0.5), run(0.52)])).toEqual({ valid: false, fidelity: true, lift: true });
     expect(by([run(0.75), run(0.75, "invalid")]).valid).toBe(true);
   });

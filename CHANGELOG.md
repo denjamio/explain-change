@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- The eval's judge asks 2 questions in 2 calls: the decisions with the prompt of 0.8.2, so `grounded` compares
+  across versions, and the statements apart (`faithful`). An unreadable answer leaves only its own measure out.
+- `--out` keeps the explanation each agent wrote, so a run can be judged again.
+- `--baseline` counts a drop as a regression only beyond 2 standard errors of the difference, and at least 0.1: 2
+  evals of the same code differed by 0.06 in lift.
+
 ## [0.9.0] - 2026-10-17
 
 ### Added

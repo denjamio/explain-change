@@ -25,11 +25,12 @@
  * --runs N explains each example N times and reports the mean and the standard deviation: 1 run of an agent is a
  * sample, not a score. --judge MODEL asks a second agent, per decision, whether the source its basis names (the PR
  * description, the spec, the code at the evidence) states its why; `grounded` is the share it confirms, and
- * `inferred` the share the agent labelled as its own reading. In the same call it checks each statement (tldr, goal,
+ * `inferred` the share the agent labelled as its own reading. In a 2nd call it checks each statement (tldr, goal,
  * story bodies, component summaries) against the digest: `faithful` is the share the digest shows, so prose that
  * names what the change does not contain scores less. A judge whose answer cannot be read is counted, not hidden.
- * --out writes every run and the summary as JSON; --baseline reads such a file and compares the measures with it
- * (scripts/eval-metrics.ts compareRuns): a mean that drops by more than the noise of either side fails the eval.
+ * --out writes every run (with the explanation the agent wrote) and the summary as JSON; --baseline reads such a file and compares the measures with it
+ * (scripts/eval-metrics.ts compareRuns): a mean that drops by more than the noise (2 standard errors of the
+ * difference, at least 0.1) fails the eval.
  * Use --runs 3 or more for a comparison: with 1 run there is no noise to measure.
  */
 import { spawnSync } from "node:child_process";
@@ -125,12 +126,31 @@ function statements(ex: Explanation): string[] {
   ].filter((t): t is string => typeof t === "string" && t.trim() !== "" && !t.includes("<"));
 }
 
+/** Asks the judge 1 question; its answer as a verdict per item, or null when it cannot be read or has another count. */
+function askJudge(ask: string, model: string, count: number): { supported: boolean }[] | null {
+  const run = spawnSync(agentCmd, [...agentArgs, ask, "--model", model, "--output-format", "json"], {
+    encoding: "utf8",
+    timeout: 5 * 60_000,
+  });
+  try {
+    const text = String(JSON.parse(run.stdout).result ?? "");
+    const verdicts = JSON.parse(text.slice(text.indexOf("["), text.lastIndexOf("]") + 1)) as { supported: boolean }[];
+    return verdicts.length === count ? verdicts : null;
+  } catch {
+    return null;
+  }
+}
+
+const share = (verdicts: { supported: boolean }[]) =>
+  round(verdicts.filter((v) => v.supported).length / verdicts.length);
+
 /**
- * 1 call to the judge per run, with 2 lists. Decisions with a basis other than inferred: does the source it names
- * state the why (the PR description, the OpenSpec section of the digest, the code at the evidence)? Statements
- * (tldr, goal, story, component summaries): do the digest's facts and hunks show them? `grounded` and `faithful`
- * are the shares it confirms. `judgeError` is true when its answer cannot be read: that run has neither, and the
- * summary counts it.
+ * 2 calls to the judge per run, each with 1 question, so neither measure changes the other's prompt. Decisions with
+ * a basis other than inferred: does the source it names state the why (the PR description, the OpenSpec section of
+ * the digest, the code at the evidence)? This prompt is the one of 0.8.2, so `grounded` compares across versions.
+ * Statements (tldr, goal, story, component summaries): does the digest (its facts and hunks) show them? `grounded`
+ * and `faithful` are the shares it confirms. `judgeError` is true when an answer cannot be read: that measure is
+ * null for the run, and the summary counts it.
  */
 function judge(
   repo: string,
@@ -145,55 +165,48 @@ function judge(
   const said = ex ? statements(ex) : [];
   if (!claims.length && !said.length) return { grounded: null, inferred, faithful: null, judgeError: false };
   const digest = readFileSync(join(repo, ".explain-change", "digest.md"), "utf8");
-  const items = claims.map((d, i) => ({
-    i,
-    basis: d.basis,
-    title: d.title,
-    why: d.why,
-    source: d.basis === "code" && d.evidence ? excerpt(repo, d.evidence) : null,
-  }));
-  const ask =
-    "You check claims, nothing else. A claim the source does not support is false, even when it is plausible.\n" +
-    "1. For each decision, say whether its source states or directly shows its why. Sources: basis pr = the PR " +
-    "description in the digest; spec = the OpenSpec part of the digest; code = the excerpt given with it.\n" +
-    "2. For each statement, say whether the digest (its facts and hunks) shows it. A statement that names " +
-    "something the digest does not contain, or says it behaves otherwise, is false.\n" +
-    'Answer only with JSON: {"decisions": [{"i": 0, "supported": true}, …], "statements": [{"i": 0, ' +
-    '"supported": true}, …]}.\n\n<digest>\n' +
-    digest +
-    "\n</digest>\n\n<decisions>\n" +
-    JSON.stringify(items, null, 1) +
-    "\n</decisions>\n\n<statements>\n" +
-    JSON.stringify(
-      said.map((text, i) => ({ i, text })),
-      null,
-      1,
-    ) +
-    "\n</statements>";
-  const run = spawnSync(agentCmd, [...agentArgs, ask, "--model", model, "--output-format", "json"], {
-    encoding: "utf8",
-    timeout: 5 * 60_000,
-  });
-  try {
-    const text = String(JSON.parse(run.stdout).result ?? "");
-    const answer = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)) as Record<
-      "decisions" | "statements",
-      { supported: boolean }[]
-    >;
-    const share = (verdicts: { supported: boolean }[] | undefined, n: number) => {
-      if (!n) return null;
-      if (verdicts?.length !== n) throw new Error("a verdict per claim");
-      return round(verdicts.filter((v) => v.supported).length / n);
-    };
-    return {
-      grounded: share(answer.decisions, claims.length),
-      inferred,
-      faithful: share(answer.statements, said.length),
-      judgeError: false,
-    };
-  } catch {
-    return { grounded: null, inferred, faithful: null, judgeError: true };
+  let judgeError = false;
+  let grounded: number | null = null;
+  if (claims.length) {
+    const items = claims.map((d, i) => ({
+      i,
+      basis: d.basis,
+      title: d.title,
+      why: d.why,
+      source: d.basis === "code" && d.evidence ? excerpt(repo, d.evidence) : null,
+    }));
+    const ask =
+      "You check claims, nothing else. For each decision below, say whether its source states or directly shows " +
+      "its why. Sources: basis pr = the PR description in the digest; spec = the OpenSpec part of the digest; code = " +
+      "the excerpt given with it. A why the source does not support is false, even when it is plausible. Answer " +
+      'only with JSON: [{"i": 0, "supported": true}, …].\n\n<digest>\n' +
+      digest +
+      "\n</digest>\n\n<decisions>\n" +
+      JSON.stringify(items, null, 1) +
+      "\n</decisions>";
+    const verdicts = askJudge(ask, model, claims.length);
+    if (verdicts) grounded = share(verdicts);
+    else judgeError = true;
   }
+  let faithful: number | null = null;
+  if (said.length) {
+    const ask =
+      "You check claims, nothing else. For each statement below, say whether the digest (its facts and hunks) shows " +
+      "it. A statement that names something the digest does not contain, or says it behaves otherwise, is false, " +
+      'even when it is plausible. Answer only with JSON: [{"i": 0, "supported": true}, …].\n\n<digest>\n' +
+      digest +
+      "\n</digest>\n\n<statements>\n" +
+      JSON.stringify(
+        said.map((text, i) => ({ i, text })),
+        null,
+        1,
+      ) +
+      "\n</statements>";
+    const verdicts = askJudge(ask, model, said.length);
+    if (verdicts) faithful = share(verdicts);
+    else judgeError = true;
+  }
+  return { grounded, inferred, faithful, judgeError };
 }
 
 const runs = Math.max(1, Number(values.runs) || 1);
@@ -255,8 +268,10 @@ try {
         draft: draftFit.fidelity,
         lift: lift(agentFit, draftFit),
         ...(values.judge ? judge(repo, written, values.judge) : {}),
+        explanation: written,
       });
-      console.log(JSON.stringify(rows[rows.length - 1]));
+      const { explanation: _, ...line } = rows[rows.length - 1] as Record<string, unknown>;
+      console.log(JSON.stringify(line));
     }
   }
 } finally {

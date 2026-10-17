@@ -158,10 +158,14 @@ export interface Comparison {
   before: number;
   now: number;
   delta: number;
-  /** The mean dropped by more than the noise: the larger standard deviation of the 2 sides, at least NOISE_FLOOR. */
+  /** The mean dropped by more than the noise: 2 standard errors of the difference, at least NOISE_FLOOR. */
   regressed: boolean;
 }
-const NOISE_FLOOR = 0.05;
+/**
+ * 2 evals of the same code (haiku, 2 PRs, 3 runs each, 2026-10-17) differed by 0.06 in lift and 0.02 in fidelity:
+ * below this, a drop is noise at the sizes the eval runs.
+ */
+const NOISE_FLOOR = 0.1;
 
 /** Compares 2 evals run by run: the valid share and each measure both have. */
 export function compareRuns(before: Record<string, unknown>[], now: Record<string, unknown>[]): Comparison[] {
@@ -182,7 +186,7 @@ export function compareRuns(before: Record<string, unknown>[], now: Record<strin
     const xn = nums(now, k);
     if (!xb.length || !xn.length) continue;
     const delta = mean(xn) - mean(xb);
-    const noise = Math.max(sd(xb), sd(xn), NOISE_FLOOR);
+    const noise = Math.max(2 * Math.sqrt(sd(xb) ** 2 / xb.length + sd(xn) ** 2 / xn.length), NOISE_FLOOR);
     out.push({
       measure: k,
       before: round(mean(xb)),
