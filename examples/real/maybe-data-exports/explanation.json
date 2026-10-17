@@ -103,8 +103,8 @@
     },
     {
       "title": "CSV per entity plus an NDJSON dump",
-      "why": "CSV opens in a spreadsheet. NDJSON keeps each record with its nested data, such as the accountable of an account.",
-      "basis": "inferred",
+      "why": "The CSV import of Maybe reads the CSV files back. NDJSON keeps each record with its nested data, such as the accountable of an account.",
+      "basis": "pr",
       "alternative": "A single JSON document for everything.",
       "evidence": "app/models/family/data_exporter.rb:27-29"
     }

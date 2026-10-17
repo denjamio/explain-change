@@ -600,7 +600,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 <body>
 <div id="app" class="app"></div>
 <noscript><p style="padding:24px">This report uses JavaScript to draw its diagrams. Open it in a browser with scripts enabled.</p></noscript>
-<script type="application/json" id="ec-data">{"tool":"0.7.0","facts":{"version":5,"tool":"0.7.0","analysis":10,"key":"bdfaa005e8ba5e8d","source":{"kind":"local","title":"Order confirmation email (openspec: add-order-confirmation)","description":"","branch":"feature/add-order-confirmation","baseRef":"main","headRef":"HEAD","headSha":"4cbee49156be6fb2e7734b1f4c7cb5004f470294","mergeBase":"887ba9396b29acf0135342d90c27da99a613b92e","host":null,"prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-01T10:00:00+00:00","commits":1},"config":{"inferred":false,"name":"Larder","direction":"Layered Django apps: views and webhooks call services; services own the rules and the transactions; models hold the state. Each external system (payments, email) sits behind 1 adapter module. Background work is a Celery task, queued after commit.","lang":"en","layers":[{"id":"web","name":"API"},{"id":"application","name":"Services"},{"id":"domain","name":"Domain"},{"id":"adapters","name":"Adapters"},{"id":"platform","name":"Platform"}],"components":[{"id":"orders-api","name":"Orders API","layer":"web","desc":"Owns the REST endpoints customers use to place and read their orders."},{"id":"payment-webhooks","name":"Payment webhooks","layer":"web","desc":"Owns the endpoint the payment provider calls with signed events."},{"id":"order-management","name":"Order management","layer":"application","desc":"Owns placing an order and marking it paid, each in 1 transaction."},{"id":"payment-processing","name":"Payment processing","layer":"application","desc":"Owns applying provider events to payments, once each."},{"id":"notifications","name":"Notifications","layer":"application","desc":"Owns the emails Larder sends about an order, and their retries."},{"id":"orders","name":"Orders","layer":"domain","desc":"Owns Order and OrderLine; an order's lines, total and status from placed to paid."},{"id":"payments","name":"Payments","layer":"domain","desc":"Owns Payment; the provider's reference and status of each charge."},{"id":"sent-emails","name":"Sent emails","layer":"domain","desc":"Owns SentEmail; which email went to whom about which order."},{"id":"catalog","name":"Catalog","layer":"domain","desc":"Owns Product; what Larder sells, its price and its stock."},{"id":"customers","name":"Customers","layer":"domain","desc":"Owns Customer; who buys and their email."},{"id":"payment-provider","name":"Payment provider","layer":"adapters","desc":"Owns the payment provider adapter: webhook signatures and events."},{"id":"email-gateway","name":"Email gateway","layer":"adapters","desc":"Owns the EmailGateway port and its Postmark adapter."},{"id":"platform","name":"Platform","layer":"platform","desc":"Owns settings, URL routing and the Celery app."}],"rules":{"allow":["web -> application","web -> domain","application -> domain","application -> adapters","adapters -> domain","platform -> application"],"forbid":["domain -> application","notifications -> order-management"]},"referenceFlows":[{"id":"place-order","title":"Place an order","steps":[{"from":"orders-api","to":"order-management","message":"place_order"},{"from":"order-management","to":"catalog","message":"Product.reserve"},{"from":"order-management","to":"orders","message":"Order.objects.create"}]},{"id":"pay-order","title":"Pay an order","steps":[{"from":"payment-webhooks","to":"payment-provider","message":"parse_webhook"},{"from":"payment-webhooks","to":"payment-processing","message":"handle_payment_event"},{"from":"payment-processing","to":"order-management","message":"mark_order_paid"}]}],"glossary":[{"term":"order","definition":"What a customer buys in 1 checkout: its lines, total and status."},{"term":"placed order","definition":"An order with reserved stock that is not paid yet."},{"term":"paid order","definition":"An order whose charge the payment provider confirmed."},{"term":"contact email","definition":"The email address an order was placed with; confirmations go there."},{"term":"confirmation","definition":"The email that tells a customer their paid order is being picked."},{"term":"payment event","definition":"A signed message from the payment provider: payment.succeeded or payment.failed."}],"names":[]},"files":[{"path":"notifications/__init__.py","previousPath":null,"delta":"added","binary":false,"additions":0,"deletions":0,"component":"notifications","category":"code","truncated":false,"hunks":[]},{"path":"notifications/apps.py","previousPath":null,"delta":"added","binary":false,"additions":5,"deletions":0,"component":"notifications","category":"code","truncated":false,"hunks":[]},{"path":"notifications/gateway.py","previousPath":null,"delta":"added","binary":false,"additions":47,"deletions":0,"component":"email-gateway","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":16,"newLines":9,"header":"","lines":[["+","    \"\"\"The provider refused the message or did not answer: the send can be retried.\"\"\""],["+",""],["+",""],["+","class EmailGateway(Protocol):"],["+","    def send(self, email: Email) -> str:"],["+","        \"\"\"Sends the email and returns the provider's message id.\"\"\""],["+",""],["+",""],["+","class PostmarkGateway:"]]}]},{"path":"notifications/migrations/0001_initial.py","previousPath":null,"delta":"added","binary":false,"additions":22,"deletions":0,"component":"sent-emails","category":"migration","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":22,"header":"","lines":[["+","import django.utils.timezone"],["+","from django.db import migrations, models"],["+",""],["+",""],["+","class Migration(migrations.Migration):"],["+","    initial = True"],["+","    dependencies = [(\"orders\", \"0002_order_contact_email\")]"],["+",""],["+","    operations = ["],["+","        migrations.CreateModel("],["+","            name=\"SentEmail\","],["+","            fields=["],["+","                (\"id\", models.BigAutoField(primary_key=True)),"],["+","                (\"kind\", models.CharField(max_length=32)),"],["+","                (\"to\", models.EmailField(max_length=254)),"],["+","                (\"provider_message_id\", models.CharField(blank=True, max_length=64)),"],["+","                (\"created_at\", models.DateTimeField(default=django.utils.timezone.now)),"],["+","                (\"order\", models.ForeignKey(on_delete=models.CASCADE, related_name=\"sent_emails\", to=\"orders.order\")),"],["+","            ],"],["+","            options={\"constraints\": [models.UniqueConstraint(fields=(\"order\", \"kind\"), name=\"one_email_per_order_and_kind\")]},"],["+","        ),"],["+","    ]"]]}]},{"path":"notifications/migrations/__init__.py","previousPath":null,"delta":"added","binary":false,"additions":0,"deletions":0,"component":"sent-emails","category":"migration","truncated":false,"hunks":[]},{"path":"notifications/models.py","previousPath":null,"delta":"added","binary":false,"additions":20,"deletions":0,"component":"sent-emails","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":20,"header":"","lines":[["+","from django.db import models"],["+","from django.utils import timezone"],["+",""],["+","from orders.models import Order"],["+",""],["+",""],["+","class SentEmail(models.Model):"],["+","    \"\"\"1 row per email sent about an order: the guard against sending it twice, and the trail for support.\"\"\""],["+",""],["+","    class Kind(models.TextChoices):"],["+","        ORDER_CONFIRMATION = \"order_confirmation\""],["+",""],["+","    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name=\"sent_emails\")"],["+","    kind = models.CharField(max_length=32, choices=Kind.choices)"],["+","    to = models.EmailField()"],["+","    provider_message_id = models.CharField(max_length=64, blank=True)"],["+","    created_at = models.DateTimeField(default=timezone.now)"],["+",""],["+","    class Meta:"],["+","        constraints = [models.UniqueConstraint(fields=[\"order\", \"kind\"], name=\"one_email_per_order_and_kind\")]"]]}]},{"path":"notifications/services.py","previousPath":null,"delta":"added","binary":false,"additions":28,"deletions":0,"component":"notifications","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":28,"header":"","lines":[["+","from django.db import IntegrityError, transaction"],["+","from django.template.loader import render_to_string"],["+",""],["+","from notifications.gateway import Email, EmailGateway, default_gateway"],["+","from notifications.models import SentEmail"],["+","from orders.models import Order"],["+",""],["+",""],["+","def send_order_confirmation(order_id: int, gateway: EmailGateway | None = None) -> bool:"],["+","    \"\"\"Sends the confirmation of a paid order once. Returns False when it was already sent.\"\"\""],["+","    order = Order.objects.prefetch_related(\"lines__product\").get(pk=order_id)"],["+","    try:"],["+","        with transaction.atomic():"],["+","            sent = SentEmail.objects.create(order=order, kind=SentEmail.Kind.ORDER_CONFIRMATION, to=order.contact_email)"],["+","    except IntegrityError:"],["+","        return False"],["+","    email = Email("],["+","        to=order.contact_email,"],["+","        subject=f\"Your Larder order #{order.id} is confirmed\","],["+","        text=render_to_string(\"notifications/order_confirmation.txt\", {\"order\": order}),"],["+","    )"],["+","    try:"],["+","        sent.provider_message_id = (gateway or default_gateway()).send(email)"],["+","    except Exception:"],["+","        sent.delete()  # free the guard, so the retry can send"],["+","        raise"],["+","    sent.save(update_fields=[\"provider_message_id\"])"],["+","    return True"]]}]},{"path":"notifications/tasks.py","previousPath":null,"delta":"added","binary":false,"additions":9,"deletions":0,"component":"notifications","category":"code","truncated":false,"hunks":[]},{"path":"notifications/templates/notifications/order_confirmation.txt","previousPath":null,"delta":"added","binary":false,"additions":9,"deletions":0,"component":"notifications","category":"docs","truncated":false,"hunks":[]},{"path":"notifications/tests/__init__.py","previousPath":null,"delta":"added","binary":false,"additions":0,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"notifications/tests/test_services.py","previousPath":null,"delta":"added","binary":false,"additions":34,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"openspec/changes/add-order-confirmation/design.md","previousPath":null,"delta":"added","binary":false,"additions":28,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":13,"newLines":12,"header":"","lines":[["+","  provider would retry the whole payment event."],["+",""],["+","### At most 1 confirmation per order"],["+","`SentEmail` has a unique (order, kind) constraint. The task creates the row before it calls Postmark; a second"],["+","run for the same order stops at the constraint."],["+","- Alternative: a `confirmation_sent_at` field on Order. Rejected: it couples Orders to email, and the next"],["+","  emails (shipped, refunded) would each need a field."],["+",""],["+","### An EmailGateway port"],["+","`notifications.gateway.EmailGateway` is the port; `PostmarkGateway` is the only adapter. Tests use a fake."],["+","- Alternative: Django's `send_mail` with an SMTP backend. Rejected: Postmark's message id is needed to answer"],["+","  support questions, and SMTP gives none."]]}]},{"path":"openspec/changes/add-order-confirmation/proposal.md","previousPath":null,"delta":"added","binary":false,"additions":18,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":4,"newLines":9,"header":"","lines":[["+","Customers get no message after they pay. Support answers about 40 tickets a week that ask whether an order went"],["+","through, and some customers pay twice."],["+",""],["+","## What Changes"],["+","- Send a confirmation email when an order becomes paid, not when it is placed: a placed order can still fail to"],["+","  pay."],["+","- Keep the email address the order was placed with, so a later change of the customer's email does not move the"],["+","  confirmation of an old order."],["+","- Send through Postmark from a new `notifications` app, behind an `EmailGateway` port."]]}]},{"path":"openspec/changes/add-order-confirmation/specs/notifications/spec.md","previousPath":null,"delta":"added","binary":false,"additions":20,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":5,"header":"","lines":[["+","## ADDED Requirements"],["+","### Requirement: Order confirmation email"],["+","The system SHALL send 1 confirmation email per paid order to the order's contact email, with its lines and total."],["+",""],["+","#### Scenario: Order paid"]]},{"oldStart":0,"oldLines":0,"newStart":11,"newLines":7,"header":"","lines":[["+","- **WHEN** the confirmation task runs again for the same order"],["+","- **THEN** no second message is sent"],["+",""],["+","### Requirement: Retry failed sends"],["+","The system SHALL retry a send that fails because of the email provider, with backoff, up to 5 times."],["+",""],["+","#### Scenario: Postmark is down"]]}]},{"path":"openspec/changes/add-order-confirmation/specs/orders/spec.md","previousPath":null,"delta":"added","binary":false,"additions":27,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":5,"header":"","lines":[["+","## MODIFIED Requirements"],["+","### Requirement: Place an order"],["+","The system SHALL create a placed order from a customer's items, reserve their stock in the same transaction, and"],["+","store the customer's current email as the order's contact email."],["+",""]]},{"oldStart":0,"oldLines":0,"newStart":13,"newLines":7,"header":"","lines":[["+","- **WHEN** an item has less stock than its quantity"],["+","- **THEN** no order is created and no stock is reserved"],["+",""],["+","### Requirement: Mark an order paid"],["+","The system SHALL mark a placed order as paid when Payments reports a successful charge, and SHALL queue its"],["+","confirmation email after the transaction commits."],["+",""]]}]},{"path":"openspec/changes/add-order-confirmation/tasks.md","previousPath":null,"delta":"added","binary":false,"additions":13,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[]},{"path":"orders/api/serializers.py","previousPath":null,"delta":"changed","binary":false,"additions":2,"deletions":1,"component":"orders-api","category":"code","truncated":false,"hunks":[]},{"path":"orders/migrations/0002_order_contact_email.py","previousPath":null,"delta":"added","binary":false,"additions":17,"deletions":0,"component":"orders","category":"migration","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":17,"header":"","lines":[["+","from django.db import migrations, models"],["+","from django.db.models import OuterRef, Subquery"],["+",""],["+",""],["+","def backfill_contact_email(apps, schema_editor):"],["+","    Order = apps.get_model(\"orders\", \"Order\")"],["+","    Customer = apps.get_model(\"customers\", \"Customer\")"],["+","    Order.objects.update(contact_email=Subquery(Customer.objects.filter(pk=OuterRef(\"customer_id\")).values(\"email\")[:1]))"],["+",""],["+",""],["+","class Migration(migrations.Migration):"],["+","    dependencies = [(\"orders\", \"0001_initial\")]"],["+",""],["+","    operations = ["],["+","        migrations.AddField(model_name=\"order\", name=\"contact_email\", field=models.EmailField(default=\"\", max_length=254), preserve_default=False),"],["+","        migrations.RunPython(backfill_contact_email, migrations.RunPython.noop),"],["+","    ]"]]}]},{"path":"orders/models.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"orders","category":"code","truncated":false,"hunks":[]},{"path":"orders/services.py","previousPath":null,"delta":"changed","binary":false,"additions":4,"deletions":0,"component":"order-management","category":"code","truncated":false,"hunks":[{"oldStart":18,"oldLines":6,"newStart":19,"newLines":7,"header":"def place_order(customer: Customer, items: list[tuple[str, int]]) -> Order:","lines":[[" ","        lines.append(OrderLine(product=product, quantity=quantity, unit_price_cents=product.price_cents))"],[" ","    order = Order.objects.create("],[" ","        customer=customer,"],["+","        contact_email=customer.email,"],[" ","        total_cents=sum(line.quantity * line.unit_price_cents for line in lines),"],[" ","    )"],[" ","    for line in lines:"]]},{"oldStart":31,"oldLines":4,"newStart":33,"newLines":6,"header":"def mark_order_paid(order_id: int, paid_at) -> Order:","lines":[[" ","    \"\"\"Called by Payments when the provider confirms the charge.\"\"\""],[" ","    order = Order.objects.select_for_update().get(pk=order_id)"],[" ","    order.mark_paid(paid_at)"],["+","    # Queue the email only once the payment is committed: a rolled-back payment sends nothing."],["+","    transaction.on_commit(lambda: send_order_confirmation.delay(order.id))"],[" ","    return order"]]}]},{"path":"orders/tests/test_services.py","previousPath":null,"delta":"changed","binary":false,"additions":16,"deletions":2,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"shop/settings.py","previousPath":null,"delta":"changed","binary":false,"additions":4,"deletions":0,"component":"platform","category":"config","truncated":false,"hunks":[]}],"components":[{"id":"orders-api","delta":"changed","files":1,"additions":2,"deletions":1},{"id":"order-management","delta":"changed","files":1,"additions":4,"deletions":0},{"id":"notifications","delta":"added","files":5,"additions":51,"deletions":0},{"id":"orders","delta":"changed","files":2,"additions":18,"deletions":0},{"id":"sent-emails","delta":"added","files":3,"additions":42,"deletions":0},{"id":"catalog","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"customers","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"email-gateway","delta":"added","files":1,"additions":47,"deletions":0},{"id":"platform","delta":"changed","files":1,"additions":4,"deletions":0}],"dependencies":[{"from":"notifications","to":"email-gateway","delta":"added","baseCount":0,"headCount":2,"examples":["notifications/services.py:4","notifications/tasks.py:4"],"violation":null},{"from":"notifications","to":"orders","delta":"added","baseCount":0,"headCount":1,"examples":["notifications/services.py:6"],"violation":null},{"from":"notifications","to":"sent-emails","delta":"added","baseCount":0,"headCount":1,"examples":["notifications/services.py:5"],"violation":null},{"from":"order-management","to":"catalog","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/services.py:3"],"violation":null},{"from":"order-management","to":"customers","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/services.py:4"],"violation":null},{"from":"order-management","to":"notifications","delta":"added","baseCount":0,"headCount":1,"examples":["orders/services.py:5"],"violation":null},{"from":"order-management","to":"orders","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/services.py:6"],"violation":null},{"from":"orders","to":"catalog","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/models.py:4"],"violation":null},{"from":"orders","to":"customers","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/models.py:5"],"violation":null},{"from":"orders-api","to":"orders","delta":"unchanged","baseCount":2,"headCount":2,"examples":["orders/api/serializers.py:3","orders/api/views.py:5"],"violation":null},{"from":"sent-emails","to":"orders","delta":"added","baseCount":0,"headCount":1,"examples":["notifications/models.py:4"],"violation":null}],"dependencyGraph":[["notifications","email-gateway"],["notifications","orders"],["notifications","sent-emails"],["order-management","catalog"],["order-management","customers"],["order-management","notifications"],["order-management","orders"],["orders","catalog"],["orders","customers"],["orders-api","order-management"],["orders-api","orders"],["payment-processing","order-management"],["payment-processing","payment-provider"],["payment-processing","payments"],["payment-webhooks","payment-processing"],["payment-webhooks","payment-provider"],["payments","orders"],["platform","orders-api"],["platform","payment-webhooks"],["sent-emails","orders"]],"ports":[],"symbols":[{"file":"notifications/apps.py","line":4,"kind":"class","name":"NotificationsConfig","delta":"added"},{"file":"notifications/gateway.py","line":9,"kind":"class","name":"Email","delta":"added"},{"file":"notifications/gateway.py","line":15,"kind":"class","name":"GatewayError","delta":"added"},{"file":"notifications/gateway.py","line":19,"kind":"class","name":"EmailGateway","delta":"added"},{"file":"notifications/gateway.py","line":31,"kind":"method","name":"send","delta":"added"},{"file":"notifications/gateway.py","line":24,"kind":"class","name":"PostmarkGateway","delta":"added"},{"file":"notifications/gateway.py","line":46,"kind":"def","name":"default_gateway","delta":"added"},{"file":"notifications/models.py","line":7,"kind":"class","name":"SentEmail","delta":"added"},{"file":"notifications/services.py","line":9,"kind":"def","name":"send_order_confirmation","delta":"added"},{"file":"notifications/tasks.py","line":8,"kind":"def","name":"send_order_confirmation","delta":"added"}],"stats":{"files":22,"additions":324,"deletions":3,"testAdditions":50,"testDeletions":2,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":160,"mappedLines":160},"notes":[],"openspec":{"changes":[{"id":"add-order-confirmation","dir":"openspec/changes/add-order-confirmation","archived":false,"deleted":false,"movedToArchive":false,"artifacts":[{"kind":"design","path":"openspec/changes/add-order-confirmation/design.md","delta":"added","moved":false,"capability":null},{"kind":"proposal","path":"openspec/changes/add-order-confirmation/proposal.md","delta":"added","moved":false,"capability":null},{"kind":"spec","path":"openspec/changes/add-order-confirmation/specs/notifications/spec.md","delta":"added","moved":false,"capability":"notifications"},{"kind":"spec","path":"openspec/changes/add-order-confirmation/specs/orders/spec.md","delta":"added","moved":false,"capability":"orders"},{"kind":"tasks","path":"openspec/changes/add-order-confirmation/tasks.md","delta":"added","moved":false,"capability":null}],"why":"Customers get no message after they pay. Support answers about 40 tickets a week that ask whether an order went through, and some customers pay twice.","what":["Send a confirmation email when an order becomes paid, not when it is placed: a placed order can still fail to","Keep the email address the order was placed with, so a later change of the customer's email does not move the","Send through Postmark from a new notifications app, behind an EmailGateway port.","Retry a failed send in the background; a payment never fails because email is down."],"impact":["Specs: orders (MODIFIED), notifications (ADDED)","Code: orders (model, services), new notifications app, settings","Data: Order.contact_email, new SentEmail table"],"decisions":["Send after commit, from a Celery task","At most 1 confirmation per order","An EmailGateway port"],"tasks":{"done":7,"total":8,"groups":[{"title":"1. Orders","done":3,"total":3},{"title":"2. Notifications app","done":3,"total":3},{"title":"3. Operations","done":1,"total":2}],"items":[{"text":"1.1 Add Order.contact_email, filled from the customer when the order is placed","done":true,"line":2,"group":0},{"text":"1.2 Migration with a backfill from Customer.email","done":true,"line":3,"group":0},{"text":"1.3 Queue the confirmation in mark_order_paid, after commit","done":true,"line":4,"group":0},{"text":"2.1 SentEmail model with a unique (order, kind) constraint","done":true,"line":7,"group":1},{"text":"2.2 EmailGateway port and PostmarkGateway adapter","done":true,"line":8,"group":1},{"text":"2.3 send_order_confirmation service and its Celery task, with retries","done":true,"line":9,"group":1},{"text":"3.1 POSTMARK_SERVER_TOKEN and EMAIL_FROM settings","done":true,"line":12,"group":2},{"text":"3.2 An admin action that resends a confirmation","done":false,"line":13,"group":2}]},"requirements":[{"id":"notifications/order-confirmation-email","capability":"notifications","name":"Order confirmation email","op":"ADDED","text":"The system SHALL send 1 confirmation email per paid order to the order's contact email, with its lines and total.","scenarios":[{"id":"order-paid","name":"Order paid","steps":[{"keyword":"WHEN","text":"the confirmation task runs for a paid order"},{"keyword":"THEN","text":"Postmark receives 1 message for the order's contact email"},{"keyword":"AND","text":"a SentEmail row records the Postmark message id"}],"line":5},{"id":"task-runs-twice","name":"Task runs twice","steps":[{"keyword":"WHEN","text":"the confirmation task runs again for the same order"},{"keyword":"THEN","text":"no second message is sent"}],"line":10}],"file":"openspec/changes/add-order-confirmation/specs/notifications/spec.md","line":2,"change":"add-order-confirmation","merged":false,"renamedFrom":null},{"id":"notifications/retry-failed-sends","capability":"notifications","name":"Retry failed sends","op":"ADDED","text":"The system SHALL retry a send that fails because of the email provider, with backoff, up to 5 times.","scenarios":[{"id":"postmark-is-down","name":"Postmark is down","steps":[{"keyword":"WHEN","text":"Postmark answers with an error or does not answer"},{"keyword":"THEN","text":"the order stays paid"},{"keyword":"AND","text":"the task is retried later"}],"line":17}],"file":"openspec/changes/add-order-confirmation/specs/notifications/spec.md","line":14,"change":"add-order-confirmation","merged":false,"renamedFrom":null},{"id":"orders/place-an-order","capability":"orders","name":"Place an order","op":"MODIFIED","text":"The system SHALL create a placed order from a customer's items, reserve their stock in the same transaction, and store the customer's current email as the order's contact email.","scenarios":[{"id":"items-in-stock","name":"Items in stock","steps":[{"keyword":"WHEN","text":"a customer places an order for items in stock"},{"keyword":"THEN","text":"the order is placed with the total of its lines"},{"keyword":"AND","text":"the stock of each product goes down by its quantity"},{"keyword":"AND","text":"the order's contact email is the customer's email"}],"line":6},{"id":"item-out-of-stock","name":"Item out of stock","steps":[{"keyword":"WHEN","text":"an item has less stock than its quantity"},{"keyword":"THEN","text":"no order is created and no stock is reserved"}],"line":12}],"file":"openspec/changes/add-order-confirmation/specs/orders/spec.md","line":2,"change":"add-order-confirmation","merged":false,"renamedFrom":null},{"id":"orders/mark-an-order-paid","capability":"orders","name":"Mark an order paid","op":"MODIFIED","text":"The system SHALL mark a placed order as paid when Payments reports a successful charge, and SHALL queue its confirmation email after the transaction commits.","scenarios":[{"id":"payment-succeeded","name":"Payment succeeded","steps":[{"keyword":"WHEN","text":"Payments reports a successful charge for a placed order"},{"keyword":"THEN","text":"the order status is paid and paid_at is the charge time"},{"keyword":"AND","text":"a confirmation email is queued for the order"}],"line":20},{"id":"payment-rolled-back","name":"Payment rolled back","steps":[{"keyword":"WHEN","text":"the transaction that marks the order paid rolls back"},{"keyword":"THEN","text":"no confirmation email is queued"}],"line":25}],"file":"openspec/changes/add-order-confirmation/specs/orders/spec.md","line":16,"change":"add-order-confirmation","merged":false,"renamedFrom":null}]}],"specs":[]},"outline":{"story":[{"about":"Email gateway added","view":"architecture","focus":["email-gateway"],"code":"notifications/gateway.py:1-47"},{"about":"Notifications added","view":"architecture","focus":["notifications"],"code":"notifications/services.py:1-28"},{"about":"Sent emails added","view":"architecture","focus":["sent-emails"],"code":"notifications/models.py:1-20"},{"about":"Orders changed","view":"architecture","focus":["orders"],"code":"orders/models.py:12-18"},{"about":"the data model","view":"data","focus":[],"code":"notifications/migrations/0001_initial.py:1-22"},{"about":"the requirements the code meets","view":"requirements","focus":["notifications/order-confirmation-email","notifications/retry-failed-sends","orders/place-an-order"],"code":null},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"notifications","to":"email-gateway"},{"from":"notifications","to":"orders"},{"from":"notifications","to":"sent-emails"},{"from":"order-management","to":"notifications"},{"from":"sent-emails","to":"orders"}],"dataFiles":["notifications/migrations/0001_initial.py","orders/migrations/0002_order_contact_email.py","notifications/models.py","orders/models.py"]}},"explanation":{"version":5,"key":"bdfaa005e8ba5e8d","lang":"en","tldr":"Larder now emails a confirmation when an order becomes paid. A new Notifications app sends it through Postmark after the payment commits, once per order, with retries.","goal":"Stop customers from asking whether their order went through, and from paying twice: about 40 support tickets a week.","story":[{"heading":"Paying an order now queues its confirmation","body":"mark_order_paid queues send_order_confirmation with transaction.on_commit. A rolled-back payment queues nothing.","view":"flow:confirm-paid-order","focus":["#1","#2"],"code":"orders/services.py:31-38"},{"heading":"Notifications sends through an EmailGateway port","body":"send_order_confirmation sends through PostmarkGateway, the only adapter. A Celery task retries a GatewayError up to 5 times with backoff.","view":"flow:confirm-paid-order","focus":["#3","#4"],"code":"notifications/services.py:1-28"},{"heading":"SentEmail guards against a second send","body":"A unique (order, kind) constraint lets 1 confirmation through per order. Order now stores contact_email, filled for existing orders.","view":"data","focus":["sent-email","order"],"code":"notifications/models.py:1-20"},{"heading":"4 requirements, all implemented","body":"The change modifies 2 requirements of orders and adds 2 to notifications. A task stays open: an admin action to resend.","view":"requirements","focus":["notifications/order-confirmation-email","notifications/retry-failed-sends","orders/mark-an-order-paid"]},{"heading":"The whole change","body":"Order management now depends on Notifications, which reads Orders and calls the Email gateway. No dependency breaks a rule.","view":"architecture","focus":[]}],"keyDependencies":[{"from":"order-management","to":"notifications","label":"queues the confirmation on commit"}],"components":[{"id":"orders-api","summary":"Order responses include contact_email, read-only."},{"id":"order-management","summary":"place_order stores the contact email; mark_order_paid queues the confirmation after commit."},{"id":"notifications","summary":"New app: sends the order confirmation once through the EmailGateway, from a Celery task with retries."},{"id":"orders","summary":"Order gets contact_email, filled for existing orders from the customer."},{"id":"sent-emails","summary":"New SentEmail records each email per order and kind, with Postmark's message id."},{"id":"email-gateway","summary":"New EmailGateway port and PostmarkGateway adapter; provider failures raise GatewayError."},{"id":"platform","summary":"Installs notifications; new POSTMARK_SERVER_TOKEN and EMAIL_FROM settings."}],"decisions":[{"title":"Send when the order is paid, not when it is placed","why":"A placed order can still fail to pay. The confirmation tells the customer that the payment went through.","basis":"spec","alternative":"Send when the order is placed.","evidence":"openspec/changes/add-order-confirmation/proposal.md:7-9"},{"title":"Queue after commit, send from a Celery task","why":"The payment webhook does not wait for Postmark, and a rolled-back payment sends nothing.","basis":"spec","alternative":"Send inside the webhook request.","evidence":"orders/services.py:36-37"},{"title":"A SentEmail row with a unique constraint","why":"A repeated task stops at the constraint. The next emails, such as shipped or refunded, add a kind, not a field on Order.","basis":"spec","alternative":"A confirmation_sent_at field on Order.","evidence":"openspec/changes/add-order-confirmation/design.md:16-21"},{"title":"An EmailGateway port with a Postmark adapter","why":"Postmark's message id answers support questions, and tests use a fake gateway.","basis":"spec","alternative":"Django send_mail with an SMTP backend.","evidence":"notifications/gateway.py:19-21"},{"title":"Keep a contact email on the order","why":"A later change of the customer's email does not move the confirmation of an old order.","basis":"spec","alternative":"Read customer.email when the email goes out.","evidence":"orders/services.py:20-24"}],"flows":[{"id":"confirm-paid-order","title":"Confirm a paid order","trigger":"POST /api/payments/webhook/","steps":[{"from":"payment-processing","to":"order-management","call":"mark_order_paid","delta":"changed","verified":true,"port":false,"via":null},{"from":"order-management","to":"notifications","call":"send_order_confirmation.delay (on commit)","delta":"added","verified":true,"port":false,"via":null},{"from":"notifications","to":"sent-emails","call":"SentEmail.objects.create","delta":"added","data":{"type":"SentEmail","fields":["+order","+kind: order_confirmation","+to"]},"verified":true,"port":false,"via":null},{"from":"notifications","to":"email-gateway","call":"PostmarkGateway.send","delta":"added","verified":true,"port":false,"via":null}]},{"id":"place-order","title":"Place an order","trigger":"POST /api/orders/","steps":[{"from":"orders-api","to":"order-management","call":"place_order","delta":"unchanged","verified":true,"port":false,"via":null},{"from":"order-management","to":"catalog","call":"Product.reserve","delta":"unchanged","verified":true,"port":false,"via":null},{"from":"order-management","to":"orders","call":"Order.objects.create","delta":"changed","data":{"type":"Order","fields":["+contact_email"]},"verified":true,"port":false,"via":null}]}],"dataModel":{"entities":[{"id":"order","name":"Order","component":"orders","delta":"changed","evidence":"orders/migrations/0002_order_contact_email.py:1-19","fields":["+contact_email: email"]},{"id":"sent-email","name":"SentEmail","component":"sent-emails","delta":"added","evidence":"notifications/migrations/0001_initial.py:1-22","fields":["+order: FK","+kind: order_confirmation","+to: email","+provider_message_id","+created_at","+unique (order, kind)"]},{"id":"customer","name":"Customer","component":"customers","delta":"unchanged","fields":[]}],"relations":[{"from":"order","to":"sent-email","label":"1..n, 1 per kind","delta":"added"},{"from":"customer","to":"order","label":"1..n","delta":"unchanged"}]},"requirements":[{"id":"notifications/order-confirmation-email","status":"implemented","components":["notifications","sent-emails","email-gateway"],"tests":["notifications/tests/test_services.py:21"],"note":"The design accepts a duplicate when Postmark times out after it accepted the message."},{"id":"notifications/retry-failed-sends","status":"implemented","components":["notifications","email-gateway"],"tests":["notifications/tests/test_services.py:30"]},{"id":"orders/place-an-order","status":"implemented","components":["order-management","orders"],"tests":["orders/tests/test_services.py:9"]},{"id":"orders/mark-an-order-paid","status":"implemented","components":["order-management"],"tests":["orders/tests/test_services.py:17","orders/tests/test_services.py:25"]}]},"state":"valid","issues":[]}</script>
+<script type="application/json" id="ec-data">{"tool":"0.7.0","facts":{"version":5,"tool":"0.7.0","analysis":11,"key":"23234c9a4e20dab6","source":{"kind":"local","title":"Order confirmation email (openspec: add-order-confirmation)","description":"","branch":"feature/add-order-confirmation","baseRef":"main","headRef":"HEAD","headSha":"4cbee49156be6fb2e7734b1f4c7cb5004f470294","mergeBase":"887ba9396b29acf0135342d90c27da99a613b92e","host":null,"prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-01T10:00:00+00:00","commits":1},"config":{"inferred":false,"name":"Larder","direction":"Layered Django apps: views and webhooks call services; services own the rules and the transactions; models hold the state. Each external system (payments, email) sits behind 1 adapter module. Background work is a Celery task, queued after commit.","lang":"en","layers":[{"id":"web","name":"API"},{"id":"application","name":"Services"},{"id":"domain","name":"Domain"},{"id":"adapters","name":"Adapters"},{"id":"platform","name":"Platform"}],"components":[{"id":"orders-api","name":"Orders API","layer":"web","desc":"Owns the REST endpoints customers use to place and read their orders."},{"id":"payment-webhooks","name":"Payment webhooks","layer":"web","desc":"Owns the endpoint the payment provider calls with signed events."},{"id":"order-management","name":"Order management","layer":"application","desc":"Owns placing an order and marking it paid, each in 1 transaction."},{"id":"payment-processing","name":"Payment processing","layer":"application","desc":"Owns applying provider events to payments, once each."},{"id":"notifications","name":"Notifications","layer":"application","desc":"Owns the emails Larder sends about an order, and their retries."},{"id":"orders","name":"Orders","layer":"domain","desc":"Owns Order and OrderLine; an order's lines, total and status from placed to paid."},{"id":"payments","name":"Payments","layer":"domain","desc":"Owns Payment; the provider's reference and status of each charge."},{"id":"sent-emails","name":"Sent emails","layer":"domain","desc":"Owns SentEmail; which email went to whom about which order."},{"id":"catalog","name":"Catalog","layer":"domain","desc":"Owns Product; what Larder sells, its price and its stock."},{"id":"customers","name":"Customers","layer":"domain","desc":"Owns Customer; who buys and their email."},{"id":"payment-provider","name":"Payment provider","layer":"adapters","desc":"Owns the payment provider adapter: webhook signatures and events."},{"id":"email-gateway","name":"Email gateway","layer":"adapters","desc":"Owns the EmailGateway port and its Postmark adapter."},{"id":"platform","name":"Platform","layer":"platform","desc":"Owns settings, URL routing and the Celery app."}],"rules":{"allow":["web -> application","web -> domain","application -> domain","application -> adapters","adapters -> domain","platform -> application"],"forbid":["domain -> application","notifications -> order-management"]},"referenceFlows":[{"id":"place-order","title":"Place an order","steps":[{"from":"orders-api","to":"order-management","message":"place_order"},{"from":"order-management","to":"catalog","message":"Product.reserve"},{"from":"order-management","to":"orders","message":"Order.objects.create"}]},{"id":"pay-order","title":"Pay an order","steps":[{"from":"payment-webhooks","to":"payment-provider","message":"parse_webhook"},{"from":"payment-webhooks","to":"payment-processing","message":"handle_payment_event"},{"from":"payment-processing","to":"order-management","message":"mark_order_paid"}]}],"glossary":[{"term":"order","definition":"What a customer buys in 1 checkout: its lines, total and status."},{"term":"placed order","definition":"An order with reserved stock that is not paid yet."},{"term":"paid order","definition":"An order whose charge the payment provider confirmed."},{"term":"contact email","definition":"The email address an order was placed with; confirmations go there."},{"term":"confirmation","definition":"The email that tells a customer their paid order is being picked."},{"term":"payment event","definition":"A signed message from the payment provider: payment.succeeded or payment.failed."}],"names":[]},"files":[{"path":"notifications/__init__.py","previousPath":null,"delta":"added","binary":false,"additions":0,"deletions":0,"component":"notifications","category":"code","truncated":false,"hunks":[]},{"path":"notifications/apps.py","previousPath":null,"delta":"added","binary":false,"additions":5,"deletions":0,"component":"notifications","category":"code","truncated":false,"hunks":[]},{"path":"notifications/gateway.py","previousPath":null,"delta":"added","binary":false,"additions":47,"deletions":0,"component":"email-gateway","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":16,"newLines":9,"header":"","lines":[["+","    \"\"\"The provider refused the message or did not answer: the send can be retried.\"\"\""],["+",""],["+",""],["+","class EmailGateway(Protocol):"],["+","    def send(self, email: Email) -> str:"],["+","        \"\"\"Sends the email and returns the provider's message id.\"\"\""],["+",""],["+",""],["+","class PostmarkGateway:"]]}]},{"path":"notifications/migrations/0001_initial.py","previousPath":null,"delta":"added","binary":false,"additions":22,"deletions":0,"component":"sent-emails","category":"migration","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":22,"header":"","lines":[["+","import django.utils.timezone"],["+","from django.db import migrations, models"],["+",""],["+",""],["+","class Migration(migrations.Migration):"],["+","    initial = True"],["+","    dependencies = [(\"orders\", \"0002_order_contact_email\")]"],["+",""],["+","    operations = ["],["+","        migrations.CreateModel("],["+","            name=\"SentEmail\","],["+","            fields=["],["+","                (\"id\", models.BigAutoField(primary_key=True)),"],["+","                (\"kind\", models.CharField(max_length=32)),"],["+","                (\"to\", models.EmailField(max_length=254)),"],["+","                (\"provider_message_id\", models.CharField(blank=True, max_length=64)),"],["+","                (\"created_at\", models.DateTimeField(default=django.utils.timezone.now)),"],["+","                (\"order\", models.ForeignKey(on_delete=models.CASCADE, related_name=\"sent_emails\", to=\"orders.order\")),"],["+","            ],"],["+","            options={\"constraints\": [models.UniqueConstraint(fields=(\"order\", \"kind\"), name=\"one_email_per_order_and_kind\")]},"],["+","        ),"],["+","    ]"]]}]},{"path":"notifications/migrations/__init__.py","previousPath":null,"delta":"added","binary":false,"additions":0,"deletions":0,"component":"sent-emails","category":"migration","truncated":false,"hunks":[]},{"path":"notifications/models.py","previousPath":null,"delta":"added","binary":false,"additions":20,"deletions":0,"component":"sent-emails","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":20,"header":"","lines":[["+","from django.db import models"],["+","from django.utils import timezone"],["+",""],["+","from orders.models import Order"],["+",""],["+",""],["+","class SentEmail(models.Model):"],["+","    \"\"\"1 row per email sent about an order: the guard against sending it twice, and the trail for support.\"\"\""],["+",""],["+","    class Kind(models.TextChoices):"],["+","        ORDER_CONFIRMATION = \"order_confirmation\""],["+",""],["+","    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name=\"sent_emails\")"],["+","    kind = models.CharField(max_length=32, choices=Kind.choices)"],["+","    to = models.EmailField()"],["+","    provider_message_id = models.CharField(max_length=64, blank=True)"],["+","    created_at = models.DateTimeField(default=timezone.now)"],["+",""],["+","    class Meta:"],["+","        constraints = [models.UniqueConstraint(fields=[\"order\", \"kind\"], name=\"one_email_per_order_and_kind\")]"]]}]},{"path":"notifications/services.py","previousPath":null,"delta":"added","binary":false,"additions":28,"deletions":0,"component":"notifications","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":28,"header":"","lines":[["+","from django.db import IntegrityError, transaction"],["+","from django.template.loader import render_to_string"],["+",""],["+","from notifications.gateway import Email, EmailGateway, default_gateway"],["+","from notifications.models import SentEmail"],["+","from orders.models import Order"],["+",""],["+",""],["+","def send_order_confirmation(order_id: int, gateway: EmailGateway | None = None) -> bool:"],["+","    \"\"\"Sends the confirmation of a paid order once. Returns False when it was already sent.\"\"\""],["+","    order = Order.objects.prefetch_related(\"lines__product\").get(pk=order_id)"],["+","    try:"],["+","        with transaction.atomic():"],["+","            sent = SentEmail.objects.create(order=order, kind=SentEmail.Kind.ORDER_CONFIRMATION, to=order.contact_email)"],["+","    except IntegrityError:"],["+","        return False"],["+","    email = Email("],["+","        to=order.contact_email,"],["+","        subject=f\"Your Larder order #{order.id} is confirmed\","],["+","        text=render_to_string(\"notifications/order_confirmation.txt\", {\"order\": order}),"],["+","    )"],["+","    try:"],["+","        sent.provider_message_id = (gateway or default_gateway()).send(email)"],["+","    except Exception:"],["+","        sent.delete()  # free the guard, so the retry can send"],["+","        raise"],["+","    sent.save(update_fields=[\"provider_message_id\"])"],["+","    return True"]]}]},{"path":"notifications/tasks.py","previousPath":null,"delta":"added","binary":false,"additions":9,"deletions":0,"component":"notifications","category":"code","truncated":false,"hunks":[]},{"path":"notifications/templates/notifications/order_confirmation.txt","previousPath":null,"delta":"added","binary":false,"additions":9,"deletions":0,"component":"notifications","category":"docs","truncated":false,"hunks":[]},{"path":"notifications/tests/__init__.py","previousPath":null,"delta":"added","binary":false,"additions":0,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"notifications/tests/test_services.py","previousPath":null,"delta":"added","binary":false,"additions":34,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"openspec/changes/add-order-confirmation/design.md","previousPath":null,"delta":"added","binary":false,"additions":28,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":13,"newLines":12,"header":"","lines":[["+","  provider would retry the whole payment event."],["+",""],["+","### At most 1 confirmation per order"],["+","`SentEmail` has a unique (order, kind) constraint. The task creates the row before it calls Postmark; a second"],["+","run for the same order stops at the constraint."],["+","- Alternative: a `confirmation_sent_at` field on Order. Rejected: it couples Orders to email, and the next"],["+","  emails (shipped, refunded) would each need a field."],["+",""],["+","### An EmailGateway port"],["+","`notifications.gateway.EmailGateway` is the port; `PostmarkGateway` is the only adapter. Tests use a fake."],["+","- Alternative: Django's `send_mail` with an SMTP backend. Rejected: Postmark's message id is needed to answer"],["+","  support questions, and SMTP gives none."]]}]},{"path":"openspec/changes/add-order-confirmation/proposal.md","previousPath":null,"delta":"added","binary":false,"additions":18,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":4,"newLines":9,"header":"","lines":[["+","Customers get no message after they pay. Support answers about 40 tickets a week that ask whether an order went"],["+","through, and some customers pay twice."],["+",""],["+","## What Changes"],["+","- Send a confirmation email when an order becomes paid, not when it is placed: a placed order can still fail to"],["+","  pay."],["+","- Keep the email address the order was placed with, so a later change of the customer's email does not move the"],["+","  confirmation of an old order."],["+","- Send through Postmark from a new `notifications` app, behind an `EmailGateway` port."]]}]},{"path":"openspec/changes/add-order-confirmation/specs/notifications/spec.md","previousPath":null,"delta":"added","binary":false,"additions":20,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":5,"header":"","lines":[["+","## ADDED Requirements"],["+","### Requirement: Order confirmation email"],["+","The system SHALL send 1 confirmation email per paid order to the order's contact email, with its lines and total."],["+",""],["+","#### Scenario: Order paid"]]},{"oldStart":0,"oldLines":0,"newStart":11,"newLines":7,"header":"","lines":[["+","- **WHEN** the confirmation task runs again for the same order"],["+","- **THEN** no second message is sent"],["+",""],["+","### Requirement: Retry failed sends"],["+","The system SHALL retry a send that fails because of the email provider, with backoff, up to 5 times."],["+",""],["+","#### Scenario: Postmark is down"]]}]},{"path":"openspec/changes/add-order-confirmation/specs/orders/spec.md","previousPath":null,"delta":"added","binary":false,"additions":27,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":5,"header":"","lines":[["+","## MODIFIED Requirements"],["+","### Requirement: Place an order"],["+","The system SHALL create a placed order from a customer's items, reserve their stock in the same transaction, and"],["+","store the customer's current email as the order's contact email."],["+",""]]},{"oldStart":0,"oldLines":0,"newStart":13,"newLines":7,"header":"","lines":[["+","- **WHEN** an item has less stock than its quantity"],["+","- **THEN** no order is created and no stock is reserved"],["+",""],["+","### Requirement: Mark an order paid"],["+","The system SHALL mark a placed order as paid when Payments reports a successful charge, and SHALL queue its"],["+","confirmation email after the transaction commits."],["+",""]]}]},{"path":"openspec/changes/add-order-confirmation/tasks.md","previousPath":null,"delta":"added","binary":false,"additions":13,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[]},{"path":"orders/api/serializers.py","previousPath":null,"delta":"changed","binary":false,"additions":2,"deletions":1,"component":"orders-api","category":"code","truncated":false,"hunks":[]},{"path":"orders/migrations/0002_order_contact_email.py","previousPath":null,"delta":"added","binary":false,"additions":17,"deletions":0,"component":"orders","category":"migration","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":17,"header":"","lines":[["+","from django.db import migrations, models"],["+","from django.db.models import OuterRef, Subquery"],["+",""],["+",""],["+","def backfill_contact_email(apps, schema_editor):"],["+","    Order = apps.get_model(\"orders\", \"Order\")"],["+","    Customer = apps.get_model(\"customers\", \"Customer\")"],["+","    Order.objects.update(contact_email=Subquery(Customer.objects.filter(pk=OuterRef(\"customer_id\")).values(\"email\")[:1]))"],["+",""],["+",""],["+","class Migration(migrations.Migration):"],["+","    dependencies = [(\"orders\", \"0001_initial\")]"],["+",""],["+","    operations = ["],["+","        migrations.AddField(model_name=\"order\", name=\"contact_email\", field=models.EmailField(default=\"\", max_length=254), preserve_default=False),"],["+","        migrations.RunPython(backfill_contact_email, migrations.RunPython.noop),"],["+","    ]"]]}]},{"path":"orders/models.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"orders","category":"code","truncated":false,"hunks":[]},{"path":"orders/services.py","previousPath":null,"delta":"changed","binary":false,"additions":4,"deletions":0,"component":"order-management","category":"code","truncated":false,"hunks":[{"oldStart":18,"oldLines":6,"newStart":19,"newLines":7,"header":"def place_order(customer: Customer, items: list[tuple[str, int]]) -> Order:","lines":[[" ","        lines.append(OrderLine(product=product, quantity=quantity, unit_price_cents=product.price_cents))"],[" ","    order = Order.objects.create("],[" ","        customer=customer,"],["+","        contact_email=customer.email,"],[" ","        total_cents=sum(line.quantity * line.unit_price_cents for line in lines),"],[" ","    )"],[" ","    for line in lines:"]]},{"oldStart":31,"oldLines":4,"newStart":33,"newLines":6,"header":"def mark_order_paid(order_id: int, paid_at) -> Order:","lines":[[" ","    \"\"\"Called by Payments when the provider confirms the charge.\"\"\""],[" ","    order = Order.objects.select_for_update().get(pk=order_id)"],[" ","    order.mark_paid(paid_at)"],["+","    # Queue the email only once the payment is committed: a rolled-back payment sends nothing."],["+","    transaction.on_commit(lambda: send_order_confirmation.delay(order.id))"],[" ","    return order"]]}]},{"path":"orders/tests/test_services.py","previousPath":null,"delta":"changed","binary":false,"additions":16,"deletions":2,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"shop/settings.py","previousPath":null,"delta":"changed","binary":false,"additions":4,"deletions":0,"component":"platform","category":"config","truncated":false,"hunks":[]}],"components":[{"id":"orders-api","delta":"changed","files":1,"additions":2,"deletions":1},{"id":"order-management","delta":"changed","files":1,"additions":4,"deletions":0},{"id":"notifications","delta":"added","files":5,"additions":51,"deletions":0},{"id":"orders","delta":"changed","files":2,"additions":18,"deletions":0},{"id":"sent-emails","delta":"added","files":3,"additions":42,"deletions":0},{"id":"catalog","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"customers","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"email-gateway","delta":"added","files":1,"additions":47,"deletions":0},{"id":"platform","delta":"changed","files":1,"additions":4,"deletions":0}],"dependencies":[{"from":"notifications","to":"email-gateway","delta":"added","baseCount":0,"headCount":2,"examples":["notifications/services.py:4","notifications/tasks.py:4"],"violation":null},{"from":"notifications","to":"orders","delta":"added","baseCount":0,"headCount":1,"examples":["notifications/services.py:6"],"violation":null},{"from":"notifications","to":"sent-emails","delta":"added","baseCount":0,"headCount":1,"examples":["notifications/services.py:5"],"violation":null},{"from":"order-management","to":"catalog","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/services.py:3"],"violation":null},{"from":"order-management","to":"customers","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/services.py:4"],"violation":null},{"from":"order-management","to":"notifications","delta":"added","baseCount":0,"headCount":1,"examples":["orders/services.py:5"],"violation":null},{"from":"order-management","to":"orders","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/services.py:6"],"violation":null},{"from":"orders","to":"catalog","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/models.py:4"],"violation":null},{"from":"orders","to":"customers","delta":"unchanged","baseCount":1,"headCount":1,"examples":["orders/models.py:5"],"violation":null},{"from":"orders-api","to":"orders","delta":"unchanged","baseCount":2,"headCount":2,"examples":["orders/api/serializers.py:3","orders/api/views.py:5"],"violation":null},{"from":"sent-emails","to":"orders","delta":"added","baseCount":0,"headCount":1,"examples":["notifications/models.py:4"],"violation":null}],"dependencyGraph":[["notifications","email-gateway"],["notifications","orders"],["notifications","sent-emails"],["order-management","catalog"],["order-management","customers"],["order-management","notifications"],["order-management","orders"],["orders","catalog"],["orders","customers"],["orders-api","order-management"],["orders-api","orders"],["payment-processing","order-management"],["payment-processing","payment-provider"],["payment-processing","payments"],["payment-webhooks","payment-processing"],["payment-webhooks","payment-provider"],["payments","orders"],["platform","orders-api"],["platform","payment-webhooks"],["sent-emails","orders"]],"ports":[],"symbols":[{"file":"notifications/apps.py","line":4,"kind":"class","name":"NotificationsConfig","delta":"added"},{"file":"notifications/gateway.py","line":9,"kind":"class","name":"Email","delta":"added"},{"file":"notifications/gateway.py","line":15,"kind":"class","name":"GatewayError","delta":"added"},{"file":"notifications/gateway.py","line":19,"kind":"class","name":"EmailGateway","delta":"added"},{"file":"notifications/gateway.py","line":31,"kind":"method","name":"send","delta":"added"},{"file":"notifications/gateway.py","line":24,"kind":"class","name":"PostmarkGateway","delta":"added"},{"file":"notifications/gateway.py","line":46,"kind":"def","name":"default_gateway","delta":"added"},{"file":"notifications/models.py","line":7,"kind":"class","name":"SentEmail","delta":"added"},{"file":"notifications/services.py","line":9,"kind":"def","name":"send_order_confirmation","delta":"added"},{"file":"notifications/tasks.py","line":8,"kind":"def","name":"send_order_confirmation","delta":"added"}],"stats":{"files":22,"additions":324,"deletions":3,"testAdditions":50,"testDeletions":2,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":160,"mappedLines":160},"notes":[],"openspec":{"changes":[{"id":"add-order-confirmation","dir":"openspec/changes/add-order-confirmation","archived":false,"deleted":false,"movedToArchive":false,"artifacts":[{"kind":"design","path":"openspec/changes/add-order-confirmation/design.md","delta":"added","moved":false,"capability":null},{"kind":"proposal","path":"openspec/changes/add-order-confirmation/proposal.md","delta":"added","moved":false,"capability":null},{"kind":"spec","path":"openspec/changes/add-order-confirmation/specs/notifications/spec.md","delta":"added","moved":false,"capability":"notifications"},{"kind":"spec","path":"openspec/changes/add-order-confirmation/specs/orders/spec.md","delta":"added","moved":false,"capability":"orders"},{"kind":"tasks","path":"openspec/changes/add-order-confirmation/tasks.md","delta":"added","moved":false,"capability":null}],"why":"Customers get no message after they pay. Support answers about 40 tickets a week that ask whether an order went through, and some customers pay twice.","what":["Send a confirmation email when an order becomes paid, not when it is placed: a placed order can still fail to","Keep the email address the order was placed with, so a later change of the customer's email does not move the","Send through Postmark from a new notifications app, behind an EmailGateway port.","Retry a failed send in the background; a payment never fails because email is down."],"impact":["Specs: orders (MODIFIED), notifications (ADDED)","Code: orders (model, services), new notifications app, settings","Data: Order.contact_email, new SentEmail table"],"decisions":["Send after commit, from a Celery task","At most 1 confirmation per order","An EmailGateway port"],"tasks":{"done":7,"total":8,"groups":[{"title":"1. Orders","done":3,"total":3},{"title":"2. Notifications app","done":3,"total":3},{"title":"3. Operations","done":1,"total":2}],"items":[{"text":"1.1 Add Order.contact_email, filled from the customer when the order is placed","done":true,"line":2,"group":0},{"text":"1.2 Migration with a backfill from Customer.email","done":true,"line":3,"group":0},{"text":"1.3 Queue the confirmation in mark_order_paid, after commit","done":true,"line":4,"group":0},{"text":"2.1 SentEmail model with a unique (order, kind) constraint","done":true,"line":7,"group":1},{"text":"2.2 EmailGateway port and PostmarkGateway adapter","done":true,"line":8,"group":1},{"text":"2.3 send_order_confirmation service and its Celery task, with retries","done":true,"line":9,"group":1},{"text":"3.1 POSTMARK_SERVER_TOKEN and EMAIL_FROM settings","done":true,"line":12,"group":2},{"text":"3.2 An admin action that resends a confirmation","done":false,"line":13,"group":2}]},"requirements":[{"id":"notifications/order-confirmation-email","capability":"notifications","name":"Order confirmation email","op":"ADDED","text":"The system SHALL send 1 confirmation email per paid order to the order's contact email, with its lines and total.","scenarios":[{"id":"order-paid","name":"Order paid","steps":[{"keyword":"WHEN","text":"the confirmation task runs for a paid order"},{"keyword":"THEN","text":"Postmark receives 1 message for the order's contact email"},{"keyword":"AND","text":"a SentEmail row records the Postmark message id"}],"line":5},{"id":"task-runs-twice","name":"Task runs twice","steps":[{"keyword":"WHEN","text":"the confirmation task runs again for the same order"},{"keyword":"THEN","text":"no second message is sent"}],"line":10}],"file":"openspec/changes/add-order-confirmation/specs/notifications/spec.md","line":2,"change":"add-order-confirmation","merged":false,"renamedFrom":null},{"id":"notifications/retry-failed-sends","capability":"notifications","name":"Retry failed sends","op":"ADDED","text":"The system SHALL retry a send that fails because of the email provider, with backoff, up to 5 times.","scenarios":[{"id":"postmark-is-down","name":"Postmark is down","steps":[{"keyword":"WHEN","text":"Postmark answers with an error or does not answer"},{"keyword":"THEN","text":"the order stays paid"},{"keyword":"AND","text":"the task is retried later"}],"line":17}],"file":"openspec/changes/add-order-confirmation/specs/notifications/spec.md","line":14,"change":"add-order-confirmation","merged":false,"renamedFrom":null},{"id":"orders/place-an-order","capability":"orders","name":"Place an order","op":"MODIFIED","text":"The system SHALL create a placed order from a customer's items, reserve their stock in the same transaction, and store the customer's current email as the order's contact email.","scenarios":[{"id":"items-in-stock","name":"Items in stock","steps":[{"keyword":"WHEN","text":"a customer places an order for items in stock"},{"keyword":"THEN","text":"the order is placed with the total of its lines"},{"keyword":"AND","text":"the stock of each product goes down by its quantity"},{"keyword":"AND","text":"the order's contact email is the customer's email"}],"line":6},{"id":"item-out-of-stock","name":"Item out of stock","steps":[{"keyword":"WHEN","text":"an item has less stock than its quantity"},{"keyword":"THEN","text":"no order is created and no stock is reserved"}],"line":12}],"file":"openspec/changes/add-order-confirmation/specs/orders/spec.md","line":2,"change":"add-order-confirmation","merged":false,"renamedFrom":null},{"id":"orders/mark-an-order-paid","capability":"orders","name":"Mark an order paid","op":"MODIFIED","text":"The system SHALL mark a placed order as paid when Payments reports a successful charge, and SHALL queue its confirmation email after the transaction commits.","scenarios":[{"id":"payment-succeeded","name":"Payment succeeded","steps":[{"keyword":"WHEN","text":"Payments reports a successful charge for a placed order"},{"keyword":"THEN","text":"the order status is paid and paid_at is the charge time"},{"keyword":"AND","text":"a confirmation email is queued for the order"}],"line":20},{"id":"payment-rolled-back","name":"Payment rolled back","steps":[{"keyword":"WHEN","text":"the transaction that marks the order paid rolls back"},{"keyword":"THEN","text":"no confirmation email is queued"}],"line":25}],"file":"openspec/changes/add-order-confirmation/specs/orders/spec.md","line":16,"change":"add-order-confirmation","merged":false,"renamedFrom":null}]}],"specs":[]},"outline":{"story":[{"about":"Email gateway added","view":"architecture","focus":["email-gateway"],"code":"notifications/gateway.py:1-47"},{"about":"Notifications added","view":"architecture","focus":["notifications"],"code":"notifications/services.py:1-28"},{"about":"Sent emails added","view":"architecture","focus":["sent-emails"],"code":"notifications/models.py:1-20"},{"about":"Orders changed","view":"architecture","focus":["orders"],"code":"orders/models.py:12-18"},{"about":"the data model","view":"data","focus":[],"code":"notifications/migrations/0001_initial.py:1-22"},{"about":"the requirements the code meets","view":"requirements","focus":["notifications/order-confirmation-email","notifications/retry-failed-sends","orders/place-an-order"],"code":null},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"notifications","to":"email-gateway"},{"from":"notifications","to":"orders"},{"from":"notifications","to":"sent-emails"},{"from":"order-management","to":"notifications"},{"from":"sent-emails","to":"orders"}],"dataFiles":["notifications/migrations/0001_initial.py","orders/migrations/0002_order_contact_email.py","notifications/models.py","orders/models.py"]}},"explanation":{"version":5,"key":"23234c9a4e20dab6","lang":"en","tldr":"Larder now emails a confirmation when an order becomes paid. A new Notifications app sends it through Postmark after the payment commits, once per order, with retries.","goal":"Stop customers from asking whether their order went through, and from paying twice: about 40 support tickets a week.","story":[{"heading":"Paying an order now queues its confirmation","body":"mark_order_paid queues send_order_confirmation with transaction.on_commit. A rolled-back payment queues nothing.","view":"flow:confirm-paid-order","focus":["#1","#2"],"code":"orders/services.py:31-38"},{"heading":"Notifications sends through an EmailGateway port","body":"send_order_confirmation sends through PostmarkGateway, the only adapter. A Celery task retries a GatewayError up to 5 times with backoff.","view":"flow:confirm-paid-order","focus":["#3","#4"],"code":"notifications/services.py:1-28"},{"heading":"SentEmail guards against a second send","body":"A unique (order, kind) constraint lets 1 confirmation through per order. Order now stores contact_email, filled for existing orders.","view":"data","focus":["sent-email","order"],"code":"notifications/models.py:1-20"},{"heading":"4 requirements, all implemented","body":"The change modifies 2 requirements of orders and adds 2 to notifications. A task stays open: an admin action to resend.","view":"requirements","focus":["notifications/order-confirmation-email","notifications/retry-failed-sends","orders/mark-an-order-paid"]},{"heading":"The whole change","body":"Order management now depends on Notifications, which reads Orders and calls the Email gateway. No dependency breaks a rule.","view":"architecture","focus":[]}],"keyDependencies":[{"from":"order-management","to":"notifications","label":"queues the confirmation on commit"}],"components":[{"id":"orders-api","summary":"Order responses include contact_email, read-only."},{"id":"order-management","summary":"place_order stores the contact email; mark_order_paid queues the confirmation after commit."},{"id":"notifications","summary":"New app: sends the order confirmation once through the EmailGateway, from a Celery task with retries."},{"id":"orders","summary":"Order gets contact_email, filled for existing orders from the customer."},{"id":"sent-emails","summary":"New SentEmail records each email per order and kind, with Postmark's message id."},{"id":"email-gateway","summary":"New EmailGateway port and PostmarkGateway adapter; provider failures raise GatewayError."},{"id":"platform","summary":"Installs notifications; new POSTMARK_SERVER_TOKEN and EMAIL_FROM settings."}],"decisions":[{"title":"Send when the order is paid, not when it is placed","why":"A placed order can still fail to pay. The confirmation tells the customer that the payment went through.","basis":"spec","alternative":"Send when the order is placed.","evidence":"openspec/changes/add-order-confirmation/proposal.md:7-9"},{"title":"Queue after commit, send from a Celery task","why":"The payment webhook does not wait for Postmark, and a rolled-back payment sends nothing.","basis":"spec","alternative":"Send inside the webhook request.","evidence":"orders/services.py:36-37"},{"title":"A SentEmail row with a unique constraint","why":"A repeated task stops at the constraint. The next emails, such as shipped or refunded, add a kind, not a field on Order.","basis":"spec","alternative":"A confirmation_sent_at field on Order.","evidence":"openspec/changes/add-order-confirmation/design.md:16-21"},{"title":"An EmailGateway port with a Postmark adapter","why":"Postmark's message id answers support questions, and tests use a fake gateway.","basis":"spec","alternative":"Django send_mail with an SMTP backend.","evidence":"notifications/gateway.py:19-21"},{"title":"Keep a contact email on the order","why":"A later change of the customer's email does not move the confirmation of an old order.","basis":"spec","alternative":"Read customer.email when the email goes out.","evidence":"orders/services.py:20-24"}],"flows":[{"id":"confirm-paid-order","title":"Confirm a paid order","trigger":"POST /api/payments/webhook/","steps":[{"from":"payment-processing","to":"order-management","call":"mark_order_paid","delta":"changed","verified":true,"port":false,"via":null},{"from":"order-management","to":"notifications","call":"send_order_confirmation.delay (on commit)","delta":"added","verified":true,"port":false,"via":null},{"from":"notifications","to":"sent-emails","call":"SentEmail.objects.create","delta":"added","data":{"type":"SentEmail","fields":["+order","+kind: order_confirmation","+to"]},"verified":true,"port":false,"via":null},{"from":"notifications","to":"email-gateway","call":"PostmarkGateway.send","delta":"added","verified":true,"port":false,"via":null}]},{"id":"place-order","title":"Place an order","trigger":"POST /api/orders/","steps":[{"from":"orders-api","to":"order-management","call":"place_order","delta":"unchanged","verified":true,"port":false,"via":null},{"from":"order-management","to":"catalog","call":"Product.reserve","delta":"unchanged","verified":true,"port":false,"via":null},{"from":"order-management","to":"orders","call":"Order.objects.create","delta":"changed","data":{"type":"Order","fields":["+contact_email"]},"verified":true,"port":false,"via":null}]}],"dataModel":{"entities":[{"id":"order","name":"Order","component":"orders","delta":"changed","evidence":"orders/migrations/0002_order_contact_email.py:1-19","fields":["+contact_email: email"]},{"id":"sent-email","name":"SentEmail","component":"sent-emails","delta":"added","evidence":"notifications/migrations/0001_initial.py:1-22","fields":["+order: FK","+kind: order_confirmation","+to: email","+provider_message_id","+created_at","+unique (order, kind)"]},{"id":"customer","name":"Customer","component":"customers","delta":"unchanged","fields":[]}],"relations":[{"from":"order","to":"sent-email","label":"1..n, 1 per kind","delta":"added"},{"from":"customer","to":"order","label":"1..n","delta":"unchanged"}]},"requirements":[{"id":"notifications/order-confirmation-email","status":"implemented","components":["notifications","sent-emails","email-gateway"],"tests":["notifications/tests/test_services.py:21"],"note":"The design accepts a duplicate when Postmark times out after it accepted the message."},{"id":"notifications/retry-failed-sends","status":"implemented","components":["notifications","email-gateway"],"tests":["notifications/tests/test_services.py:30"]},{"id":"orders/place-an-order","status":"implemented","components":["order-management","orders"],"tests":["orders/tests/test_services.py:9"]},{"id":"orders/mark-an-order-paid","status":"implemented","components":["order-management"],"tests":["orders/tests/test_services.py:17","orders/tests/test_services.py:25"]}]},"state":"valid","issues":[]}</script>
 <script>(() => {
   // report/bulb.svg
   var bulb_default = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="explain-change">
@@ -1087,6 +1087,487 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       entById[e.id] = e;
   var isNewViolation = (e) => Boolean(e.violation && !e.violation.preexisting);
 
+  // report/ui.ts
+  function onOpen(el, path) {
+    const url = prFileUrl2(path);
+    if (url) {
+      el.classList.add("linked");
+      el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
+    }
+    return el;
+  }
+  function fileLink(ref, label) {
+    const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
+    const url = prFileUrl2(path);
+    return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref }) : h("code", { class: "ref", text: label || ref });
+  }
+  function sectionShell(id, title, body, lead) {
+    return h("section", { class: "section", id }, h("div", { class: "section-head" }, h("h2", { text: title }), lead ? h("span", { class: "section-lead", text: lead }) : null), body);
+  }
+  function legendItem(kind, color, label) {
+    if (kind === "swatch")
+      return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
+    return h("span", null, h("i", {
+      class: `legend-line${kind.includes("anim") ? " anim" : ""}`,
+      style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`
+    }), label);
+  }
+  function chip(v, label, cls) {
+    return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
+  }
+  var mapApi = {};
+  function fieldDelta(f) {
+    const c = f.trim().charAt(0);
+    return c === "+" ? "added" : c === "-" || c === "−" ? "removed" : c === "~" ? "changed" : "unchanged";
+  }
+  var fieldText = (f) => /^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim();
+  var FIELD_MARK = { added: "+", removed: "−", changed: "~", unchanged: "" };
+
+  // report/header.ts
+  function renderHeader() {
+    const states = {
+      stale: [T.staleExplanation, T.staleText],
+      invalid: [T.invalidExplanation, T.invalidText],
+      draft: [T.draftExplanation, T.draftExplanationText]
+    };
+    const [noticeTitle, noticeText] = states[DATA.state] ?? [T.noExplanation, T.noExplanationText];
+    const notice = ex ? null : h("div", { class: "notice" }, h("span", { class: "notice-icon", text: "i" }), h("div", null, h("b", { text: noticeTitle }), " ", noticeText, DATA.state === "invalid" ? h("ul", null, DATA.issues.slice(0, 20).map((e) => h("li", { text: `${e.path}: ${e.message}` }))) : null));
+    const counts = { added: 0, changed: 0, removed: 0 };
+    for (const c of facts.components)
+      if (c.delta !== "unchanged")
+        counts[c.delta]++;
+    const srcLabel = src.kind === "pr" ? `${T.pr} #${src.prId}` : T.local;
+    const coverage = st.codeLines ? Math.round(100 * (st.mappedLines || 0) / st.codeLines) : 100;
+    const part = (v, label, cls) => [
+      h("b", { class: cls || "", text: String(v) }),
+      h("span", { text: label })
+    ];
+    function group(parts, title, href) {
+      const el = h(href ? "a" : "span", { class: "stat-chip", title: title || null, href: href || null });
+      parts.filter(Boolean).forEach((pt, i) => {
+        if (i)
+          el.appendChild(h("span", { class: "sep", text: "·" }));
+        append(el, pt);
+      });
+      return el;
+    }
+    const moved = [
+      counts.added ? part(counts.added, counts.added === 1 ? T.lAdded : T.nAdded, "added") : null,
+      counts.changed ? part(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
+      counts.removed ? part(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null
+    ].filter(Boolean);
+    const chips = [
+      group([
+        part(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
+        [
+          h("b", null, h("span", { class: "add", text: `+${fmt(st.additions)}` }), " ", h("span", { class: "del", text: `−${fmt(st.deletions)}` })),
+          h("span", { text: T.kLines })
+        ]
+      ]),
+      moved.length ? group(moved, null, "#changes") : null,
+      coverage < 100 ? h("span", { class: "stat-chip", title: T.coverageHint }, h("b", { text: `${coverage}%` }), h("span", { text: T.onMap })) : null,
+      st.newViolations ? chip(st.newViolations, st.newViolations === 1 ? T.brokenRule : T.brokenRules, "violation") : null
+    ];
+    if (OS) {
+      let done = 0;
+      let total = 0;
+      for (const c of OS.changes) {
+        if (c.tasks) {
+          done += c.tasks.done;
+          total += c.tasks.total;
+        }
+      }
+      const spec = [
+        REQS.length ? part(REQS.length, T.kReqs, "accent") : null,
+        total ? part(`${done}/${total}`, T.kTasks, done === total ? "ok" : "warn") : null
+      ].filter(Boolean);
+      if (spec.length)
+        chips.push(group(spec, null, "#sdd"));
+    }
+    return h("header", { class: "page-head", id: "summary" }, cfg.inferred ? h("div", { class: "config-warn", role: "note" }, h("span", { class: "config-warn-icon", text: "!" }), h("div", null, h("b", { text: T.noConfig }), " ", h("span", { text: T.noConfigText }))) : null, h("div", { class: "eyebrow" }, h("span", { text: cfg.name }), h("span", { class: "faint", text: "·" }), src.url ? h("a", { href: src.url, text: srcLabel }) : h("span", { text: srcLabel }), h("span", { class: "faint", text: "·" }), h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.baseRef })), h("span", {
+      class: "faint",
+      text: `${src.commits} ${src.commits === 1 ? T.commit : T.commits}${src.headDate ? ` · ${src.headDate.slice(0, 10)}` : ""}`
+    })), h("h1", { class: "title", text: src.title }), ex ? h("p", { class: "goal" }, h("b", { text: T.goal }), ex.goal) : null, ex ? h("p", { class: "tldr", text: ex.tldr }) : null, notice, h("div", { class: "chips" }, chips), facts.notes.map((n) => h("p", { class: "note faint", text: n })));
+  }
+
+  // report/story.ts
+  var keyPairs = {};
+  if (ex)
+    for (const x of ex.keyDependencies)
+      keyPairs[`${x.from}>${x.to}`] = x.label ?? "";
+  var VIEWS = [{ id: "architecture", title: T.architecture }];
+  for (const fl of ex?.flows ?? [])
+    VIEWS.push({ id: `flow:${fl.id}`, title: fl.title, flow: fl });
+  if (DM)
+    VIEWS.push({ id: "data", title: T.dataView });
+  var flowById = {};
+  for (const fl of ex?.flows ?? [])
+    flowById[fl.id] = fl;
+  function viewTitle(view) {
+    if (view === "requirements")
+      return T.reqs;
+    return VIEWS.find((v) => v.id === view)?.title ?? T.architecture;
+  }
+  function autoStory() {
+    const steps = [];
+    const touched = facts.components.filter((c) => c.delta !== "unchanged");
+    const layers = new Set(touched.map((c) => compById[c.id]?.layer));
+    steps.push({
+      heading: tf("autoOverviewH", { n: touched.length, m: layers.size }),
+      body: tf("autoOverviewB", { f: st.files, a: fmt(st.additions), d: fmt(st.deletions) }),
+      view: "architecture",
+      focus: []
+    });
+    for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
+      steps.push({
+        heading: tf("autoViolH", { a: compName(e.from), b: compName(e.to) }),
+        body: e.violation?.rule ?? "",
+        view: "architecture",
+        focus: [e.from, e.to],
+        code: e.examples[0]
+      });
+    }
+    for (const c of touched.filter((c) => c.delta === "added").slice(0, 2)) {
+      steps.push({
+        heading: tf("autoNewH", { x: compName(c.id) }),
+        body: tf("autoNewB", { l: layerName(c.id) }),
+        view: "architecture",
+        focus: [c.id]
+      });
+    }
+    for (const c of touched.filter((c) => c.delta === "removed").slice(0, 1)) {
+      steps.push({
+        heading: tf("autoRemovedH", { x: compName(c.id) }),
+        body: T.autoRemovedB,
+        view: "architecture",
+        focus: [c.id]
+      });
+    }
+    touched.filter((c) => c.delta === "changed").sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions) || byCompRank(a.id, b.id)).slice(0, Math.max(0, 5 - steps.length)).forEach((c) => {
+      steps.push({
+        heading: tf("autoChangedH", { x: compName(c.id) }),
+        body: tf("autoChangedB", { n: c.files, a: c.additions, d: c.deletions }),
+        view: "architecture",
+        focus: [c.id]
+      });
+    });
+    if (OS && REQS.length) {
+      for (const c of OS.changes) {
+        if (c.requirements.length) {
+          steps.push({
+            heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }),
+            body: c.why || T.autoSpecB,
+            view: "requirements",
+            focus: c.requirements.map((r) => r.id)
+          });
+        }
+      }
+    }
+    return steps;
+  }
+  var STORY = ex?.story.length ? ex.story : autoStory();
+  var storyIsAuto = !ex?.story.length;
+  var MEANINGFUL = new Set;
+  for (const e of facts.dependencies) {
+    if (e.delta === "added" || e.delta === "removed" || isNewViolation(e) || keyPairs[`${e.from}>${e.to}`] !== undefined) {
+      MEANINGFUL.add(e.from);
+      MEANINGFUL.add(e.to);
+    }
+  }
+  for (const step of STORY)
+    if ((step.view ?? "architecture") === "architecture")
+      for (const id of step.focus ?? [])
+        MEANINGFUL.add(id);
+  for (const m of Object.values(specMap))
+    for (const id of m.components ?? [])
+      MEANINGFUL.add(id);
+  var isContext = (c) => c.delta === "unchanged" && !MEANINGFUL.has(c.id);
+  var CONTEXT_COUNT = facts.components.filter(isContext).length;
+
+  // report/svg-view.ts
+  function newView(id, W, H) {
+    const svg = s("svg", {
+      class: `view-svg view-${id.split(":")[0]}`,
+      role: "img",
+      preserveAspectRatio: "xMidYMid meet"
+    });
+    return { id, svg, W, H, geo: {}, keyOf: (x) => x, expand: (set) => set };
+  }
+  function markers(svg, prefix, kinds) {
+    const defs = s("defs");
+    for (const k of kinds) {
+      defs.appendChild(s("marker", {
+        id: prefix + k,
+        viewBox: "0 0 10 10",
+        refX: "8",
+        refY: "5",
+        markerWidth: "10",
+        markerHeight: "10",
+        markerUnits: "userSpaceOnUse",
+        orient: "auto-start-reverse"
+      }, s("path", { d: "M0,0 L10,5 L0,10 z", class: `arrow arrow-${k}` })));
+    }
+    svg.appendChild(defs);
+  }
+
+  // report/arch.ts
+  function layoutArch(nodes, edges, compact) {
+    const W = compact ? 380 : 1160;
+    const LABEL = compact ? 0 : 156;
+    const NW = compact ? 168 : 200;
+    const NH = 66;
+    const GX = compact ? 12 : 34;
+    const GY = 22;
+    const PADY = 24;
+    const TOPL = compact ? 30 : 0;
+    const perRow = Math.max(1, Math.floor((W - LABEL - 24 + GX) / (NW + GX)));
+    const layerOf = (id) => compById[id]?.layer;
+    const layers = cfg.layers.filter((l) => nodes.some((n) => layerOf(n.id) === l.id));
+    const byLayer = {};
+    const idx = {};
+    const adj = {};
+    for (const l of layers) {
+      byLayer[l.id] = nodes.filter((n) => layerOf(n.id) === l.id).sort((a, b) => Number(a.delta === "unchanged") - Number(b.delta === "unchanged") || byCompRank(a.id, b.id));
+    }
+    for (const e of edges) {
+      listAt(adj, e.from).push(e.to);
+      listAt(adj, e.to).push(e.from);
+    }
+    const reindex = (l) => {
+      const arr = byLayer[l.id] ?? [];
+      arr.forEach((n, i) => {
+        idx[n.id] = (i + 0.5) / arr.length;
+      });
+    };
+    layers.forEach(reindex);
+    for (let it = 0;it < 4; it++) {
+      for (const l of it % 2 ? [...layers].reverse() : layers) {
+        const bc = {};
+        for (const n of byLayer[l.id] ?? []) {
+          const nb = (adj[n.id] ?? []).filter((x) => idx[x] !== undefined && layerOf(x) !== l.id);
+          bc[n.id] = nb.length ? nb.reduce((a, x) => a + idx[x], 0) / nb.length : idx[n.id];
+        }
+        (byLayer[l.id] ?? []).sort((a, b) => bc[a.id] - bc[b.id] || byCompRank(a.id, b.id));
+        reindex(l);
+      }
+    }
+    const bands = [];
+    const pos = {};
+    let y = 0;
+    for (const layer of layers) {
+      const inLayer = byLayer[layer.id] ?? [];
+      const rows = Math.ceil(inLayer.length / perRow);
+      const ids = inLayer.map((n) => n.id);
+      const ARC = edges.some((e) => ids.includes(e.from) && ids.includes(e.to)) ? 40 : 0;
+      const top = TOPL + ARC;
+      const bh = rows * NH + (rows - 1) * GY + PADY * 2 + top;
+      bands.push({ layer, y, h: bh, n: inLayer.length });
+      inLayer.forEach((n, i) => {
+        const row = Math.floor(i / perRow);
+        const col = i % perRow;
+        const inRow = Math.min(perRow, inLayer.length - row * perRow);
+        const rowW = inRow * NW + (inRow - 1) * GX;
+        const x0 = LABEL + (W - LABEL - rowW) / 2;
+        pos[n.id] = { x: x0 + col * (NW + GX), y: y + top + PADY + row * (NH + GY), w: NW, h: NH };
+      });
+      y += bh + 12;
+    }
+    return { W, H: Math.max(y - 12, 60), bands, pos, compact, GX };
+  }
+  function edgePaths(edges, pos, L) {
+    const ports = {};
+    const addPort = (node, side, edgeKey, otherX) => {
+      const k = `${node}|${side}`;
+      listAt(ports, k).push({ key: edgeKey, x: otherX });
+    };
+    const geo = edges.map((e) => {
+      const a = pos[e.from];
+      const b = pos[e.to];
+      const down = b.y > a.y + 1;
+      const up = b.y + 1 < a.y;
+      const g = { e, key: `${e.from}>${e.to}`, a, b, sa: "top", sb: "top" };
+      if (down)
+        [g.sa, g.sb] = ["bottom", "top"];
+      else if (up)
+        [g.sa, g.sb] = ["top", "bottom"];
+      addPort(e.from, g.sa, g.key, b.x);
+      addPort(e.to, g.sb, g.key, a.x);
+      return g;
+    });
+    function portX(node, side, key) {
+      const list = [...ports[`${node}|${side}`] ?? []].sort((p, q) => p.x - q.x || (p.key < q.key ? -1 : 1));
+      const i = list.findIndex((p) => p.key === key);
+      const r = pos[node];
+      return r.x + r.w * (i + 1) / (list.length + 1);
+    }
+    function obstacles(g, x1, x2, yTop, yBot) {
+      const lo = Math.min(x1, x2) - 8;
+      const hi = Math.max(x1, x2) + 8;
+      return Object.keys(pos).filter((id) => {
+        if (id === g.e.from || id === g.e.to)
+          return false;
+        const r = pos[id];
+        return r.y < yBot && r.y + r.h > yTop && r.x < hi && r.x + r.w > lo;
+      }).map((id) => pos[id]);
+    }
+    const laneUse = {};
+    return geo.map((g) => {
+      const x1 = portX(g.e.from, g.sa, g.key);
+      const x2 = portX(g.e.to, g.sb, g.key);
+      const y1 = g.sa === "bottom" ? g.a.y + g.a.h : g.a.y;
+      const y2 = g.sb === "top" ? g.b.y - 4 : g.b.y + g.b.h + 4;
+      if (g.sa === "top" && g.sb === "top") {
+        const lift = Math.min(34, 22 + Math.abs(x2 - x1) / 10);
+        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(y1 - lift)} ${r1(x2)},${r1(y2 - lift)} ${r1(x2)},${y2}`;
+        return { e: g.e, d, mx: (x1 + x2) / 2, my: Math.min(y1, y2) - lift * 0.75 };
+      }
+      const dir = y2 > y1 ? 1 : -1;
+      let blockers = obstacles(g, x1, x2, Math.min(y1, y2), Math.max(y1, y2));
+      if (!blockers.length) {
+        const my = (y1 + y2) / 2;
+        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(my)} ${r1(x2)},${r1(my)} ${r1(x2)},${y2}`;
+        return { e: g.e, d, mx: (x1 + x2) / 2, my };
+      }
+      const gap = (L.GX || 20) / 2;
+      const mid = (x1 + x2) / 2;
+      const yTop = Math.min(y1, y2);
+      const yBot = Math.max(y1, y2);
+      let lane = 0;
+      let right = 0;
+      let left = 0;
+      for (let guard = 0;guard < 12; guard++) {
+        right = Math.max(...blockers.map((r) => r.x + r.w)) + gap;
+        left = Math.min(...blockers.map((r) => r.x)) - gap;
+        lane = Math.abs(right - mid) <= Math.abs(left - mid) && right < L.W - 4 || left < 4 ? right : left;
+        const hit = obstacles(g, lane, lane, yTop, yBot).filter((r) => !blockers.includes(r));
+        if (!hit.length)
+          break;
+        blockers = blockers.concat(hit);
+      }
+      const used = (laneUse[Math.round(lane)] ?? 0) + 1;
+      laneUse[Math.round(lane)] = used;
+      lane += (lane === right ? 1 : -1) * (used - 1) * 4;
+      const ra = y1 + dir * 26;
+      const rb = y2 - dir * 26;
+      const d = `M${r1(x1)},${y1} C${r1(x1)},${y1 + dir * 18} ${r1(lane)},${y1 + dir * 8} ${r1(lane)},${ra}` + ` L${r1(lane)},${rb} C${r1(lane)},${y2 - dir * 8} ${r1(x2)},${y2 - dir * 18} ${r1(x2)},${y2}`;
+      return { e: g.e, d, mx: lane, my: (y1 + y2) / 2 };
+    });
+  }
+  function buildArchitecture(mode, compact, withContext, onNode) {
+    const nodes = facts.components.filter((n) => !(mode === "before" && n.delta === "added") && !(mode === "after" && n.delta === "removed") && (withContext || !isContext(n)));
+    const vis = new Set(nodes.map((n) => n.id));
+    const edges = facts.dependencies.filter((e) => {
+      if (!vis.has(e.from) || !vis.has(e.to))
+        return false;
+      if (mode === "before")
+        return e.delta !== "added";
+      if (mode === "after")
+        return e.delta !== "removed";
+      return true;
+    });
+    const L = layoutArch(nodes, edges, compact);
+    const V = newView("architecture", L.W, L.H);
+    const svg = V.svg;
+    svg.classList.add(`mode-${mode}`);
+    if (!nodes.length) {
+      V.empty = T.archEmpty;
+      return V;
+    }
+    markers(svg, "ar-", ["unchanged", "added", "changed", "removed", "violation", "key"]);
+    for (const b of L.bands) {
+      svg.appendChild(s("rect", { x: 0, y: b.y, width: L.W, height: b.h, rx: 14, class: "band" }));
+      if (L.compact)
+        svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: trunc(b.layer.name, 40) }));
+      else {
+        svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 - 2, class: "band-label", text: trunc(b.layer.name, 18) }));
+        svg.appendChild(s("text", {
+          x: 18,
+          y: b.y + b.h / 2 + 14,
+          class: "band-sub",
+          text: `${b.n} ${b.n === 1 ? T.component : T.kComponents}`
+        }));
+      }
+    }
+    const edgeLayer = s("g", { class: "edges" });
+    const labelLayer = s("g", { class: "edge-labels" });
+    const labels = [];
+    const freeSpot = (cx, cy, w, h) => {
+      const covers = (x, y) => [...Object.values(L.pos), ...labels].some((b) => x - w / 2 < b.x + b.w + 4 && x + w / 2 > b.x - 4 && y - h / 2 < b.y + b.h + 4 && y + h / 2 > b.y - 4);
+      for (const dy of [0, -14, 14, -28, 28, -42, 42, -56, 56]) {
+        for (const dx of [0, -(w / 2 + 14), w / 2 + 14])
+          if (!covers(cx + dx, cy + dy))
+            return [cx + dx, cy + dy];
+      }
+      return [cx, cy];
+    };
+    edgePaths(edges, L.pos, L).forEach((p, i) => {
+      const e = p.e;
+      const k = isNewViolation(e) || e.violation && withContext ? "violation" : e.delta;
+      const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
+      const tip = `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` + (e.examples[0] ? ` · ${e.examples[0]}` : "") + (e.violation ? ` · ⚠ ${e.violation.rule}` : "");
+      const pid = `ep-${i}`;
+      const g = s("g", { class: `edge-g${isKey ? " key" : ""}`, "data-k": `e:${e.from}>${e.to}`, "data-a": e.from, "data-b": e.to }, s("title", { text: tip }), s("path", { d: p.d, class: "edge-hit" }), isKey ? s("path", { d: p.d, class: "edge-glow" }) : null, s("path", {
+        id: pid,
+        d: p.d,
+        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
+        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`
+      }));
+      if ((isKey || e.delta === "added") && e.delta !== "removed") {
+        g.appendChild(s("circle", { r: isKey ? 4.5 : 3, class: `pulse${isKey ? " key" : ""}` }, s("animateMotion", { dur: isKey ? "2.2s" : "3s", repeatCount: "indefinite", begin: `-${r1(i % 5 * 0.4)}s` }, s("mpath", { href: `#${pid}` }))));
+      }
+      edgeLayer.appendChild(g);
+      const keyLabel = keyPairs[`${e.from}>${e.to}`];
+      if (isKey && keyLabel) {
+        const label = trunc(keyLabel, 40);
+        const lw = Math.ceil(textWidth(label, "600 11.5px")) + 20;
+        const [cx, cy] = freeSpot(p.mx, p.my, lw, 22);
+        labels.push({ x: cx - lw / 2, y: cy - 11, w: lw, h: 22 });
+        labelLayer.appendChild(s("g", { class: "edge-label", "data-a": e.from, "data-b": e.to }, s("rect", { x: r1(cx - lw / 2), y: r1(cy - 11), width: r1(lw), height: 22, rx: 11 }), s("text", { x: r1(cx), y: r1(cy + 4), "text-anchor": "middle", text: label })));
+      }
+    });
+    svg.appendChild(edgeLayer);
+    for (const n of nodes) {
+      const r = L.pos[n.id];
+      const c = compById[n.id];
+      V.geo[n.id] = r;
+      const nreq = reqsOfComp(n.id).length;
+      const neighbor = n.delta === "unchanged";
+      const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}${nreq ? ` · ◆ ${nreq}` : ""}`;
+      const g = s("g", {
+        class: `node st-${n.delta}`,
+        "data-k": n.id,
+        tabindex: "0",
+        role: "button",
+        "aria-label": `${c.name}, ${deltaLabel(n.delta, true)}`
+      }, s("title", { text: c.name + (summaryOf[n.id] ? `
+${summaryOf[n.id]}` : c.desc ? `
+${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12, class: "box" }), s("text", { x: r.x + 14, y: r.y + 19, class: "tag", text: neighbor ? "" : deltaLabel(n.delta).toUpperCase() }), neighbor ? null : s("text", { x: r.x + r.w - 12, y: r.y + 19, "text-anchor": "end", class: "delta" }, s("tspan", { class: "add", text: `+${n.additions}` }), s("tspan", { class: "del", text: ` −${n.deletions}` })), s("text", {
+        x: r.x + 14,
+        y: r.y + 39,
+        class: "name",
+        text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28)
+      }), s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }));
+      onNode?.(g, n.id);
+      svg.appendChild(g);
+    }
+    svg.appendChild(labelLayer);
+    V.expand = (set) => {
+      const keys = Object.keys(set);
+      const only = keys[0];
+      if (keys.length === 1 && only !== undefined && vis.has(only)) {
+        for (const e of edges) {
+          if (e.from === only)
+            set[e.to] = true;
+          if (e.to === only)
+            set[e.from] = true;
+        }
+      }
+      return set;
+    };
+    V.focusBoxKeys = (ids) => ids.filter((x) => vis.has(x));
+    return V;
+  }
+
   // report/camera.ts
   function createCamera(viewport, view) {
     let vb = null;
@@ -1202,42 +1683,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     return { apply, frame, fly, zoom, fullBox, box };
   }
 
-  // report/ui.ts
-  function onOpen(el, path) {
-    const url = prFileUrl2(path);
-    if (url) {
-      el.classList.add("linked");
-      el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
-    }
-    return el;
-  }
-  function fileLink(ref, label) {
-    const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
-    const url = prFileUrl2(path);
-    return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref }) : h("code", { class: "ref", text: label || ref });
-  }
-  function sectionShell(id, title, body, lead) {
-    return h("section", { class: "section", id }, h("div", { class: "section-head" }, h("h2", { text: title }), lead ? h("span", { class: "section-lead", text: lead }) : null), body);
-  }
-  function legendItem(kind, color, label) {
-    if (kind === "swatch")
-      return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
-    return h("span", null, h("i", {
-      class: `legend-line${kind.includes("anim") ? " anim" : ""}`,
-      style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`
-    }), label);
-  }
-  function chip(v, label, cls) {
-    return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
-  }
-  var mapApi = {};
-  function fieldDelta(f) {
-    const c = f.trim().charAt(0);
-    return c === "+" ? "added" : c === "-" || c === "−" ? "removed" : c === "~" ? "changed" : "unchanged";
-  }
-  var fieldText = (f) => /^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim();
-  var FIELD_MARK = { added: "+", removed: "−", changed: "~", unchanged: "" };
-
   // report/code.ts
   function codeExcerpt(ref) {
     const m = /^(.+?):(\d+)(?:-(\d+))?$/.exec(ref || "");
@@ -1286,6 +1731,128 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
         n++;
     }
     return frag;
+  }
+
+  // report/data-view.ts
+  function buildData(onNode) {
+    const dm = DM;
+    const EW = 250;
+    const GX = 90;
+    const GY = 70;
+    const PER = 3;
+    const order = { added: 0, changed: 1, removed: 2, unchanged: 3 };
+    const ents = [...dm.entities].sort((a, b) => order[a.delta] - order[b.delta] || byCompRank(a.component ?? "", b.component ?? "") || (a.name < b.name ? -1 : 1));
+    const migrations = facts.files.filter((f) => f.category === "migration");
+    const top = migrations.length ? 34 + Math.min(migrations.length, 4) * 20 + 30 : 10;
+    const heights = ents.map((e) => 52 + Math.max(1, (e.fields ?? []).length) * 19 + 10);
+    const rows = Math.ceil(ents.length / PER);
+    const rowH = [];
+    for (let r = 0;r < rows; r++)
+      rowH.push(Math.max(...heights.slice(r * PER, r * PER + PER)));
+    const cols = Math.min(PER, ents.length);
+    const W = Math.max(cols * EW + (cols - 1) * GX, 600);
+    const pos = {};
+    let y = top;
+    ents.forEach((e, i) => {
+      const r = Math.floor(i / PER);
+      const c = i % PER;
+      const inRow = Math.min(PER, ents.length - r * PER);
+      const x0 = (W - (inRow * EW + (inRow - 1) * GX)) / 2;
+      const ry = top + rowH.slice(0, r).reduce((a, v) => a + v + GY, 0);
+      pos[e.id] = { x: x0 + c * (EW + GX), y: ry, w: EW, h: heights[i] };
+      y = Math.max(y, ry + heights[i]);
+    });
+    const V = newView("data", W, y + 10);
+    const svg = V.svg;
+    if (migrations.length) {
+      const mg = s("g", { class: "migrations" }, s("text", { x: 0, y: 14, class: "col-label", text: T.migrations.toUpperCase() }));
+      migrations.slice(0, 4).forEach((f, i) => {
+        const letter = gitLetter(f);
+        const text = s("text", { x: 0, y: 38 + i * 20, class: "mig" }, s("tspan", { class: `gs-${letter}`, text: `${letter}  ` }), s("tspan", { text: trunc(f.path, 90) }));
+        mg.appendChild(onOpen(text, f.path));
+      });
+      if (migrations.length > 4)
+        mg.appendChild(s("text", { x: 0, y: 38 + 4 * 20, class: "info", text: `+${migrations.length - 4}` }));
+      svg.appendChild(mg);
+    }
+    const links = s("g", { class: "links" });
+    svg.appendChild(links);
+    V.links = [];
+    for (const rl of dm.relations) {
+      const a = pos[rl.from];
+      const b = pos[rl.to];
+      if (!a || !b)
+        continue;
+      const ax = a.x + a.w / 2;
+      const ay = a.y + a.h / 2;
+      const bx = b.x + b.w / 2;
+      const by = b.y + b.h / 2;
+      let d;
+      let x1;
+      let y1;
+      let x2;
+      let y2;
+      if (Math.abs(ay - by) < 10 || Math.abs(bx - ax) > Math.abs(by - ay)) {
+        x1 = bx > ax ? a.x + a.w : a.x;
+        x2 = bx > ax ? b.x : b.x + b.w;
+        y1 = a.y + 26;
+        y2 = b.y + 26;
+        const mx = (x1 + x2) / 2;
+        d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+      } else {
+        x1 = ax;
+        x2 = bx;
+        y1 = by > ay ? a.y + a.h : a.y;
+        y2 = by > ay ? b.y : b.y + b.h;
+        const my = (y1 + y2) / 2;
+        d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+      }
+      links.appendChild(s("path", { d, class: `rel rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }));
+      if (rl.label) {
+        const lx = (x1 + x2) / 2;
+        const ly = (y1 + y2) / 2;
+        const lw = Math.ceil(textWidth(rl.label, "11px", MONO)) + 16;
+        links.appendChild(s("g", { class: `rel-label rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }, s("rect", { x: r1(lx - lw / 2), y: r1(ly - 10), width: r1(lw), height: 20, rx: 10 }), s("text", { x: r1(lx), y: r1(ly + 4), "text-anchor": "middle", text: rl.label })));
+      }
+      V.links.push([`ent:${rl.from}`, `ent:${rl.to}`]);
+    }
+    for (const e of ents) {
+      const b = pos[e.id];
+      const key = `ent:${e.id}`;
+      V.geo[key] = b;
+      const fields = e.fields ?? [];
+      const g = s("g", { class: `entity st-${e.delta}`, "data-k": key, tabindex: "0", role: "button" }, s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 12, class: "box" }), s("rect", { x: b.x, y: b.y, width: b.w, height: 40, rx: 12, class: "head" }), s("rect", { x: b.x, y: b.y + 28, width: b.w, height: 12, class: "head" }), s("text", { x: b.x + 14, y: b.y + 25, class: "name", text: trunc(e.name, 24) }), s("text", {
+        x: b.x + b.w - 12,
+        y: b.y + 25,
+        "text-anchor": "end",
+        class: "tag",
+        text: e.delta === "unchanged" ? "" : deltaLabel(e.delta).toUpperCase()
+      }));
+      if (!fields.length) {
+        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62, class: "info", text: e.component ? compName(e.component) : "" }));
+      }
+      fields.forEach((f, i) => {
+        const k = fieldDelta(f);
+        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62 + i * 19, class: `field f-${k}` }, s("tspan", { class: "fmark", text: `${FIELD_MARK[k] || " "} ` }), s("tspan", { text: trunc(fieldText(f), 28) })));
+      });
+      onNode?.(g, key);
+      svg.appendChild(g);
+    }
+    V.keyOf = (id) => id.slice(0, 4) === "ent:" ? id : `ent:${id}`;
+    V.expand = (set) => {
+      const add = {};
+      if (Object.keys(set).length === 1) {
+        for (const l of V.links ?? []) {
+          if (set[l[0]])
+            add[l[1]] = true;
+          if (set[l[1]])
+            add[l[0]] = true;
+        }
+      }
+      Object.assign(set, add);
+      return set;
+    };
+    return V;
   }
 
   // report/sdd.ts
@@ -1584,433 +2151,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     ], tf("leadSpec", { n: REQS.length, i: REQS.filter((r) => reqStatus(r) === "implemented").length }));
   }
 
-  // report/inspector.ts
-  function componentDetails(id, nav) {
-    const c = compById[id];
-    const n = changeComp[id] ?? { id, delta: "unchanged", files: 0, additions: 0, deletions: 0 };
-    const files = facts.files.filter((f) => f.component === id);
-    const syms = facts.symbols.filter((sy) => files.some((f) => f.path === sy.file));
-    const outE = facts.dependencies.filter((e) => e.from === id);
-    const inE = facts.dependencies.filter((e) => e.to === id);
-    const reqs = reqsOfComp(id);
-    return [
-      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
-      h("div", { class: "insp-title" }, h("span", { class: `badge ${n.delta}`, text: deltaLabel(n.delta, true) }), h("h3", { text: c ? c.name : id })),
-      h("div", {
-        class: "faint",
-        text: layerName(id) + (n.delta !== "unchanged" ? ` · ${n.files} ${n.files === 1 ? T.file : T.kFiles} · +${n.additions} −${n.deletions}` : "")
-      }),
-      summaryOf[id] ? h("p", { class: "insp-summary", text: summaryOf[id] }) : c?.desc ? h("p", { class: "insp-summary muted", text: c.desc }) : null,
-      files.length ? inspList(T.files, files.map((f) => h("div", { class: "insp-row" }, h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }), fileLink(f.path, f.path.split("/").pop()), h("span", { class: "nums" }, h("span", { class: "add", text: `+${f.additions}` }), " ", h("span", { class: "del", text: `−${f.deletions}` }))))) : null,
-      syms.length ? inspList(T.symbols, syms.slice(0, 12).map((sy) => h("div", { class: "insp-row" }, h("span", {
-        class: `badge ${sy.delta}`,
-        text: sy.delta === "added" ? "+" : sy.delta === "removed" ? "−" : "~"
-      }), fileLink(`${sy.file}:${sy.line}`, sy.name)))) : null,
-      outE.length ? inspList(T.dependsOn, outE.map(edgeRow((e) => e.to, nav))) : null,
-      inE.length ? inspList(T.usedBy, inE.map(edgeRow((e) => e.from, nav))) : null,
-      reqs.length ? inspList(T.reqs, reqs.map(reqRow)) : null
-    ];
-  }
-  function entityDetails(eid, nav) {
-    const e = entById[eid];
-    const dm = DM;
-    const rels = dm.relations.filter((r) => r.from === eid || r.to === eid);
-    const fields = e.fields ?? [];
-    return [
-      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
-      h("div", { class: "insp-title" }, h("span", { class: `badge ${e.delta}`, text: deltaLabel(e.delta) }), h("h3", { text: e.name })),
-      e.component ? h("div", null, h("a", {
-        href: "#",
-        class: "faint",
-        text: compName(e.component),
-        onclick: (ev) => {
-          ev.preventDefault();
-          nav.inspect(e.component);
-        }
-      })) : null,
-      fields.length ? inspList(T.fields, fields.map((f) => {
-        const k = fieldDelta(f);
-        return h("div", { class: `insp-row field-row f-${k}` }, h("span", { class: "fmark", text: FIELD_MARK[k] || "·" }), h("code", { text: fieldText(f) }));
-      })) : null,
-      rels.length ? inspList(T.relations, rels.map((r) => {
-        const other = r.from === eid ? r.to : r.from;
-        return h("div", { class: "insp-row" }, h("span", { class: `badge ${r.delta}`, text: r.label || "—" }), h("a", {
-          href: "#",
-          text: entById[other]?.name ?? other,
-          onclick: (ev) => {
-            ev.preventDefault();
-            nav.entity(other);
-          }
-        }));
-      })) : null,
-      e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null
-    ];
-  }
-  function edgeRow(other, nav) {
-    return (e) => {
-      const k = isNewViolation(e) ? "violation" : e.delta;
-      const mark = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
-      return h("div", { class: "insp-row" }, h("span", { class: `badge ${k}`, text: mark[k] }), h("a", {
-        href: "#",
-        text: compName(other(e)),
-        onclick: (ev) => {
-          ev.preventDefault();
-          nav.inspect(other(e));
-        }
-      }), e.examples[0] ? fileLink(e.examples[0], e.examples[0].split("/").pop()) : null);
-    };
-  }
-
-  // report/app.ts
-  function renderHeader() {
-    const states = {
-      stale: [T.staleExplanation, T.staleText],
-      invalid: [T.invalidExplanation, T.invalidText],
-      draft: [T.draftExplanation, T.draftExplanationText]
-    };
-    const [noticeTitle, noticeText] = states[DATA.state] ?? [T.noExplanation, T.noExplanationText];
-    const notice = ex ? null : h("div", { class: "notice" }, h("span", { class: "notice-icon", text: "i" }), h("div", null, h("b", { text: noticeTitle }), " ", noticeText, DATA.state === "invalid" ? h("ul", null, DATA.issues.slice(0, 20).map((e) => h("li", { text: `${e.path}: ${e.message}` }))) : null));
-    const counts = { added: 0, changed: 0, removed: 0 };
-    for (const c of facts.components)
-      if (c.delta !== "unchanged")
-        counts[c.delta]++;
-    const srcLabel = src.kind === "pr" ? `${T.pr} #${src.prId}` : T.local;
-    const coverage = st.codeLines ? Math.round(100 * (st.mappedLines || 0) / st.codeLines) : 100;
-    const part = (v, label, cls) => [
-      h("b", { class: cls || "", text: String(v) }),
-      h("span", { text: label })
-    ];
-    function group(parts, title, href) {
-      const el = h(href ? "a" : "span", { class: "stat-chip", title: title || null, href: href || null });
-      parts.filter(Boolean).forEach((pt, i) => {
-        if (i)
-          el.appendChild(h("span", { class: "sep", text: "·" }));
-        append(el, pt);
-      });
-      return el;
-    }
-    const moved = [
-      counts.added ? part(counts.added, counts.added === 1 ? T.lAdded : T.nAdded, "added") : null,
-      counts.changed ? part(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
-      counts.removed ? part(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null
-    ].filter(Boolean);
-    const chips = [
-      group([
-        part(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
-        [
-          h("b", null, h("span", { class: "add", text: `+${fmt(st.additions)}` }), " ", h("span", { class: "del", text: `−${fmt(st.deletions)}` })),
-          h("span", { text: T.kLines })
-        ]
-      ]),
-      moved.length ? group(moved, null, "#changes") : null,
-      coverage < 100 ? h("span", { class: "stat-chip", title: T.coverageHint }, h("b", { text: `${coverage}%` }), h("span", { text: T.onMap })) : null,
-      st.newViolations ? chip(st.newViolations, st.newViolations === 1 ? T.brokenRule : T.brokenRules, "violation") : null
-    ];
-    if (OS) {
-      let done = 0;
-      let total = 0;
-      for (const c of OS.changes) {
-        if (c.tasks) {
-          done += c.tasks.done;
-          total += c.tasks.total;
-        }
-      }
-      const spec = [
-        REQS.length ? part(REQS.length, T.kReqs, "accent") : null,
-        total ? part(`${done}/${total}`, T.kTasks, done === total ? "ok" : "warn") : null
-      ].filter(Boolean);
-      if (spec.length)
-        chips.push(group(spec, null, "#sdd"));
-    }
-    return h("header", { class: "page-head", id: "summary" }, cfg.inferred ? h("div", { class: "config-warn", role: "note" }, h("span", { class: "config-warn-icon", text: "!" }), h("div", null, h("b", { text: T.noConfig }), " ", h("span", { text: T.noConfigText }))) : null, h("div", { class: "eyebrow" }, h("span", { text: cfg.name }), h("span", { class: "faint", text: "·" }), src.url ? h("a", { href: src.url, text: srcLabel }) : h("span", { text: srcLabel }), h("span", { class: "faint", text: "·" }), h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.baseRef })), h("span", {
-      class: "faint",
-      text: `${src.commits} ${src.commits === 1 ? T.commit : T.commits}${src.headDate ? ` · ${src.headDate.slice(0, 10)}` : ""}`
-    })), h("h1", { class: "title", text: src.title }), ex ? h("p", { class: "goal" }, h("b", { text: T.goal }), ex.goal) : null, ex ? h("p", { class: "tldr", text: ex.tldr }) : null, notice, h("div", { class: "chips" }, chips), facts.notes.map((n) => h("p", { class: "note faint", text: n })));
-  }
-  function newView(id, W, H) {
-    const svg = s("svg", {
-      class: `view-svg view-${id.split(":")[0]}`,
-      role: "img",
-      preserveAspectRatio: "xMidYMid meet"
-    });
-    return { id, svg, W, H, geo: {}, keyOf: (x) => x, expand: (set) => set };
-  }
-  function markers(svg, prefix, kinds) {
-    const defs = s("defs");
-    for (const k of kinds) {
-      defs.appendChild(s("marker", {
-        id: prefix + k,
-        viewBox: "0 0 10 10",
-        refX: "8",
-        refY: "5",
-        markerWidth: "10",
-        markerHeight: "10",
-        markerUnits: "userSpaceOnUse",
-        orient: "auto-start-reverse"
-      }, s("path", { d: "M0,0 L10,5 L0,10 z", class: `arrow arrow-${k}` })));
-    }
-    svg.appendChild(defs);
-  }
-  var keyPairs = {};
-  if (ex)
-    for (const x of ex.keyDependencies)
-      keyPairs[`${x.from}>${x.to}`] = x.label ?? "";
-  function layoutArch(nodes, edges, compact) {
-    const W = compact ? 380 : 1160;
-    const LABEL = compact ? 0 : 156;
-    const NW = compact ? 168 : 200;
-    const NH = 66;
-    const GX = compact ? 12 : 34;
-    const GY = 22;
-    const PADY = 24;
-    const TOPL = compact ? 30 : 0;
-    const perRow = Math.max(1, Math.floor((W - LABEL - 24 + GX) / (NW + GX)));
-    const layerOf = (id) => compById[id]?.layer;
-    const layers = cfg.layers.filter((l) => nodes.some((n) => layerOf(n.id) === l.id));
-    const byLayer = {};
-    const idx = {};
-    const adj = {};
-    for (const l of layers) {
-      byLayer[l.id] = nodes.filter((n) => layerOf(n.id) === l.id).sort((a, b) => Number(a.delta === "unchanged") - Number(b.delta === "unchanged") || byCompRank(a.id, b.id));
-    }
-    for (const e of edges) {
-      listAt(adj, e.from).push(e.to);
-      listAt(adj, e.to).push(e.from);
-    }
-    const reindex = (l) => {
-      const arr = byLayer[l.id] ?? [];
-      arr.forEach((n, i) => {
-        idx[n.id] = (i + 0.5) / arr.length;
-      });
-    };
-    layers.forEach(reindex);
-    for (let it = 0;it < 4; it++) {
-      for (const l of it % 2 ? [...layers].reverse() : layers) {
-        const bc = {};
-        for (const n of byLayer[l.id] ?? []) {
-          const nb = (adj[n.id] ?? []).filter((x) => idx[x] !== undefined && layerOf(x) !== l.id);
-          bc[n.id] = nb.length ? nb.reduce((a, x) => a + idx[x], 0) / nb.length : idx[n.id];
-        }
-        (byLayer[l.id] ?? []).sort((a, b) => bc[a.id] - bc[b.id] || byCompRank(a.id, b.id));
-        reindex(l);
-      }
-    }
-    const bands = [];
-    const pos = {};
-    let y = 0;
-    for (const layer of layers) {
-      const inLayer = byLayer[layer.id] ?? [];
-      const rows = Math.ceil(inLayer.length / perRow);
-      const ids = inLayer.map((n) => n.id);
-      const ARC = edges.some((e) => ids.includes(e.from) && ids.includes(e.to)) ? 40 : 0;
-      const top = TOPL + ARC;
-      const bh = rows * NH + (rows - 1) * GY + PADY * 2 + top;
-      bands.push({ layer, y, h: bh, n: inLayer.length });
-      inLayer.forEach((n, i) => {
-        const row = Math.floor(i / perRow);
-        const col = i % perRow;
-        const inRow = Math.min(perRow, inLayer.length - row * perRow);
-        const rowW = inRow * NW + (inRow - 1) * GX;
-        const x0 = LABEL + (W - LABEL - rowW) / 2;
-        pos[n.id] = { x: x0 + col * (NW + GX), y: y + top + PADY + row * (NH + GY), w: NW, h: NH };
-      });
-      y += bh + 12;
-    }
-    return { W, H: Math.max(y - 12, 60), bands, pos, compact, GX };
-  }
-  function edgePaths(edges, pos, L) {
-    const ports = {};
-    const addPort = (node, side, edgeKey, otherX) => {
-      const k = `${node}|${side}`;
-      listAt(ports, k).push({ key: edgeKey, x: otherX });
-    };
-    const geo = edges.map((e) => {
-      const a = pos[e.from];
-      const b = pos[e.to];
-      const down = b.y > a.y + 1;
-      const up = b.y + 1 < a.y;
-      const g = { e, key: `${e.from}>${e.to}`, a, b, sa: "top", sb: "top" };
-      if (down)
-        [g.sa, g.sb] = ["bottom", "top"];
-      else if (up)
-        [g.sa, g.sb] = ["top", "bottom"];
-      addPort(e.from, g.sa, g.key, b.x);
-      addPort(e.to, g.sb, g.key, a.x);
-      return g;
-    });
-    function portX(node, side, key) {
-      const list = [...ports[`${node}|${side}`] ?? []].sort((p, q) => p.x - q.x || (p.key < q.key ? -1 : 1));
-      const i = list.findIndex((p) => p.key === key);
-      const r = pos[node];
-      return r.x + r.w * (i + 1) / (list.length + 1);
-    }
-    function obstacles(g, x1, x2, yTop, yBot) {
-      const lo = Math.min(x1, x2) - 8;
-      const hi = Math.max(x1, x2) + 8;
-      return Object.keys(pos).filter((id) => {
-        if (id === g.e.from || id === g.e.to)
-          return false;
-        const r = pos[id];
-        return r.y < yBot && r.y + r.h > yTop && r.x < hi && r.x + r.w > lo;
-      }).map((id) => pos[id]);
-    }
-    const laneUse = {};
-    return geo.map((g) => {
-      const x1 = portX(g.e.from, g.sa, g.key);
-      const x2 = portX(g.e.to, g.sb, g.key);
-      const y1 = g.sa === "bottom" ? g.a.y + g.a.h : g.a.y;
-      const y2 = g.sb === "top" ? g.b.y - 4 : g.b.y + g.b.h + 4;
-      if (g.sa === "top" && g.sb === "top") {
-        const lift = Math.min(34, 22 + Math.abs(x2 - x1) / 10);
-        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(y1 - lift)} ${r1(x2)},${r1(y2 - lift)} ${r1(x2)},${y2}`;
-        return { e: g.e, d, mx: (x1 + x2) / 2, my: Math.min(y1, y2) - lift * 0.75 };
-      }
-      const dir = y2 > y1 ? 1 : -1;
-      let blockers = obstacles(g, x1, x2, Math.min(y1, y2), Math.max(y1, y2));
-      if (!blockers.length) {
-        const my = (y1 + y2) / 2;
-        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(my)} ${r1(x2)},${r1(my)} ${r1(x2)},${y2}`;
-        return { e: g.e, d, mx: (x1 + x2) / 2, my };
-      }
-      const gap = (L.GX || 20) / 2;
-      const mid = (x1 + x2) / 2;
-      const yTop = Math.min(y1, y2);
-      const yBot = Math.max(y1, y2);
-      let lane = 0;
-      let right = 0;
-      let left = 0;
-      for (let guard = 0;guard < 12; guard++) {
-        right = Math.max(...blockers.map((r) => r.x + r.w)) + gap;
-        left = Math.min(...blockers.map((r) => r.x)) - gap;
-        lane = Math.abs(right - mid) <= Math.abs(left - mid) && right < L.W - 4 || left < 4 ? right : left;
-        const hit = obstacles(g, lane, lane, yTop, yBot).filter((r) => !blockers.includes(r));
-        if (!hit.length)
-          break;
-        blockers = blockers.concat(hit);
-      }
-      const used = (laneUse[Math.round(lane)] ?? 0) + 1;
-      laneUse[Math.round(lane)] = used;
-      lane += (lane === right ? 1 : -1) * (used - 1) * 4;
-      const ra = y1 + dir * 26;
-      const rb = y2 - dir * 26;
-      const d = `M${r1(x1)},${y1} C${r1(x1)},${y1 + dir * 18} ${r1(lane)},${y1 + dir * 8} ${r1(lane)},${ra}` + ` L${r1(lane)},${rb} C${r1(lane)},${y2 - dir * 8} ${r1(x2)},${y2 - dir * 18} ${r1(x2)},${y2}`;
-      return { e: g.e, d, mx: lane, my: (y1 + y2) / 2 };
-    });
-  }
-  function buildArchitecture(mode, compact, withContext, onNode) {
-    const nodes = facts.components.filter((n) => !(mode === "before" && n.delta === "added") && !(mode === "after" && n.delta === "removed") && (withContext || !isContext(n)));
-    const vis = new Set(nodes.map((n) => n.id));
-    const edges = facts.dependencies.filter((e) => {
-      if (!vis.has(e.from) || !vis.has(e.to))
-        return false;
-      if (mode === "before")
-        return e.delta !== "added";
-      if (mode === "after")
-        return e.delta !== "removed";
-      return true;
-    });
-    const L = layoutArch(nodes, edges, compact);
-    const V = newView("architecture", L.W, L.H);
-    const svg = V.svg;
-    svg.classList.add(`mode-${mode}`);
-    if (!nodes.length) {
-      V.empty = T.archEmpty;
-      return V;
-    }
-    markers(svg, "ar-", ["unchanged", "added", "changed", "removed", "violation", "key"]);
-    for (const b of L.bands) {
-      svg.appendChild(s("rect", { x: 0, y: b.y, width: L.W, height: b.h, rx: 14, class: "band" }));
-      if (L.compact)
-        svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: trunc(b.layer.name, 40) }));
-      else {
-        svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 - 2, class: "band-label", text: trunc(b.layer.name, 18) }));
-        svg.appendChild(s("text", {
-          x: 18,
-          y: b.y + b.h / 2 + 14,
-          class: "band-sub",
-          text: `${b.n} ${b.n === 1 ? T.component : T.kComponents}`
-        }));
-      }
-    }
-    const edgeLayer = s("g", { class: "edges" });
-    const labelLayer = s("g", { class: "edge-labels" });
-    const labels = [];
-    const freeSpot = (cx, cy, w, h) => {
-      const covers = (x, y) => [...Object.values(L.pos), ...labels].some((b) => x - w / 2 < b.x + b.w + 4 && x + w / 2 > b.x - 4 && y - h / 2 < b.y + b.h + 4 && y + h / 2 > b.y - 4);
-      for (const dy of [0, -14, 14, -28, 28, -42, 42, -56, 56]) {
-        for (const dx of [0, -(w / 2 + 14), w / 2 + 14])
-          if (!covers(cx + dx, cy + dy))
-            return [cx + dx, cy + dy];
-      }
-      return [cx, cy];
-    };
-    edgePaths(edges, L.pos, L).forEach((p, i) => {
-      const e = p.e;
-      const k = isNewViolation(e) || e.violation && withContext ? "violation" : e.delta;
-      const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
-      const tip = `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` + (e.examples[0] ? ` · ${e.examples[0]}` : "") + (e.violation ? ` · ⚠ ${e.violation.rule}` : "");
-      const pid = `ep-${i}`;
-      const g = s("g", { class: `edge-g${isKey ? " key" : ""}`, "data-k": `e:${e.from}>${e.to}`, "data-a": e.from, "data-b": e.to }, s("title", { text: tip }), s("path", { d: p.d, class: "edge-hit" }), isKey ? s("path", { d: p.d, class: "edge-glow" }) : null, s("path", {
-        id: pid,
-        d: p.d,
-        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
-        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`
-      }));
-      if ((isKey || e.delta === "added") && e.delta !== "removed") {
-        g.appendChild(s("circle", { r: isKey ? 4.5 : 3, class: `pulse${isKey ? " key" : ""}` }, s("animateMotion", { dur: isKey ? "2.2s" : "3s", repeatCount: "indefinite", begin: `-${r1(i % 5 * 0.4)}s` }, s("mpath", { href: `#${pid}` }))));
-      }
-      edgeLayer.appendChild(g);
-      const keyLabel = keyPairs[`${e.from}>${e.to}`];
-      if (isKey && keyLabel) {
-        const label = trunc(keyLabel, 40);
-        const lw = Math.ceil(textWidth(label, "600 11.5px")) + 20;
-        const [cx, cy] = freeSpot(p.mx, p.my, lw, 22);
-        labels.push({ x: cx - lw / 2, y: cy - 11, w: lw, h: 22 });
-        labelLayer.appendChild(s("g", { class: "edge-label", "data-a": e.from, "data-b": e.to }, s("rect", { x: r1(cx - lw / 2), y: r1(cy - 11), width: r1(lw), height: 22, rx: 11 }), s("text", { x: r1(cx), y: r1(cy + 4), "text-anchor": "middle", text: label })));
-      }
-    });
-    svg.appendChild(edgeLayer);
-    for (const n of nodes) {
-      const r = L.pos[n.id];
-      const c = compById[n.id];
-      V.geo[n.id] = r;
-      const nreq = reqsOfComp(n.id).length;
-      const neighbor = n.delta === "unchanged";
-      const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}${nreq ? ` · ◆ ${nreq}` : ""}`;
-      const g = s("g", {
-        class: `node st-${n.delta}`,
-        "data-k": n.id,
-        tabindex: "0",
-        role: "button",
-        "aria-label": `${c.name}, ${deltaLabel(n.delta, true)}`
-      }, s("title", { text: c.name + (summaryOf[n.id] ? `
-${summaryOf[n.id]}` : c.desc ? `
-${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12, class: "box" }), s("text", { x: r.x + 14, y: r.y + 19, class: "tag", text: neighbor ? "" : deltaLabel(n.delta).toUpperCase() }), neighbor ? null : s("text", { x: r.x + r.w - 12, y: r.y + 19, "text-anchor": "end", class: "delta" }, s("tspan", { class: "add", text: `+${n.additions}` }), s("tspan", { class: "del", text: ` −${n.deletions}` })), s("text", {
-        x: r.x + 14,
-        y: r.y + 39,
-        class: "name",
-        text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28)
-      }), s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }));
-      onNode?.(g, n.id);
-      svg.appendChild(g);
-    }
-    svg.appendChild(labelLayer);
-    V.expand = (set) => {
-      const keys = Object.keys(set);
-      const only = keys[0];
-      if (keys.length === 1 && only !== undefined && vis.has(only)) {
-        for (const e of edges) {
-          if (e.from === only)
-            set[e.to] = true;
-          if (e.to === only)
-            set[e.from] = true;
-        }
-      }
-      return set;
-    };
-    V.focusBoxKeys = (ids) => ids.filter((x) => vis.has(x));
-    return V;
-  }
+  // report/flow.ts
   function buildFlow(fl) {
     const parts = [];
     for (const x of fl.steps)
@@ -2169,214 +2310,122 @@ ${fields.join(`
     g.appendChild(text);
     return g;
   }
-  function buildData(onNode) {
+  function flowNotes(fl) {
+    const out = [];
+    if (fl.trigger)
+      out.push(h("span", { class: "flow-trigger" }, h("b", { text: `${T.startsAt} ` }), h("code", { text: fl.trigger })));
+    const ref = cfg.referenceFlows.find((f) => f.id === fl.id);
+    if (fl.scenario) {
+      const [rid, sid] = fl.scenario.split("#");
+      const r = reqById[rid];
+      const sc = r?.scenarios.find((x) => x.id === sid);
+      if (r && sc)
+        out.push(scenarioStrip(r, sc, true));
+    }
+    if (ref) {
+      const diff = (a, b) => {
+        const pool = b.map((x) => `${x.from}>${x.to}`);
+        return a.filter((x) => {
+          const i = pool.indexOf(`${x.from}>${x.to}`);
+          if (i < 0)
+            return true;
+          pool.splice(i, 1);
+          return false;
+        });
+      };
+      const extra = diff(fl.steps, ref.steps);
+      const missing = diff(ref.steps, fl.steps);
+      out.push(h("span", { class: "muted" }, h("b", { text: `${T.vsReference} “${ref.title || ref.id}”: ` }), !extra.length && !missing.length ? T.matchesReference : [
+        extra.length ? `${extra.length} ${T.extraSteps}` : "",
+        extra.length && missing.length ? " · " : "",
+        missing.length ? `${missing.length} ${T.missingSteps} (${missing.map((x) => `${compName(x.from)}→${compName(x.to)}${x.message ? `: ${x.message}` : ""}`).join("; ")})` : ""
+      ]));
+    }
+    const unverified = fl.steps.filter((x) => !x.verified);
+    if (unverified.length) {
+      out.push(h("span", { class: "warn-text" }, `? ${T.unverifiedNote} ${unverified.map((x) => `${compName(x.from)} → ${compName(x.to)}`).join(", ")}`));
+    }
+    return out;
+  }
+
+  // report/inspector.ts
+  function componentDetails(id, nav) {
+    const c = compById[id];
+    const n = changeComp[id] ?? { id, delta: "unchanged", files: 0, additions: 0, deletions: 0 };
+    const files = facts.files.filter((f) => f.component === id);
+    const syms = facts.symbols.filter((sy) => files.some((f) => f.path === sy.file));
+    const outE = facts.dependencies.filter((e) => e.from === id);
+    const inE = facts.dependencies.filter((e) => e.to === id);
+    const reqs = reqsOfComp(id);
+    return [
+      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
+      h("div", { class: "insp-title" }, h("span", { class: `badge ${n.delta}`, text: deltaLabel(n.delta, true) }), h("h3", { text: c ? c.name : id })),
+      h("div", {
+        class: "faint",
+        text: layerName(id) + (n.delta !== "unchanged" ? ` · ${n.files} ${n.files === 1 ? T.file : T.kFiles} · +${n.additions} −${n.deletions}` : "")
+      }),
+      summaryOf[id] ? h("p", { class: "insp-summary", text: summaryOf[id] }) : c?.desc ? h("p", { class: "insp-summary muted", text: c.desc }) : null,
+      files.length ? inspList(T.files, files.map((f) => h("div", { class: "insp-row" }, h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }), fileLink(f.path, f.path.split("/").pop()), h("span", { class: "nums" }, h("span", { class: "add", text: `+${f.additions}` }), " ", h("span", { class: "del", text: `−${f.deletions}` }))))) : null,
+      syms.length ? inspList(T.symbols, syms.slice(0, 12).map((sy) => h("div", { class: "insp-row" }, h("span", {
+        class: `badge ${sy.delta}`,
+        text: sy.delta === "added" ? "+" : sy.delta === "removed" ? "−" : "~"
+      }), fileLink(`${sy.file}:${sy.line}`, sy.name)))) : null,
+      outE.length ? inspList(T.dependsOn, outE.map(edgeRow((e) => e.to, nav))) : null,
+      inE.length ? inspList(T.usedBy, inE.map(edgeRow((e) => e.from, nav))) : null,
+      reqs.length ? inspList(T.reqs, reqs.map(reqRow)) : null
+    ];
+  }
+  function entityDetails(eid, nav) {
+    const e = entById[eid];
     const dm = DM;
-    const EW = 250;
-    const GX = 90;
-    const GY = 70;
-    const PER = 3;
-    const order = { added: 0, changed: 1, removed: 2, unchanged: 3 };
-    const ents = [...dm.entities].sort((a, b) => order[a.delta] - order[b.delta] || byCompRank(a.component ?? "", b.component ?? "") || (a.name < b.name ? -1 : 1));
-    const migrations = facts.files.filter((f) => f.category === "migration");
-    const top = migrations.length ? 34 + Math.min(migrations.length, 4) * 20 + 30 : 10;
-    const heights = ents.map((e) => 52 + Math.max(1, (e.fields ?? []).length) * 19 + 10);
-    const rows = Math.ceil(ents.length / PER);
-    const rowH = [];
-    for (let r = 0;r < rows; r++)
-      rowH.push(Math.max(...heights.slice(r * PER, r * PER + PER)));
-    const cols = Math.min(PER, ents.length);
-    const W = Math.max(cols * EW + (cols - 1) * GX, 600);
-    const pos = {};
-    let y = top;
-    ents.forEach((e, i) => {
-      const r = Math.floor(i / PER);
-      const c = i % PER;
-      const inRow = Math.min(PER, ents.length - r * PER);
-      const x0 = (W - (inRow * EW + (inRow - 1) * GX)) / 2;
-      const ry = top + rowH.slice(0, r).reduce((a, v) => a + v + GY, 0);
-      pos[e.id] = { x: x0 + c * (EW + GX), y: ry, w: EW, h: heights[i] };
-      y = Math.max(y, ry + heights[i]);
-    });
-    const V = newView("data", W, y + 10);
-    const svg = V.svg;
-    if (migrations.length) {
-      const mg = s("g", { class: "migrations" }, s("text", { x: 0, y: 14, class: "col-label", text: T.migrations.toUpperCase() }));
-      migrations.slice(0, 4).forEach((f, i) => {
-        const letter = gitLetter(f);
-        const text = s("text", { x: 0, y: 38 + i * 20, class: "mig" }, s("tspan", { class: `gs-${letter}`, text: `${letter}  ` }), s("tspan", { text: trunc(f.path, 90) }));
-        mg.appendChild(onOpen(text, f.path));
-      });
-      if (migrations.length > 4)
-        mg.appendChild(s("text", { x: 0, y: 38 + 4 * 20, class: "info", text: `+${migrations.length - 4}` }));
-      svg.appendChild(mg);
-    }
-    const links = s("g", { class: "links" });
-    svg.appendChild(links);
-    V.links = [];
-    for (const rl of dm.relations) {
-      const a = pos[rl.from];
-      const b = pos[rl.to];
-      if (!a || !b)
-        continue;
-      const ax = a.x + a.w / 2;
-      const ay = a.y + a.h / 2;
-      const bx = b.x + b.w / 2;
-      const by = b.y + b.h / 2;
-      let d;
-      let x1;
-      let y1;
-      let x2;
-      let y2;
-      if (Math.abs(ay - by) < 10 || Math.abs(bx - ax) > Math.abs(by - ay)) {
-        x1 = bx > ax ? a.x + a.w : a.x;
-        x2 = bx > ax ? b.x : b.x + b.w;
-        y1 = a.y + 26;
-        y2 = b.y + 26;
-        const mx = (x1 + x2) / 2;
-        d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-      } else {
-        x1 = ax;
-        x2 = bx;
-        y1 = by > ay ? a.y + a.h : a.y;
-        y2 = by > ay ? b.y : b.y + b.h;
-        const my = (y1 + y2) / 2;
-        d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
-      }
-      links.appendChild(s("path", { d, class: `rel rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }));
-      if (rl.label) {
-        const lx = (x1 + x2) / 2;
-        const ly = (y1 + y2) / 2;
-        const lw = Math.ceil(textWidth(rl.label, "11px", MONO)) + 16;
-        links.appendChild(s("g", { class: `rel-label rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }, s("rect", { x: r1(lx - lw / 2), y: r1(ly - 10), width: r1(lw), height: 20, rx: 10 }), s("text", { x: r1(lx), y: r1(ly + 4), "text-anchor": "middle", text: rl.label })));
-      }
-      V.links.push([`ent:${rl.from}`, `ent:${rl.to}`]);
-    }
-    for (const e of ents) {
-      const b = pos[e.id];
-      const key = `ent:${e.id}`;
-      V.geo[key] = b;
-      const fields = e.fields ?? [];
-      const g = s("g", { class: `entity st-${e.delta}`, "data-k": key, tabindex: "0", role: "button" }, s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 12, class: "box" }), s("rect", { x: b.x, y: b.y, width: b.w, height: 40, rx: 12, class: "head" }), s("rect", { x: b.x, y: b.y + 28, width: b.w, height: 12, class: "head" }), s("text", { x: b.x + 14, y: b.y + 25, class: "name", text: trunc(e.name, 24) }), s("text", {
-        x: b.x + b.w - 12,
-        y: b.y + 25,
-        "text-anchor": "end",
-        class: "tag",
-        text: e.delta === "unchanged" ? "" : deltaLabel(e.delta).toUpperCase()
-      }));
-      if (!fields.length) {
-        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62, class: "info", text: e.component ? compName(e.component) : "" }));
-      }
-      fields.forEach((f, i) => {
+    const rels = dm.relations.filter((r) => r.from === eid || r.to === eid);
+    const fields = e.fields ?? [];
+    return [
+      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
+      h("div", { class: "insp-title" }, h("span", { class: `badge ${e.delta}`, text: deltaLabel(e.delta) }), h("h3", { text: e.name })),
+      e.component ? h("div", null, h("a", {
+        href: "#",
+        class: "faint",
+        text: compName(e.component),
+        onclick: (ev) => {
+          ev.preventDefault();
+          nav.inspect(e.component);
+        }
+      })) : null,
+      fields.length ? inspList(T.fields, fields.map((f) => {
         const k = fieldDelta(f);
-        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62 + i * 19, class: `field f-${k}` }, s("tspan", { class: "fmark", text: `${FIELD_MARK[k] || " "} ` }), s("tspan", { text: trunc(fieldText(f), 28) })));
-      });
-      onNode?.(g, key);
-      svg.appendChild(g);
-    }
-    V.keyOf = (id) => id.slice(0, 4) === "ent:" ? id : `ent:${id}`;
-    V.expand = (set) => {
-      const add = {};
-      if (Object.keys(set).length === 1) {
-        for (const l of V.links ?? []) {
-          if (set[l[0]])
-            add[l[1]] = true;
-          if (set[l[1]])
-            add[l[0]] = true;
+        return h("div", { class: `insp-row field-row f-${k}` }, h("span", { class: "fmark", text: FIELD_MARK[k] || "·" }), h("code", { text: fieldText(f) }));
+      })) : null,
+      rels.length ? inspList(T.relations, rels.map((r) => {
+        const other = r.from === eid ? r.to : r.from;
+        return h("div", { class: "insp-row" }, h("span", { class: `badge ${r.delta}`, text: r.label || "—" }), h("a", {
+          href: "#",
+          text: entById[other]?.name ?? other,
+          onclick: (ev) => {
+            ev.preventDefault();
+            nav.entity(other);
+          }
+        }));
+      })) : null,
+      e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null
+    ];
+  }
+  function edgeRow(other, nav) {
+    return (e) => {
+      const k = isNewViolation(e) ? "violation" : e.delta;
+      const mark = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
+      return h("div", { class: "insp-row" }, h("span", { class: `badge ${k}`, text: mark[k] }), h("a", {
+        href: "#",
+        text: compName(other(e)),
+        onclick: (ev) => {
+          ev.preventDefault();
+          nav.inspect(other(e));
         }
-      }
-      Object.assign(set, add);
-      return set;
+      }), e.examples[0] ? fileLink(e.examples[0], e.examples[0].split("/").pop()) : null);
     };
-    return V;
   }
-  var VIEWS = [{ id: "architecture", title: T.architecture }];
-  for (const fl of ex?.flows ?? [])
-    VIEWS.push({ id: `flow:${fl.id}`, title: fl.title, flow: fl });
-  if (DM)
-    VIEWS.push({ id: "data", title: T.dataView });
-  var flowById = {};
-  for (const fl of ex?.flows ?? [])
-    flowById[fl.id] = fl;
-  function viewTitle(view) {
-    if (view === "requirements")
-      return T.reqs;
-    return VIEWS.find((v) => v.id === view)?.title ?? T.architecture;
-  }
-  function autoStory() {
-    const steps = [];
-    const touched = facts.components.filter((c) => c.delta !== "unchanged");
-    const layers = new Set(touched.map((c) => compById[c.id]?.layer));
-    steps.push({
-      heading: tf("autoOverviewH", { n: touched.length, m: layers.size }),
-      body: tf("autoOverviewB", { f: st.files, a: fmt(st.additions), d: fmt(st.deletions) }),
-      view: "architecture",
-      focus: []
-    });
-    for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
-      steps.push({
-        heading: tf("autoViolH", { a: compName(e.from), b: compName(e.to) }),
-        body: e.violation?.rule ?? "",
-        view: "architecture",
-        focus: [e.from, e.to],
-        code: e.examples[0]
-      });
-    }
-    for (const c of touched.filter((c) => c.delta === "added").slice(0, 2)) {
-      steps.push({
-        heading: tf("autoNewH", { x: compName(c.id) }),
-        body: tf("autoNewB", { l: layerName(c.id) }),
-        view: "architecture",
-        focus: [c.id]
-      });
-    }
-    for (const c of touched.filter((c) => c.delta === "removed").slice(0, 1)) {
-      steps.push({
-        heading: tf("autoRemovedH", { x: compName(c.id) }),
-        body: T.autoRemovedB,
-        view: "architecture",
-        focus: [c.id]
-      });
-    }
-    touched.filter((c) => c.delta === "changed").sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions) || byCompRank(a.id, b.id)).slice(0, Math.max(0, 5 - steps.length)).forEach((c) => {
-      steps.push({
-        heading: tf("autoChangedH", { x: compName(c.id) }),
-        body: tf("autoChangedB", { n: c.files, a: c.additions, d: c.deletions }),
-        view: "architecture",
-        focus: [c.id]
-      });
-    });
-    if (OS && REQS.length) {
-      for (const c of OS.changes) {
-        if (c.requirements.length) {
-          steps.push({
-            heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }),
-            body: c.why || T.autoSpecB,
-            view: "requirements",
-            focus: c.requirements.map((r) => r.id)
-          });
-        }
-      }
-    }
-    return steps;
-  }
-  var STORY = ex?.story.length ? ex.story : autoStory();
-  var storyIsAuto = !ex?.story.length;
-  var MEANINGFUL = new Set;
-  for (const e of facts.dependencies) {
-    if (e.delta === "added" || e.delta === "removed" || isNewViolation(e) || keyPairs[`${e.from}>${e.to}`] !== undefined) {
-      MEANINGFUL.add(e.from);
-      MEANINGFUL.add(e.to);
-    }
-  }
-  for (const step of STORY)
-    if ((step.view ?? "architecture") === "architecture")
-      for (const id of step.focus ?? [])
-        MEANINGFUL.add(id);
-  for (const m of Object.values(specMap))
-    for (const id of m.components ?? [])
-      MEANINGFUL.add(id);
-  var isContext = (c) => c.delta === "unchanged" && !MEANINGFUL.has(c.id);
-  var CONTEXT_COUNT = facts.components.filter(isContext).length;
+
+  // report/map.ts
   function renderMap() {
     const compactQ = window.matchMedia ? window.matchMedia("(max-width: 720px)") : { matches: false };
     let archMode = store("ec:arch-mode") ?? "delta";
@@ -2864,43 +2913,8 @@ ${fields.join(`
     };
     return root;
   }
-  function flowNotes(fl) {
-    const out = [];
-    if (fl.trigger)
-      out.push(h("span", { class: "flow-trigger" }, h("b", { text: `${T.startsAt} ` }), h("code", { text: fl.trigger })));
-    const ref = cfg.referenceFlows.find((f) => f.id === fl.id);
-    if (fl.scenario) {
-      const [rid, sid] = fl.scenario.split("#");
-      const r = reqById[rid];
-      const sc = r?.scenarios.find((x) => x.id === sid);
-      if (r && sc)
-        out.push(scenarioStrip(r, sc, true));
-    }
-    if (ref) {
-      const diff = (a, b) => {
-        const pool = b.map((x) => `${x.from}>${x.to}`);
-        return a.filter((x) => {
-          const i = pool.indexOf(`${x.from}>${x.to}`);
-          if (i < 0)
-            return true;
-          pool.splice(i, 1);
-          return false;
-        });
-      };
-      const extra = diff(fl.steps, ref.steps);
-      const missing = diff(ref.steps, fl.steps);
-      out.push(h("span", { class: "muted" }, h("b", { text: `${T.vsReference} “${ref.title || ref.id}”: ` }), !extra.length && !missing.length ? T.matchesReference : [
-        extra.length ? `${extra.length} ${T.extraSteps}` : "",
-        extra.length && missing.length ? " · " : "",
-        missing.length ? `${missing.length} ${T.missingSteps} (${missing.map((x) => `${compName(x.from)}→${compName(x.to)}${x.message ? `: ${x.message}` : ""}`).join("; ")})` : ""
-      ]));
-    }
-    const unverified = fl.steps.filter((x) => !x.verified);
-    if (unverified.length) {
-      out.push(h("span", { class: "warn-text" }, `? ${T.unverifiedNote} ${unverified.map((x) => `${compName(x.from)} → ${compName(x.to)}`).join(", ")}`));
-    }
-    return out;
-  }
+
+  // report/sections.ts
   function renderDecisions() {
     if (!ex?.decisions.length)
       return null;
@@ -2943,6 +2957,8 @@ ${fields.join(`
       outside.length ? group(null, T.outsideMap, null, null, outside) : null
     ]), tf("leadChanges", { c: comps.length, f: nFiles }));
   }
+
+  // report/app.ts
   function themeButton() {
     const modes = ["auto", "light", "dark"];
     let cur = store("ec:theme") ?? "auto";

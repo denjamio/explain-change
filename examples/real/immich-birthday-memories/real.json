@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/immich-app/immich.git",
-  "commit": "d6d094738366aaf4d2fcefdfe2702f50c72ba5b0",
+  "pr": 30831,
+  "head": "043caa0bcac81968687fd252d6958bce852867de",
+  "base": "f48d4b332127ad365ba256108799ca8f571d2dd5",
   "report": "real-immich-ts-birthday-memories.html",
   "project": "Immich",
   "title": "Birthday memories (#30831)",

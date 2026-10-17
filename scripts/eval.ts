@@ -3,8 +3,8 @@
  *
  *   bun scripts/eval.ts [--model haiku|sonnet|opus] [--agent "claude -p"] [--real] [--runs N] [--judge MODEL] [example…]
  *
- * The examples are the scenarios (examples/scenarios/<name>) and, with --real or by name, the real PRs
- * (examples/real/<name>, cloned: needs the network). For each one: its git repository is built in a temp folder, `explain-change` (this
+ * The examples are the scenarios (examples/scenarios/<name>, asked as "explain my changes") and, with --real or by
+ * name, the real PRs (examples/real/<name>, asked by their GitHub URL, as a user does: needs the network and `gh`). For each one: its git repository is built in a temp folder, `explain-change` (this
  * checkout) is put on PATH, and the agent gets the user's request plus skills/explain-change/SKILL.md (the skill
  * itself, without its front matter). Then `explain-change status --json` says whether the explanation is valid.
  * Reported per example: the final state, the issues left, the agent's turns, cost and time (from
@@ -38,12 +38,6 @@ const { values, positionals } = parseArgs({
   },
   allowPositionals: true,
 });
-/** What the user asks: the branch for a scenario, the last commit for a real PR. */
-const request = (base: string) =>
-  base === "main"
-    ? "Explain the changes of this branch with explain-change."
-    : `Explain the last commit with explain-change (its base is ${base}).`;
-
 await buildAssets();
 const tmp = mkdtempSync(join(tmpdir(), "explain-change-eval-"));
 const bin = join(tmp, "bin");
@@ -187,7 +181,7 @@ try {
         cmd as string,
         [
           ...args,
-          request(target.base),
+          target.request,
           "--model",
           values.model as string,
           "--output-format",

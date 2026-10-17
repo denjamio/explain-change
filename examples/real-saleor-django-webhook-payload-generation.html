@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="generator" content="explain-change">
-<title>Saleor · Add per-webhook payloadGeneration to opt out of deferred payloads (#19916) (#19920)</title>
+<title>Saleor · Add per-webhook payloadGeneration to opt out of deferred payloads</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22explain-change%22%3E%20%3Cpath%20class%3D%22bulb-line%22%20d%3D%22M16%201.6v2.6M5.6%206l1.8%201.8M26.4%206l-1.8%201.8M1.8%2015.2h2.6M27.6%2015.2h2.6%22%20fill%3D%22none%22%20stroke%3D%22%234b4fd6%22%20stroke-width%3D%222.2%22%20stroke-linecap%3D%22round%22%2F%3E%20%3Cpath%20class%3D%22bulb-line%22%20d%3D%22M16%207.2a8%208%200%200%200-4.8%2014.4c.9.7%201.4%201.6%201.4%202.7v.4h6.8v-.4c0-1.1.5-2%201.4-2.7A8%208%200%200%200%2016%207.2z%22%20fill%3D%22%23ffd65a%22%20stroke%3D%22%234b4fd6%22%20stroke-width%3D%222.2%22%20stroke-linejoin%3D%22round%22%2F%3E%20%3Cpath%20class%3D%22bulb-line%22%20d%3D%22M13.4%2019.6q2.6-3.6%205.2%200%22%20fill%3D%22none%22%20stroke%3D%22%234b4fd6%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%20%3Cpath%20class%3D%22bulb-line%22%20d%3D%22M12.8%2027.6h6.4M14.2%2030.2h3.6%22%20fill%3D%22none%22%20stroke%3D%22%234b4fd6%22%20stroke-width%3D%222.2%22%20stroke-linecap%3D%22round%22%2F%3E%20%3C%2Fsvg%3E">
 <style>/* explain-change report. One semantic palette for badges, diagrams and diffs: --added, --changed, --removed and
    --unchanged follow the delta of each element; --violation marks a broken rule. */
@@ -600,7 +600,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 <body>
 <div id="app" class="app"></div>
 <noscript><p style="padding:24px">This report uses JavaScript to draw its diagrams. Open it in a browser with scripts enabled.</p></noscript>
-<script type="application/json" id="ec-data">{"tool":"0.7.0","facts":{"version":5,"tool":"0.7.0","analysis":10,"key":"84ba0dc706e40ef6","source":{"kind":"local","title":"Add per-webhook payloadGeneration to opt out of deferred payloads (#19916) (#19920)","description":"","branch":"3dd4bf79","baseRef":"HEAD~1","headRef":"HEAD","headSha":"3dd4bf79a46132ed2f8e6225a9863f5ef8dc243b","mergeBase":"dfa97c976418c4760ffd63d34b5e13698dfd85e8","host":"github","prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-10-16T12:34:17+02:00","commits":1},"config":{"inferred":false,"name":"Saleor","direction":"Layered by context: GraphQL mutations in saleor/graphql call the commerce apps; the apps hold the models and rules and never import the API. Side effects to apps and plugins go through the PluginsManager, not Django signals.","lang":"en","layers":[{"id":"api","name":"API"},{"id":"domain","name":"Commerce"},{"id":"integrations","name":"Integrations"},{"id":"platform","name":"Platform"}],"components":[{"id":"catalog-api","name":"Catalog API","layer":"api","desc":"Owns the GraphQL types, queries and mutations for products, variants, categories, collections and attributes."},{"id":"checkout-api","name":"Checkout API","layer":"api","desc":"Owns the checkout mutations: create, add lines, set delivery, apply a voucher, complete."},{"id":"orders-api","name":"Orders API","layer":"api","desc":"Owns order queries and the staff mutations: drafts, fulfilments, refunds, invoices."},{"id":"discounts-api","name":"Discounts API","layer":"api","desc":"Owns the GraphQL types and mutations for vouchers, promotions and gift cards."},{"id":"payments-api","name":"Payments API","layer":"api","desc":"Owns payment and transaction queries and mutations, and the payment gateway list."},{"id":"accounts-api","name":"Accounts API","layer":"api","desc":"Owns the GraphQL types and mutations for customers, staff, addresses, permission groups and sign-in."},{"id":"graphql-api","name":"GraphQL API","layer":"api","desc":"Owns the schema, the base mutation and types, and the API of channels, apps, webhooks, shipping and content."},{"id":"catalog","name":"Catalog","layer":"domain","desc":"Owns Product, ProductVariant, Category, Collection and attributes; what is sold and in which channels."},{"id":"checkout","name":"Checkout","layer":"domain","desc":"Owns Checkout and its lines; prices a cart and turns it into an order."},{"id":"orders","name":"Orders","layer":"domain","desc":"Owns Order, its lines, fulfilments, events and invoices; the order life cycle after checkout."},{"id":"discounts","name":"Discounts","layer":"domain","desc":"Owns vouchers, promotions and gift cards; which discount applies to which line."},{"id":"payments","name":"Payments","layer":"domain","desc":"Owns Payment, TransactionItem and their events; what was authorized, charged and refunded."},{"id":"stock-shipping","name":"Stock and shipping","layer":"domain","desc":"Owns warehouses, stock, allocations, shipping zones and methods."},{"id":"channels","name":"Channels and taxes","layer":"domain","desc":"Owns channels (currency, country, settings) and tax configuration; each sales context of a shop."},{"id":"accounts","name":"Accounts","layer":"domain","desc":"Owns users, customers, staff, addresses and permissions."},{"id":"content","name":"Content","layer":"domain","desc":"Owns pages, menus, SEO fields and translations."},{"id":"apps","name":"Apps","layer":"integrations","desc":"Owns installed apps, their tokens, permissions and manifests."},{"id":"webhooks","name":"Webhooks","layer":"integrations","desc":"Owns webhooks and their events; builds each payload from a GraphQL subscription and delivers it, sync or async."},{"id":"plugins","name":"Plugins","layer":"integrations","desc":"Owns the PluginsManager, the event bus that calls plugins and webhooks, and the built-in plugins."},{"id":"payment-gateways","name":"Payment gateways","layer":"integrations","desc":"Owns the built-in payment gateway plugins and their provider clients."},{"id":"platform","name":"Platform","layer":"platform","desc":"Owns settings, Celery, ASGI, money and taxed-money helpers, and the base models every app uses."}],"rules":{"allow":["api -> domain","api -> integrations","api -> platform","domain -> integrations","domain -> platform","integrations -> domain","integrations -> platform","webhooks -> api"],"forbid":["domain -> api","platform -> api"]},"referenceFlows":[{"id":"complete-checkout","title":"Complete a checkout","steps":[{"from":"checkout-api","to":"checkout","message":"complete_checkout"},{"from":"checkout","to":"discounts","message":"apply voucher and promotions"},{"from":"checkout","to":"orders","message":"create order from checkout"},{"from":"checkout","to":"plugins","message":"manager.checkout_fully_paid"}]},{"id":"notify-apps","title":"Notify apps of an event","steps":[{"from":"orders","to":"plugins","message":"manager.order_created"},{"from":"plugins","to":"webhooks","message":"trigger_webhooks_async"}]}],"glossary":[{"term":"product","definition":"An item for sale; its variants are what a customer buys."},{"term":"variant","definition":"A sellable version of a product, with its own SKU, price and stock."},{"term":"channel","definition":"A sales context: its currency, countries and which products it sells."},{"term":"checkout","definition":"A customer's cart before it becomes an order."},{"term":"order","definition":"What a customer bought, from payment to fulfilment."},{"term":"voucher","definition":"A code that gives a discount when the customer enters it."},{"term":"promotion","definition":"A discount that applies on its own when its rules match."},{"term":"gift card","definition":"A prepaid balance a customer spends at checkout."},{"term":"warehouse","definition":"A place that holds stock and ships orders."},{"term":"app","definition":"An external service with a token and webhooks, which extends Saleor through the API."},{"term":"webhook","definition":"An event delivery from Saleor to an app, sync or async."},{"term":"plugin","definition":"A Python extension that the PluginsManager calls on domain events."}],"names":[]},"files":[{"path":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md","previousPath":null,"delta":"added","binary":false,"additions":78,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":36,"newLines":22,"header":"","lines":[["+","writer would move the full payload-generation load onto the primary, which is the database that"],["+","every pod shares and the scaling bottleneck."],["+",""],["+","## Per-webhook opt-out"],["+",""],["+","Deferral is right by default but not for every consumer. An integration that applies each"],["+","`ORDER_METADATA_UPDATED` in sequence, expecting the metadata as written by each request, breaks"],["+","when several pending deliveries all carry the final state. Each webhook therefore carries a"],["+","`payloadGeneration` choice, `DEFERRED` by default or `IMMEDIATE`, set by the app that registers it"],["+","through the mutations or the manifest. An `IMMEDIATE` subscription webhook on a deferred event has"],["+","its payload built by whatever triggered the event, as every webhook did before deferral, and only"],["+","that webhook pays the cost. For events fired from a request that is the mutation's latency. For"],["+","events fired from a background task, such as the variant price and stock events, it is that task's"],["+","run time, which is why those events were deferred from the start. An app that sets `IMMEDIATE` on"],["+","such an event takes that cost knowingly. Because such a task may fire the event with a replica-allowed"],["+","manager right after its own write, an `IMMEDIATE` payload on a deferrable event is resolved against the"],["+","writer, so the dataloader-resolved fields cannot predate the write. Fields read from the subscribable"],["+","object itself still reflect where the caller loaded it from. The choice is ignored where it cannot apply: legacy"],["+","webhooks without a subscription query, sync events, and events that are not deferred."],["+",""],["+","## When each event became deferred"],["+",""]]}]},{"path":"saleor/app/installation_utils.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[]},{"path":"saleor/app/manifest_schema.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[]},{"path":"saleor/app/manifest_validations.py","previousPath":null,"delta":"changed","binary":false,"additions":27,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[{"oldStart":292,"oldLines":6,"newStart":293,"newLines":31,"header":"def _clean_webhook_identifier(webhook, seen_identifiers, errors):","lines":[[" ","    seen_identifiers.add(identifier)"],[" ",""],[" ",""],["+","def _clean_webhook_payload_generation(webhook, errors):"],["+","    \"\"\"Map the manifest's `payloadGeneration` enum name to its stored value."],["+",""],["+","    Accepts the GraphQL enum names (`DEFERRED`, `IMMEDIATE`), like event names"],["+","    do. A missing value means `DEFERRED`."],["+","    \"\"\""],["+","    payload_generation_values = {"],["+","        str_to_enum(value): value for value, _ in WebhookPayloadGeneration.CHOICES"],["+","    }"],["+","    raw_value = webhook.get(\"payloadGeneration\")"],["+","    if raw_value is None:"],["+","        webhook[\"payloadGeneration\"] = WebhookPayloadGeneration.DEFERRED"],["+","        return"],["+","    try:"],["+","        webhook[\"payloadGeneration\"] = payload_generation_values[raw_value]"],["+","    except KeyError:"],["+","        allowed = \", \".join(payload_generation_values)"],["+","        errors[\"webhooks\"].append("],["+","            ValidationError("],["+","                f\"Invalid payload generation: {raw_value}. Allowed values: {allowed}.\","],["+","                code=AppErrorCode.INVALID.value,"],["+","            )"],["+","        )"],["+",""],["+",""],[" ","def _clean_webhooks(manifest_data, errors):"],[" ","    webhooks = manifest_data.get(\"webhooks\", [])"],[" ",""]]}]},{"path":"saleor/app/tests/test_installation_utils.py","previousPath":null,"delta":"changed","binary":false,"additions":41,"deletions":0,"component":"apps","category":"test","truncated":false,"hunks":[]},{"path":"saleor/app/tests/test_manifest_validations.py","previousPath":null,"delta":"changed","binary":false,"additions":61,"deletions":1,"component":"apps","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/meta/tests/mutations/test_order.py","previousPath":null,"delta":"changed","binary":false,"additions":115,"deletions":0,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/schema.graphql","previousPath":null,"delta":"changed","binary":false,"additions":35,"deletions":0,"component":"graphql-api","category":"ignored","truncated":true,"hunks":[]},{"path":"saleor/graphql/webhook/enums.py","previousPath":null,"delta":"changed","binary":false,"additions":19,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_create.py","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_trigger.py","previousPath":null,"delta":"changed","binary":false,"additions":12,"deletions":3,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_update.py","previousPath":null,"delta":"changed","binary":false,"additions":13,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_create.py","previousPath":null,"delta":"changed","binary":false,"additions":74,"deletions":2,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_trigger.py","previousPath":null,"delta":"changed","binary":false,"additions":68,"deletions":1,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_update.py","previousPath":null,"delta":"changed","binary":false,"additions":55,"deletions":2,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/types.py","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/webhook/migrations/0015_webhook_payload_generation.py","previousPath":null,"delta":"added","binary":false,"additions":22,"deletions":0,"component":"webhooks","category":"migration","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":22,"header":"","lines":[["+","# Generated by Django 5.2.18 on 2026-10-14 14:12"],["+",""],["+","from django.db import migrations, models"],["+",""],["+",""],["+","class Migration(migrations.Migration):"],["+","    dependencies = ["],["+","        (\"webhook\", \"0014_webhook_identifier_unique_constraint\"),"],["+","    ]"],["+",""],["+","    operations = ["],["+","        migrations.AddField("],["+","            model_name=\"webhook\","],["+","            name=\"payload_generation\","],["+","            field=models.CharField("],["+","                choices=[(\"deferred\", \"Deferred\"), (\"immediate\", \"Immediate\")],"],["+","                db_default=\"deferred\","],["+","                default=\"deferred\","],["+","                max_length=32,"],["+","            ),"],["+","        ),"],["+","    ]"]]}]},{"path":"saleor/webhook/migrations/0016_merge_20261016_0603.py","previousPath":null,"delta":"added","binary":false,"additions":12,"deletions":0,"component":"webhooks","category":"migration","truncated":false,"hunks":[]},{"path":"saleor/webhook/models.py","previousPath":null,"delta":"changed","binary":false,"additions":23,"deletions":0,"component":"webhooks","category":"code","truncated":false,"hunks":[{"oldStart":41,"oldLines":6,"newStart":51,"newLines":19,"header":"class Webhook(models.Model):","lines":[[" ","    # that doesn't set an identifier. Empty string stays blocked by the"],[" ","    # identifier_not_blank CheckConstraint below."],[" ","    identifier = models.CharField(max_length=256, null=True, blank=True)"],["+","    # How the subscription payload is built for async events that defer payload"],["+","    # generation (`is_deferred_payload` in the event map). The value is read once,"],["+","    # when a delivery is created by whatever triggered the event, a request or a"],["+","    # background task. Changing it never affects deliveries already created or"],["+","    # tasks already queued: those finish the way they started. It is ignored for"],["+","    # webhooks without a subscription query, for sync events and for events that"],["+","    # do not defer payload generation."],["+","    payload_generation = models.CharField("],["+","        max_length=32,"],["+","        choices=WebhookPayloadGeneration.CHOICES,"],["+","        default=WebhookPayloadGeneration.DEFERRED,"],["+","        db_default=WebhookPayloadGeneration.DEFERRED,"],["+","    )"],[" ",""],[" ","    class Meta:"],[" ","        ordering = (\"pk\",)"]]}]},{"path":"saleor/webhook/tests/test_models.py","previousPath":null,"delta":"changed","binary":false,"additions":10,"deletions":1,"component":"webhooks","category":"test","truncated":false,"hunks":[]},{"path":"saleor/webhook/transport/asynchronous/tests/test_deferred_payload.py","previousPath":null,"delta":"changed","binary":false,"additions":356,"deletions":0,"component":"webhooks","category":"test","truncated":false,"hunks":[]},{"path":"saleor/webhook/transport/asynchronous/transport.py","previousPath":null,"delta":"changed","binary":false,"additions":51,"deletions":8,"component":"webhooks","category":"code","truncated":false,"hunks":[{"oldStart":300,"oldLines":5,"newStart":302,"newLines":26,"header":"def group_webhooks_by_subscription(","lines":[[" ",""],[" ",""],["+","def group_subscription_webhooks_by_payload_generation("],["+","    webhooks: Sequence[\"Webhook\"],"],["+",") -> tuple[list[\"Webhook\"], list[\"Webhook\"]]:"],["+","    \"\"\"Group subscription webhooks by their `payload_generation` setting."],["+",""],["+","    Returns a tuple of two lists: webhooks whose payload is built in the deferred"],["+","    task and webhooks whose payload is built immediately, in the request."],["+","    \"\"\""],["+","    deferred = ["],["+","        webhook"],["+","        for webhook in webhooks"],["+","        if webhook.payload_generation == WebhookPayloadGeneration.DEFERRED"],["+","    ]"],["+","    immediate = ["],["+","        webhook"],["+","        for webhook in webhooks"],["+","        if webhook.payload_generation != WebhookPayloadGeneration.DEFERRED"],["+","    ]"],["+","    return deferred, immediate"],["+",""],["+",""],[" ","@allow_writer()"],[" ","def create_event_delivery_list_for_webhooks("],[" ","    webhooks: Sequence[\"Webhook\"],"]]},{"oldStart":401,"oldLines":24,"newStart":422,"newLines":40,"header":"def trigger_webhooks_async_for_multiple_objects(","lines":[[" ","            webhook_payload_data.subscribable_object"],[" ","            for webhook_payload_data in webhook_payloads_data"],[" ","        ]"],["-","        if is_deferred_payload:"],["+","        # A webhook's `payload_generation` is read here, once, when its deliveries"],["+","        # are created. Deliveries and tasks created earlier are not affected by a"],["+","        # later change of the setting."],["+","        deferred_webhooks: list[Webhook] = []"],["+","        immediate_webhooks = subscription_webhooks"],["+","        if is_deferrable_event:"],["+","            deferred_webhooks, immediate_webhooks = ("],["+","                group_subscription_webhooks_by_payload_generation(subscription_webhooks)"],["+","            )"],["+","        if deferred_webhooks:"],[" ","            deferred_deliveries_per_object = ("],[" ","                create_deliveries_for_deferred_payload_subscriptions("],[" ","                    event_type=event_type,"],[" ","                    subscribable_objects=subscribable_objects,"],["-","                    webhooks=subscription_webhooks,"],["+","                    webhooks=deferred_webhooks,"],[" ","                    requestor=requestor,"],[" ","                    allow_replica=allow_replica,"],[" ","                    request_time=request_time,"],[" ","                )"],[" ","            )"],["-","        else:"],["+","        if immediate_webhooks:"],["+","            # A deferrable event can be fired by a task right after it wrote the"],["+","            # object on the writer, with a manager that allows the replica. The"],["+","            # deferred task waits for the replica to catch up before it resolves"],["+","            # the payload, but this path resolves it now, so the fields it loads"],["+","            # through dataloaders are read from the writer instead. Fields taken"],["+","            # from the subscribable object itself still reflect wherever the"],["+","            # caller loaded that object from."],[" ","            delivery_promise = create_deliveries_for_multiple_subscription_objects("],[" ","                event_type=event_type,"],[" ","                subscribable_objects=subscribable_objects,"],["-","                webhooks=subscription_webhooks,"],["+","                webhooks=immediate_webhooks,"],[" ","                requestor=requestor,"],["-","                allow_replica=allow_replica,"],["+","                allow_replica=allow_replica and not is_deferrable_event,"],[" ","                pre_save_payloads=pre_save_payloads,"],[" ","                request_time=request_time,"],[" ","            )"]]}]}],"components":[{"id":"graphql-api","delta":"changed","files":5,"additions":62,"deletions":3},{"id":"catalog","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"discounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"accounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"apps","delta":"changed","files":3,"additions":29,"deletions":0},{"id":"webhooks","delta":"changed","files":4,"additions":108,"deletions":8},{"id":"plugins","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"platform","delta":"unchanged","files":0,"additions":0,"deletions":0}],"dependencies":[{"from":"apps","to":"accounts","delta":"unchanged","baseCount":7,"headCount":7,"examples":["saleor/app/installation_utils.py:22","saleor/app/manifest_validations.py:17","saleor/app/management/commands/utils.py:3"],"violation":null},{"from":"apps","to":"catalog","delta":"unchanged","baseCount":4,"headCount":4,"examples":["saleor/app/installation_utils.py:24","saleor/app/manifest_schema.py:8"],"violation":null},{"from":"apps","to":"discounts","delta":"unchanged","baseCount":1,"headCount":1,"examples":["saleor/app/manifest_validations.py:13"],"violation":null},{"from":"apps","to":"graphql-api","delta":"unchanged","baseCount":3,"headCount":3,"examples":["saleor/app/manifest_validations.py:14"],"violation":{"rule":"not allowed: integrations -> api","preexisting":true}},{"from":"apps","to":"platform","delta":"unchanged","baseCount":19,"headCount":19,"examples":["saleor/app/installation_utils.py:16","saleor/app/manifest_validations.py:12","saleor/app/actions.py:5"],"violation":null},{"from":"apps","to":"plugins","delta":"unchanged","baseCount":3,"headCount":3,"examples":["saleor/app/installation_utils.py:23","saleor/app/actions.py:7","saleor/app/management/commands/app_delete_all.py:6"],"violation":null},{"from":"apps","to":"webhooks","delta":"changed","baseCount":11,"headCount":12,"examples":["saleor/app/installation_utils.py:27","saleor/app/manifest_schema.py:9","saleor/app/manifest_validations.py:24"],"violation":null},{"from":"graphql-api","to":"accounts","delta":"unchanged","baseCount":171,"headCount":171,"examples":["saleor/graphql/webhook/mutations/webhook_create.py:4","saleor/graphql/webhook/mutations/webhook_trigger.py:16","saleor/graphql/webhook/mutations/webhook_update.py:5"],"violation":null},{"from":"graphql-api","to":"apps","delta":"unchanged","baseCount":67,"headCount":67,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:8","saleor/graphql/webhook/mutations/webhook_update.py:4","saleor/graphql/app/dataloaders/app.py:8"],"violation":null},{"from":"graphql-api","to":"discounts","delta":"unchanged","baseCount":24,"headCount":24,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:14","saleor/graphql/channel/mutations/channel_update.py:11","saleor/graphql/core/enums.py:21"],"violation":null},{"from":"graphql-api","to":"platform","delta":"unchanged","baseCount":115,"headCount":115,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:9","saleor/graphql/webhook/types.py:3","saleor/graphql/api.py:20"],"violation":null},{"from":"graphql-api","to":"webhooks","delta":"changed","baseCount":77,"headCount":78,"examples":["saleor/graphql/webhook/enums.py:3","saleor/graphql/webhook/mutations/webhook_create.py:6","saleor/graphql/webhook/mutations/webhook_trigger.py:17"],"violation":null},{"from":"webhooks","to":"apps","delta":"unchanged","baseCount":14,"headCount":14,"examples":["saleor/webhook/models.py:5","saleor/webhook/circuit_breaker/breaker_board.py:21","saleor/webhook/observability/sensitive_data.py:12"],"violation":null},{"from":"webhooks","to":"graphql-api","delta":"unchanged","baseCount":17,"headCount":17,"examples":["saleor/webhook/transport/asynchronous/transport.py:32","saleor/webhook/circuit_breaker/breaker_board.py:17","saleor/webhook/circuit_breaker/storage.py:8"],"violation":null},{"from":"webhooks","to":"platform","delta":"changed","baseCount":45,"headCount":46,"examples":["saleor/webhook/models.py:7","saleor/webhook/transport/asynchronous/transport.py:19","saleor/webhook/__init__.py:1"],"violation":null}],"dependencyGraph":[["accounts","accounts-api"],["accounts","apps"],["accounts","channels"],["accounts","checkout"],["accounts","graphql-api"],["accounts","orders"],["accounts","platform"],["accounts","plugins"],["accounts-api","accounts"],["accounts-api","apps"],["accounts-api","catalog"],["accounts-api","catalog-api"],["accounts-api","channels"],["accounts-api","checkout"],["accounts-api","checkout-api"],["accounts-api","discounts"],["accounts-api","discounts-api"],["accounts-api","graphql-api"],["accounts-api","orders"],["accounts-api","orders-api"],["accounts-api","payments"],["accounts-api","payments-api"],["accounts-api","platform"],["accounts-api","plugins"],["accounts-api","webhooks"],["apps","accounts"],["apps","catalog"],["apps","discounts"],["apps","graphql-api"],["apps","platform"],["apps","plugins"],["apps","webhooks"],["catalog","accounts"],["catalog","apps"],["catalog","catalog-api"],["catalog","channels"],["catalog","content"],["catalog","discounts"],["catalog","discounts-api"],["catalog","graphql-api"],["catalog","orders"],["catalog","platform"],["catalog","plugins"],["catalog","stock-shipping"],["catalog","webhooks"],["catalog-api","accounts"],["catalog-api","accounts-api"],["catalog-api","catalog"],["catalog-api","channels"],["catalog-api","content"],["catalog-api","discounts"],["catalog-api","graphql-api"],["catalog-api","orders"],["catalog-api","orders-api"],["catalog-api","platform"],["catalog-api","stock-shipping"],["catalog-api","webhooks"],["channels","accounts"],["channels","apps"],["channels","checkout"],["channels","graphql-api"],["channels","orders"],["channels","platform"],["channels","webhooks"],["checkout","accounts"],["checkout","accounts-api"],["checkout","apps"],["checkout","catalog"],["checkout","catalog-api"],["checkout","channels"],["checkout","checkout-api"],["checkout","discounts"],["checkout","graphql-api"],["checkout","orders"],["checkout","payments"],["checkout","payments-api"],["checkout","platform"],["checkout","plugins"],["checkout","stock-shipping"],["checkout","webhooks"],["checkout-api","accounts"],["checkout-api","accounts-api"],["checkout-api","apps"],["checkout-api","catalog"],["checkout-api","catalog-api"],["checkout-api","channels"],["checkout-api","checkout"],["checkout-api","discounts"],["checkout-api","discounts-api"],["checkout-api","graphql-api"],["checkout-api","orders"],["checkout-api","orders-api"],["checkout-api","payments"],["checkout-api","payments-api"],["checkout-api","platform"],["checkout-api","plugins"],["checkout-api","stock-shipping"],["checkout-api","webhooks"],["content","accounts"],["content","apps"],["content","catalog"],["content","catalog-api"],["content","graphql-api"],["content","platform"],["discounts","accounts"],["discounts","apps"],["discounts","catalog"],["discounts","channels"],["discounts","checkout"],["discounts","discounts-api"],["discounts","graphql-api"],["discounts","orders"],["discounts","payments"],["discounts","payments-api"],["discounts","platform"],["discounts","plugins"],["discounts","stock-shipping"],["discounts","webhooks"],["discounts-api","accounts"],["discounts-api","accounts-api"],["discounts-api","catalog"],["discounts-api","catalog-api"],["discounts-api","channels"],["discounts-api","checkout"],["discounts-api","checkout-api"],["discounts-api","discounts"],["discounts-api","graphql-api"],["discounts-api","orders"],["discounts-api","orders-api"],["discounts-api","platform"],["discounts-api","plugins"],["discounts-api","webhooks"],["graphql-api","accounts"],["graphql-api","accounts-api"],["graphql-api","apps"],["graphql-api","catalog"],["graphql-api","catalog-api"],["graphql-api","channels"],["graphql-api","checkout"],["graphql-api","checkout-api"],["graphql-api","content"],["graphql-api","discounts"],["graphql-api","discounts-api"],["graphql-api","orders"],["graphql-api","orders-api"],["graphql-api","payments"],["graphql-api","payments-api"],["graphql-api","platform"],["graphql-api","plugins"],["graphql-api","stock-shipping"],["graphql-api","webhooks"],["orders","accounts"],["orders","apps"],["orders","catalog"],["orders","channels"],["orders","checkout"],["orders","content"],["orders","discounts"],["orders","graphql-api"],["orders","orders-api"],["orders","payments"],["orders","platform"],["orders","plugins"],["orders","stock-shipping"],["orders","webhooks"],["orders-api","accounts"],["orders-api","accounts-api"],["orders-api","apps"],["orders-api","catalog"],["orders-api","catalog-api"],["orders-api","channels"],["orders-api","checkout"],["orders-api","checkout-api"],["orders-api","content"],["orders-api","discounts"],["orders-api","discounts-api"],["orders-api","graphql-api"],["orders-api","orders"],["orders-api","payments"],["orders-api","payments-api"],["orders-api","platform"],["orders-api","plugins"],["orders-api","stock-shipping"],["orders-api","webhooks"],["payment-gateways","checkout"],["payment-gateways","graphql-api"],["payment-gateways","orders"],["payment-gateways","payments"],["payment-gateways","platform"],["payment-gateways","plugins"],["payments","accounts"],["payments","apps"],["payments","channels"],["payments","checkout"],["payments","discounts"],["payments","graphql-api"],["payments","orders"],["payments","platform"],["payments","plugins"],["payments","webhooks"],["payments-api","accounts"],["payments-api","accounts-api"],["payments-api","apps"],["payments-api","channels"],["payments-api","checkout"],["payments-api","checkout-api"],["payments-api","content"],["payments-api","discounts"],["payments-api","graphql-api"],["payments-api","orders"],["payments-api","orders-api"],["payments-api","payments"],["payments-api","platform"],["payments-api","plugins"],["payments-api","webhooks"],["platform","accounts"],["platform","accounts-api"],["platform","apps"],["platform","catalog"],["platform","channels"],["platform","checkout"],["platform","content"],["platform","discounts"],["platform","graphql-api"],["platform","orders"],["platform","payments"],["platform","plugins"],["platform","stock-shipping"],["platform","webhooks"],["plugins","accounts"],["plugins","accounts-api"],["plugins","apps"],["plugins","catalog"],["plugins","channels"],["plugins","checkout"],["plugins","content"],["plugins","discounts"],["plugins","graphql-api"],["plugins","orders"],["plugins","payments"],["plugins","platform"],["plugins","stock-shipping"],["plugins","webhooks"],["stock-shipping","accounts"],["stock-shipping","apps"],["stock-shipping","catalog"],["stock-shipping","channels"],["stock-shipping","checkout"],["stock-shipping","graphql-api"],["stock-shipping","orders"],["stock-shipping","platform"],["stock-shipping","plugins"],["stock-shipping","webhooks"],["webhooks","accounts"],["webhooks","apps"],["webhooks","catalog"],["webhooks","channels"],["webhooks","checkout"],["webhooks","content"],["webhooks","discounts"],["webhooks","graphql-api"],["webhooks","orders"],["webhooks","payments"],["webhooks","platform"],["webhooks","plugins"],["webhooks","stock-shipping"]],"ports":[],"symbols":[{"file":"saleor/graphql/webhook/enums.py","line":362,"kind":"class","name":"WebhookPayloadGenerationEnum","delta":"added"},{"file":"saleor/webhook/models.py","line":18,"kind":"class","name":"WebhookPayloadGeneration","delta":"added"},{"file":"saleor/webhook/transport/asynchronous/transport.py","line":304,"kind":"def","name":"group_subscription_webhooks_by_payload_generation","delta":"added"}],"stats":{"files":22,"additions":1057,"deletions":18,"testAdditions":780,"testDeletions":7,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":210,"mappedLines":210},"notes":[],"openspec":null,"outline":{"story":[{"about":"Webhooks changed","view":"architecture","focus":["webhooks"],"code":"saleor/webhook/models.py:15-30"},{"about":"GraphQL API changed","view":"architecture","focus":["graphql-api"],"code":"saleor/graphql/webhook/enums.py:357-377"},{"about":"the data model","view":"data","focus":[],"code":"saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"apps","to":"webhooks"},{"from":"graphql-api","to":"webhooks"}],"dataFiles":["saleor/webhook/migrations/0015_webhook_payload_generation.py","saleor/webhook/migrations/0016_merge_20261016_0603.py","saleor/webhook/models.py"]}},"explanation":{"version":5,"key":"84ba0dc706e40ef6","lang":"en","tldr":"Each webhook now has payloadGeneration: DEFERRED, the default, or IMMEDIATE. An IMMEDIATE webhook gets its payload built when the event fires, with the state of that moment.","goal":"Let an app that applies each event in sequence get the state at trigger time, while other webhooks keep deferred payloads.","story":[{"heading":"Webhook gets a payload_generation field","body":"The new column is deferred by default. Existing webhooks keep deferred payloads, so they behave as before.","view":"data","focus":["webhook"],"code":"saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"},{"heading":"Async triggers split the webhooks of an event","body":"DEFERRED webhooks go to the background task. IMMEDIATE ones get their payload at once, and only they slow the request down.","view":"flow:trigger-async-webhooks","focus":["#1","#2"],"code":"saleor/webhook/transport/asynchronous/transport.py:422-461"},{"heading":"Apps set it; webhookTrigger respects it","body":"The manifest, webhookCreate and webhookUpdate take DEFERRED or IMMEDIATE. A manual trigger defers only for a DEFERRED webhook.","view":"flow:register-webhook","focus":["#1","#2"],"code":"saleor/app/manifest_validations.py:293-323"},{"heading":"ADR 0011 records the trade-off","body":"Deferred payloads carry the state when the task runs, not when the event happened. The opt-out is for consumers that need each step.","view":"architecture","focus":[],"code":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:39-54"}],"keyDependencies":[{"from":"graphql-api","to":"webhooks","label":"sets payloadGeneration"}],"components":[{"id":"graphql-api","summary":"New WebhookPayloadGenerationEnum; webhookCreate and webhookUpdate set it, and webhookTrigger reads it."},{"id":"apps","summary":"The app manifest takes payloadGeneration per webhook and stores deferred when it is missing."},{"id":"webhooks","summary":"Webhook stores payload_generation. Async triggers build IMMEDIATE payloads at once and defer the rest."}],"decisions":[{"title":"Deferred stays the default; IMMEDIATE is a per-webhook opt-out","why":"Deferral keeps heavy mutations fast. An integration that applies each ORDER_METADATA_UPDATED in sequence breaks when all deliveries carry the final state.","basis":"code","alternative":"Store a snapshot of every payload in the request.","evidence":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:41-47"},{"title":"The setting is read once, when the delivery is created","why":"Deliveries and queued tasks finish the way they started. A later change of the setting affects only new deliveries.","basis":"code","alternative":"Read the setting again when the task runs.","evidence":"saleor/webhook/models.py:55-62"},{"title":"An IMMEDIATE payload reads from the writer","why":"A task can fire the event right after its own write. The replica can lag, so dataloaders read the writer for this path.","basis":"code","alternative":"Read the replica, as the deferred task does.","evidence":"saleor/webhook/transport/asynchronous/transport.py:445-460"},{"title":"Group the webhooks, not the event","why":"An event reaches many apps. Each app chooses for its own webhook, and only that webhook pays the cost.","basis":"code","alternative":"A setting per event type for all apps.","evidence":"saleor/webhook/transport/asynchronous/transport.py:305-326"}],"flows":[{"id":"trigger-async-webhooks","title":"Trigger async webhooks for an event","trigger":"trigger_webhooks_async_for_multiple_objects","steps":[{"from":"webhooks","to":"webhooks","call":"group_subscription_webhooks_by_payload_generation","delta":"added","verified":true,"port":false,"via":null},{"from":"webhooks","to":"graphql-api","call":"build the IMMEDIATE payloads now","delta":"changed","data":{"type":"Webhook","fields":["+payload_generation: immediate"]},"verified":true,"port":false,"via":null}]},{"id":"register-webhook","title":"Register a webhook with its payload generation","trigger":"webhookCreate","steps":[{"from":"graphql-api","to":"webhooks","call":"Webhook.payload_generation","delta":"added","verified":true,"port":false,"via":null},{"from":"apps","to":"webhooks","call":"_clean_webhook_payload_generation","delta":"added","verified":true,"port":false,"via":null}]}],"dataModel":{"entities":[{"id":"webhook","name":"Webhook","component":"webhooks","delta":"changed","evidence":"saleor/webhook/models.py:51-69","fields":["+payload_generation: deferred|immediate = deferred"]},{"id":"app","name":"App","component":"apps","delta":"unchanged","fields":[]},{"id":"event-delivery","name":"EventDelivery","component":"webhooks","delta":"unchanged","fields":[]}],"relations":[{"from":"app","to":"webhook","label":"1..n","delta":"unchanged"},{"from":"webhook","to":"event-delivery","label":"1..n","delta":"unchanged"}]},"requirements":[]},"state":"valid","issues":[]}</script>
+<script type="application/json" id="ec-data">{"tool":"0.7.0","facts":{"version":5,"tool":"0.7.0","analysis":11,"key":"bd95b07be353fd85","source":{"kind":"pr","host":"github","prId":"19920","headRef":"refs/explain-change/pr-19920/source","headSha":"3e247353d7116a4f296c75f4ecffbd145e0cd54f","baseRef":"main","mergeBase":"dfa97c976418c4760ffd63d34b5e13698dfd85e8","branch":"pxtx-885","title":"Add per-webhook payloadGeneration to opt out of deferred payloads","description":"Port of https://github.com/saleor/saleor/pull/19916.","url":"https://github.com/saleor/saleor/pull/19920","includeUncommitted":false,"headDate":"2026-10-16T08:12:27+02:00","commits":1},"config":{"inferred":false,"name":"Saleor","direction":"Layered by context: GraphQL mutations in saleor/graphql call the commerce apps; the apps hold the models and rules and never import the API. Side effects to apps and plugins go through the PluginsManager, not Django signals.","lang":"en","layers":[{"id":"api","name":"API"},{"id":"domain","name":"Commerce"},{"id":"integrations","name":"Integrations"},{"id":"platform","name":"Platform"}],"components":[{"id":"catalog-api","name":"Catalog API","layer":"api","desc":"Owns the GraphQL types, queries and mutations for products, variants, categories, collections and attributes."},{"id":"checkout-api","name":"Checkout API","layer":"api","desc":"Owns the checkout mutations: create, add lines, set delivery, apply a voucher, complete."},{"id":"orders-api","name":"Orders API","layer":"api","desc":"Owns order queries and the staff mutations: drafts, fulfilments, refunds, invoices."},{"id":"discounts-api","name":"Discounts API","layer":"api","desc":"Owns the GraphQL types and mutations for vouchers, promotions and gift cards."},{"id":"payments-api","name":"Payments API","layer":"api","desc":"Owns payment and transaction queries and mutations, and the payment gateway list."},{"id":"accounts-api","name":"Accounts API","layer":"api","desc":"Owns the GraphQL types and mutations for customers, staff, addresses, permission groups and sign-in."},{"id":"graphql-api","name":"GraphQL API","layer":"api","desc":"Owns the schema, the base mutation and types, and the API of channels, apps, webhooks, shipping and content."},{"id":"catalog","name":"Catalog","layer":"domain","desc":"Owns Product, ProductVariant, Category, Collection and attributes; what is sold and in which channels."},{"id":"checkout","name":"Checkout","layer":"domain","desc":"Owns Checkout and its lines; prices a cart and turns it into an order."},{"id":"orders","name":"Orders","layer":"domain","desc":"Owns Order, its lines, fulfilments, events and invoices; the order life cycle after checkout."},{"id":"discounts","name":"Discounts","layer":"domain","desc":"Owns vouchers, promotions and gift cards; which discount applies to which line."},{"id":"payments","name":"Payments","layer":"domain","desc":"Owns Payment, TransactionItem and their events; what was authorized, charged and refunded."},{"id":"stock-shipping","name":"Stock and shipping","layer":"domain","desc":"Owns warehouses, stock, allocations, shipping zones and methods."},{"id":"channels","name":"Channels and taxes","layer":"domain","desc":"Owns channels (currency, country, settings) and tax configuration; each sales context of a shop."},{"id":"accounts","name":"Accounts","layer":"domain","desc":"Owns users, customers, staff, addresses and permissions."},{"id":"content","name":"Content","layer":"domain","desc":"Owns pages, menus, SEO fields and translations."},{"id":"apps","name":"Apps","layer":"integrations","desc":"Owns installed apps, their tokens, permissions and manifests."},{"id":"webhooks","name":"Webhooks","layer":"integrations","desc":"Owns webhooks and their events; builds each payload from a GraphQL subscription and delivers it, sync or async."},{"id":"plugins","name":"Plugins","layer":"integrations","desc":"Owns the PluginsManager, the event bus that calls plugins and webhooks, and the built-in plugins."},{"id":"payment-gateways","name":"Payment gateways","layer":"integrations","desc":"Owns the built-in payment gateway plugins and their provider clients."},{"id":"platform","name":"Platform","layer":"platform","desc":"Owns settings, Celery, ASGI, money and taxed-money helpers, and the base models every app uses."}],"rules":{"allow":["api -> domain","api -> integrations","api -> platform","domain -> integrations","domain -> platform","integrations -> domain","integrations -> platform","webhooks -> api"],"forbid":["domain -> api","platform -> api"]},"referenceFlows":[{"id":"complete-checkout","title":"Complete a checkout","steps":[{"from":"checkout-api","to":"checkout","message":"complete_checkout"},{"from":"checkout","to":"discounts","message":"apply voucher and promotions"},{"from":"checkout","to":"orders","message":"create order from checkout"},{"from":"checkout","to":"plugins","message":"manager.checkout_fully_paid"}]},{"id":"notify-apps","title":"Notify apps of an event","steps":[{"from":"orders","to":"plugins","message":"manager.order_created"},{"from":"plugins","to":"webhooks","message":"trigger_webhooks_async"}]}],"glossary":[{"term":"product","definition":"An item for sale; its variants are what a customer buys."},{"term":"variant","definition":"A sellable version of a product, with its own SKU, price and stock."},{"term":"channel","definition":"A sales context: its currency, countries and which products it sells."},{"term":"checkout","definition":"A customer's cart before it becomes an order."},{"term":"order","definition":"What a customer bought, from payment to fulfilment."},{"term":"voucher","definition":"A code that gives a discount when the customer enters it."},{"term":"promotion","definition":"A discount that applies on its own when its rules match."},{"term":"gift card","definition":"A prepaid balance a customer spends at checkout."},{"term":"warehouse","definition":"A place that holds stock and ships orders."},{"term":"app","definition":"An external service with a token and webhooks, which extends Saleor through the API."},{"term":"webhook","definition":"An event delivery from Saleor to an app, sync or async."},{"term":"plugin","definition":"A Python extension that the PluginsManager calls on domain events."}],"names":[]},"files":[{"path":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md","previousPath":null,"delta":"added","binary":false,"additions":78,"deletions":0,"component":null,"category":"docs","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":36,"newLines":22,"header":"","lines":[["+","writer would move the full payload-generation load onto the primary, which is the database that"],["+","every pod shares and the scaling bottleneck."],["+",""],["+","## Per-webhook opt-out"],["+",""],["+","Deferral is right by default but not for every consumer. An integration that applies each"],["+","`ORDER_METADATA_UPDATED` in sequence, expecting the metadata as written by each request, breaks"],["+","when several pending deliveries all carry the final state. Each webhook therefore carries a"],["+","`payloadGeneration` choice, `DEFERRED` by default or `IMMEDIATE`, set by the app that registers it"],["+","through the mutations or the manifest. An `IMMEDIATE` subscription webhook on a deferred event has"],["+","its payload built by whatever triggered the event, as every webhook did before deferral, and only"],["+","that webhook pays the cost. For events fired from a request that is the mutation's latency. For"],["+","events fired from a background task, such as the variant price and stock events, it is that task's"],["+","run time, which is why those events were deferred from the start. An app that sets `IMMEDIATE` on"],["+","such an event takes that cost knowingly. Because such a task may fire the event with a replica-allowed"],["+","manager right after its own write, an `IMMEDIATE` payload on a deferrable event is resolved against the"],["+","writer, so the dataloader-resolved fields cannot predate the write. Fields read from the subscribable"],["+","object itself still reflect where the caller loaded it from. The choice is ignored where it cannot apply: legacy"],["+","webhooks without a subscription query, sync events, and events that are not deferred."],["+",""],["+","## When each event became deferred"],["+",""]]}]},{"path":"saleor/app/installation_utils.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[]},{"path":"saleor/app/manifest_schema.py","previousPath":null,"delta":"changed","binary":false,"additions":1,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[]},{"path":"saleor/app/manifest_validations.py","previousPath":null,"delta":"changed","binary":false,"additions":27,"deletions":0,"component":"apps","category":"code","truncated":false,"hunks":[{"oldStart":292,"oldLines":6,"newStart":293,"newLines":31,"header":"def _clean_webhook_identifier(webhook, seen_identifiers, errors):","lines":[[" ","    seen_identifiers.add(identifier)"],[" ",""],[" ",""],["+","def _clean_webhook_payload_generation(webhook, errors):"],["+","    \"\"\"Map the manifest's `payloadGeneration` enum name to its stored value."],["+",""],["+","    Accepts the GraphQL enum names (`DEFERRED`, `IMMEDIATE`), like event names"],["+","    do. A missing value means `DEFERRED`."],["+","    \"\"\""],["+","    payload_generation_values = {"],["+","        str_to_enum(value): value for value, _ in WebhookPayloadGeneration.CHOICES"],["+","    }"],["+","    raw_value = webhook.get(\"payloadGeneration\")"],["+","    if raw_value is None:"],["+","        webhook[\"payloadGeneration\"] = WebhookPayloadGeneration.DEFERRED"],["+","        return"],["+","    try:"],["+","        webhook[\"payloadGeneration\"] = payload_generation_values[raw_value]"],["+","    except KeyError:"],["+","        allowed = \", \".join(payload_generation_values)"],["+","        errors[\"webhooks\"].append("],["+","            ValidationError("],["+","                f\"Invalid payload generation: {raw_value}. Allowed values: {allowed}.\","],["+","                code=AppErrorCode.INVALID.value,"],["+","            )"],["+","        )"],["+",""],["+",""],[" ","def _clean_webhooks(manifest_data, errors):"],[" ","    webhooks = manifest_data.get(\"webhooks\", [])"],[" ",""]]}]},{"path":"saleor/app/tests/test_installation_utils.py","previousPath":null,"delta":"changed","binary":false,"additions":41,"deletions":0,"component":"apps","category":"test","truncated":false,"hunks":[]},{"path":"saleor/app/tests/test_manifest_validations.py","previousPath":null,"delta":"changed","binary":false,"additions":61,"deletions":1,"component":"apps","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/meta/tests/mutations/test_order.py","previousPath":null,"delta":"changed","binary":false,"additions":115,"deletions":0,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/schema.graphql","previousPath":null,"delta":"changed","binary":false,"additions":35,"deletions":0,"component":"graphql-api","category":"ignored","truncated":true,"hunks":[]},{"path":"saleor/graphql/webhook/enums.py","previousPath":null,"delta":"changed","binary":false,"additions":19,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_create.py","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_trigger.py","previousPath":null,"delta":"changed","binary":false,"additions":12,"deletions":3,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/mutations/webhook_update.py","previousPath":null,"delta":"changed","binary":false,"additions":13,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_create.py","previousPath":null,"delta":"changed","binary":false,"additions":74,"deletions":2,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_trigger.py","previousPath":null,"delta":"changed","binary":false,"additions":68,"deletions":1,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/tests/mutations/test_webhook_update.py","previousPath":null,"delta":"changed","binary":false,"additions":55,"deletions":2,"component":"graphql-api","category":"test","truncated":false,"hunks":[]},{"path":"saleor/graphql/webhook/types.py","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":0,"component":"graphql-api","category":"code","truncated":false,"hunks":[]},{"path":"saleor/webhook/migrations/0015_webhook_payload_generation.py","previousPath":null,"delta":"added","binary":false,"additions":22,"deletions":0,"component":"webhooks","category":"migration","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":22,"header":"","lines":[["+","# Generated by Django 5.2.18 on 2026-10-14 14:12"],["+",""],["+","from django.db import migrations, models"],["+",""],["+",""],["+","class Migration(migrations.Migration):"],["+","    dependencies = ["],["+","        (\"webhook\", \"0014_webhook_identifier_unique_constraint\"),"],["+","    ]"],["+",""],["+","    operations = ["],["+","        migrations.AddField("],["+","            model_name=\"webhook\","],["+","            name=\"payload_generation\","],["+","            field=models.CharField("],["+","                choices=[(\"deferred\", \"Deferred\"), (\"immediate\", \"Immediate\")],"],["+","                db_default=\"deferred\","],["+","                default=\"deferred\","],["+","                max_length=32,"],["+","            ),"],["+","        ),"],["+","    ]"]]}]},{"path":"saleor/webhook/migrations/0016_merge_20261016_0603.py","previousPath":null,"delta":"added","binary":false,"additions":12,"deletions":0,"component":"webhooks","category":"migration","truncated":false,"hunks":[]},{"path":"saleor/webhook/models.py","previousPath":null,"delta":"changed","binary":false,"additions":23,"deletions":0,"component":"webhooks","category":"code","truncated":false,"hunks":[{"oldStart":41,"oldLines":6,"newStart":51,"newLines":19,"header":"class Webhook(models.Model):","lines":[[" ","    # that doesn't set an identifier. Empty string stays blocked by the"],[" ","    # identifier_not_blank CheckConstraint below."],[" ","    identifier = models.CharField(max_length=256, null=True, blank=True)"],["+","    # How the subscription payload is built for async events that defer payload"],["+","    # generation (`is_deferred_payload` in the event map). The value is read once,"],["+","    # when a delivery is created by whatever triggered the event, a request or a"],["+","    # background task. Changing it never affects deliveries already created or"],["+","    # tasks already queued: those finish the way they started. It is ignored for"],["+","    # webhooks without a subscription query, for sync events and for events that"],["+","    # do not defer payload generation."],["+","    payload_generation = models.CharField("],["+","        max_length=32,"],["+","        choices=WebhookPayloadGeneration.CHOICES,"],["+","        default=WebhookPayloadGeneration.DEFERRED,"],["+","        db_default=WebhookPayloadGeneration.DEFERRED,"],["+","    )"],[" ",""],[" ","    class Meta:"],[" ","        ordering = (\"pk\",)"]]}]},{"path":"saleor/webhook/tests/test_models.py","previousPath":null,"delta":"changed","binary":false,"additions":10,"deletions":1,"component":"webhooks","category":"test","truncated":false,"hunks":[]},{"path":"saleor/webhook/transport/asynchronous/tests/test_deferred_payload.py","previousPath":null,"delta":"changed","binary":false,"additions":356,"deletions":0,"component":"webhooks","category":"test","truncated":false,"hunks":[]},{"path":"saleor/webhook/transport/asynchronous/transport.py","previousPath":null,"delta":"changed","binary":false,"additions":51,"deletions":8,"component":"webhooks","category":"code","truncated":false,"hunks":[{"oldStart":300,"oldLines":5,"newStart":302,"newLines":26,"header":"def group_webhooks_by_subscription(","lines":[[" ",""],[" ",""],["+","def group_subscription_webhooks_by_payload_generation("],["+","    webhooks: Sequence[\"Webhook\"],"],["+",") -> tuple[list[\"Webhook\"], list[\"Webhook\"]]:"],["+","    \"\"\"Group subscription webhooks by their `payload_generation` setting."],["+",""],["+","    Returns a tuple of two lists: webhooks whose payload is built in the deferred"],["+","    task and webhooks whose payload is built immediately, in the request."],["+","    \"\"\""],["+","    deferred = ["],["+","        webhook"],["+","        for webhook in webhooks"],["+","        if webhook.payload_generation == WebhookPayloadGeneration.DEFERRED"],["+","    ]"],["+","    immediate = ["],["+","        webhook"],["+","        for webhook in webhooks"],["+","        if webhook.payload_generation != WebhookPayloadGeneration.DEFERRED"],["+","    ]"],["+","    return deferred, immediate"],["+",""],["+",""],[" ","@allow_writer()"],[" ","def create_event_delivery_list_for_webhooks("],[" ","    webhooks: Sequence[\"Webhook\"],"]]},{"oldStart":401,"oldLines":24,"newStart":422,"newLines":40,"header":"def trigger_webhooks_async_for_multiple_objects(","lines":[[" ","            webhook_payload_data.subscribable_object"],[" ","            for webhook_payload_data in webhook_payloads_data"],[" ","        ]"],["-","        if is_deferred_payload:"],["+","        # A webhook's `payload_generation` is read here, once, when its deliveries"],["+","        # are created. Deliveries and tasks created earlier are not affected by a"],["+","        # later change of the setting."],["+","        deferred_webhooks: list[Webhook] = []"],["+","        immediate_webhooks = subscription_webhooks"],["+","        if is_deferrable_event:"],["+","            deferred_webhooks, immediate_webhooks = ("],["+","                group_subscription_webhooks_by_payload_generation(subscription_webhooks)"],["+","            )"],["+","        if deferred_webhooks:"],[" ","            deferred_deliveries_per_object = ("],[" ","                create_deliveries_for_deferred_payload_subscriptions("],[" ","                    event_type=event_type,"],[" ","                    subscribable_objects=subscribable_objects,"],["-","                    webhooks=subscription_webhooks,"],["+","                    webhooks=deferred_webhooks,"],[" ","                    requestor=requestor,"],[" ","                    allow_replica=allow_replica,"],[" ","                    request_time=request_time,"],[" ","                )"],[" ","            )"],["-","        else:"],["+","        if immediate_webhooks:"],["+","            # A deferrable event can be fired by a task right after it wrote the"],["+","            # object on the writer, with a manager that allows the replica. The"],["+","            # deferred task waits for the replica to catch up before it resolves"],["+","            # the payload, but this path resolves it now, so the fields it loads"],["+","            # through dataloaders are read from the writer instead. Fields taken"],["+","            # from the subscribable object itself still reflect wherever the"],["+","            # caller loaded that object from."],[" ","            delivery_promise = create_deliveries_for_multiple_subscription_objects("],[" ","                event_type=event_type,"],[" ","                subscribable_objects=subscribable_objects,"],["-","                webhooks=subscription_webhooks,"],["+","                webhooks=immediate_webhooks,"],[" ","                requestor=requestor,"],["-","                allow_replica=allow_replica,"],["+","                allow_replica=allow_replica and not is_deferrable_event,"],[" ","                pre_save_payloads=pre_save_payloads,"],[" ","                request_time=request_time,"],[" ","            )"]]}]}],"components":[{"id":"graphql-api","delta":"changed","files":5,"additions":62,"deletions":3},{"id":"catalog","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"discounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"accounts","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"apps","delta":"changed","files":3,"additions":29,"deletions":0},{"id":"webhooks","delta":"changed","files":4,"additions":108,"deletions":8},{"id":"plugins","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"platform","delta":"unchanged","files":0,"additions":0,"deletions":0}],"dependencies":[{"from":"apps","to":"accounts","delta":"unchanged","baseCount":7,"headCount":7,"examples":["saleor/app/installation_utils.py:22","saleor/app/manifest_validations.py:17","saleor/app/management/commands/utils.py:3"],"violation":null},{"from":"apps","to":"catalog","delta":"unchanged","baseCount":4,"headCount":4,"examples":["saleor/app/installation_utils.py:24","saleor/app/manifest_schema.py:8"],"violation":null},{"from":"apps","to":"discounts","delta":"unchanged","baseCount":1,"headCount":1,"examples":["saleor/app/manifest_validations.py:13"],"violation":null},{"from":"apps","to":"graphql-api","delta":"unchanged","baseCount":3,"headCount":3,"examples":["saleor/app/manifest_validations.py:14"],"violation":{"rule":"not allowed: integrations -> api","preexisting":true}},{"from":"apps","to":"platform","delta":"unchanged","baseCount":19,"headCount":19,"examples":["saleor/app/installation_utils.py:16","saleor/app/manifest_validations.py:12","saleor/app/actions.py:5"],"violation":null},{"from":"apps","to":"plugins","delta":"unchanged","baseCount":3,"headCount":3,"examples":["saleor/app/installation_utils.py:23","saleor/app/actions.py:7","saleor/app/management/commands/app_delete_all.py:6"],"violation":null},{"from":"apps","to":"webhooks","delta":"changed","baseCount":11,"headCount":12,"examples":["saleor/app/installation_utils.py:27","saleor/app/manifest_schema.py:9","saleor/app/manifest_validations.py:24"],"violation":null},{"from":"graphql-api","to":"accounts","delta":"unchanged","baseCount":171,"headCount":171,"examples":["saleor/graphql/webhook/mutations/webhook_create.py:4","saleor/graphql/webhook/mutations/webhook_trigger.py:16","saleor/graphql/webhook/mutations/webhook_update.py:5"],"violation":null},{"from":"graphql-api","to":"apps","delta":"unchanged","baseCount":67,"headCount":67,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:8","saleor/graphql/webhook/mutations/webhook_update.py:4","saleor/graphql/app/dataloaders/app.py:8"],"violation":null},{"from":"graphql-api","to":"discounts","delta":"unchanged","baseCount":24,"headCount":24,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:14","saleor/graphql/channel/mutations/channel_update.py:11","saleor/graphql/core/enums.py:21"],"violation":null},{"from":"graphql-api","to":"platform","delta":"unchanged","baseCount":115,"headCount":115,"examples":["saleor/graphql/webhook/mutations/webhook_trigger.py:9","saleor/graphql/webhook/types.py:3","saleor/graphql/api.py:20"],"violation":null},{"from":"graphql-api","to":"webhooks","delta":"changed","baseCount":77,"headCount":78,"examples":["saleor/graphql/webhook/enums.py:3","saleor/graphql/webhook/mutations/webhook_create.py:6","saleor/graphql/webhook/mutations/webhook_trigger.py:17"],"violation":null},{"from":"webhooks","to":"apps","delta":"unchanged","baseCount":14,"headCount":14,"examples":["saleor/webhook/models.py:5","saleor/webhook/circuit_breaker/breaker_board.py:21","saleor/webhook/observability/sensitive_data.py:12"],"violation":null},{"from":"webhooks","to":"graphql-api","delta":"unchanged","baseCount":17,"headCount":17,"examples":["saleor/webhook/transport/asynchronous/transport.py:32","saleor/webhook/circuit_breaker/breaker_board.py:17","saleor/webhook/circuit_breaker/storage.py:8"],"violation":null},{"from":"webhooks","to":"platform","delta":"changed","baseCount":45,"headCount":46,"examples":["saleor/webhook/models.py:7","saleor/webhook/transport/asynchronous/transport.py:19","saleor/webhook/__init__.py:1"],"violation":null}],"dependencyGraph":[["accounts","accounts-api"],["accounts","apps"],["accounts","channels"],["accounts","checkout"],["accounts","graphql-api"],["accounts","orders"],["accounts","platform"],["accounts","plugins"],["accounts-api","accounts"],["accounts-api","apps"],["accounts-api","catalog"],["accounts-api","catalog-api"],["accounts-api","channels"],["accounts-api","checkout"],["accounts-api","checkout-api"],["accounts-api","discounts"],["accounts-api","discounts-api"],["accounts-api","graphql-api"],["accounts-api","orders"],["accounts-api","orders-api"],["accounts-api","payments"],["accounts-api","payments-api"],["accounts-api","platform"],["accounts-api","plugins"],["accounts-api","webhooks"],["apps","accounts"],["apps","catalog"],["apps","discounts"],["apps","graphql-api"],["apps","platform"],["apps","plugins"],["apps","webhooks"],["catalog","accounts"],["catalog","apps"],["catalog","catalog-api"],["catalog","channels"],["catalog","content"],["catalog","discounts"],["catalog","discounts-api"],["catalog","graphql-api"],["catalog","orders"],["catalog","platform"],["catalog","plugins"],["catalog","stock-shipping"],["catalog","webhooks"],["catalog-api","accounts"],["catalog-api","accounts-api"],["catalog-api","catalog"],["catalog-api","channels"],["catalog-api","content"],["catalog-api","discounts"],["catalog-api","graphql-api"],["catalog-api","orders"],["catalog-api","orders-api"],["catalog-api","platform"],["catalog-api","stock-shipping"],["catalog-api","webhooks"],["channels","accounts"],["channels","apps"],["channels","checkout"],["channels","graphql-api"],["channels","orders"],["channels","platform"],["channels","webhooks"],["checkout","accounts"],["checkout","accounts-api"],["checkout","apps"],["checkout","catalog"],["checkout","catalog-api"],["checkout","channels"],["checkout","checkout-api"],["checkout","discounts"],["checkout","graphql-api"],["checkout","orders"],["checkout","payments"],["checkout","payments-api"],["checkout","platform"],["checkout","plugins"],["checkout","stock-shipping"],["checkout","webhooks"],["checkout-api","accounts"],["checkout-api","accounts-api"],["checkout-api","apps"],["checkout-api","catalog"],["checkout-api","catalog-api"],["checkout-api","channels"],["checkout-api","checkout"],["checkout-api","discounts"],["checkout-api","discounts-api"],["checkout-api","graphql-api"],["checkout-api","orders"],["checkout-api","orders-api"],["checkout-api","payments"],["checkout-api","payments-api"],["checkout-api","platform"],["checkout-api","plugins"],["checkout-api","stock-shipping"],["checkout-api","webhooks"],["content","accounts"],["content","apps"],["content","catalog"],["content","catalog-api"],["content","graphql-api"],["content","platform"],["discounts","accounts"],["discounts","apps"],["discounts","catalog"],["discounts","channels"],["discounts","checkout"],["discounts","discounts-api"],["discounts","graphql-api"],["discounts","orders"],["discounts","payments"],["discounts","payments-api"],["discounts","platform"],["discounts","plugins"],["discounts","stock-shipping"],["discounts","webhooks"],["discounts-api","accounts"],["discounts-api","accounts-api"],["discounts-api","catalog"],["discounts-api","catalog-api"],["discounts-api","channels"],["discounts-api","checkout"],["discounts-api","checkout-api"],["discounts-api","discounts"],["discounts-api","graphql-api"],["discounts-api","orders"],["discounts-api","orders-api"],["discounts-api","platform"],["discounts-api","plugins"],["discounts-api","webhooks"],["graphql-api","accounts"],["graphql-api","accounts-api"],["graphql-api","apps"],["graphql-api","catalog"],["graphql-api","catalog-api"],["graphql-api","channels"],["graphql-api","checkout"],["graphql-api","checkout-api"],["graphql-api","content"],["graphql-api","discounts"],["graphql-api","discounts-api"],["graphql-api","orders"],["graphql-api","orders-api"],["graphql-api","payments"],["graphql-api","payments-api"],["graphql-api","platform"],["graphql-api","plugins"],["graphql-api","stock-shipping"],["graphql-api","webhooks"],["orders","accounts"],["orders","apps"],["orders","catalog"],["orders","channels"],["orders","checkout"],["orders","content"],["orders","discounts"],["orders","graphql-api"],["orders","orders-api"],["orders","payments"],["orders","platform"],["orders","plugins"],["orders","stock-shipping"],["orders","webhooks"],["orders-api","accounts"],["orders-api","accounts-api"],["orders-api","apps"],["orders-api","catalog"],["orders-api","catalog-api"],["orders-api","channels"],["orders-api","checkout"],["orders-api","checkout-api"],["orders-api","content"],["orders-api","discounts"],["orders-api","discounts-api"],["orders-api","graphql-api"],["orders-api","orders"],["orders-api","payments"],["orders-api","payments-api"],["orders-api","platform"],["orders-api","plugins"],["orders-api","stock-shipping"],["orders-api","webhooks"],["payment-gateways","checkout"],["payment-gateways","graphql-api"],["payment-gateways","orders"],["payment-gateways","payments"],["payment-gateways","platform"],["payment-gateways","plugins"],["payments","accounts"],["payments","apps"],["payments","channels"],["payments","checkout"],["payments","discounts"],["payments","graphql-api"],["payments","orders"],["payments","platform"],["payments","plugins"],["payments","webhooks"],["payments-api","accounts"],["payments-api","accounts-api"],["payments-api","apps"],["payments-api","channels"],["payments-api","checkout"],["payments-api","checkout-api"],["payments-api","content"],["payments-api","discounts"],["payments-api","graphql-api"],["payments-api","orders"],["payments-api","orders-api"],["payments-api","payments"],["payments-api","platform"],["payments-api","plugins"],["payments-api","webhooks"],["platform","accounts"],["platform","accounts-api"],["platform","apps"],["platform","catalog"],["platform","channels"],["platform","checkout"],["platform","content"],["platform","discounts"],["platform","graphql-api"],["platform","orders"],["platform","payments"],["platform","plugins"],["platform","stock-shipping"],["platform","webhooks"],["plugins","accounts"],["plugins","accounts-api"],["plugins","apps"],["plugins","catalog"],["plugins","channels"],["plugins","checkout"],["plugins","content"],["plugins","discounts"],["plugins","graphql-api"],["plugins","orders"],["plugins","payments"],["plugins","platform"],["plugins","stock-shipping"],["plugins","webhooks"],["stock-shipping","accounts"],["stock-shipping","apps"],["stock-shipping","catalog"],["stock-shipping","channels"],["stock-shipping","checkout"],["stock-shipping","graphql-api"],["stock-shipping","orders"],["stock-shipping","platform"],["stock-shipping","plugins"],["stock-shipping","webhooks"],["webhooks","accounts"],["webhooks","apps"],["webhooks","catalog"],["webhooks","channels"],["webhooks","checkout"],["webhooks","content"],["webhooks","discounts"],["webhooks","graphql-api"],["webhooks","orders"],["webhooks","payments"],["webhooks","platform"],["webhooks","plugins"],["webhooks","stock-shipping"]],"ports":[],"symbols":[{"file":"saleor/graphql/webhook/enums.py","line":362,"kind":"class","name":"WebhookPayloadGenerationEnum","delta":"added"},{"file":"saleor/webhook/models.py","line":18,"kind":"class","name":"WebhookPayloadGeneration","delta":"added"},{"file":"saleor/webhook/transport/asynchronous/transport.py","line":304,"kind":"def","name":"group_subscription_webhooks_by_payload_generation","delta":"added"}],"stats":{"files":22,"additions":1057,"deletions":18,"testAdditions":780,"testDeletions":7,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":210,"mappedLines":210},"notes":["PR 19920 has no merge ref (merged): explained as 'pxtx-885' against its merge base with 'main'."],"openspec":null,"outline":{"story":[{"about":"Webhooks changed","view":"architecture","focus":["webhooks"],"code":"saleor/webhook/transport/asynchronous/transport.py:301-327"},{"about":"GraphQL API changed","view":"architecture","focus":["graphql-api"],"code":"saleor/graphql/webhook/enums.py:357-377"},{"about":"the data model","view":"data","focus":[],"code":"saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"apps","to":"webhooks"},{"from":"graphql-api","to":"webhooks"}],"dataFiles":["saleor/webhook/migrations/0015_webhook_payload_generation.py","saleor/webhook/migrations/0016_merge_20261016_0603.py","saleor/webhook/models.py"]}},"explanation":{"version":5,"key":"bd95b07be353fd85","lang":"en","tldr":"Each webhook now has payloadGeneration: DEFERRED, the default, or IMMEDIATE. An IMMEDIATE webhook gets its payload built when the event fires, with the state of that moment.","goal":"Let an app that applies each event in sequence get the state at trigger time, while other webhooks keep deferred payloads.","story":[{"heading":"Webhook gets a payload_generation field","body":"The new column is deferred by default. Existing webhooks keep deferred payloads, so they behave as before.","view":"data","focus":["webhook"],"code":"saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"},{"heading":"Async triggers split the webhooks of an event","body":"DEFERRED webhooks go to the background task. IMMEDIATE ones get their payload at once, and only they slow the request down.","view":"flow:trigger-async-webhooks","focus":["#1","#2"],"code":"saleor/webhook/transport/asynchronous/transport.py:422-461"},{"heading":"Apps set it; webhookTrigger respects it","body":"The manifest, webhookCreate and webhookUpdate take DEFERRED or IMMEDIATE. A manual trigger defers only for a DEFERRED webhook.","view":"flow:register-webhook","focus":["#1","#2"],"code":"saleor/app/manifest_validations.py:293-323"},{"heading":"ADR 0011 records the trade-off","body":"Deferred payloads carry the state when the task runs, not when the event happened. The opt-out is for consumers that need each step.","view":"architecture","focus":[],"code":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:39-54"}],"keyDependencies":[{"from":"graphql-api","to":"webhooks","label":"sets payloadGeneration"}],"components":[{"id":"graphql-api","summary":"New WebhookPayloadGenerationEnum; webhookCreate and webhookUpdate set it, and webhookTrigger reads it."},{"id":"apps","summary":"The app manifest takes payloadGeneration per webhook and stores deferred when it is missing."},{"id":"webhooks","summary":"Webhook stores payload_generation. Async triggers build IMMEDIATE payloads at once and defer the rest."}],"decisions":[{"title":"Deferred stays the default; IMMEDIATE is a per-webhook opt-out","why":"Deferral keeps heavy mutations fast. An integration that applies each ORDER_METADATA_UPDATED in sequence breaks when all deliveries carry the final state.","basis":"code","alternative":"Store a snapshot of every payload in the request.","evidence":"docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:41-47"},{"title":"The setting is read once, when the delivery is created","why":"Deliveries and queued tasks finish the way they started. A later change of the setting affects only new deliveries.","basis":"code","alternative":"Read the setting again when the task runs.","evidence":"saleor/webhook/models.py:55-62"},{"title":"An IMMEDIATE payload reads from the writer","why":"A task can fire the event right after its own write. The replica can lag, so dataloaders read the writer for this path.","basis":"code","alternative":"Read the replica, as the deferred task does.","evidence":"saleor/webhook/transport/asynchronous/transport.py:445-460"},{"title":"Group the webhooks, not the event","why":"An event reaches many apps. Each app chooses for its own webhook, and only that webhook pays the cost.","basis":"code","alternative":"A setting per event type for all apps.","evidence":"saleor/webhook/transport/asynchronous/transport.py:305-326"}],"flows":[{"id":"trigger-async-webhooks","title":"Trigger async webhooks for an event","trigger":"trigger_webhooks_async_for_multiple_objects","steps":[{"from":"webhooks","to":"webhooks","call":"group_subscription_webhooks_by_payload_generation","delta":"added","verified":true,"port":false,"via":null},{"from":"webhooks","to":"graphql-api","call":"build the IMMEDIATE payloads now","delta":"changed","data":{"type":"Webhook","fields":["+payload_generation: immediate"]},"verified":true,"port":false,"via":null}]},{"id":"register-webhook","title":"Register a webhook with its payload generation","trigger":"webhookCreate","steps":[{"from":"graphql-api","to":"webhooks","call":"Webhook.payload_generation","delta":"added","verified":true,"port":false,"via":null},{"from":"apps","to":"webhooks","call":"_clean_webhook_payload_generation","delta":"added","verified":true,"port":false,"via":null}]}],"dataModel":{"entities":[{"id":"webhook","name":"Webhook","component":"webhooks","delta":"changed","evidence":"saleor/webhook/models.py:51-69","fields":["+payload_generation: deferred|immediate = deferred"]},{"id":"app","name":"App","component":"apps","delta":"unchanged","fields":[]},{"id":"event-delivery","name":"EventDelivery","component":"webhooks","delta":"unchanged","fields":[]}],"relations":[{"from":"app","to":"webhook","label":"1..n","delta":"unchanged"},{"from":"webhook","to":"event-delivery","label":"1..n","delta":"unchanged"}]},"requirements":[]},"state":"valid","issues":[]}</script>
 <script>(() => {
   // report/bulb.svg
   var bulb_default = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="explain-change">
@@ -1087,6 +1087,487 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       entById[e.id] = e;
   var isNewViolation = (e) => Boolean(e.violation && !e.violation.preexisting);
 
+  // report/ui.ts
+  function onOpen(el, path) {
+    const url = prFileUrl2(path);
+    if (url) {
+      el.classList.add("linked");
+      el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
+    }
+    return el;
+  }
+  function fileLink(ref, label) {
+    const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
+    const url = prFileUrl2(path);
+    return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref }) : h("code", { class: "ref", text: label || ref });
+  }
+  function sectionShell(id, title, body, lead) {
+    return h("section", { class: "section", id }, h("div", { class: "section-head" }, h("h2", { text: title }), lead ? h("span", { class: "section-lead", text: lead }) : null), body);
+  }
+  function legendItem(kind, color, label) {
+    if (kind === "swatch")
+      return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
+    return h("span", null, h("i", {
+      class: `legend-line${kind.includes("anim") ? " anim" : ""}`,
+      style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`
+    }), label);
+  }
+  function chip(v, label, cls) {
+    return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
+  }
+  var mapApi = {};
+  function fieldDelta(f) {
+    const c = f.trim().charAt(0);
+    return c === "+" ? "added" : c === "-" || c === "−" ? "removed" : c === "~" ? "changed" : "unchanged";
+  }
+  var fieldText = (f) => /^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim();
+  var FIELD_MARK = { added: "+", removed: "−", changed: "~", unchanged: "" };
+
+  // report/header.ts
+  function renderHeader() {
+    const states = {
+      stale: [T.staleExplanation, T.staleText],
+      invalid: [T.invalidExplanation, T.invalidText],
+      draft: [T.draftExplanation, T.draftExplanationText]
+    };
+    const [noticeTitle, noticeText] = states[DATA.state] ?? [T.noExplanation, T.noExplanationText];
+    const notice = ex ? null : h("div", { class: "notice" }, h("span", { class: "notice-icon", text: "i" }), h("div", null, h("b", { text: noticeTitle }), " ", noticeText, DATA.state === "invalid" ? h("ul", null, DATA.issues.slice(0, 20).map((e) => h("li", { text: `${e.path}: ${e.message}` }))) : null));
+    const counts = { added: 0, changed: 0, removed: 0 };
+    for (const c of facts.components)
+      if (c.delta !== "unchanged")
+        counts[c.delta]++;
+    const srcLabel = src.kind === "pr" ? `${T.pr} #${src.prId}` : T.local;
+    const coverage = st.codeLines ? Math.round(100 * (st.mappedLines || 0) / st.codeLines) : 100;
+    const part = (v, label, cls) => [
+      h("b", { class: cls || "", text: String(v) }),
+      h("span", { text: label })
+    ];
+    function group(parts, title, href) {
+      const el = h(href ? "a" : "span", { class: "stat-chip", title: title || null, href: href || null });
+      parts.filter(Boolean).forEach((pt, i) => {
+        if (i)
+          el.appendChild(h("span", { class: "sep", text: "·" }));
+        append(el, pt);
+      });
+      return el;
+    }
+    const moved = [
+      counts.added ? part(counts.added, counts.added === 1 ? T.lAdded : T.nAdded, "added") : null,
+      counts.changed ? part(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
+      counts.removed ? part(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null
+    ].filter(Boolean);
+    const chips = [
+      group([
+        part(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
+        [
+          h("b", null, h("span", { class: "add", text: `+${fmt(st.additions)}` }), " ", h("span", { class: "del", text: `−${fmt(st.deletions)}` })),
+          h("span", { text: T.kLines })
+        ]
+      ]),
+      moved.length ? group(moved, null, "#changes") : null,
+      coverage < 100 ? h("span", { class: "stat-chip", title: T.coverageHint }, h("b", { text: `${coverage}%` }), h("span", { text: T.onMap })) : null,
+      st.newViolations ? chip(st.newViolations, st.newViolations === 1 ? T.brokenRule : T.brokenRules, "violation") : null
+    ];
+    if (OS) {
+      let done = 0;
+      let total = 0;
+      for (const c of OS.changes) {
+        if (c.tasks) {
+          done += c.tasks.done;
+          total += c.tasks.total;
+        }
+      }
+      const spec = [
+        REQS.length ? part(REQS.length, T.kReqs, "accent") : null,
+        total ? part(`${done}/${total}`, T.kTasks, done === total ? "ok" : "warn") : null
+      ].filter(Boolean);
+      if (spec.length)
+        chips.push(group(spec, null, "#sdd"));
+    }
+    return h("header", { class: "page-head", id: "summary" }, cfg.inferred ? h("div", { class: "config-warn", role: "note" }, h("span", { class: "config-warn-icon", text: "!" }), h("div", null, h("b", { text: T.noConfig }), " ", h("span", { text: T.noConfigText }))) : null, h("div", { class: "eyebrow" }, h("span", { text: cfg.name }), h("span", { class: "faint", text: "·" }), src.url ? h("a", { href: src.url, text: srcLabel }) : h("span", { text: srcLabel }), h("span", { class: "faint", text: "·" }), h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.baseRef })), h("span", {
+      class: "faint",
+      text: `${src.commits} ${src.commits === 1 ? T.commit : T.commits}${src.headDate ? ` · ${src.headDate.slice(0, 10)}` : ""}`
+    })), h("h1", { class: "title", text: src.title }), ex ? h("p", { class: "goal" }, h("b", { text: T.goal }), ex.goal) : null, ex ? h("p", { class: "tldr", text: ex.tldr }) : null, notice, h("div", { class: "chips" }, chips), facts.notes.map((n) => h("p", { class: "note faint", text: n })));
+  }
+
+  // report/story.ts
+  var keyPairs = {};
+  if (ex)
+    for (const x of ex.keyDependencies)
+      keyPairs[`${x.from}>${x.to}`] = x.label ?? "";
+  var VIEWS = [{ id: "architecture", title: T.architecture }];
+  for (const fl of ex?.flows ?? [])
+    VIEWS.push({ id: `flow:${fl.id}`, title: fl.title, flow: fl });
+  if (DM)
+    VIEWS.push({ id: "data", title: T.dataView });
+  var flowById = {};
+  for (const fl of ex?.flows ?? [])
+    flowById[fl.id] = fl;
+  function viewTitle(view) {
+    if (view === "requirements")
+      return T.reqs;
+    return VIEWS.find((v) => v.id === view)?.title ?? T.architecture;
+  }
+  function autoStory() {
+    const steps = [];
+    const touched = facts.components.filter((c) => c.delta !== "unchanged");
+    const layers = new Set(touched.map((c) => compById[c.id]?.layer));
+    steps.push({
+      heading: tf("autoOverviewH", { n: touched.length, m: layers.size }),
+      body: tf("autoOverviewB", { f: st.files, a: fmt(st.additions), d: fmt(st.deletions) }),
+      view: "architecture",
+      focus: []
+    });
+    for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
+      steps.push({
+        heading: tf("autoViolH", { a: compName(e.from), b: compName(e.to) }),
+        body: e.violation?.rule ?? "",
+        view: "architecture",
+        focus: [e.from, e.to],
+        code: e.examples[0]
+      });
+    }
+    for (const c of touched.filter((c) => c.delta === "added").slice(0, 2)) {
+      steps.push({
+        heading: tf("autoNewH", { x: compName(c.id) }),
+        body: tf("autoNewB", { l: layerName(c.id) }),
+        view: "architecture",
+        focus: [c.id]
+      });
+    }
+    for (const c of touched.filter((c) => c.delta === "removed").slice(0, 1)) {
+      steps.push({
+        heading: tf("autoRemovedH", { x: compName(c.id) }),
+        body: T.autoRemovedB,
+        view: "architecture",
+        focus: [c.id]
+      });
+    }
+    touched.filter((c) => c.delta === "changed").sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions) || byCompRank(a.id, b.id)).slice(0, Math.max(0, 5 - steps.length)).forEach((c) => {
+      steps.push({
+        heading: tf("autoChangedH", { x: compName(c.id) }),
+        body: tf("autoChangedB", { n: c.files, a: c.additions, d: c.deletions }),
+        view: "architecture",
+        focus: [c.id]
+      });
+    });
+    if (OS && REQS.length) {
+      for (const c of OS.changes) {
+        if (c.requirements.length) {
+          steps.push({
+            heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }),
+            body: c.why || T.autoSpecB,
+            view: "requirements",
+            focus: c.requirements.map((r) => r.id)
+          });
+        }
+      }
+    }
+    return steps;
+  }
+  var STORY = ex?.story.length ? ex.story : autoStory();
+  var storyIsAuto = !ex?.story.length;
+  var MEANINGFUL = new Set;
+  for (const e of facts.dependencies) {
+    if (e.delta === "added" || e.delta === "removed" || isNewViolation(e) || keyPairs[`${e.from}>${e.to}`] !== undefined) {
+      MEANINGFUL.add(e.from);
+      MEANINGFUL.add(e.to);
+    }
+  }
+  for (const step of STORY)
+    if ((step.view ?? "architecture") === "architecture")
+      for (const id of step.focus ?? [])
+        MEANINGFUL.add(id);
+  for (const m of Object.values(specMap))
+    for (const id of m.components ?? [])
+      MEANINGFUL.add(id);
+  var isContext = (c) => c.delta === "unchanged" && !MEANINGFUL.has(c.id);
+  var CONTEXT_COUNT = facts.components.filter(isContext).length;
+
+  // report/svg-view.ts
+  function newView(id, W, H) {
+    const svg = s("svg", {
+      class: `view-svg view-${id.split(":")[0]}`,
+      role: "img",
+      preserveAspectRatio: "xMidYMid meet"
+    });
+    return { id, svg, W, H, geo: {}, keyOf: (x) => x, expand: (set) => set };
+  }
+  function markers(svg, prefix, kinds) {
+    const defs = s("defs");
+    for (const k of kinds) {
+      defs.appendChild(s("marker", {
+        id: prefix + k,
+        viewBox: "0 0 10 10",
+        refX: "8",
+        refY: "5",
+        markerWidth: "10",
+        markerHeight: "10",
+        markerUnits: "userSpaceOnUse",
+        orient: "auto-start-reverse"
+      }, s("path", { d: "M0,0 L10,5 L0,10 z", class: `arrow arrow-${k}` })));
+    }
+    svg.appendChild(defs);
+  }
+
+  // report/arch.ts
+  function layoutArch(nodes, edges, compact) {
+    const W = compact ? 380 : 1160;
+    const LABEL = compact ? 0 : 156;
+    const NW = compact ? 168 : 200;
+    const NH = 66;
+    const GX = compact ? 12 : 34;
+    const GY = 22;
+    const PADY = 24;
+    const TOPL = compact ? 30 : 0;
+    const perRow = Math.max(1, Math.floor((W - LABEL - 24 + GX) / (NW + GX)));
+    const layerOf = (id) => compById[id]?.layer;
+    const layers = cfg.layers.filter((l) => nodes.some((n) => layerOf(n.id) === l.id));
+    const byLayer = {};
+    const idx = {};
+    const adj = {};
+    for (const l of layers) {
+      byLayer[l.id] = nodes.filter((n) => layerOf(n.id) === l.id).sort((a, b) => Number(a.delta === "unchanged") - Number(b.delta === "unchanged") || byCompRank(a.id, b.id));
+    }
+    for (const e of edges) {
+      listAt(adj, e.from).push(e.to);
+      listAt(adj, e.to).push(e.from);
+    }
+    const reindex = (l) => {
+      const arr = byLayer[l.id] ?? [];
+      arr.forEach((n, i) => {
+        idx[n.id] = (i + 0.5) / arr.length;
+      });
+    };
+    layers.forEach(reindex);
+    for (let it = 0;it < 4; it++) {
+      for (const l of it % 2 ? [...layers].reverse() : layers) {
+        const bc = {};
+        for (const n of byLayer[l.id] ?? []) {
+          const nb = (adj[n.id] ?? []).filter((x) => idx[x] !== undefined && layerOf(x) !== l.id);
+          bc[n.id] = nb.length ? nb.reduce((a, x) => a + idx[x], 0) / nb.length : idx[n.id];
+        }
+        (byLayer[l.id] ?? []).sort((a, b) => bc[a.id] - bc[b.id] || byCompRank(a.id, b.id));
+        reindex(l);
+      }
+    }
+    const bands = [];
+    const pos = {};
+    let y = 0;
+    for (const layer of layers) {
+      const inLayer = byLayer[layer.id] ?? [];
+      const rows = Math.ceil(inLayer.length / perRow);
+      const ids = inLayer.map((n) => n.id);
+      const ARC = edges.some((e) => ids.includes(e.from) && ids.includes(e.to)) ? 40 : 0;
+      const top = TOPL + ARC;
+      const bh = rows * NH + (rows - 1) * GY + PADY * 2 + top;
+      bands.push({ layer, y, h: bh, n: inLayer.length });
+      inLayer.forEach((n, i) => {
+        const row = Math.floor(i / perRow);
+        const col = i % perRow;
+        const inRow = Math.min(perRow, inLayer.length - row * perRow);
+        const rowW = inRow * NW + (inRow - 1) * GX;
+        const x0 = LABEL + (W - LABEL - rowW) / 2;
+        pos[n.id] = { x: x0 + col * (NW + GX), y: y + top + PADY + row * (NH + GY), w: NW, h: NH };
+      });
+      y += bh + 12;
+    }
+    return { W, H: Math.max(y - 12, 60), bands, pos, compact, GX };
+  }
+  function edgePaths(edges, pos, L) {
+    const ports = {};
+    const addPort = (node, side, edgeKey, otherX) => {
+      const k = `${node}|${side}`;
+      listAt(ports, k).push({ key: edgeKey, x: otherX });
+    };
+    const geo = edges.map((e) => {
+      const a = pos[e.from];
+      const b = pos[e.to];
+      const down = b.y > a.y + 1;
+      const up = b.y + 1 < a.y;
+      const g = { e, key: `${e.from}>${e.to}`, a, b, sa: "top", sb: "top" };
+      if (down)
+        [g.sa, g.sb] = ["bottom", "top"];
+      else if (up)
+        [g.sa, g.sb] = ["top", "bottom"];
+      addPort(e.from, g.sa, g.key, b.x);
+      addPort(e.to, g.sb, g.key, a.x);
+      return g;
+    });
+    function portX(node, side, key) {
+      const list = [...ports[`${node}|${side}`] ?? []].sort((p, q) => p.x - q.x || (p.key < q.key ? -1 : 1));
+      const i = list.findIndex((p) => p.key === key);
+      const r = pos[node];
+      return r.x + r.w * (i + 1) / (list.length + 1);
+    }
+    function obstacles(g, x1, x2, yTop, yBot) {
+      const lo = Math.min(x1, x2) - 8;
+      const hi = Math.max(x1, x2) + 8;
+      return Object.keys(pos).filter((id) => {
+        if (id === g.e.from || id === g.e.to)
+          return false;
+        const r = pos[id];
+        return r.y < yBot && r.y + r.h > yTop && r.x < hi && r.x + r.w > lo;
+      }).map((id) => pos[id]);
+    }
+    const laneUse = {};
+    return geo.map((g) => {
+      const x1 = portX(g.e.from, g.sa, g.key);
+      const x2 = portX(g.e.to, g.sb, g.key);
+      const y1 = g.sa === "bottom" ? g.a.y + g.a.h : g.a.y;
+      const y2 = g.sb === "top" ? g.b.y - 4 : g.b.y + g.b.h + 4;
+      if (g.sa === "top" && g.sb === "top") {
+        const lift = Math.min(34, 22 + Math.abs(x2 - x1) / 10);
+        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(y1 - lift)} ${r1(x2)},${r1(y2 - lift)} ${r1(x2)},${y2}`;
+        return { e: g.e, d, mx: (x1 + x2) / 2, my: Math.min(y1, y2) - lift * 0.75 };
+      }
+      const dir = y2 > y1 ? 1 : -1;
+      let blockers = obstacles(g, x1, x2, Math.min(y1, y2), Math.max(y1, y2));
+      if (!blockers.length) {
+        const my = (y1 + y2) / 2;
+        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(my)} ${r1(x2)},${r1(my)} ${r1(x2)},${y2}`;
+        return { e: g.e, d, mx: (x1 + x2) / 2, my };
+      }
+      const gap = (L.GX || 20) / 2;
+      const mid = (x1 + x2) / 2;
+      const yTop = Math.min(y1, y2);
+      const yBot = Math.max(y1, y2);
+      let lane = 0;
+      let right = 0;
+      let left = 0;
+      for (let guard = 0;guard < 12; guard++) {
+        right = Math.max(...blockers.map((r) => r.x + r.w)) + gap;
+        left = Math.min(...blockers.map((r) => r.x)) - gap;
+        lane = Math.abs(right - mid) <= Math.abs(left - mid) && right < L.W - 4 || left < 4 ? right : left;
+        const hit = obstacles(g, lane, lane, yTop, yBot).filter((r) => !blockers.includes(r));
+        if (!hit.length)
+          break;
+        blockers = blockers.concat(hit);
+      }
+      const used = (laneUse[Math.round(lane)] ?? 0) + 1;
+      laneUse[Math.round(lane)] = used;
+      lane += (lane === right ? 1 : -1) * (used - 1) * 4;
+      const ra = y1 + dir * 26;
+      const rb = y2 - dir * 26;
+      const d = `M${r1(x1)},${y1} C${r1(x1)},${y1 + dir * 18} ${r1(lane)},${y1 + dir * 8} ${r1(lane)},${ra}` + ` L${r1(lane)},${rb} C${r1(lane)},${y2 - dir * 8} ${r1(x2)},${y2 - dir * 18} ${r1(x2)},${y2}`;
+      return { e: g.e, d, mx: lane, my: (y1 + y2) / 2 };
+    });
+  }
+  function buildArchitecture(mode, compact, withContext, onNode) {
+    const nodes = facts.components.filter((n) => !(mode === "before" && n.delta === "added") && !(mode === "after" && n.delta === "removed") && (withContext || !isContext(n)));
+    const vis = new Set(nodes.map((n) => n.id));
+    const edges = facts.dependencies.filter((e) => {
+      if (!vis.has(e.from) || !vis.has(e.to))
+        return false;
+      if (mode === "before")
+        return e.delta !== "added";
+      if (mode === "after")
+        return e.delta !== "removed";
+      return true;
+    });
+    const L = layoutArch(nodes, edges, compact);
+    const V = newView("architecture", L.W, L.H);
+    const svg = V.svg;
+    svg.classList.add(`mode-${mode}`);
+    if (!nodes.length) {
+      V.empty = T.archEmpty;
+      return V;
+    }
+    markers(svg, "ar-", ["unchanged", "added", "changed", "removed", "violation", "key"]);
+    for (const b of L.bands) {
+      svg.appendChild(s("rect", { x: 0, y: b.y, width: L.W, height: b.h, rx: 14, class: "band" }));
+      if (L.compact)
+        svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: trunc(b.layer.name, 40) }));
+      else {
+        svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 - 2, class: "band-label", text: trunc(b.layer.name, 18) }));
+        svg.appendChild(s("text", {
+          x: 18,
+          y: b.y + b.h / 2 + 14,
+          class: "band-sub",
+          text: `${b.n} ${b.n === 1 ? T.component : T.kComponents}`
+        }));
+      }
+    }
+    const edgeLayer = s("g", { class: "edges" });
+    const labelLayer = s("g", { class: "edge-labels" });
+    const labels = [];
+    const freeSpot = (cx, cy, w, h) => {
+      const covers = (x, y) => [...Object.values(L.pos), ...labels].some((b) => x - w / 2 < b.x + b.w + 4 && x + w / 2 > b.x - 4 && y - h / 2 < b.y + b.h + 4 && y + h / 2 > b.y - 4);
+      for (const dy of [0, -14, 14, -28, 28, -42, 42, -56, 56]) {
+        for (const dx of [0, -(w / 2 + 14), w / 2 + 14])
+          if (!covers(cx + dx, cy + dy))
+            return [cx + dx, cy + dy];
+      }
+      return [cx, cy];
+    };
+    edgePaths(edges, L.pos, L).forEach((p, i) => {
+      const e = p.e;
+      const k = isNewViolation(e) || e.violation && withContext ? "violation" : e.delta;
+      const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
+      const tip = `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` + (e.examples[0] ? ` · ${e.examples[0]}` : "") + (e.violation ? ` · ⚠ ${e.violation.rule}` : "");
+      const pid = `ep-${i}`;
+      const g = s("g", { class: `edge-g${isKey ? " key" : ""}`, "data-k": `e:${e.from}>${e.to}`, "data-a": e.from, "data-b": e.to }, s("title", { text: tip }), s("path", { d: p.d, class: "edge-hit" }), isKey ? s("path", { d: p.d, class: "edge-glow" }) : null, s("path", {
+        id: pid,
+        d: p.d,
+        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
+        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`
+      }));
+      if ((isKey || e.delta === "added") && e.delta !== "removed") {
+        g.appendChild(s("circle", { r: isKey ? 4.5 : 3, class: `pulse${isKey ? " key" : ""}` }, s("animateMotion", { dur: isKey ? "2.2s" : "3s", repeatCount: "indefinite", begin: `-${r1(i % 5 * 0.4)}s` }, s("mpath", { href: `#${pid}` }))));
+      }
+      edgeLayer.appendChild(g);
+      const keyLabel = keyPairs[`${e.from}>${e.to}`];
+      if (isKey && keyLabel) {
+        const label = trunc(keyLabel, 40);
+        const lw = Math.ceil(textWidth(label, "600 11.5px")) + 20;
+        const [cx, cy] = freeSpot(p.mx, p.my, lw, 22);
+        labels.push({ x: cx - lw / 2, y: cy - 11, w: lw, h: 22 });
+        labelLayer.appendChild(s("g", { class: "edge-label", "data-a": e.from, "data-b": e.to }, s("rect", { x: r1(cx - lw / 2), y: r1(cy - 11), width: r1(lw), height: 22, rx: 11 }), s("text", { x: r1(cx), y: r1(cy + 4), "text-anchor": "middle", text: label })));
+      }
+    });
+    svg.appendChild(edgeLayer);
+    for (const n of nodes) {
+      const r = L.pos[n.id];
+      const c = compById[n.id];
+      V.geo[n.id] = r;
+      const nreq = reqsOfComp(n.id).length;
+      const neighbor = n.delta === "unchanged";
+      const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}${nreq ? ` · ◆ ${nreq}` : ""}`;
+      const g = s("g", {
+        class: `node st-${n.delta}`,
+        "data-k": n.id,
+        tabindex: "0",
+        role: "button",
+        "aria-label": `${c.name}, ${deltaLabel(n.delta, true)}`
+      }, s("title", { text: c.name + (summaryOf[n.id] ? `
+${summaryOf[n.id]}` : c.desc ? `
+${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12, class: "box" }), s("text", { x: r.x + 14, y: r.y + 19, class: "tag", text: neighbor ? "" : deltaLabel(n.delta).toUpperCase() }), neighbor ? null : s("text", { x: r.x + r.w - 12, y: r.y + 19, "text-anchor": "end", class: "delta" }, s("tspan", { class: "add", text: `+${n.additions}` }), s("tspan", { class: "del", text: ` −${n.deletions}` })), s("text", {
+        x: r.x + 14,
+        y: r.y + 39,
+        class: "name",
+        text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28)
+      }), s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }));
+      onNode?.(g, n.id);
+      svg.appendChild(g);
+    }
+    svg.appendChild(labelLayer);
+    V.expand = (set) => {
+      const keys = Object.keys(set);
+      const only = keys[0];
+      if (keys.length === 1 && only !== undefined && vis.has(only)) {
+        for (const e of edges) {
+          if (e.from === only)
+            set[e.to] = true;
+          if (e.to === only)
+            set[e.from] = true;
+        }
+      }
+      return set;
+    };
+    V.focusBoxKeys = (ids) => ids.filter((x) => vis.has(x));
+    return V;
+  }
+
   // report/camera.ts
   function createCamera(viewport, view) {
     let vb = null;
@@ -1202,42 +1683,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     return { apply, frame, fly, zoom, fullBox, box };
   }
 
-  // report/ui.ts
-  function onOpen(el, path) {
-    const url = prFileUrl2(path);
-    if (url) {
-      el.classList.add("linked");
-      el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
-    }
-    return el;
-  }
-  function fileLink(ref, label) {
-    const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
-    const url = prFileUrl2(path);
-    return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref }) : h("code", { class: "ref", text: label || ref });
-  }
-  function sectionShell(id, title, body, lead) {
-    return h("section", { class: "section", id }, h("div", { class: "section-head" }, h("h2", { text: title }), lead ? h("span", { class: "section-lead", text: lead }) : null), body);
-  }
-  function legendItem(kind, color, label) {
-    if (kind === "swatch")
-      return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
-    return h("span", null, h("i", {
-      class: `legend-line${kind.includes("anim") ? " anim" : ""}`,
-      style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`
-    }), label);
-  }
-  function chip(v, label, cls) {
-    return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
-  }
-  var mapApi = {};
-  function fieldDelta(f) {
-    const c = f.trim().charAt(0);
-    return c === "+" ? "added" : c === "-" || c === "−" ? "removed" : c === "~" ? "changed" : "unchanged";
-  }
-  var fieldText = (f) => /^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim();
-  var FIELD_MARK = { added: "+", removed: "−", changed: "~", unchanged: "" };
-
   // report/code.ts
   function codeExcerpt(ref) {
     const m = /^(.+?):(\d+)(?:-(\d+))?$/.exec(ref || "");
@@ -1286,6 +1731,128 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
         n++;
     }
     return frag;
+  }
+
+  // report/data-view.ts
+  function buildData(onNode) {
+    const dm = DM;
+    const EW = 250;
+    const GX = 90;
+    const GY = 70;
+    const PER = 3;
+    const order = { added: 0, changed: 1, removed: 2, unchanged: 3 };
+    const ents = [...dm.entities].sort((a, b) => order[a.delta] - order[b.delta] || byCompRank(a.component ?? "", b.component ?? "") || (a.name < b.name ? -1 : 1));
+    const migrations = facts.files.filter((f) => f.category === "migration");
+    const top = migrations.length ? 34 + Math.min(migrations.length, 4) * 20 + 30 : 10;
+    const heights = ents.map((e) => 52 + Math.max(1, (e.fields ?? []).length) * 19 + 10);
+    const rows = Math.ceil(ents.length / PER);
+    const rowH = [];
+    for (let r = 0;r < rows; r++)
+      rowH.push(Math.max(...heights.slice(r * PER, r * PER + PER)));
+    const cols = Math.min(PER, ents.length);
+    const W = Math.max(cols * EW + (cols - 1) * GX, 600);
+    const pos = {};
+    let y = top;
+    ents.forEach((e, i) => {
+      const r = Math.floor(i / PER);
+      const c = i % PER;
+      const inRow = Math.min(PER, ents.length - r * PER);
+      const x0 = (W - (inRow * EW + (inRow - 1) * GX)) / 2;
+      const ry = top + rowH.slice(0, r).reduce((a, v) => a + v + GY, 0);
+      pos[e.id] = { x: x0 + c * (EW + GX), y: ry, w: EW, h: heights[i] };
+      y = Math.max(y, ry + heights[i]);
+    });
+    const V = newView("data", W, y + 10);
+    const svg = V.svg;
+    if (migrations.length) {
+      const mg = s("g", { class: "migrations" }, s("text", { x: 0, y: 14, class: "col-label", text: T.migrations.toUpperCase() }));
+      migrations.slice(0, 4).forEach((f, i) => {
+        const letter = gitLetter(f);
+        const text = s("text", { x: 0, y: 38 + i * 20, class: "mig" }, s("tspan", { class: `gs-${letter}`, text: `${letter}  ` }), s("tspan", { text: trunc(f.path, 90) }));
+        mg.appendChild(onOpen(text, f.path));
+      });
+      if (migrations.length > 4)
+        mg.appendChild(s("text", { x: 0, y: 38 + 4 * 20, class: "info", text: `+${migrations.length - 4}` }));
+      svg.appendChild(mg);
+    }
+    const links = s("g", { class: "links" });
+    svg.appendChild(links);
+    V.links = [];
+    for (const rl of dm.relations) {
+      const a = pos[rl.from];
+      const b = pos[rl.to];
+      if (!a || !b)
+        continue;
+      const ax = a.x + a.w / 2;
+      const ay = a.y + a.h / 2;
+      const bx = b.x + b.w / 2;
+      const by = b.y + b.h / 2;
+      let d;
+      let x1;
+      let y1;
+      let x2;
+      let y2;
+      if (Math.abs(ay - by) < 10 || Math.abs(bx - ax) > Math.abs(by - ay)) {
+        x1 = bx > ax ? a.x + a.w : a.x;
+        x2 = bx > ax ? b.x : b.x + b.w;
+        y1 = a.y + 26;
+        y2 = b.y + 26;
+        const mx = (x1 + x2) / 2;
+        d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+      } else {
+        x1 = ax;
+        x2 = bx;
+        y1 = by > ay ? a.y + a.h : a.y;
+        y2 = by > ay ? b.y : b.y + b.h;
+        const my = (y1 + y2) / 2;
+        d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+      }
+      links.appendChild(s("path", { d, class: `rel rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }));
+      if (rl.label) {
+        const lx = (x1 + x2) / 2;
+        const ly = (y1 + y2) / 2;
+        const lw = Math.ceil(textWidth(rl.label, "11px", MONO)) + 16;
+        links.appendChild(s("g", { class: `rel-label rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }, s("rect", { x: r1(lx - lw / 2), y: r1(ly - 10), width: r1(lw), height: 20, rx: 10 }), s("text", { x: r1(lx), y: r1(ly + 4), "text-anchor": "middle", text: rl.label })));
+      }
+      V.links.push([`ent:${rl.from}`, `ent:${rl.to}`]);
+    }
+    for (const e of ents) {
+      const b = pos[e.id];
+      const key = `ent:${e.id}`;
+      V.geo[key] = b;
+      const fields = e.fields ?? [];
+      const g = s("g", { class: `entity st-${e.delta}`, "data-k": key, tabindex: "0", role: "button" }, s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 12, class: "box" }), s("rect", { x: b.x, y: b.y, width: b.w, height: 40, rx: 12, class: "head" }), s("rect", { x: b.x, y: b.y + 28, width: b.w, height: 12, class: "head" }), s("text", { x: b.x + 14, y: b.y + 25, class: "name", text: trunc(e.name, 24) }), s("text", {
+        x: b.x + b.w - 12,
+        y: b.y + 25,
+        "text-anchor": "end",
+        class: "tag",
+        text: e.delta === "unchanged" ? "" : deltaLabel(e.delta).toUpperCase()
+      }));
+      if (!fields.length) {
+        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62, class: "info", text: e.component ? compName(e.component) : "" }));
+      }
+      fields.forEach((f, i) => {
+        const k = fieldDelta(f);
+        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62 + i * 19, class: `field f-${k}` }, s("tspan", { class: "fmark", text: `${FIELD_MARK[k] || " "} ` }), s("tspan", { text: trunc(fieldText(f), 28) })));
+      });
+      onNode?.(g, key);
+      svg.appendChild(g);
+    }
+    V.keyOf = (id) => id.slice(0, 4) === "ent:" ? id : `ent:${id}`;
+    V.expand = (set) => {
+      const add = {};
+      if (Object.keys(set).length === 1) {
+        for (const l of V.links ?? []) {
+          if (set[l[0]])
+            add[l[1]] = true;
+          if (set[l[1]])
+            add[l[0]] = true;
+        }
+      }
+      Object.assign(set, add);
+      return set;
+    };
+    return V;
   }
 
   // report/sdd.ts
@@ -1584,433 +2151,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     ], tf("leadSpec", { n: REQS.length, i: REQS.filter((r) => reqStatus(r) === "implemented").length }));
   }
 
-  // report/inspector.ts
-  function componentDetails(id, nav) {
-    const c = compById[id];
-    const n = changeComp[id] ?? { id, delta: "unchanged", files: 0, additions: 0, deletions: 0 };
-    const files = facts.files.filter((f) => f.component === id);
-    const syms = facts.symbols.filter((sy) => files.some((f) => f.path === sy.file));
-    const outE = facts.dependencies.filter((e) => e.from === id);
-    const inE = facts.dependencies.filter((e) => e.to === id);
-    const reqs = reqsOfComp(id);
-    return [
-      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
-      h("div", { class: "insp-title" }, h("span", { class: `badge ${n.delta}`, text: deltaLabel(n.delta, true) }), h("h3", { text: c ? c.name : id })),
-      h("div", {
-        class: "faint",
-        text: layerName(id) + (n.delta !== "unchanged" ? ` · ${n.files} ${n.files === 1 ? T.file : T.kFiles} · +${n.additions} −${n.deletions}` : "")
-      }),
-      summaryOf[id] ? h("p", { class: "insp-summary", text: summaryOf[id] }) : c?.desc ? h("p", { class: "insp-summary muted", text: c.desc }) : null,
-      files.length ? inspList(T.files, files.map((f) => h("div", { class: "insp-row" }, h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }), fileLink(f.path, f.path.split("/").pop()), h("span", { class: "nums" }, h("span", { class: "add", text: `+${f.additions}` }), " ", h("span", { class: "del", text: `−${f.deletions}` }))))) : null,
-      syms.length ? inspList(T.symbols, syms.slice(0, 12).map((sy) => h("div", { class: "insp-row" }, h("span", {
-        class: `badge ${sy.delta}`,
-        text: sy.delta === "added" ? "+" : sy.delta === "removed" ? "−" : "~"
-      }), fileLink(`${sy.file}:${sy.line}`, sy.name)))) : null,
-      outE.length ? inspList(T.dependsOn, outE.map(edgeRow((e) => e.to, nav))) : null,
-      inE.length ? inspList(T.usedBy, inE.map(edgeRow((e) => e.from, nav))) : null,
-      reqs.length ? inspList(T.reqs, reqs.map(reqRow)) : null
-    ];
-  }
-  function entityDetails(eid, nav) {
-    const e = entById[eid];
-    const dm = DM;
-    const rels = dm.relations.filter((r) => r.from === eid || r.to === eid);
-    const fields = e.fields ?? [];
-    return [
-      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
-      h("div", { class: "insp-title" }, h("span", { class: `badge ${e.delta}`, text: deltaLabel(e.delta) }), h("h3", { text: e.name })),
-      e.component ? h("div", null, h("a", {
-        href: "#",
-        class: "faint",
-        text: compName(e.component),
-        onclick: (ev) => {
-          ev.preventDefault();
-          nav.inspect(e.component);
-        }
-      })) : null,
-      fields.length ? inspList(T.fields, fields.map((f) => {
-        const k = fieldDelta(f);
-        return h("div", { class: `insp-row field-row f-${k}` }, h("span", { class: "fmark", text: FIELD_MARK[k] || "·" }), h("code", { text: fieldText(f) }));
-      })) : null,
-      rels.length ? inspList(T.relations, rels.map((r) => {
-        const other = r.from === eid ? r.to : r.from;
-        return h("div", { class: "insp-row" }, h("span", { class: `badge ${r.delta}`, text: r.label || "—" }), h("a", {
-          href: "#",
-          text: entById[other]?.name ?? other,
-          onclick: (ev) => {
-            ev.preventDefault();
-            nav.entity(other);
-          }
-        }));
-      })) : null,
-      e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null
-    ];
-  }
-  function edgeRow(other, nav) {
-    return (e) => {
-      const k = isNewViolation(e) ? "violation" : e.delta;
-      const mark = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
-      return h("div", { class: "insp-row" }, h("span", { class: `badge ${k}`, text: mark[k] }), h("a", {
-        href: "#",
-        text: compName(other(e)),
-        onclick: (ev) => {
-          ev.preventDefault();
-          nav.inspect(other(e));
-        }
-      }), e.examples[0] ? fileLink(e.examples[0], e.examples[0].split("/").pop()) : null);
-    };
-  }
-
-  // report/app.ts
-  function renderHeader() {
-    const states = {
-      stale: [T.staleExplanation, T.staleText],
-      invalid: [T.invalidExplanation, T.invalidText],
-      draft: [T.draftExplanation, T.draftExplanationText]
-    };
-    const [noticeTitle, noticeText] = states[DATA.state] ?? [T.noExplanation, T.noExplanationText];
-    const notice = ex ? null : h("div", { class: "notice" }, h("span", { class: "notice-icon", text: "i" }), h("div", null, h("b", { text: noticeTitle }), " ", noticeText, DATA.state === "invalid" ? h("ul", null, DATA.issues.slice(0, 20).map((e) => h("li", { text: `${e.path}: ${e.message}` }))) : null));
-    const counts = { added: 0, changed: 0, removed: 0 };
-    for (const c of facts.components)
-      if (c.delta !== "unchanged")
-        counts[c.delta]++;
-    const srcLabel = src.kind === "pr" ? `${T.pr} #${src.prId}` : T.local;
-    const coverage = st.codeLines ? Math.round(100 * (st.mappedLines || 0) / st.codeLines) : 100;
-    const part = (v, label, cls) => [
-      h("b", { class: cls || "", text: String(v) }),
-      h("span", { text: label })
-    ];
-    function group(parts, title, href) {
-      const el = h(href ? "a" : "span", { class: "stat-chip", title: title || null, href: href || null });
-      parts.filter(Boolean).forEach((pt, i) => {
-        if (i)
-          el.appendChild(h("span", { class: "sep", text: "·" }));
-        append(el, pt);
-      });
-      return el;
-    }
-    const moved = [
-      counts.added ? part(counts.added, counts.added === 1 ? T.lAdded : T.nAdded, "added") : null,
-      counts.changed ? part(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
-      counts.removed ? part(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null
-    ].filter(Boolean);
-    const chips = [
-      group([
-        part(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
-        [
-          h("b", null, h("span", { class: "add", text: `+${fmt(st.additions)}` }), " ", h("span", { class: "del", text: `−${fmt(st.deletions)}` })),
-          h("span", { text: T.kLines })
-        ]
-      ]),
-      moved.length ? group(moved, null, "#changes") : null,
-      coverage < 100 ? h("span", { class: "stat-chip", title: T.coverageHint }, h("b", { text: `${coverage}%` }), h("span", { text: T.onMap })) : null,
-      st.newViolations ? chip(st.newViolations, st.newViolations === 1 ? T.brokenRule : T.brokenRules, "violation") : null
-    ];
-    if (OS) {
-      let done = 0;
-      let total = 0;
-      for (const c of OS.changes) {
-        if (c.tasks) {
-          done += c.tasks.done;
-          total += c.tasks.total;
-        }
-      }
-      const spec = [
-        REQS.length ? part(REQS.length, T.kReqs, "accent") : null,
-        total ? part(`${done}/${total}`, T.kTasks, done === total ? "ok" : "warn") : null
-      ].filter(Boolean);
-      if (spec.length)
-        chips.push(group(spec, null, "#sdd"));
-    }
-    return h("header", { class: "page-head", id: "summary" }, cfg.inferred ? h("div", { class: "config-warn", role: "note" }, h("span", { class: "config-warn-icon", text: "!" }), h("div", null, h("b", { text: T.noConfig }), " ", h("span", { text: T.noConfigText }))) : null, h("div", { class: "eyebrow" }, h("span", { text: cfg.name }), h("span", { class: "faint", text: "·" }), src.url ? h("a", { href: src.url, text: srcLabel }) : h("span", { text: srcLabel }), h("span", { class: "faint", text: "·" }), h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.baseRef })), h("span", {
-      class: "faint",
-      text: `${src.commits} ${src.commits === 1 ? T.commit : T.commits}${src.headDate ? ` · ${src.headDate.slice(0, 10)}` : ""}`
-    })), h("h1", { class: "title", text: src.title }), ex ? h("p", { class: "goal" }, h("b", { text: T.goal }), ex.goal) : null, ex ? h("p", { class: "tldr", text: ex.tldr }) : null, notice, h("div", { class: "chips" }, chips), facts.notes.map((n) => h("p", { class: "note faint", text: n })));
-  }
-  function newView(id, W, H) {
-    const svg = s("svg", {
-      class: `view-svg view-${id.split(":")[0]}`,
-      role: "img",
-      preserveAspectRatio: "xMidYMid meet"
-    });
-    return { id, svg, W, H, geo: {}, keyOf: (x) => x, expand: (set) => set };
-  }
-  function markers(svg, prefix, kinds) {
-    const defs = s("defs");
-    for (const k of kinds) {
-      defs.appendChild(s("marker", {
-        id: prefix + k,
-        viewBox: "0 0 10 10",
-        refX: "8",
-        refY: "5",
-        markerWidth: "10",
-        markerHeight: "10",
-        markerUnits: "userSpaceOnUse",
-        orient: "auto-start-reverse"
-      }, s("path", { d: "M0,0 L10,5 L0,10 z", class: `arrow arrow-${k}` })));
-    }
-    svg.appendChild(defs);
-  }
-  var keyPairs = {};
-  if (ex)
-    for (const x of ex.keyDependencies)
-      keyPairs[`${x.from}>${x.to}`] = x.label ?? "";
-  function layoutArch(nodes, edges, compact) {
-    const W = compact ? 380 : 1160;
-    const LABEL = compact ? 0 : 156;
-    const NW = compact ? 168 : 200;
-    const NH = 66;
-    const GX = compact ? 12 : 34;
-    const GY = 22;
-    const PADY = 24;
-    const TOPL = compact ? 30 : 0;
-    const perRow = Math.max(1, Math.floor((W - LABEL - 24 + GX) / (NW + GX)));
-    const layerOf = (id) => compById[id]?.layer;
-    const layers = cfg.layers.filter((l) => nodes.some((n) => layerOf(n.id) === l.id));
-    const byLayer = {};
-    const idx = {};
-    const adj = {};
-    for (const l of layers) {
-      byLayer[l.id] = nodes.filter((n) => layerOf(n.id) === l.id).sort((a, b) => Number(a.delta === "unchanged") - Number(b.delta === "unchanged") || byCompRank(a.id, b.id));
-    }
-    for (const e of edges) {
-      listAt(adj, e.from).push(e.to);
-      listAt(adj, e.to).push(e.from);
-    }
-    const reindex = (l) => {
-      const arr = byLayer[l.id] ?? [];
-      arr.forEach((n, i) => {
-        idx[n.id] = (i + 0.5) / arr.length;
-      });
-    };
-    layers.forEach(reindex);
-    for (let it = 0;it < 4; it++) {
-      for (const l of it % 2 ? [...layers].reverse() : layers) {
-        const bc = {};
-        for (const n of byLayer[l.id] ?? []) {
-          const nb = (adj[n.id] ?? []).filter((x) => idx[x] !== undefined && layerOf(x) !== l.id);
-          bc[n.id] = nb.length ? nb.reduce((a, x) => a + idx[x], 0) / nb.length : idx[n.id];
-        }
-        (byLayer[l.id] ?? []).sort((a, b) => bc[a.id] - bc[b.id] || byCompRank(a.id, b.id));
-        reindex(l);
-      }
-    }
-    const bands = [];
-    const pos = {};
-    let y = 0;
-    for (const layer of layers) {
-      const inLayer = byLayer[layer.id] ?? [];
-      const rows = Math.ceil(inLayer.length / perRow);
-      const ids = inLayer.map((n) => n.id);
-      const ARC = edges.some((e) => ids.includes(e.from) && ids.includes(e.to)) ? 40 : 0;
-      const top = TOPL + ARC;
-      const bh = rows * NH + (rows - 1) * GY + PADY * 2 + top;
-      bands.push({ layer, y, h: bh, n: inLayer.length });
-      inLayer.forEach((n, i) => {
-        const row = Math.floor(i / perRow);
-        const col = i % perRow;
-        const inRow = Math.min(perRow, inLayer.length - row * perRow);
-        const rowW = inRow * NW + (inRow - 1) * GX;
-        const x0 = LABEL + (W - LABEL - rowW) / 2;
-        pos[n.id] = { x: x0 + col * (NW + GX), y: y + top + PADY + row * (NH + GY), w: NW, h: NH };
-      });
-      y += bh + 12;
-    }
-    return { W, H: Math.max(y - 12, 60), bands, pos, compact, GX };
-  }
-  function edgePaths(edges, pos, L) {
-    const ports = {};
-    const addPort = (node, side, edgeKey, otherX) => {
-      const k = `${node}|${side}`;
-      listAt(ports, k).push({ key: edgeKey, x: otherX });
-    };
-    const geo = edges.map((e) => {
-      const a = pos[e.from];
-      const b = pos[e.to];
-      const down = b.y > a.y + 1;
-      const up = b.y + 1 < a.y;
-      const g = { e, key: `${e.from}>${e.to}`, a, b, sa: "top", sb: "top" };
-      if (down)
-        [g.sa, g.sb] = ["bottom", "top"];
-      else if (up)
-        [g.sa, g.sb] = ["top", "bottom"];
-      addPort(e.from, g.sa, g.key, b.x);
-      addPort(e.to, g.sb, g.key, a.x);
-      return g;
-    });
-    function portX(node, side, key) {
-      const list = [...ports[`${node}|${side}`] ?? []].sort((p, q) => p.x - q.x || (p.key < q.key ? -1 : 1));
-      const i = list.findIndex((p) => p.key === key);
-      const r = pos[node];
-      return r.x + r.w * (i + 1) / (list.length + 1);
-    }
-    function obstacles(g, x1, x2, yTop, yBot) {
-      const lo = Math.min(x1, x2) - 8;
-      const hi = Math.max(x1, x2) + 8;
-      return Object.keys(pos).filter((id) => {
-        if (id === g.e.from || id === g.e.to)
-          return false;
-        const r = pos[id];
-        return r.y < yBot && r.y + r.h > yTop && r.x < hi && r.x + r.w > lo;
-      }).map((id) => pos[id]);
-    }
-    const laneUse = {};
-    return geo.map((g) => {
-      const x1 = portX(g.e.from, g.sa, g.key);
-      const x2 = portX(g.e.to, g.sb, g.key);
-      const y1 = g.sa === "bottom" ? g.a.y + g.a.h : g.a.y;
-      const y2 = g.sb === "top" ? g.b.y - 4 : g.b.y + g.b.h + 4;
-      if (g.sa === "top" && g.sb === "top") {
-        const lift = Math.min(34, 22 + Math.abs(x2 - x1) / 10);
-        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(y1 - lift)} ${r1(x2)},${r1(y2 - lift)} ${r1(x2)},${y2}`;
-        return { e: g.e, d, mx: (x1 + x2) / 2, my: Math.min(y1, y2) - lift * 0.75 };
-      }
-      const dir = y2 > y1 ? 1 : -1;
-      let blockers = obstacles(g, x1, x2, Math.min(y1, y2), Math.max(y1, y2));
-      if (!blockers.length) {
-        const my = (y1 + y2) / 2;
-        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(my)} ${r1(x2)},${r1(my)} ${r1(x2)},${y2}`;
-        return { e: g.e, d, mx: (x1 + x2) / 2, my };
-      }
-      const gap = (L.GX || 20) / 2;
-      const mid = (x1 + x2) / 2;
-      const yTop = Math.min(y1, y2);
-      const yBot = Math.max(y1, y2);
-      let lane = 0;
-      let right = 0;
-      let left = 0;
-      for (let guard = 0;guard < 12; guard++) {
-        right = Math.max(...blockers.map((r) => r.x + r.w)) + gap;
-        left = Math.min(...blockers.map((r) => r.x)) - gap;
-        lane = Math.abs(right - mid) <= Math.abs(left - mid) && right < L.W - 4 || left < 4 ? right : left;
-        const hit = obstacles(g, lane, lane, yTop, yBot).filter((r) => !blockers.includes(r));
-        if (!hit.length)
-          break;
-        blockers = blockers.concat(hit);
-      }
-      const used = (laneUse[Math.round(lane)] ?? 0) + 1;
-      laneUse[Math.round(lane)] = used;
-      lane += (lane === right ? 1 : -1) * (used - 1) * 4;
-      const ra = y1 + dir * 26;
-      const rb = y2 - dir * 26;
-      const d = `M${r1(x1)},${y1} C${r1(x1)},${y1 + dir * 18} ${r1(lane)},${y1 + dir * 8} ${r1(lane)},${ra}` + ` L${r1(lane)},${rb} C${r1(lane)},${y2 - dir * 8} ${r1(x2)},${y2 - dir * 18} ${r1(x2)},${y2}`;
-      return { e: g.e, d, mx: lane, my: (y1 + y2) / 2 };
-    });
-  }
-  function buildArchitecture(mode, compact, withContext, onNode) {
-    const nodes = facts.components.filter((n) => !(mode === "before" && n.delta === "added") && !(mode === "after" && n.delta === "removed") && (withContext || !isContext(n)));
-    const vis = new Set(nodes.map((n) => n.id));
-    const edges = facts.dependencies.filter((e) => {
-      if (!vis.has(e.from) || !vis.has(e.to))
-        return false;
-      if (mode === "before")
-        return e.delta !== "added";
-      if (mode === "after")
-        return e.delta !== "removed";
-      return true;
-    });
-    const L = layoutArch(nodes, edges, compact);
-    const V = newView("architecture", L.W, L.H);
-    const svg = V.svg;
-    svg.classList.add(`mode-${mode}`);
-    if (!nodes.length) {
-      V.empty = T.archEmpty;
-      return V;
-    }
-    markers(svg, "ar-", ["unchanged", "added", "changed", "removed", "violation", "key"]);
-    for (const b of L.bands) {
-      svg.appendChild(s("rect", { x: 0, y: b.y, width: L.W, height: b.h, rx: 14, class: "band" }));
-      if (L.compact)
-        svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: trunc(b.layer.name, 40) }));
-      else {
-        svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 - 2, class: "band-label", text: trunc(b.layer.name, 18) }));
-        svg.appendChild(s("text", {
-          x: 18,
-          y: b.y + b.h / 2 + 14,
-          class: "band-sub",
-          text: `${b.n} ${b.n === 1 ? T.component : T.kComponents}`
-        }));
-      }
-    }
-    const edgeLayer = s("g", { class: "edges" });
-    const labelLayer = s("g", { class: "edge-labels" });
-    const labels = [];
-    const freeSpot = (cx, cy, w, h) => {
-      const covers = (x, y) => [...Object.values(L.pos), ...labels].some((b) => x - w / 2 < b.x + b.w + 4 && x + w / 2 > b.x - 4 && y - h / 2 < b.y + b.h + 4 && y + h / 2 > b.y - 4);
-      for (const dy of [0, -14, 14, -28, 28, -42, 42, -56, 56]) {
-        for (const dx of [0, -(w / 2 + 14), w / 2 + 14])
-          if (!covers(cx + dx, cy + dy))
-            return [cx + dx, cy + dy];
-      }
-      return [cx, cy];
-    };
-    edgePaths(edges, L.pos, L).forEach((p, i) => {
-      const e = p.e;
-      const k = isNewViolation(e) || e.violation && withContext ? "violation" : e.delta;
-      const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
-      const tip = `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` + (e.examples[0] ? ` · ${e.examples[0]}` : "") + (e.violation ? ` · ⚠ ${e.violation.rule}` : "");
-      const pid = `ep-${i}`;
-      const g = s("g", { class: `edge-g${isKey ? " key" : ""}`, "data-k": `e:${e.from}>${e.to}`, "data-a": e.from, "data-b": e.to }, s("title", { text: tip }), s("path", { d: p.d, class: "edge-hit" }), isKey ? s("path", { d: p.d, class: "edge-glow" }) : null, s("path", {
-        id: pid,
-        d: p.d,
-        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
-        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`
-      }));
-      if ((isKey || e.delta === "added") && e.delta !== "removed") {
-        g.appendChild(s("circle", { r: isKey ? 4.5 : 3, class: `pulse${isKey ? " key" : ""}` }, s("animateMotion", { dur: isKey ? "2.2s" : "3s", repeatCount: "indefinite", begin: `-${r1(i % 5 * 0.4)}s` }, s("mpath", { href: `#${pid}` }))));
-      }
-      edgeLayer.appendChild(g);
-      const keyLabel = keyPairs[`${e.from}>${e.to}`];
-      if (isKey && keyLabel) {
-        const label = trunc(keyLabel, 40);
-        const lw = Math.ceil(textWidth(label, "600 11.5px")) + 20;
-        const [cx, cy] = freeSpot(p.mx, p.my, lw, 22);
-        labels.push({ x: cx - lw / 2, y: cy - 11, w: lw, h: 22 });
-        labelLayer.appendChild(s("g", { class: "edge-label", "data-a": e.from, "data-b": e.to }, s("rect", { x: r1(cx - lw / 2), y: r1(cy - 11), width: r1(lw), height: 22, rx: 11 }), s("text", { x: r1(cx), y: r1(cy + 4), "text-anchor": "middle", text: label })));
-      }
-    });
-    svg.appendChild(edgeLayer);
-    for (const n of nodes) {
-      const r = L.pos[n.id];
-      const c = compById[n.id];
-      V.geo[n.id] = r;
-      const nreq = reqsOfComp(n.id).length;
-      const neighbor = n.delta === "unchanged";
-      const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}${nreq ? ` · ◆ ${nreq}` : ""}`;
-      const g = s("g", {
-        class: `node st-${n.delta}`,
-        "data-k": n.id,
-        tabindex: "0",
-        role: "button",
-        "aria-label": `${c.name}, ${deltaLabel(n.delta, true)}`
-      }, s("title", { text: c.name + (summaryOf[n.id] ? `
-${summaryOf[n.id]}` : c.desc ? `
-${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12, class: "box" }), s("text", { x: r.x + 14, y: r.y + 19, class: "tag", text: neighbor ? "" : deltaLabel(n.delta).toUpperCase() }), neighbor ? null : s("text", { x: r.x + r.w - 12, y: r.y + 19, "text-anchor": "end", class: "delta" }, s("tspan", { class: "add", text: `+${n.additions}` }), s("tspan", { class: "del", text: ` −${n.deletions}` })), s("text", {
-        x: r.x + 14,
-        y: r.y + 39,
-        class: "name",
-        text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28)
-      }), s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }));
-      onNode?.(g, n.id);
-      svg.appendChild(g);
-    }
-    svg.appendChild(labelLayer);
-    V.expand = (set) => {
-      const keys = Object.keys(set);
-      const only = keys[0];
-      if (keys.length === 1 && only !== undefined && vis.has(only)) {
-        for (const e of edges) {
-          if (e.from === only)
-            set[e.to] = true;
-          if (e.to === only)
-            set[e.from] = true;
-        }
-      }
-      return set;
-    };
-    V.focusBoxKeys = (ids) => ids.filter((x) => vis.has(x));
-    return V;
-  }
+  // report/flow.ts
   function buildFlow(fl) {
     const parts = [];
     for (const x of fl.steps)
@@ -2169,214 +2310,122 @@ ${fields.join(`
     g.appendChild(text);
     return g;
   }
-  function buildData(onNode) {
+  function flowNotes(fl) {
+    const out = [];
+    if (fl.trigger)
+      out.push(h("span", { class: "flow-trigger" }, h("b", { text: `${T.startsAt} ` }), h("code", { text: fl.trigger })));
+    const ref = cfg.referenceFlows.find((f) => f.id === fl.id);
+    if (fl.scenario) {
+      const [rid, sid] = fl.scenario.split("#");
+      const r = reqById[rid];
+      const sc = r?.scenarios.find((x) => x.id === sid);
+      if (r && sc)
+        out.push(scenarioStrip(r, sc, true));
+    }
+    if (ref) {
+      const diff = (a, b) => {
+        const pool = b.map((x) => `${x.from}>${x.to}`);
+        return a.filter((x) => {
+          const i = pool.indexOf(`${x.from}>${x.to}`);
+          if (i < 0)
+            return true;
+          pool.splice(i, 1);
+          return false;
+        });
+      };
+      const extra = diff(fl.steps, ref.steps);
+      const missing = diff(ref.steps, fl.steps);
+      out.push(h("span", { class: "muted" }, h("b", { text: `${T.vsReference} “${ref.title || ref.id}”: ` }), !extra.length && !missing.length ? T.matchesReference : [
+        extra.length ? `${extra.length} ${T.extraSteps}` : "",
+        extra.length && missing.length ? " · " : "",
+        missing.length ? `${missing.length} ${T.missingSteps} (${missing.map((x) => `${compName(x.from)}→${compName(x.to)}${x.message ? `: ${x.message}` : ""}`).join("; ")})` : ""
+      ]));
+    }
+    const unverified = fl.steps.filter((x) => !x.verified);
+    if (unverified.length) {
+      out.push(h("span", { class: "warn-text" }, `? ${T.unverifiedNote} ${unverified.map((x) => `${compName(x.from)} → ${compName(x.to)}`).join(", ")}`));
+    }
+    return out;
+  }
+
+  // report/inspector.ts
+  function componentDetails(id, nav) {
+    const c = compById[id];
+    const n = changeComp[id] ?? { id, delta: "unchanged", files: 0, additions: 0, deletions: 0 };
+    const files = facts.files.filter((f) => f.component === id);
+    const syms = facts.symbols.filter((sy) => files.some((f) => f.path === sy.file));
+    const outE = facts.dependencies.filter((e) => e.from === id);
+    const inE = facts.dependencies.filter((e) => e.to === id);
+    const reqs = reqsOfComp(id);
+    return [
+      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
+      h("div", { class: "insp-title" }, h("span", { class: `badge ${n.delta}`, text: deltaLabel(n.delta, true) }), h("h3", { text: c ? c.name : id })),
+      h("div", {
+        class: "faint",
+        text: layerName(id) + (n.delta !== "unchanged" ? ` · ${n.files} ${n.files === 1 ? T.file : T.kFiles} · +${n.additions} −${n.deletions}` : "")
+      }),
+      summaryOf[id] ? h("p", { class: "insp-summary", text: summaryOf[id] }) : c?.desc ? h("p", { class: "insp-summary muted", text: c.desc }) : null,
+      files.length ? inspList(T.files, files.map((f) => h("div", { class: "insp-row" }, h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }), fileLink(f.path, f.path.split("/").pop()), h("span", { class: "nums" }, h("span", { class: "add", text: `+${f.additions}` }), " ", h("span", { class: "del", text: `−${f.deletions}` }))))) : null,
+      syms.length ? inspList(T.symbols, syms.slice(0, 12).map((sy) => h("div", { class: "insp-row" }, h("span", {
+        class: `badge ${sy.delta}`,
+        text: sy.delta === "added" ? "+" : sy.delta === "removed" ? "−" : "~"
+      }), fileLink(`${sy.file}:${sy.line}`, sy.name)))) : null,
+      outE.length ? inspList(T.dependsOn, outE.map(edgeRow((e) => e.to, nav))) : null,
+      inE.length ? inspList(T.usedBy, inE.map(edgeRow((e) => e.from, nav))) : null,
+      reqs.length ? inspList(T.reqs, reqs.map(reqRow)) : null
+    ];
+  }
+  function entityDetails(eid, nav) {
+    const e = entById[eid];
     const dm = DM;
-    const EW = 250;
-    const GX = 90;
-    const GY = 70;
-    const PER = 3;
-    const order = { added: 0, changed: 1, removed: 2, unchanged: 3 };
-    const ents = [...dm.entities].sort((a, b) => order[a.delta] - order[b.delta] || byCompRank(a.component ?? "", b.component ?? "") || (a.name < b.name ? -1 : 1));
-    const migrations = facts.files.filter((f) => f.category === "migration");
-    const top = migrations.length ? 34 + Math.min(migrations.length, 4) * 20 + 30 : 10;
-    const heights = ents.map((e) => 52 + Math.max(1, (e.fields ?? []).length) * 19 + 10);
-    const rows = Math.ceil(ents.length / PER);
-    const rowH = [];
-    for (let r = 0;r < rows; r++)
-      rowH.push(Math.max(...heights.slice(r * PER, r * PER + PER)));
-    const cols = Math.min(PER, ents.length);
-    const W = Math.max(cols * EW + (cols - 1) * GX, 600);
-    const pos = {};
-    let y = top;
-    ents.forEach((e, i) => {
-      const r = Math.floor(i / PER);
-      const c = i % PER;
-      const inRow = Math.min(PER, ents.length - r * PER);
-      const x0 = (W - (inRow * EW + (inRow - 1) * GX)) / 2;
-      const ry = top + rowH.slice(0, r).reduce((a, v) => a + v + GY, 0);
-      pos[e.id] = { x: x0 + c * (EW + GX), y: ry, w: EW, h: heights[i] };
-      y = Math.max(y, ry + heights[i]);
-    });
-    const V = newView("data", W, y + 10);
-    const svg = V.svg;
-    if (migrations.length) {
-      const mg = s("g", { class: "migrations" }, s("text", { x: 0, y: 14, class: "col-label", text: T.migrations.toUpperCase() }));
-      migrations.slice(0, 4).forEach((f, i) => {
-        const letter = gitLetter(f);
-        const text = s("text", { x: 0, y: 38 + i * 20, class: "mig" }, s("tspan", { class: `gs-${letter}`, text: `${letter}  ` }), s("tspan", { text: trunc(f.path, 90) }));
-        mg.appendChild(onOpen(text, f.path));
-      });
-      if (migrations.length > 4)
-        mg.appendChild(s("text", { x: 0, y: 38 + 4 * 20, class: "info", text: `+${migrations.length - 4}` }));
-      svg.appendChild(mg);
-    }
-    const links = s("g", { class: "links" });
-    svg.appendChild(links);
-    V.links = [];
-    for (const rl of dm.relations) {
-      const a = pos[rl.from];
-      const b = pos[rl.to];
-      if (!a || !b)
-        continue;
-      const ax = a.x + a.w / 2;
-      const ay = a.y + a.h / 2;
-      const bx = b.x + b.w / 2;
-      const by = b.y + b.h / 2;
-      let d;
-      let x1;
-      let y1;
-      let x2;
-      let y2;
-      if (Math.abs(ay - by) < 10 || Math.abs(bx - ax) > Math.abs(by - ay)) {
-        x1 = bx > ax ? a.x + a.w : a.x;
-        x2 = bx > ax ? b.x : b.x + b.w;
-        y1 = a.y + 26;
-        y2 = b.y + 26;
-        const mx = (x1 + x2) / 2;
-        d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-      } else {
-        x1 = ax;
-        x2 = bx;
-        y1 = by > ay ? a.y + a.h : a.y;
-        y2 = by > ay ? b.y : b.y + b.h;
-        const my = (y1 + y2) / 2;
-        d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
-      }
-      links.appendChild(s("path", { d, class: `rel rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }));
-      if (rl.label) {
-        const lx = (x1 + x2) / 2;
-        const ly = (y1 + y2) / 2;
-        const lw = Math.ceil(textWidth(rl.label, "11px", MONO)) + 16;
-        links.appendChild(s("g", { class: `rel-label rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }, s("rect", { x: r1(lx - lw / 2), y: r1(ly - 10), width: r1(lw), height: 20, rx: 10 }), s("text", { x: r1(lx), y: r1(ly + 4), "text-anchor": "middle", text: rl.label })));
-      }
-      V.links.push([`ent:${rl.from}`, `ent:${rl.to}`]);
-    }
-    for (const e of ents) {
-      const b = pos[e.id];
-      const key = `ent:${e.id}`;
-      V.geo[key] = b;
-      const fields = e.fields ?? [];
-      const g = s("g", { class: `entity st-${e.delta}`, "data-k": key, tabindex: "0", role: "button" }, s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 12, class: "box" }), s("rect", { x: b.x, y: b.y, width: b.w, height: 40, rx: 12, class: "head" }), s("rect", { x: b.x, y: b.y + 28, width: b.w, height: 12, class: "head" }), s("text", { x: b.x + 14, y: b.y + 25, class: "name", text: trunc(e.name, 24) }), s("text", {
-        x: b.x + b.w - 12,
-        y: b.y + 25,
-        "text-anchor": "end",
-        class: "tag",
-        text: e.delta === "unchanged" ? "" : deltaLabel(e.delta).toUpperCase()
-      }));
-      if (!fields.length) {
-        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62, class: "info", text: e.component ? compName(e.component) : "" }));
-      }
-      fields.forEach((f, i) => {
+    const rels = dm.relations.filter((r) => r.from === eid || r.to === eid);
+    const fields = e.fields ?? [];
+    return [
+      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
+      h("div", { class: "insp-title" }, h("span", { class: `badge ${e.delta}`, text: deltaLabel(e.delta) }), h("h3", { text: e.name })),
+      e.component ? h("div", null, h("a", {
+        href: "#",
+        class: "faint",
+        text: compName(e.component),
+        onclick: (ev) => {
+          ev.preventDefault();
+          nav.inspect(e.component);
+        }
+      })) : null,
+      fields.length ? inspList(T.fields, fields.map((f) => {
         const k = fieldDelta(f);
-        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62 + i * 19, class: `field f-${k}` }, s("tspan", { class: "fmark", text: `${FIELD_MARK[k] || " "} ` }), s("tspan", { text: trunc(fieldText(f), 28) })));
-      });
-      onNode?.(g, key);
-      svg.appendChild(g);
-    }
-    V.keyOf = (id) => id.slice(0, 4) === "ent:" ? id : `ent:${id}`;
-    V.expand = (set) => {
-      const add = {};
-      if (Object.keys(set).length === 1) {
-        for (const l of V.links ?? []) {
-          if (set[l[0]])
-            add[l[1]] = true;
-          if (set[l[1]])
-            add[l[0]] = true;
+        return h("div", { class: `insp-row field-row f-${k}` }, h("span", { class: "fmark", text: FIELD_MARK[k] || "·" }), h("code", { text: fieldText(f) }));
+      })) : null,
+      rels.length ? inspList(T.relations, rels.map((r) => {
+        const other = r.from === eid ? r.to : r.from;
+        return h("div", { class: "insp-row" }, h("span", { class: `badge ${r.delta}`, text: r.label || "—" }), h("a", {
+          href: "#",
+          text: entById[other]?.name ?? other,
+          onclick: (ev) => {
+            ev.preventDefault();
+            nav.entity(other);
+          }
+        }));
+      })) : null,
+      e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null
+    ];
+  }
+  function edgeRow(other, nav) {
+    return (e) => {
+      const k = isNewViolation(e) ? "violation" : e.delta;
+      const mark = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
+      return h("div", { class: "insp-row" }, h("span", { class: `badge ${k}`, text: mark[k] }), h("a", {
+        href: "#",
+        text: compName(other(e)),
+        onclick: (ev) => {
+          ev.preventDefault();
+          nav.inspect(other(e));
         }
-      }
-      Object.assign(set, add);
-      return set;
+      }), e.examples[0] ? fileLink(e.examples[0], e.examples[0].split("/").pop()) : null);
     };
-    return V;
   }
-  var VIEWS = [{ id: "architecture", title: T.architecture }];
-  for (const fl of ex?.flows ?? [])
-    VIEWS.push({ id: `flow:${fl.id}`, title: fl.title, flow: fl });
-  if (DM)
-    VIEWS.push({ id: "data", title: T.dataView });
-  var flowById = {};
-  for (const fl of ex?.flows ?? [])
-    flowById[fl.id] = fl;
-  function viewTitle(view) {
-    if (view === "requirements")
-      return T.reqs;
-    return VIEWS.find((v) => v.id === view)?.title ?? T.architecture;
-  }
-  function autoStory() {
-    const steps = [];
-    const touched = facts.components.filter((c) => c.delta !== "unchanged");
-    const layers = new Set(touched.map((c) => compById[c.id]?.layer));
-    steps.push({
-      heading: tf("autoOverviewH", { n: touched.length, m: layers.size }),
-      body: tf("autoOverviewB", { f: st.files, a: fmt(st.additions), d: fmt(st.deletions) }),
-      view: "architecture",
-      focus: []
-    });
-    for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
-      steps.push({
-        heading: tf("autoViolH", { a: compName(e.from), b: compName(e.to) }),
-        body: e.violation?.rule ?? "",
-        view: "architecture",
-        focus: [e.from, e.to],
-        code: e.examples[0]
-      });
-    }
-    for (const c of touched.filter((c) => c.delta === "added").slice(0, 2)) {
-      steps.push({
-        heading: tf("autoNewH", { x: compName(c.id) }),
-        body: tf("autoNewB", { l: layerName(c.id) }),
-        view: "architecture",
-        focus: [c.id]
-      });
-    }
-    for (const c of touched.filter((c) => c.delta === "removed").slice(0, 1)) {
-      steps.push({
-        heading: tf("autoRemovedH", { x: compName(c.id) }),
-        body: T.autoRemovedB,
-        view: "architecture",
-        focus: [c.id]
-      });
-    }
-    touched.filter((c) => c.delta === "changed").sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions) || byCompRank(a.id, b.id)).slice(0, Math.max(0, 5 - steps.length)).forEach((c) => {
-      steps.push({
-        heading: tf("autoChangedH", { x: compName(c.id) }),
-        body: tf("autoChangedB", { n: c.files, a: c.additions, d: c.deletions }),
-        view: "architecture",
-        focus: [c.id]
-      });
-    });
-    if (OS && REQS.length) {
-      for (const c of OS.changes) {
-        if (c.requirements.length) {
-          steps.push({
-            heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }),
-            body: c.why || T.autoSpecB,
-            view: "requirements",
-            focus: c.requirements.map((r) => r.id)
-          });
-        }
-      }
-    }
-    return steps;
-  }
-  var STORY = ex?.story.length ? ex.story : autoStory();
-  var storyIsAuto = !ex?.story.length;
-  var MEANINGFUL = new Set;
-  for (const e of facts.dependencies) {
-    if (e.delta === "added" || e.delta === "removed" || isNewViolation(e) || keyPairs[`${e.from}>${e.to}`] !== undefined) {
-      MEANINGFUL.add(e.from);
-      MEANINGFUL.add(e.to);
-    }
-  }
-  for (const step of STORY)
-    if ((step.view ?? "architecture") === "architecture")
-      for (const id of step.focus ?? [])
-        MEANINGFUL.add(id);
-  for (const m of Object.values(specMap))
-    for (const id of m.components ?? [])
-      MEANINGFUL.add(id);
-  var isContext = (c) => c.delta === "unchanged" && !MEANINGFUL.has(c.id);
-  var CONTEXT_COUNT = facts.components.filter(isContext).length;
+
+  // report/map.ts
   function renderMap() {
     const compactQ = window.matchMedia ? window.matchMedia("(max-width: 720px)") : { matches: false };
     let archMode = store("ec:arch-mode") ?? "delta";
@@ -2864,43 +2913,8 @@ ${fields.join(`
     };
     return root;
   }
-  function flowNotes(fl) {
-    const out = [];
-    if (fl.trigger)
-      out.push(h("span", { class: "flow-trigger" }, h("b", { text: `${T.startsAt} ` }), h("code", { text: fl.trigger })));
-    const ref = cfg.referenceFlows.find((f) => f.id === fl.id);
-    if (fl.scenario) {
-      const [rid, sid] = fl.scenario.split("#");
-      const r = reqById[rid];
-      const sc = r?.scenarios.find((x) => x.id === sid);
-      if (r && sc)
-        out.push(scenarioStrip(r, sc, true));
-    }
-    if (ref) {
-      const diff = (a, b) => {
-        const pool = b.map((x) => `${x.from}>${x.to}`);
-        return a.filter((x) => {
-          const i = pool.indexOf(`${x.from}>${x.to}`);
-          if (i < 0)
-            return true;
-          pool.splice(i, 1);
-          return false;
-        });
-      };
-      const extra = diff(fl.steps, ref.steps);
-      const missing = diff(ref.steps, fl.steps);
-      out.push(h("span", { class: "muted" }, h("b", { text: `${T.vsReference} “${ref.title || ref.id}”: ` }), !extra.length && !missing.length ? T.matchesReference : [
-        extra.length ? `${extra.length} ${T.extraSteps}` : "",
-        extra.length && missing.length ? " · " : "",
-        missing.length ? `${missing.length} ${T.missingSteps} (${missing.map((x) => `${compName(x.from)}→${compName(x.to)}${x.message ? `: ${x.message}` : ""}`).join("; ")})` : ""
-      ]));
-    }
-    const unverified = fl.steps.filter((x) => !x.verified);
-    if (unverified.length) {
-      out.push(h("span", { class: "warn-text" }, `? ${T.unverifiedNote} ${unverified.map((x) => `${compName(x.from)} → ${compName(x.to)}`).join(", ")}`));
-    }
-    return out;
-  }
+
+  // report/sections.ts
   function renderDecisions() {
     if (!ex?.decisions.length)
       return null;
@@ -2943,6 +2957,8 @@ ${fields.join(`
       outside.length ? group(null, T.outsideMap, null, null, outside) : null
     ]), tf("leadChanges", { c: comps.length, f: nFiles }));
   }
+
+  // report/app.ts
   function themeButton() {
     const modes = ["auto", "light", "dark"];
     let cur = store("ec:theme") ?? "auto";

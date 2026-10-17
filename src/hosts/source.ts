@@ -101,6 +101,24 @@ export function fetchRefs(
 }
 
 /**
+ * The base of a PR its target already holds (merged with a merge commit): its merge base is its own head, so the
+ * diff would be empty. The first-parent commit of the target that merged the head names the target before the
+ * merge; the PR is its head against the merge base with that commit. null when the target does not hold the head
+ * (open, or squashed: the merge base is right), or when no merge commit brought it in (a fast-forward).
+ */
+export function mergedBase(root: string, target: string, head: string): string | null {
+  if (git(["merge-base", target, head], root).trim() !== head) return null;
+  const chain = git(["rev-list", "--first-parent", "--ancestry-path", "--reverse", `${head}..${target}`], root)
+    .split(/\s+/)
+    .filter(Boolean);
+  const merge = chain[0];
+  if (!merge) return null;
+  const parents = git(["rev-list", "--parents", "-n", "1", merge], root).split(/\s+/).filter(Boolean).slice(1);
+  if (parents.length < 2 || parents[0] === head) return null;
+  return git(["merge-base", parents[0] as string, head], root).trim();
+}
+
+/**
  * The PR as a change source. Prefers the host's merge ref (the PR applied to its target); a PR without one
  * (merge conflicts, completed, abandoned) falls back to its own commits against the merge base with its target.
  */
@@ -136,7 +154,7 @@ export function prSource(root: string, host: PrHost, input: string, notes: strin
       );
     }
     head = git(["rev-parse", headRef], root).trim();
-    base = git(["merge-base", `${ref}/target`, head], root).trim();
+    base = mergedBase(root, `${ref}/target`, head) ?? git(["merge-base", `${ref}/target`, head], root).trim();
     notes.push(
       `PR ${prId} has no merge ref (${meta.status || "unknown"}): explained as '${source || own}' against its merge base with '${target}'.`,
     );

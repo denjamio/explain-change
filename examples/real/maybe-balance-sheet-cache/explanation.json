@@ -98,22 +98,22 @@
   "decisions": [
     {
       "title": "2 timestamps on Family as cache keys",
-      "why": "1 touch per sync transition expires every family cache. A key no longer needs a query for the newest entry.",
-      "basis": "inferred",
+      "why": "The Sync process sets both timestamps, so the background sync does all cache expiry. A key no longer needs a query for the newest entry.",
+      "basis": "pr",
       "alternative": "entries.maximum(:updated_at) in each cache key, as before.",
       "evidence": "db/migrate/20250610181219_add_sync_timestamps_to_family.rb:3-4"
     },
     {
       "title": "Activity and completion are separate timestamps",
       "why": "Sync status changes when a sync starts or ends. Totals change only when a sync completes, so they keep their cache during a sync.",
-      "basis": "code",
+      "basis": "pr",
       "alternative": "A single timestamp for every sync change.",
       "evidence": "app/models/sync.rb:170-176"
     },
     {
       "title": "Small POROs in the BalanceSheet namespace",
-      "why": "The app keeps logic in models and POROs. Each object answers a single question: totals, groups, the net worth series or sync status.",
-      "basis": "inferred",
+      "why": "The PR splits BalanceSheet into classes that each cache a single result: account totals, groups, the net worth series or sync status.",
+      "basis": "pr",
       "alternative": "A single BalanceSheet class with a single large query.",
       "evidence": "app/models/balance_sheet.rb:53-62"
     },

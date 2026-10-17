@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="generator" content="explain-change">
-<title>Bitwarden · [PM-41472] feat: add bulk folder delete endpoint (#8157)</title>
+<title>Bitwarden · [PM-41472] feat: add bulk folder delete endpoint</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22explain-change%22%3E%20%3Cpath%20class%3D%22bulb-line%22%20d%3D%22M16%201.6v2.6M5.6%206l1.8%201.8M26.4%206l-1.8%201.8M1.8%2015.2h2.6M27.6%2015.2h2.6%22%20fill%3D%22none%22%20stroke%3D%22%234b4fd6%22%20stroke-width%3D%222.2%22%20stroke-linecap%3D%22round%22%2F%3E%20%3Cpath%20class%3D%22bulb-line%22%20d%3D%22M16%207.2a8%208%200%200%200-4.8%2014.4c.9.7%201.4%201.6%201.4%202.7v.4h6.8v-.4c0-1.1.5-2%201.4-2.7A8%208%200%200%200%2016%207.2z%22%20fill%3D%22%23ffd65a%22%20stroke%3D%22%234b4fd6%22%20stroke-width%3D%222.2%22%20stroke-linejoin%3D%22round%22%2F%3E%20%3Cpath%20class%3D%22bulb-line%22%20d%3D%22M13.4%2019.6q2.6-3.6%205.2%200%22%20fill%3D%22none%22%20stroke%3D%22%234b4fd6%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%20%3Cpath%20class%3D%22bulb-line%22%20d%3D%22M12.8%2027.6h6.4M14.2%2030.2h3.6%22%20fill%3D%22none%22%20stroke%3D%22%234b4fd6%22%20stroke-width%3D%222.2%22%20stroke-linecap%3D%22round%22%2F%3E%20%3C%2Fsvg%3E">
 <style>/* explain-change report. One semantic palette for badges, diagrams and diffs: --added, --changed, --removed and
    --unchanged follow the delta of each element; --violation marks a broken rule. */
@@ -600,7 +600,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 <body>
 <div id="app" class="app"></div>
 <noscript><p style="padding:24px">This report uses JavaScript to draw its diagrams. Open it in a browser with scripts enabled.</p></noscript>
-<script type="application/json" id="ec-data">{"tool":"0.7.0","facts":{"version":5,"tool":"0.7.0","analysis":10,"key":"e89a62fdce442211","source":{"kind":"local","title":"[PM-41472] feat: add bulk folder delete endpoint (#8157)","description":"","branch":"e93b9623","baseRef":"HEAD~1","headRef":"HEAD","headSha":"e93b962371d80964556f5590c6615f5160a437a1","mergeBase":"643e3aa631e3a7f238c9084ed20657334ff07993","host":"github","prId":null,"url":null,"includeUncommitted":false,"headDate":"2026-08-12T13:06:11-07:00","commits":1},"config":{"inferred":false,"name":"Bitwarden","direction":"Ports and adapters: Core defines entities, commands, queries and repository interfaces and references no infrastructure; Dapper and Entity Framework each implement every repository. Code is split by team folder (Vault, AdminConsole, Auth…) in every project.","lang":"en","layers":[{"id":"hosts","name":"Hosts"},{"id":"core","name":"Core"},{"id":"adapters","name":"Adapters"},{"id":"database","name":"Database"}],"components":[{"id":"api","name":"API","layer":"hosts","desc":"Owns the REST API that the clients call: controllers and request and response models, by team."},{"id":"identity","name":"Identity","layer":"hosts","desc":"Owns login and token issuance: the OAuth 2.0 and OpenID Connect server."},{"id":"admin-portal","name":"Admin portal","layer":"hosts","desc":"Owns the internal admin site for support and operations."},{"id":"other-hosts","name":"Event and billing hosts","layer":"hosts","desc":"Owns the smaller hosts: event collection and processing, push notifications, icons and billing webhooks."},{"id":"scim-sso","name":"SCIM and SSO","layer":"hosts","desc":"Owns the licensed hosts: SCIM provisioning from identity providers, and SSO login."},{"id":"pam-service","name":"PAM service","layer":"hosts","desc":"Owns the licensed PAM module the API hosts: its endpoints, access requests, connectors and credential rotation."},{"id":"shared-web","name":"Shared web","layer":"hosts","desc":"Owns what every host shares: service registration (the composition root), auth and HTTP setup."},{"id":"vault","name":"Vault","layer":"core","desc":"Owns ciphers, folders and collections access for vault items; what a user stores and how it is shared."},{"id":"admin-console","name":"Admin Console","layer":"core","desc":"Owns organizations, members, groups, policies and providers; who belongs to which organization."},{"id":"auth","name":"Auth","layer":"core","desc":"Owns login methods, two-factor, SSO configuration, devices and emergency access."},{"id":"billing","name":"Billing","layer":"core","desc":"Owns plans, subscriptions, seats and the payment provider integration."},{"id":"key-management","name":"Key management","layer":"core","desc":"Owns account keys, key rotation and the encryption versions of user data."},{"id":"tools","name":"Tools","layer":"core","desc":"Owns Send, import and export."},{"id":"secrets-manager","name":"Secrets Manager","layer":"core","desc":"Owns projects, secrets, service accounts and their access policies."},{"id":"data-insights","name":"Data insights","layer":"core","desc":"Owns reports and Access Intelligence: password health and risk insights for organizations."},{"id":"notification-center","name":"Notification center","layer":"core","desc":"Owns the notifications a user sees in the clients, and their status."},{"id":"pam","name":"PAM","layer":"core","desc":"Owns privileged access management: access connectors and their rules."},{"id":"platform","name":"Platform","layer":"core","desc":"Owns push, mail, installations, feature flags and scheduled jobs that every team uses."},{"id":"licensed","name":"Licensed features","layer":"core","desc":"Owns the commercially licensed domain logic: providers, SSO configuration and enterprise features."},{"id":"shared-kernel","name":"Shared kernel","layer":"core","desc":"Owns the shared entities (User, Organization…), the legacy services and repository interfaces, and utilities."},{"id":"dapper","name":"Dapper (SQL Server)","layer":"adapters","desc":"Owns the SQL Server repositories: Dapper calls to stored procedures."},{"id":"entity-framework","name":"Entity Framework","layer":"adapters","desc":"Owns the EF Core repositories and models for PostgreSQL, MySQL and SQLite."},{"id":"sql-server-schema","name":"SQL Server schema","layer":"database","desc":"Owns the SQL Server tables, views and stored procedures, and their migration scripts."},{"id":"ef-migrations","name":"EF migrations","layer":"database","desc":"Owns the generated EF migrations for PostgreSQL, MySQL and SQLite."}],"rules":{"allow":["hosts -> core","adapters -> core","shared-web -> adapters","database -> core","database -> adapters","admin-portal -> database","dapper -> sql-server-schema"],"forbid":["core -> adapters","core -> hosts"]},"referenceFlows":[{"id":"save-cipher","title":"Save a vault item","steps":[{"from":"api","to":"vault","message":"CreateCipherCommand"},{"from":"vault","to":"shared-kernel","message":"ICipherRepository.CreateAsync"},{"from":"dapper","to":"shared-kernel","message":"CipherRepository implements ICipherRepository"}]}],"glossary":[{"term":"vault","definition":"A user's encrypted store of items; Bitwarden never sees the plain text."},{"term":"cipher","definition":"1 encrypted vault item: a login, a card, an identity, a secure note or an SSH key."},{"term":"folder","definition":"A user's own grouping of vault items, encrypted with the user's key."},{"term":"collection","definition":"An organization's grouping of vault items, shared with members and groups."},{"term":"organization","definition":"A team or company account that shares collections with its members."},{"term":"member","definition":"A user's membership in an organization, with a role and a status (invited, accepted, confirmed)."},{"term":"staged user","definition":"A member that an admin creates in advance and invites later."},{"term":"account recovery","definition":"An organization's ability to reset a member's master password."},{"term":"send","definition":"A short-lived encrypted share of text or a file, with a link."}],"names":[]},"files":[{"path":"src/Api/Vault/Controllers/FoldersController.cs","previousPath":null,"delta":"changed","binary":false,"additions":24,"deletions":1,"component":"api","category":"code","truncated":false,"hunks":[{"oldStart":103,"oldLines":6,"newStart":113,"newLines":19,"header":"public class FoldersController : Controller","lines":[[" ","        await Delete(id);"],[" ","    }"],[" ",""],["+","    [HttpDelete(\"\")]"],["+","    [RequireFeature(FeatureFlagKeys.VFO1Foundation)]"],["+","    public async Task DeleteMany([FromBody] FolderBulkDeleteRequestModel model)"],["+","    {"],["+","        if (!_globalSettings.SelfHosted && model.Ids.Count() > 500)"],["+","        {"],["+","            throw new BadRequestException(\"You can only delete up to 500 folders at a time.\");"],["+","        }"],["+",""],["+","        var userId = _userService.GetProperUserId(User).Value;"],["+","        await _deleteManyFoldersCommand.DeleteManyAsync(model.Ids, userId);"],["+","    }"],["+",""],[" ","    [HttpDelete(\"all\")]"],[" ","    public async Task DeleteAll()"],[" ","    {"]]}]},{"path":"src/Api/Vault/Models/Request/FolderRequestModel.cs","previousPath":null,"delta":"changed","binary":false,"additions":6,"deletions":0,"component":"api","category":"code","truncated":false,"hunks":[]},{"path":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs","previousPath":null,"delta":"added","binary":false,"additions":35,"deletions":0,"component":"vault","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":35,"header":"","lines":[["+","﻿using Bit.Core.Exceptions;"],["+","using Bit.Core.Platform.Push;"],["+","using Bit.Core.Vault.Commands.Interfaces;"],["+","using Bit.Core.Vault.Repositories;"],["+",""],["+","namespace Bit.Core.Vault.Commands;"],["+",""],["+","public class DeleteManyFoldersCommand("],["+","    IFolderRepository folderRepository,"],["+","    IPushNotificationService pushService)"],["+","    : IDeleteManyFoldersCommand"],["+","{"],["+","    public async Task DeleteManyAsync(IEnumerable\u003cGuid> folderIds, Guid userId)"],["+","    {"],["+","        var requestedIds = folderIds?.ToHashSet();"],["+","        if (requestedIds == null || requestedIds.Count == 0)"],["+","        {"],["+","            throw new BadRequestException(\"No folder ids provided.\");"],["+","        }"],["+",""],["+","        var folders = await folderRepository.GetManyByUserIdAsync(userId);"],["+","        var deletingFolders = folders.Where(f => requestedIds.Contains(f.Id)).ToList();"],["+",""],["+","        if (deletingFolders.Count == 0)"],["+","        {"],["+","            return;"],["+","        }"],["+",""],["+","        await folderRepository.DeleteManyAsync(deletingFolders.Select(f => f.Id), userId);"],["+",""],["+","        // Deleting folders also re-assigns the ciphers filed under them, so clients need a full vault sync"],["+","        // rather than a per-folder delete notification."],["+","        await pushService.PushSyncVaultAsync(userId);"],["+","    }"],["+","}"]]}]},{"path":"src/Core/Vault/Commands/Interfaces/IDeleteManyFoldersCommand.cs","previousPath":null,"delta":"added","binary":false,"additions":11,"deletions":0,"component":"vault","category":"code","truncated":false,"hunks":[]},{"path":"src/Core/Vault/Repositories/IFolderRepository.cs","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":1,"component":"vault","category":"code","truncated":false,"hunks":[{"oldStart":6,"oldLines":9,"newStart":6,"newLines":17,"header":"namespace Bit.Core.Vault.Repositories;","lines":[[" ",""],[" ","public interface IFolderRepository : IRepository\u003cFolder, Guid>"],[" ","{"],["-","    Task\u003cFolder> GetByIdAsync(Guid id, Guid userId);"],["+","    Task\u003cFolder?> GetByIdAsync(Guid id, Guid userId);"],[" ","    Task\u003cICollection\u003cFolder>> GetManyByUserIdAsync(Guid userId);"],[" ",""],["+","    /// \u003csummary>"],["+","    /// Deletes the given folders and re-assigns any of the user's ciphers that were filed under them to no folder."],["+","    /// Ids that do not belong to the user are ignored."],["+","    /// \u003c/summary>"],["+","    /// \u003cparam name=\"folderIds\">The folders to delete\u003c/param>"],["+","    /// \u003cparam name=\"userId\">The owner of the folders\u003c/param>"],["+","    Task DeleteManyAsync(IEnumerable\u003cGuid> folderIds, Guid userId);"],["+",""],[" ","    /// \u003csummary>"],[" ","    /// Updates encrypted data for folders during a key rotation"],[" ","    /// \u003c/summary>"]]}]},{"path":"src/Core/Vault/VaultServiceCollectionExtensions.cs","previousPath":null,"delta":"changed","binary":false,"additions":2,"deletions":0,"component":"vault","category":"code","truncated":false,"hunks":[]},{"path":"src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs","previousPath":null,"delta":"changed","binary":false,"additions":24,"deletions":0,"component":"dapper","category":"code","truncated":false,"hunks":[{"oldStart":47,"oldLines":5,"newStart":47,"newLines":29,"header":"public class FolderRepository : Repository\u003cFolder, Guid>, IFolderRepository","lines":[[" ","        }"],[" ","    }"],[" ",""],["+","    /// \u003cinheritdoc />"],["+","    public async Task DeleteManyAsync(IEnumerable\u003cGuid> folderIds, Guid userId)"],["+","    {"],["+","        await using var connection = new SqlConnection(ConnectionString);"],["+","        await connection.OpenAsync();"],["+",""],["+","        await using var transaction = await connection.BeginTransactionAsync();"],["+","        try"],["+","        {"],["+","            await connection.ExecuteAsync("],["+","                $\"[{Schema}].[Folder_DeleteByIds]\","],["+","                new { Ids = folderIds.ToGuidIdArrayTVP(), UserId = userId },"],["+","                commandType: CommandType.StoredProcedure,"],["+","                transaction: transaction);"],["+",""],["+","            await transaction.CommitAsync();"],["+","        }"],["+","        catch"],["+","        {"],["+","            await transaction.RollbackAsync();"],["+","            throw;"],["+","        }"],["+","    }"],["+",""],[" ","    /// \u003cinheritdoc />"],[" ","    public UpdateEncryptedDataForKeyRotation UpdateForKeyRotation("]]}]},{"path":"src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs","previousPath":null,"delta":"changed","binary":false,"additions":70,"deletions":0,"component":"entity-framework","category":"code","truncated":false,"hunks":[]},{"path":"src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql","previousPath":null,"delta":"added","binary":false,"additions":94,"deletions":0,"component":"sql-server-schema","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":94,"header":"","lines":[["+","CREATE PROCEDURE [dbo].[Folder_DeleteByIds]"],["+","    @Ids AS [dbo].[GuidIdArray] READONLY,"],["+","    @UserId UNIQUEIDENTIFIER"],["+","AS"],["+","BEGIN"],["+","    SET NOCOUNT ON"],["+",""],["+","    DECLARE @UserIdPath VARCHAR(50) = CONCAT('$.\"', @UserId, '\"')"],["+",""],["+","    DECLARE @OwnedIds AS TABLE ([Id] UNIQUEIDENTIFIER PRIMARY KEY)"],["+",""],["+","    INSERT INTO @OwnedIds ([Id])"],["+","    SELECT"],["+","        [Id]"],["+","    FROM"],["+","        [dbo].[Folder]"],["+","    WHERE"],["+","        [Id] IN (SELECT [Id] FROM @Ids)"],["+","        AND [UserId] = @UserId"],["+",""],["+","    IF NOT EXISTS (SELECT 1 FROM @OwnedIds)"],["+","    BEGIN"],["+","        RETURN"],["+","    END"],["+",""],["+","    ;WITH [CTE] AS ("],["+","        SELECT"],["+","            [Id],"],["+","            [OrganizationId]"],["+","        FROM"],["+","            [OrganizationUser]"],["+","        WHERE"],["+","            [UserId] = @UserId"],["+","            AND [Status] = 2 -- Confirmed"],["+","    )"],["+","    UPDATE"],["+","        C"],["+","    SET"],["+","        C.[Folders] = JSON_MODIFY(C.[Folders], @UserIdPath, NULL)"],["+","    FROM"],["+","        [dbo].[Cipher] C"],["+","    INNER JOIN"],["+","        [CTE] OU ON C.[UserId] IS NULL AND C.[OrganizationId] IN (SELECT [OrganizationId] FROM [CTE])"],["+","    INNER JOIN"],["+","        [dbo].[Organization] O ON O.[Id] = OU.[OrganizationId] AND O.[Id] = C.[OrganizationId] AND O.[Enabled] = 1"],["+","    LEFT JOIN"],["+","        [dbo].[CollectionCipher] CC ON CC.[CipherId] = C.[Id]"],["+","    LEFT JOIN"],["+","        [dbo].[CollectionUser] CU ON CU.[CollectionId] = CC.[CollectionId] AND CU.[OrganizationUserId] = OU.[Id]"],["+","    LEFT JOIN"],["+","        [dbo].[GroupUser] GU ON CU.[CollectionId] IS NULL AND GU.[OrganizationUserId] = OU.[Id]"],["+","    LEFT JOIN"],["+","        [dbo].[Group] G ON G.[Id] = GU.[GroupId]"],["+","    LEFT JOIN"],["+","        [dbo].[CollectionGroup] CG ON CG.[CollectionId] = CC.[CollectionId] AND CG.[GroupId] = GU.[GroupId]"],["+","    WHERE"],["+","        ("],["+","            CU.[CollectionId] IS NOT NULL"],["+","            OR CG.[CollectionId] IS NOT NULL"],["+","        )"],["+","        AND EXISTS ("],["+","            SELECT"],["+","                1"],["+","            FROM"],["+","                @OwnedIds OI"],["+","            WHERE"],["+","                OI.[Id] = JSON_VALUE(C.[Folders], @UserIdPath)"],["+","        )"],["+",""],["+","    UPDATE"],["+","        C"],["+","    SET"],["+","        C.[Folders] = JSON_MODIFY(C.[Folders], @UserIdPath, NULL)"],["+","    FROM"],["+","        [dbo].[Cipher] C"],["+","    WHERE"],["+","        [UserId] = @UserId"],["+","        AND EXISTS ("],["+","            SELECT"],["+","                1"],["+","            FROM"],["+","                @OwnedIds OI"],["+","            WHERE"],["+","                OI.[Id] = JSON_VALUE(C.[Folders], @UserIdPath)"],["+","        )"],["+",""],["+","    DELETE"],["+","    FROM"],["+","        [dbo].[Folder]"],["+","    WHERE"],["+","        [Id] IN (SELECT [Id] FROM @OwnedIds)"],["+",""],["+","    EXEC [dbo].[User_BumpAccountRevisionDate] @UserId"],["+","END"]]}]},{"path":"test/Api.Test/Vault/Controllers/FoldersControllerTests.cs","previousPath":null,"delta":"added","binary":false,"additions":82,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"test/Core.Test/Vault/Commands/DeleteManyFoldersCommandTest.cs","previousPath":null,"delta":"added","binary":false,"additions":107,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"test/Infrastructure.IntegrationTest/Vault/Repositories/FolderRepositoryTests.cs","previousPath":null,"delta":"added","binary":false,"additions":151,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql","previousPath":null,"delta":"added","binary":false,"additions":95,"deletions":0,"component":"sql-server-schema","category":"migration","truncated":false,"hunks":[]}],"components":[{"id":"api","delta":"changed","files":2,"additions":30,"deletions":1},{"id":"vault","delta":"changed","files":4,"additions":57,"deletions":1},{"id":"admin-console","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"auth","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"key-management","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"data-insights","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"platform","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"shared-kernel","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"dapper","delta":"changed","files":1,"additions":24,"deletions":0},{"id":"entity-framework","delta":"changed","files":1,"additions":70,"deletions":0},{"id":"sql-server-schema","delta":"changed","files":2,"additions":189,"deletions":0}],"dependencies":[{"from":"api","to":"admin-console","delta":"unchanged","baseCount":571,"headCount":571,"examples":["src/Api/Vault/Controllers/FoldersController.cs:9","src/Api/AdminConsole/Attributes/BindOrganizationAttribute.cs:2","src/Api/AdminConsole/Attributes/InjectOrganizationUserAttribute.cs:3"],"violation":null},{"from":"api","to":"auth","delta":"changed","baseCount":190,"headCount":191,"examples":["src/Api/Vault/Controllers/FoldersController.cs:10","src/Api/AdminConsole/Attributes/BindOrganizationAttribute.cs:4","src/Api/AdminConsole/Attributes/InjectOrganizationUserAttribute.cs:3"],"violation":null},{"from":"api","to":"data-insights","delta":"unchanged","baseCount":324,"headCount":324,"examples":["src/Api/Vault/Controllers/FoldersController.cs:9","src/Api/AdminConsole/Attributes/BindOrganizationAttribute.cs:4","src/Api/AdminConsole/Attributes/InjectOrganizationUserAttribute.cs:3"],"violation":null},{"from":"api","to":"platform","delta":"unchanged","baseCount":146,"headCount":146,"examples":["src/Api/Vault/Controllers/FoldersController.cs:9","src/Api/AdminConsole/Authorization/Collections/BulkCollectionAuthorizationHandler.cs:6","src/Api/AdminConsole/Authorization/Collections/CollectionAuthorizationHandler.cs:3"],"violation":null},{"from":"api","to":"shared-kernel","delta":"changed","baseCount":757,"headCount":759,"examples":["src/Api/Vault/Controllers/FoldersController.cs:7","src/Api/Vault/Models/Request/FolderRequestModel.cs:5","src/Api/AdminConsole/Attributes/BindOrganizationAttribute.cs:3"],"violation":null},{"from":"api","to":"vault","delta":"changed","baseCount":59,"headCount":60,"examples":["src/Api/Vault/Controllers/FoldersController.cs:11","src/Api/Vault/Models/Request/FolderRequestModel.cs:6","src/Api/Auth/Models/Response/EmergencyAccessResponseModel.cs:12"],"violation":null},{"from":"dapper","to":"auth","delta":"unchanged","baseCount":91,"headCount":91,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:6","src/Infrastructure.Dapper/AdminConsole/Repositories/CollectionRepository.cs:8","src/Infrastructure.Dapper/AdminConsole/Repositories/GroupRepository.cs:8"],"violation":null},{"from":"dapper","to":"key-management","delta":"unchanged","baseCount":18,"headCount":18,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:5","src/Infrastructure.Dapper/AdminConsole/Repositories/OrganizationUserRepository.cs:10","src/Infrastructure.Dapper/Auth/Repositories/EmergencyAccessRepository.cs:5"],"violation":null},{"from":"dapper","to":"shared-kernel","delta":"unchanged","baseCount":127,"headCount":127,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:6","src/Infrastructure.Dapper/AdminConsole/Helpers/BulkResourceCreationService.cs:2","src/Infrastructure.Dapper/AdminConsole/Repositories/CollectionRepository.cs:5"],"violation":null},{"from":"dapper","to":"sql-server-schema","delta":"changed","baseCount":308,"headCount":309,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:42","src/Infrastructure.Dapper/AdminConsole/Repositories/CollectionRepository.cs:35","src/Infrastructure.Dapper/AdminConsole/Repositories/GroupRepository.cs:32"],"violation":null},{"from":"dapper","to":"vault","delta":"unchanged","baseCount":13,"headCount":13,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:7","src/Infrastructure.Dapper/AdminConsole/Helpers/BulkResourceCreationService.cs:3","src/Infrastructure.Dapper/DapperServiceCollectionExtensions.cs:15"],"violation":null},{"from":"entity-framework","to":"auth","delta":"unchanged","baseCount":100,"headCount":100,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:14","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:11","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/ProjectRepository.cs:9"],"violation":null},{"from":"entity-framework","to":"data-insights","delta":"unchanged","baseCount":162,"headCount":162,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:14","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:2","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/ProjectRepository.cs:3"],"violation":null},{"from":"entity-framework","to":"key-management","delta":"unchanged","baseCount":78,"headCount":78,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:6","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:11","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/ProjectRepository.cs:9"],"violation":null},{"from":"entity-framework","to":"platform","delta":"unchanged","baseCount":101,"headCount":101,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:14","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:2","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/ProjectRepository.cs:3"],"violation":null},{"from":"entity-framework","to":"shared-kernel","delta":"changed","baseCount":161,"headCount":162,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:7","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/Commercial.Infrastructure.EntityFramework.csproj:11","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:2"],"violation":null},{"from":"entity-framework","to":"vault","delta":"unchanged","baseCount":16,"headCount":16,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:8","src/Infrastructure.EntityFramework/Dirt/Repositories/Queries/EventReadPageByCipherIdQuery.cs:2","src/Infrastructure.EntityFramework/EntityFrameworkServiceCollectionExtensions.cs:16"],"violation":null},{"from":"vault","to":"admin-console","delta":"unchanged","baseCount":44,"headCount":44,"examples":["src/Core/Vault/Repositories/IFolderRepository.cs:2","src/Core/Vault/Authorization/Permissions/NormalCipherPermissions.cs:2","src/Core/Vault/Authorization/SecurityTasks/SecurityTaskAuthorizationHandler.cs:1"],"violation":null},{"from":"vault","to":"auth","delta":"unchanged","baseCount":11,"headCount":11,"examples":["src/Core/Vault/Repositories/IFolderRepository.cs:2","src/Core/Vault/VaultServiceCollectionExtensions.cs:4","src/Core/Vault/Commands/CreateManyTaskNotificationsCommand.cs:9"],"violation":null},{"from":"vault","to":"data-insights","delta":"unchanged","baseCount":30,"headCount":30,"examples":["src/Core/Vault/Repositories/IFolderRepository.cs:2","src/Core/Vault/VaultServiceCollectionExtensions.cs:4","src/Core/Vault/Authorization/Permissions/NormalCipherPermissions.cs:2"],"violation":null},{"from":"vault","to":"key-management","delta":"unchanged","baseCount":3,"headCount":3,"examples":["src/Core/Vault/Repositories/IFolderRepository.cs:1","src/Core/Vault/VaultServiceCollectionExtensions.cs:4","src/Core/Vault/Repositories/ICipherRepository.cs:2"],"violation":null},{"from":"vault","to":"platform","delta":"changed","baseCount":23,"headCount":24,"examples":["src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:2","src/Core/Vault/VaultServiceCollectionExtensions.cs:4","src/Core/Vault/Authorization/SecurityTasks/SecurityTaskAuthorizationHandler.cs:2"],"violation":null},{"from":"vault","to":"shared-kernel","delta":"changed","baseCount":88,"headCount":89,"examples":["src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1","src/Core/Vault/Repositories/IFolderRepository.cs:2","src/Core/Vault/VaultServiceCollectionExtensions.cs:4"],"violation":null}],"dependencyGraph":[["admin-console","auth"],["admin-console","billing"],["admin-console","data-insights"],["admin-console","key-management"],["admin-console","platform"],["admin-console","secrets-manager"],["admin-console","shared-kernel"],["admin-console","tools"],["admin-console","vault"],["admin-portal","admin-console"],["admin-portal","auth"],["admin-portal","billing"],["admin-portal","data-insights"],["admin-portal","ef-migrations"],["admin-portal","entity-framework"],["admin-portal","licensed"],["admin-portal","platform"],["admin-portal","secrets-manager"],["admin-portal","shared-kernel"],["admin-portal","shared-web"],["admin-portal","sql-server-schema"],["admin-portal","tools"],["admin-portal","vault"],["api","admin-console"],["api","auth"],["api","billing"],["api","data-insights"],["api","entity-framework"],["api","key-management"],["api","licensed"],["api","notification-center"],["api","pam-service"],["api","platform"],["api","secrets-manager"],["api","shared-kernel"],["api","shared-web"],["api","tools"],["api","vault"],["auth","admin-console"],["auth","billing"],["auth","data-insights"],["auth","key-management"],["auth","platform"],["auth","shared-kernel"],["auth","vault"],["billing","admin-console"],["billing","auth"],["billing","data-insights"],["billing","key-management"],["billing","platform"],["billing","shared-kernel"],["dapper","admin-console"],["dapper","auth"],["dapper","billing"],["dapper","data-insights"],["dapper","key-management"],["dapper","notification-center"],["dapper","pam"],["dapper","platform"],["dapper","secrets-manager"],["dapper","shared-kernel"],["dapper","sql-server-schema"],["dapper","tools"],["dapper","vault"],["data-insights","admin-console"],["data-insights","auth"],["data-insights","key-management"],["data-insights","platform"],["data-insights","secrets-manager"],["data-insights","shared-kernel"],["data-insights","vault"],["ef-migrations","auth"],["ef-migrations","data-insights"],["ef-migrations","entity-framework"],["ef-migrations","key-management"],["ef-migrations","platform"],["ef-migrations","shared-kernel"],["entity-framework","admin-console"],["entity-framework","auth"],["entity-framework","billing"],["entity-framework","data-insights"],["entity-framework","key-management"],["entity-framework","notification-center"],["entity-framework","pam"],["entity-framework","platform"],["entity-framework","secrets-manager"],["entity-framework","shared-kernel"],["entity-framework","sql-server-schema"],["entity-framework","tools"],["entity-framework","vault"],["identity","admin-console"],["identity","auth"],["identity","billing"],["identity","data-insights"],["identity","key-management"],["identity","platform"],["identity","secrets-manager"],["identity","shared-kernel"],["identity","shared-web"],["identity","tools"],["key-management","admin-console"],["key-management","auth"],["key-management","data-insights"],["key-management","platform"],["key-management","shared-kernel"],["key-management","tools"],["key-management","vault"],["licensed","admin-console"],["licensed","auth"],["licensed","billing"],["licensed","data-insights"],["licensed","key-management"],["licensed","platform"],["licensed","secrets-manager"],["licensed","shared-kernel"],["notification-center","admin-console"],["notification-center","auth"],["notification-center","data-insights"],["notification-center","key-management"],["notification-center","platform"],["notification-center","shared-kernel"],["other-hosts","admin-console"],["other-hosts","auth"],["other-hosts","billing"],["other-hosts","data-insights"],["other-hosts","licensed"],["other-hosts","platform"],["other-hosts","secrets-manager"],["other-hosts","shared-kernel"],["other-hosts","shared-web"],["other-hosts","vault"],["pam-service","admin-console"],["pam-service","auth"],["pam-service","data-insights"],["pam-service","pam"],["pam-service","platform"],["pam-service","shared-kernel"],["pam-service","shared-web"],["platform","admin-console"],["platform","auth"],["platform","billing"],["platform","data-insights"],["platform","key-management"],["platform","notification-center"],["platform","secrets-manager"],["platform","shared-kernel"],["platform","tools"],["platform","vault"],["scim-sso","admin-console"],["scim-sso","auth"],["scim-sso","billing"],["scim-sso","data-insights"],["scim-sso","platform"],["scim-sso","secrets-manager"],["scim-sso","shared-kernel"],["scim-sso","shared-web"],["secrets-manager","admin-console"],["secrets-manager","auth"],["secrets-manager","data-insights"],["secrets-manager","platform"],["secrets-manager","shared-kernel"],["shared-kernel","admin-console"],["shared-kernel","auth"],["shared-kernel","billing"],["shared-kernel","data-insights"],["shared-kernel","key-management"],["shared-kernel","notification-center"],["shared-kernel","platform"],["shared-kernel","tools"],["shared-kernel","vault"],["shared-web","admin-console"],["shared-web","auth"],["shared-web","billing"],["shared-web","dapper"],["shared-web","data-insights"],["shared-web","entity-framework"],["shared-web","key-management"],["shared-web","notification-center"],["shared-web","platform"],["shared-web","secrets-manager"],["shared-web","shared-kernel"],["shared-web","tools"],["shared-web","vault"],["sql-server-schema","auth"],["sql-server-schema","shared-kernel"],["tools","admin-console"],["tools","auth"],["tools","billing"],["tools","data-insights"],["tools","key-management"],["tools","platform"],["tools","shared-kernel"],["tools","vault"],["vault","admin-console"],["vault","auth"],["vault","billing"],["vault","data-insights"],["vault","key-management"],["vault","notification-center"],["vault","platform"],["vault","shared-kernel"]],"ports":[{"from":"admin-console","to":"dapper","interfaces":["ICollectionRepository","IGroupRepository","IOrganizationInviteLinkRepository","IOrganizationRepository","IOrganizationUserRepository","IPolicyRepository","IProviderOrganizationRepository","IProviderRepository","IProviderUserRepository"]},{"from":"admin-console","to":"entity-framework","interfaces":["ICollectionRepository","IGroupRepository","IOrganizationInviteLinkRepository","IOrganizationRepository","IOrganizationUserRepository","IPolicyRepository","IProviderOrganizationRepository","IProviderRepository","IProviderUserRepository"]},{"from":"auth","to":"dapper","interfaces":["IAuthRequestRepository","IEmergencyAccessRepository","IGrantRepository","ISsoConfigRepository","ISsoUserRepository","IWebAuthnCredentialRepository"]},{"from":"auth","to":"entity-framework","interfaces":["IAuthRequestRepository","IEmergencyAccessRepository","IGrantRepository","ISsoConfigRepository","ISsoUserRepository","IWebAuthnCredentialRepository"]},{"from":"billing","to":"dapper","interfaces":["IClientOrganizationMigrationRecordRepository","IOrganizationInstallationRepository","IOrganizationPlanMigrationCohortAssignmentRepository","IOrganizationPlanMigrationCohortRepository","IProviderInvoiceItemRepository","IProviderPlanRepository","ISubscriptionDiscountRepository"]},{"from":"billing","to":"entity-framework","interfaces":["IClientOrganizationMigrationRecordRepository","IOrganizationInstallationRepository","IOrganizationPlanMigrationCohortAssignmentRepository","IOrganizationPlanMigrationCohortRepository","IProviderInvoiceItemRepository","IProviderPlanRepository","ISubscriptionDiscountRepository"]},{"from":"data-insights","to":"dapper","interfaces":["IEventRepository","IOrganizationApplicationRepository","IOrganizationIntegrationConfigurationRepository","IOrganizationIntegrationRepository","IOrganizationMemberBaseDetailRepository","IOrganizationReportRepository","IPasswordHealthReportApplicationRepository"]},{"from":"data-insights","to":"entity-framework","interfaces":["IEventRepository","IOrganizationApplicationRepository","IOrganizationIntegrationConfigurationRepository","IOrganizationIntegrationRepository","IOrganizationMemberBaseDetailRepository","IOrganizationReportRepository","IPasswordHealthReportApplicationRepository"]},{"from":"key-management","to":"dapper","interfaces":["IUserAsymmetricKeysRepository","IUserSignatureKeyPairRepository"]},{"from":"key-management","to":"entity-framework","interfaces":["IUserAsymmetricKeysRepository","IUserSignatureKeyPairRepository"]},{"from":"notification-center","to":"dapper","interfaces":["INotificationRepository","INotificationStatusRepository"]},{"from":"notification-center","to":"entity-framework","interfaces":["INotificationRepository","INotificationStatusRepository"]},{"from":"pam","to":"dapper","interfaces":["IAccessLeaseRepository","IAccessRequestRepository","IAccessRuleRepository"]},{"from":"pam","to":"entity-framework","interfaces":["IAccessLeaseRepository","IAccessRequestRepository","IAccessRuleRepository"]},{"from":"platform","to":"dapper","interfaces":["IInstallationRepository"]},{"from":"secrets-manager","to":"dapper","interfaces":["IApiKeyRepository"]},{"from":"secrets-manager","to":"entity-framework","interfaces":["IAccessPolicyRepository","IApiKeyRepository","IProjectRepository","ISecretRepository","ISecretVersionRepository","IServiceAccountRepository"]},{"from":"shared-kernel","to":"dapper","interfaces":["ICollectionCipherRepository","IDeviceRepository","IMaintenanceRepository","IOrganizationApiKeyRepository","IOrganizationConnectionRepository","IOrganizationDomainRepository","IOrganizationSponsorshipRepository","IPlayItemRepository","ITransactionRepository","IUserRepository"]},{"from":"shared-kernel","to":"entity-framework","interfaces":["ICollectionCipherRepository","IDeviceRepository","IMaintenanceRepository","IOrganizationApiKeyRepository","IOrganizationConnectionRepository","IOrganizationDomainRepository","IOrganizationSponsorshipRepository","IPlayItemRepository","ITransactionRepository","IUserRepository"]},{"from":"shared-kernel","to":"sql-server-schema","interfaces":["IDbMigrator"]},{"from":"shared-kernel","to":"vault","interfaces":["IAttachmentStorageService"]},{"from":"tools","to":"dapper","interfaces":["ISendRepository"]},{"from":"tools","to":"entity-framework","interfaces":["ISendRepository"]},{"from":"vault","to":"dapper","interfaces":["ICipherRepository","IFolderRepository","ISecurityTaskRepository"]},{"from":"vault","to":"entity-framework","interfaces":["ICipherRepository","IFolderRepository","ISecurityTaskRepository"]}],"symbols":[{"file":"src/Api/Vault/Controllers/FoldersController.cs","line":116,"kind":"endpoint","name":"HttpDelete","delta":"added"},{"file":"src/Api/Vault/Controllers/FoldersController.cs","line":118,"kind":"method","name":"DeleteMany","delta":"added"},{"file":"src/Api/Vault/Models/Request/FolderRequestModel.cs","line":32,"kind":"class","name":"FolderBulkDeleteRequestModel","delta":"added"},{"file":"src/Api/Vault/Models/Request/FolderRequestModel.cs","line":35,"kind":"method","name":"IEnumerable","delta":"added"},{"file":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs","line":8,"kind":"class","name":"DeleteManyFoldersCommand","delta":"added"},{"file":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs","line":13,"kind":"method","name":"DeleteManyAsync","delta":"added"},{"file":"src/Core/Vault/Commands/Interfaces/IDeleteManyFoldersCommand.cs","line":3,"kind":"interface","name":"IDeleteManyFoldersCommand","delta":"added"},{"file":"src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs","line":51,"kind":"method","name":"DeleteManyAsync","delta":"added"},{"file":"src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs","line":48,"kind":"method","name":"DeleteAsync","delta":"added"},{"file":"src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs","line":54,"kind":"method","name":"DeleteManyAsync","delta":"added"}],"stats":{"files":13,"additions":710,"deletions":2,"testAdditions":340,"testDeletions":0,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":372,"mappedLines":372},"notes":[],"openspec":null,"outline":{"story":[{"about":"Vault changed","view":"architecture","focus":["vault"],"code":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1-35"},{"about":"Entity Framework changed","view":"architecture","focus":["entity-framework"],"code":"src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:45-117"},{"about":"Dapper (SQL Server) changed","view":"architecture","focus":["dapper"],"code":"src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:47-76"},{"about":"API changed","view":"architecture","focus":["api"],"code":"src/Api/Vault/Controllers/FoldersController.cs:113-131"},{"about":"the data model","view":"data","focus":[],"code":"util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql:1-95"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"api","to":"vault"},{"from":"api","to":"shared-kernel"},{"from":"api","to":"auth"},{"from":"entity-framework","to":"shared-kernel"},{"from":"vault","to":"platform"},{"from":"vault","to":"shared-kernel"}],"dataFiles":["util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql"]}},"explanation":{"version":5,"key":"e89a62fdce442211","lang":"en","tldr":"Users can now delete many folders in a single request. The items in those folders stay in the vault with no folder, on SQL Server and on the EF databases.","goal":"Let a client clean up many folders at once, in place of 1 delete request per folder.","story":[{"heading":"1 port, 2 adapters: IFolderRepository.DeleteManyAsync","body":"The Vault port now deletes many folders. Dapper implements it on SQL Server and Entity Framework on PostgreSQL, MySQL and SQLite.","view":"architecture","focus":["vault","dapper","entity-framework"],"code":"src/Core/Vault/Repositories/IFolderRepository.cs:6-22"},{"heading":"DELETE /folders added","body":"The endpoint takes a list of folder ids. Cloud requests take up to 500 ids. The VFO1Foundation feature flag gates it.","view":"flow:delete-folders","focus":["#1"],"code":"src/Api/Vault/Controllers/FoldersController.cs:113-131"},{"heading":"DeleteManyFoldersCommand added to Vault","body":"It keeps only the folders the user owns, deletes them and pushes a single vault sync to the user's clients.","view":"flow:delete-folders","focus":["#2","#5"],"code":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1-35"},{"heading":"Both adapters clear the items, then delete the folders","body":"Dapper calls Folder_DeleteByIds, which clears each item with JSON_MODIFY in a transaction. Entity Framework does the same in LINQ.","view":"architecture","focus":["dapper","entity-framework","sql-server-schema"],"code":"src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql:1-94"},{"heading":"The whole change","body":"The change follows the ports and adapters rule: API, then Vault, then 2 adapters. Core references no infrastructure.","view":"architecture","focus":[]}],"keyDependencies":[{"from":"api","to":"vault","label":"IDeleteManyFoldersCommand"}],"components":[{"id":"api","summary":"New DELETE /folders endpoint and FolderBulkDeleteRequestModel, with a limit of 500 ids on cloud."},{"id":"vault","summary":"New DeleteManyFoldersCommand; IFolderRepository gets DeleteManyAsync."},{"id":"dapper","summary":"FolderRepository.DeleteManyAsync calls Folder_DeleteByIds in a transaction."},{"id":"entity-framework","summary":"FolderRepository.DeleteManyAsync removes the folders and clears them from filed items; DeleteAsync uses it."},{"id":"sql-server-schema","summary":"New Folder_DeleteByIds stored procedure and its migration script."}],"decisions":[{"title":"1 port, 2 adapters","why":"Core references no infrastructure. The port in Vault defines the behavior, and Dapper and EF give it to SQL Server and to PostgreSQL, MySQL and SQLite.","basis":"inferred","alternative":"Call DeleteAsync once per folder from the command.","evidence":"src/Core/Vault/Repositories/IFolderRepository.cs:12-18"},{"title":"SQL Server does the work in a stored procedure","why":"A single round trip updates the items and deletes the folders in a single transaction, as the other SQL Server repositories do.","basis":"code","alternative":"Load the items in C# and update them, as EF does.","evidence":"src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:50-72"},{"title":"Ids the user does not own are ignored","why":"The command filters the user's own folders. A request with other ids deletes nothing else and does not fail.","basis":"code","alternative":"Refuse the whole request when an id is not the user's.","evidence":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:19-25"},{"title":"A single vault sync in place of 1 notification per folder","why":"A delete also moves the items out of the folders. The clients need the whole vault again, not only the folder ids.","basis":"inferred","alternative":"Push 1 folder delete notification per folder.","evidence":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:27-30"},{"title":"A limit of 500 ids, on cloud only","why":"The cloud API caps the cost of a request. A self-hosted server has no limit.","basis":"inferred","alternative":"The same limit for every server.","evidence":"src/Api/Vault/Controllers/FoldersController.cs:119-122"}],"flows":[{"id":"delete-folders","title":"Delete folders in bulk","trigger":"DELETE /folders","steps":[{"from":"api","to":"vault","call":"IDeleteManyFoldersCommand.DeleteManyAsync","delta":"added","verified":true,"port":false,"via":null},{"from":"vault","to":"vault","call":"folderRepository.GetManyByUserIdAsync","delta":"unchanged","verified":true,"port":false,"via":null},{"from":"vault","to":"dapper","call":"IFolderRepository.DeleteManyAsync","delta":"added","verified":true,"port":true,"via":"IFolderRepository"},{"from":"dapper","to":"sql-server-schema","call":"Folder_DeleteByIds","delta":"added","data":{"type":"Cipher","fields":["~Folders: user's entry removed"]},"verified":true,"port":false,"via":null},{"from":"vault","to":"platform","call":"pushService.PushSyncVaultAsync","delta":"added","verified":true,"port":false,"via":null}]}],"dataModel":{"entities":[{"id":"folder","name":"Folder","component":"vault","delta":"unchanged","fields":[]},{"id":"cipher","name":"Cipher","component":"vault","delta":"unchanged","fields":[]}],"relations":[{"from":"cipher","to":"folder","label":"Folders: user id → folder id","delta":"unchanged"}]},"requirements":[]},"state":"valid","issues":[]}</script>
+<script type="application/json" id="ec-data">{"tool":"0.7.0","facts":{"version":5,"tool":"0.7.0","analysis":11,"key":"8178ed1409572ef1","source":{"kind":"pr","host":"github","prId":"8157","headRef":"refs/explain-change/pr-8157/source","headSha":"0d8e0470c0453c0ca568f4a7187cf5787a46d96a","baseRef":"main","mergeBase":"643e3aa631e3a7f238c9084ed20657334ff07993","branch":"vault/pm-41472/add-bulk-folder-delete-endpoint","title":"[PM-41472] feat: add bulk folder delete endpoint","description":"## 🎟️ Tracking\n\n[PM-41472](https://bitwarden.atlassian.net/browse/PM-41472)\n\n## 📔 Objective\n\nVFO1 introduces a new My Folders page in the web client, where users can multiselect folders and delete them in bulk. There is no bulk folder delete anywhere in the stack today, so the client has to issue one `DELETE /folders/{id}` per selected folder — N round trips for a single user action, and non-atomic.\n\nThis adds `DELETE /folders`, which takes a list of folder ids and deletes them in one request.\n\n[PM-41472]: https://bitwarden.atlassian.net/browse/PM-41472?atlOrigin=eyJpIjoiNWRkNTljNzYxNjVmNDY3MDlhMDU5Y2ZhYzA5YTRkZjUiLCJwIjoiZ2l0aHViLWNvbS1KU1cifQ","url":"https://github.com/bitwarden/server/pull/8157","includeUncommitted":false,"headDate":"2026-08-12T14:17:46-04:00","commits":11},"config":{"inferred":false,"name":"Bitwarden","direction":"Ports and adapters: Core defines entities, commands, queries and repository interfaces and references no infrastructure; Dapper and Entity Framework each implement every repository. Code is split by team folder (Vault, AdminConsole, Auth…) in every project.","lang":"en","layers":[{"id":"hosts","name":"Hosts"},{"id":"core","name":"Core"},{"id":"adapters","name":"Adapters"},{"id":"database","name":"Database"}],"components":[{"id":"api","name":"API","layer":"hosts","desc":"Owns the REST API that the clients call: controllers and request and response models, by team."},{"id":"identity","name":"Identity","layer":"hosts","desc":"Owns login and token issuance: the OAuth 2.0 and OpenID Connect server."},{"id":"admin-portal","name":"Admin portal","layer":"hosts","desc":"Owns the internal admin site for support and operations."},{"id":"other-hosts","name":"Event and billing hosts","layer":"hosts","desc":"Owns the smaller hosts: event collection and processing, push notifications, icons and billing webhooks."},{"id":"scim-sso","name":"SCIM and SSO","layer":"hosts","desc":"Owns the licensed hosts: SCIM provisioning from identity providers, and SSO login."},{"id":"pam-service","name":"PAM service","layer":"hosts","desc":"Owns the licensed PAM module the API hosts: its endpoints, access requests, connectors and credential rotation."},{"id":"shared-web","name":"Shared web","layer":"hosts","desc":"Owns what every host shares: service registration (the composition root), auth and HTTP setup."},{"id":"vault","name":"Vault","layer":"core","desc":"Owns ciphers, folders and collections access for vault items; what a user stores and how it is shared."},{"id":"admin-console","name":"Admin Console","layer":"core","desc":"Owns organizations, members, groups, policies and providers; who belongs to which organization."},{"id":"auth","name":"Auth","layer":"core","desc":"Owns login methods, two-factor, SSO configuration, devices and emergency access."},{"id":"billing","name":"Billing","layer":"core","desc":"Owns plans, subscriptions, seats and the payment provider integration."},{"id":"key-management","name":"Key management","layer":"core","desc":"Owns account keys, key rotation and the encryption versions of user data."},{"id":"tools","name":"Tools","layer":"core","desc":"Owns Send, import and export."},{"id":"secrets-manager","name":"Secrets Manager","layer":"core","desc":"Owns projects, secrets, service accounts and their access policies."},{"id":"data-insights","name":"Data insights","layer":"core","desc":"Owns reports and Access Intelligence: password health and risk insights for organizations."},{"id":"notification-center","name":"Notification center","layer":"core","desc":"Owns the notifications a user sees in the clients, and their status."},{"id":"pam","name":"PAM","layer":"core","desc":"Owns privileged access management: access connectors and their rules."},{"id":"platform","name":"Platform","layer":"core","desc":"Owns push, mail, installations, feature flags and scheduled jobs that every team uses."},{"id":"licensed","name":"Licensed features","layer":"core","desc":"Owns the commercially licensed domain logic: providers, SSO configuration and enterprise features."},{"id":"shared-kernel","name":"Shared kernel","layer":"core","desc":"Owns the shared entities (User, Organization…), the legacy services and repository interfaces, and utilities."},{"id":"dapper","name":"Dapper (SQL Server)","layer":"adapters","desc":"Owns the SQL Server repositories: Dapper calls to stored procedures."},{"id":"entity-framework","name":"Entity Framework","layer":"adapters","desc":"Owns the EF Core repositories and models for PostgreSQL, MySQL and SQLite."},{"id":"sql-server-schema","name":"SQL Server schema","layer":"database","desc":"Owns the SQL Server tables, views and stored procedures, and their migration scripts."},{"id":"ef-migrations","name":"EF migrations","layer":"database","desc":"Owns the generated EF migrations for PostgreSQL, MySQL and SQLite."}],"rules":{"allow":["hosts -> core","adapters -> core","shared-web -> adapters","database -> core","database -> adapters","admin-portal -> database","dapper -> sql-server-schema"],"forbid":["core -> adapters","core -> hosts"]},"referenceFlows":[{"id":"save-cipher","title":"Save a vault item","steps":[{"from":"api","to":"vault","message":"CreateCipherCommand"},{"from":"vault","to":"shared-kernel","message":"ICipherRepository.CreateAsync"},{"from":"dapper","to":"shared-kernel","message":"CipherRepository implements ICipherRepository"}]}],"glossary":[{"term":"vault","definition":"A user's encrypted store of items; Bitwarden never sees the plain text."},{"term":"cipher","definition":"1 encrypted vault item: a login, a card, an identity, a secure note or an SSH key."},{"term":"folder","definition":"A user's own grouping of vault items, encrypted with the user's key."},{"term":"collection","definition":"An organization's grouping of vault items, shared with members and groups."},{"term":"organization","definition":"A team or company account that shares collections with its members."},{"term":"member","definition":"A user's membership in an organization, with a role and a status (invited, accepted, confirmed)."},{"term":"staged user","definition":"A member that an admin creates in advance and invites later."},{"term":"account recovery","definition":"An organization's ability to reset a member's master password."},{"term":"send","definition":"A short-lived encrypted share of text or a file, with a link."}],"names":[]},"files":[{"path":"src/Api/Vault/Controllers/FoldersController.cs","previousPath":null,"delta":"changed","binary":false,"additions":24,"deletions":1,"component":"api","category":"code","truncated":false,"hunks":[{"oldStart":103,"oldLines":6,"newStart":113,"newLines":19,"header":"public class FoldersController : Controller","lines":[[" ","        await Delete(id);"],[" ","    }"],[" ",""],["+","    [HttpDelete(\"\")]"],["+","    [RequireFeature(FeatureFlagKeys.VFO1Foundation)]"],["+","    public async Task DeleteMany([FromBody] FolderBulkDeleteRequestModel model)"],["+","    {"],["+","        if (!_globalSettings.SelfHosted && model.Ids.Count() > 500)"],["+","        {"],["+","            throw new BadRequestException(\"You can only delete up to 500 folders at a time.\");"],["+","        }"],["+",""],["+","        var userId = _userService.GetProperUserId(User).Value;"],["+","        await _deleteManyFoldersCommand.DeleteManyAsync(model.Ids, userId);"],["+","    }"],["+",""],[" ","    [HttpDelete(\"all\")]"],[" ","    public async Task DeleteAll()"],[" ","    {"]]}]},{"path":"src/Api/Vault/Models/Request/FolderRequestModel.cs","previousPath":null,"delta":"changed","binary":false,"additions":6,"deletions":0,"component":"api","category":"code","truncated":false,"hunks":[]},{"path":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs","previousPath":null,"delta":"added","binary":false,"additions":35,"deletions":0,"component":"vault","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":35,"header":"","lines":[["+","﻿using Bit.Core.Exceptions;"],["+","using Bit.Core.Platform.Push;"],["+","using Bit.Core.Vault.Commands.Interfaces;"],["+","using Bit.Core.Vault.Repositories;"],["+",""],["+","namespace Bit.Core.Vault.Commands;"],["+",""],["+","public class DeleteManyFoldersCommand("],["+","    IFolderRepository folderRepository,"],["+","    IPushNotificationService pushService)"],["+","    : IDeleteManyFoldersCommand"],["+","{"],["+","    public async Task DeleteManyAsync(IEnumerable\u003cGuid> folderIds, Guid userId)"],["+","    {"],["+","        var requestedIds = folderIds?.ToHashSet();"],["+","        if (requestedIds == null || requestedIds.Count == 0)"],["+","        {"],["+","            throw new BadRequestException(\"No folder ids provided.\");"],["+","        }"],["+",""],["+","        var folders = await folderRepository.GetManyByUserIdAsync(userId);"],["+","        var deletingFolders = folders.Where(f => requestedIds.Contains(f.Id)).ToList();"],["+",""],["+","        if (deletingFolders.Count == 0)"],["+","        {"],["+","            return;"],["+","        }"],["+",""],["+","        await folderRepository.DeleteManyAsync(deletingFolders.Select(f => f.Id), userId);"],["+",""],["+","        // Deleting folders also re-assigns the ciphers filed under them, so clients need a full vault sync"],["+","        // rather than a per-folder delete notification."],["+","        await pushService.PushSyncVaultAsync(userId);"],["+","    }"],["+","}"]]}]},{"path":"src/Core/Vault/Commands/Interfaces/IDeleteManyFoldersCommand.cs","previousPath":null,"delta":"added","binary":false,"additions":11,"deletions":0,"component":"vault","category":"code","truncated":false,"hunks":[]},{"path":"src/Core/Vault/Repositories/IFolderRepository.cs","previousPath":null,"delta":"changed","binary":false,"additions":9,"deletions":1,"component":"vault","category":"code","truncated":false,"hunks":[{"oldStart":6,"oldLines":9,"newStart":6,"newLines":17,"header":"namespace Bit.Core.Vault.Repositories;","lines":[[" ",""],[" ","public interface IFolderRepository : IRepository\u003cFolder, Guid>"],[" ","{"],["-","    Task\u003cFolder> GetByIdAsync(Guid id, Guid userId);"],["+","    Task\u003cFolder?> GetByIdAsync(Guid id, Guid userId);"],[" ","    Task\u003cICollection\u003cFolder>> GetManyByUserIdAsync(Guid userId);"],[" ",""],["+","    /// \u003csummary>"],["+","    /// Deletes the given folders and re-assigns any of the user's ciphers that were filed under them to no folder."],["+","    /// Ids that do not belong to the user are ignored."],["+","    /// \u003c/summary>"],["+","    /// \u003cparam name=\"folderIds\">The folders to delete\u003c/param>"],["+","    /// \u003cparam name=\"userId\">The owner of the folders\u003c/param>"],["+","    Task DeleteManyAsync(IEnumerable\u003cGuid> folderIds, Guid userId);"],["+",""],[" ","    /// \u003csummary>"],[" ","    /// Updates encrypted data for folders during a key rotation"],[" ","    /// \u003c/summary>"]]}]},{"path":"src/Core/Vault/VaultServiceCollectionExtensions.cs","previousPath":null,"delta":"changed","binary":false,"additions":2,"deletions":0,"component":"vault","category":"code","truncated":false,"hunks":[]},{"path":"src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs","previousPath":null,"delta":"changed","binary":false,"additions":24,"deletions":0,"component":"dapper","category":"code","truncated":false,"hunks":[{"oldStart":47,"oldLines":5,"newStart":47,"newLines":29,"header":"public class FolderRepository : Repository\u003cFolder, Guid>, IFolderRepository","lines":[[" ","        }"],[" ","    }"],[" ",""],["+","    /// \u003cinheritdoc />"],["+","    public async Task DeleteManyAsync(IEnumerable\u003cGuid> folderIds, Guid userId)"],["+","    {"],["+","        await using var connection = new SqlConnection(ConnectionString);"],["+","        await connection.OpenAsync();"],["+",""],["+","        await using var transaction = await connection.BeginTransactionAsync();"],["+","        try"],["+","        {"],["+","            await connection.ExecuteAsync("],["+","                $\"[{Schema}].[Folder_DeleteByIds]\","],["+","                new { Ids = folderIds.ToGuidIdArrayTVP(), UserId = userId },"],["+","                commandType: CommandType.StoredProcedure,"],["+","                transaction: transaction);"],["+",""],["+","            await transaction.CommitAsync();"],["+","        }"],["+","        catch"],["+","        {"],["+","            await transaction.RollbackAsync();"],["+","            throw;"],["+","        }"],["+","    }"],["+",""],[" ","    /// \u003cinheritdoc />"],[" ","    public UpdateEncryptedDataForKeyRotation UpdateForKeyRotation("]]}]},{"path":"src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs","previousPath":null,"delta":"changed","binary":false,"additions":70,"deletions":0,"component":"entity-framework","category":"code","truncated":false,"hunks":[]},{"path":"src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql","previousPath":null,"delta":"added","binary":false,"additions":94,"deletions":0,"component":"sql-server-schema","category":"code","truncated":false,"hunks":[{"oldStart":0,"oldLines":0,"newStart":1,"newLines":94,"header":"","lines":[["+","CREATE PROCEDURE [dbo].[Folder_DeleteByIds]"],["+","    @Ids AS [dbo].[GuidIdArray] READONLY,"],["+","    @UserId UNIQUEIDENTIFIER"],["+","AS"],["+","BEGIN"],["+","    SET NOCOUNT ON"],["+",""],["+","    DECLARE @UserIdPath VARCHAR(50) = CONCAT('$.\"', @UserId, '\"')"],["+",""],["+","    DECLARE @OwnedIds AS TABLE ([Id] UNIQUEIDENTIFIER PRIMARY KEY)"],["+",""],["+","    INSERT INTO @OwnedIds ([Id])"],["+","    SELECT"],["+","        [Id]"],["+","    FROM"],["+","        [dbo].[Folder]"],["+","    WHERE"],["+","        [Id] IN (SELECT [Id] FROM @Ids)"],["+","        AND [UserId] = @UserId"],["+",""],["+","    IF NOT EXISTS (SELECT 1 FROM @OwnedIds)"],["+","    BEGIN"],["+","        RETURN"],["+","    END"],["+",""],["+","    ;WITH [CTE] AS ("],["+","        SELECT"],["+","            [Id],"],["+","            [OrganizationId]"],["+","        FROM"],["+","            [OrganizationUser]"],["+","        WHERE"],["+","            [UserId] = @UserId"],["+","            AND [Status] = 2 -- Confirmed"],["+","    )"],["+","    UPDATE"],["+","        C"],["+","    SET"],["+","        C.[Folders] = JSON_MODIFY(C.[Folders], @UserIdPath, NULL)"],["+","    FROM"],["+","        [dbo].[Cipher] C"],["+","    INNER JOIN"],["+","        [CTE] OU ON C.[UserId] IS NULL AND C.[OrganizationId] IN (SELECT [OrganizationId] FROM [CTE])"],["+","    INNER JOIN"],["+","        [dbo].[Organization] O ON O.[Id] = OU.[OrganizationId] AND O.[Id] = C.[OrganizationId] AND O.[Enabled] = 1"],["+","    LEFT JOIN"],["+","        [dbo].[CollectionCipher] CC ON CC.[CipherId] = C.[Id]"],["+","    LEFT JOIN"],["+","        [dbo].[CollectionUser] CU ON CU.[CollectionId] = CC.[CollectionId] AND CU.[OrganizationUserId] = OU.[Id]"],["+","    LEFT JOIN"],["+","        [dbo].[GroupUser] GU ON CU.[CollectionId] IS NULL AND GU.[OrganizationUserId] = OU.[Id]"],["+","    LEFT JOIN"],["+","        [dbo].[Group] G ON G.[Id] = GU.[GroupId]"],["+","    LEFT JOIN"],["+","        [dbo].[CollectionGroup] CG ON CG.[CollectionId] = CC.[CollectionId] AND CG.[GroupId] = GU.[GroupId]"],["+","    WHERE"],["+","        ("],["+","            CU.[CollectionId] IS NOT NULL"],["+","            OR CG.[CollectionId] IS NOT NULL"],["+","        )"],["+","        AND EXISTS ("],["+","            SELECT"],["+","                1"],["+","            FROM"],["+","                @OwnedIds OI"],["+","            WHERE"],["+","                OI.[Id] = JSON_VALUE(C.[Folders], @UserIdPath)"],["+","        )"],["+",""],["+","    UPDATE"],["+","        C"],["+","    SET"],["+","        C.[Folders] = JSON_MODIFY(C.[Folders], @UserIdPath, NULL)"],["+","    FROM"],["+","        [dbo].[Cipher] C"],["+","    WHERE"],["+","        [UserId] = @UserId"],["+","        AND EXISTS ("],["+","            SELECT"],["+","                1"],["+","            FROM"],["+","                @OwnedIds OI"],["+","            WHERE"],["+","                OI.[Id] = JSON_VALUE(C.[Folders], @UserIdPath)"],["+","        )"],["+",""],["+","    DELETE"],["+","    FROM"],["+","        [dbo].[Folder]"],["+","    WHERE"],["+","        [Id] IN (SELECT [Id] FROM @OwnedIds)"],["+",""],["+","    EXEC [dbo].[User_BumpAccountRevisionDate] @UserId"],["+","END"]]}]},{"path":"test/Api.Test/Vault/Controllers/FoldersControllerTests.cs","previousPath":null,"delta":"added","binary":false,"additions":82,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"test/Core.Test/Vault/Commands/DeleteManyFoldersCommandTest.cs","previousPath":null,"delta":"added","binary":false,"additions":107,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"test/Infrastructure.IntegrationTest/Vault/Repositories/FolderRepositoryTests.cs","previousPath":null,"delta":"added","binary":false,"additions":151,"deletions":0,"component":null,"category":"test","truncated":false,"hunks":[]},{"path":"util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql","previousPath":null,"delta":"added","binary":false,"additions":95,"deletions":0,"component":"sql-server-schema","category":"migration","truncated":false,"hunks":[]}],"components":[{"id":"api","delta":"changed","files":2,"additions":30,"deletions":1},{"id":"vault","delta":"changed","files":4,"additions":57,"deletions":1},{"id":"admin-console","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"auth","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"key-management","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"data-insights","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"platform","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"shared-kernel","delta":"unchanged","files":0,"additions":0,"deletions":0},{"id":"dapper","delta":"changed","files":1,"additions":24,"deletions":0},{"id":"entity-framework","delta":"changed","files":1,"additions":70,"deletions":0},{"id":"sql-server-schema","delta":"changed","files":2,"additions":189,"deletions":0}],"dependencies":[{"from":"api","to":"admin-console","delta":"unchanged","baseCount":571,"headCount":571,"examples":["src/Api/Vault/Controllers/FoldersController.cs:9","src/Api/AdminConsole/Attributes/BindOrganizationAttribute.cs:2","src/Api/AdminConsole/Attributes/InjectOrganizationUserAttribute.cs:3"],"violation":null},{"from":"api","to":"auth","delta":"changed","baseCount":190,"headCount":191,"examples":["src/Api/Vault/Controllers/FoldersController.cs:10","src/Api/AdminConsole/Attributes/BindOrganizationAttribute.cs:4","src/Api/AdminConsole/Attributes/InjectOrganizationUserAttribute.cs:3"],"violation":null},{"from":"api","to":"data-insights","delta":"unchanged","baseCount":324,"headCount":324,"examples":["src/Api/Vault/Controllers/FoldersController.cs:9","src/Api/AdminConsole/Attributes/BindOrganizationAttribute.cs:4","src/Api/AdminConsole/Attributes/InjectOrganizationUserAttribute.cs:3"],"violation":null},{"from":"api","to":"platform","delta":"unchanged","baseCount":146,"headCount":146,"examples":["src/Api/Vault/Controllers/FoldersController.cs:9","src/Api/AdminConsole/Authorization/Collections/BulkCollectionAuthorizationHandler.cs:6","src/Api/AdminConsole/Authorization/Collections/CollectionAuthorizationHandler.cs:3"],"violation":null},{"from":"api","to":"shared-kernel","delta":"changed","baseCount":757,"headCount":759,"examples":["src/Api/Vault/Controllers/FoldersController.cs:7","src/Api/Vault/Models/Request/FolderRequestModel.cs:5","src/Api/AdminConsole/Attributes/BindOrganizationAttribute.cs:3"],"violation":null},{"from":"api","to":"vault","delta":"changed","baseCount":59,"headCount":60,"examples":["src/Api/Vault/Controllers/FoldersController.cs:11","src/Api/Vault/Models/Request/FolderRequestModel.cs:6","src/Api/Auth/Models/Response/EmergencyAccessResponseModel.cs:12"],"violation":null},{"from":"dapper","to":"auth","delta":"unchanged","baseCount":91,"headCount":91,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:6","src/Infrastructure.Dapper/AdminConsole/Repositories/CollectionRepository.cs:8","src/Infrastructure.Dapper/AdminConsole/Repositories/GroupRepository.cs:8"],"violation":null},{"from":"dapper","to":"key-management","delta":"unchanged","baseCount":18,"headCount":18,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:5","src/Infrastructure.Dapper/AdminConsole/Repositories/OrganizationUserRepository.cs:10","src/Infrastructure.Dapper/Auth/Repositories/EmergencyAccessRepository.cs:5"],"violation":null},{"from":"dapper","to":"shared-kernel","delta":"unchanged","baseCount":127,"headCount":127,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:6","src/Infrastructure.Dapper/AdminConsole/Helpers/BulkResourceCreationService.cs:2","src/Infrastructure.Dapper/AdminConsole/Repositories/CollectionRepository.cs:5"],"violation":null},{"from":"dapper","to":"sql-server-schema","delta":"changed","baseCount":308,"headCount":309,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:42","src/Infrastructure.Dapper/AdminConsole/Repositories/CollectionRepository.cs:35","src/Infrastructure.Dapper/AdminConsole/Repositories/GroupRepository.cs:32"],"violation":null},{"from":"dapper","to":"vault","delta":"unchanged","baseCount":13,"headCount":13,"examples":["src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:7","src/Infrastructure.Dapper/AdminConsole/Helpers/BulkResourceCreationService.cs:3","src/Infrastructure.Dapper/DapperServiceCollectionExtensions.cs:15"],"violation":null},{"from":"entity-framework","to":"auth","delta":"unchanged","baseCount":100,"headCount":100,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:14","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:11","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/ProjectRepository.cs:9"],"violation":null},{"from":"entity-framework","to":"data-insights","delta":"unchanged","baseCount":162,"headCount":162,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:14","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:2","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/ProjectRepository.cs:3"],"violation":null},{"from":"entity-framework","to":"key-management","delta":"unchanged","baseCount":78,"headCount":78,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:6","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:11","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/ProjectRepository.cs:9"],"violation":null},{"from":"entity-framework","to":"platform","delta":"unchanged","baseCount":101,"headCount":101,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:14","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:2","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/ProjectRepository.cs:3"],"violation":null},{"from":"entity-framework","to":"shared-kernel","delta":"changed","baseCount":161,"headCount":162,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:7","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/Commercial.Infrastructure.EntityFramework.csproj:11","bitwarden_license/src/Commercial.Infrastructure.EntityFramework/SecretsManager/Repositories/AccessPolicyRepository.cs:2"],"violation":null},{"from":"entity-framework","to":"vault","delta":"unchanged","baseCount":16,"headCount":16,"examples":["src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:8","src/Infrastructure.EntityFramework/Dirt/Repositories/Queries/EventReadPageByCipherIdQuery.cs:2","src/Infrastructure.EntityFramework/EntityFrameworkServiceCollectionExtensions.cs:16"],"violation":null},{"from":"vault","to":"admin-console","delta":"unchanged","baseCount":44,"headCount":44,"examples":["src/Core/Vault/Repositories/IFolderRepository.cs:2","src/Core/Vault/Authorization/Permissions/NormalCipherPermissions.cs:2","src/Core/Vault/Authorization/SecurityTasks/SecurityTaskAuthorizationHandler.cs:1"],"violation":null},{"from":"vault","to":"auth","delta":"unchanged","baseCount":11,"headCount":11,"examples":["src/Core/Vault/Repositories/IFolderRepository.cs:2","src/Core/Vault/VaultServiceCollectionExtensions.cs:4","src/Core/Vault/Commands/CreateManyTaskNotificationsCommand.cs:9"],"violation":null},{"from":"vault","to":"data-insights","delta":"unchanged","baseCount":30,"headCount":30,"examples":["src/Core/Vault/Repositories/IFolderRepository.cs:2","src/Core/Vault/VaultServiceCollectionExtensions.cs:4","src/Core/Vault/Authorization/Permissions/NormalCipherPermissions.cs:2"],"violation":null},{"from":"vault","to":"key-management","delta":"unchanged","baseCount":3,"headCount":3,"examples":["src/Core/Vault/Repositories/IFolderRepository.cs:1","src/Core/Vault/VaultServiceCollectionExtensions.cs:4","src/Core/Vault/Repositories/ICipherRepository.cs:2"],"violation":null},{"from":"vault","to":"platform","delta":"changed","baseCount":23,"headCount":24,"examples":["src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:2","src/Core/Vault/VaultServiceCollectionExtensions.cs:4","src/Core/Vault/Authorization/SecurityTasks/SecurityTaskAuthorizationHandler.cs:2"],"violation":null},{"from":"vault","to":"shared-kernel","delta":"changed","baseCount":88,"headCount":89,"examples":["src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1","src/Core/Vault/Repositories/IFolderRepository.cs:2","src/Core/Vault/VaultServiceCollectionExtensions.cs:4"],"violation":null}],"dependencyGraph":[["admin-console","auth"],["admin-console","billing"],["admin-console","data-insights"],["admin-console","key-management"],["admin-console","platform"],["admin-console","secrets-manager"],["admin-console","shared-kernel"],["admin-console","tools"],["admin-console","vault"],["admin-portal","admin-console"],["admin-portal","auth"],["admin-portal","billing"],["admin-portal","data-insights"],["admin-portal","ef-migrations"],["admin-portal","entity-framework"],["admin-portal","licensed"],["admin-portal","platform"],["admin-portal","secrets-manager"],["admin-portal","shared-kernel"],["admin-portal","shared-web"],["admin-portal","sql-server-schema"],["admin-portal","tools"],["admin-portal","vault"],["api","admin-console"],["api","auth"],["api","billing"],["api","data-insights"],["api","entity-framework"],["api","key-management"],["api","licensed"],["api","notification-center"],["api","pam-service"],["api","platform"],["api","secrets-manager"],["api","shared-kernel"],["api","shared-web"],["api","tools"],["api","vault"],["auth","admin-console"],["auth","billing"],["auth","data-insights"],["auth","key-management"],["auth","platform"],["auth","shared-kernel"],["auth","vault"],["billing","admin-console"],["billing","auth"],["billing","data-insights"],["billing","key-management"],["billing","platform"],["billing","shared-kernel"],["dapper","admin-console"],["dapper","auth"],["dapper","billing"],["dapper","data-insights"],["dapper","key-management"],["dapper","notification-center"],["dapper","pam"],["dapper","platform"],["dapper","secrets-manager"],["dapper","shared-kernel"],["dapper","sql-server-schema"],["dapper","tools"],["dapper","vault"],["data-insights","admin-console"],["data-insights","auth"],["data-insights","key-management"],["data-insights","platform"],["data-insights","secrets-manager"],["data-insights","shared-kernel"],["data-insights","vault"],["ef-migrations","auth"],["ef-migrations","data-insights"],["ef-migrations","entity-framework"],["ef-migrations","key-management"],["ef-migrations","platform"],["ef-migrations","shared-kernel"],["entity-framework","admin-console"],["entity-framework","auth"],["entity-framework","billing"],["entity-framework","data-insights"],["entity-framework","key-management"],["entity-framework","notification-center"],["entity-framework","pam"],["entity-framework","platform"],["entity-framework","secrets-manager"],["entity-framework","shared-kernel"],["entity-framework","sql-server-schema"],["entity-framework","tools"],["entity-framework","vault"],["identity","admin-console"],["identity","auth"],["identity","billing"],["identity","data-insights"],["identity","key-management"],["identity","platform"],["identity","secrets-manager"],["identity","shared-kernel"],["identity","shared-web"],["identity","tools"],["key-management","admin-console"],["key-management","auth"],["key-management","data-insights"],["key-management","platform"],["key-management","shared-kernel"],["key-management","tools"],["key-management","vault"],["licensed","admin-console"],["licensed","auth"],["licensed","billing"],["licensed","data-insights"],["licensed","key-management"],["licensed","platform"],["licensed","secrets-manager"],["licensed","shared-kernel"],["notification-center","admin-console"],["notification-center","auth"],["notification-center","data-insights"],["notification-center","key-management"],["notification-center","platform"],["notification-center","shared-kernel"],["other-hosts","admin-console"],["other-hosts","auth"],["other-hosts","billing"],["other-hosts","data-insights"],["other-hosts","licensed"],["other-hosts","platform"],["other-hosts","secrets-manager"],["other-hosts","shared-kernel"],["other-hosts","shared-web"],["other-hosts","vault"],["pam-service","admin-console"],["pam-service","auth"],["pam-service","data-insights"],["pam-service","pam"],["pam-service","platform"],["pam-service","shared-kernel"],["pam-service","shared-web"],["platform","admin-console"],["platform","auth"],["platform","billing"],["platform","data-insights"],["platform","key-management"],["platform","notification-center"],["platform","secrets-manager"],["platform","shared-kernel"],["platform","tools"],["platform","vault"],["scim-sso","admin-console"],["scim-sso","auth"],["scim-sso","billing"],["scim-sso","data-insights"],["scim-sso","platform"],["scim-sso","secrets-manager"],["scim-sso","shared-kernel"],["scim-sso","shared-web"],["secrets-manager","admin-console"],["secrets-manager","auth"],["secrets-manager","data-insights"],["secrets-manager","platform"],["secrets-manager","shared-kernel"],["shared-kernel","admin-console"],["shared-kernel","auth"],["shared-kernel","billing"],["shared-kernel","data-insights"],["shared-kernel","key-management"],["shared-kernel","notification-center"],["shared-kernel","platform"],["shared-kernel","tools"],["shared-kernel","vault"],["shared-web","admin-console"],["shared-web","auth"],["shared-web","billing"],["shared-web","dapper"],["shared-web","data-insights"],["shared-web","entity-framework"],["shared-web","key-management"],["shared-web","notification-center"],["shared-web","platform"],["shared-web","secrets-manager"],["shared-web","shared-kernel"],["shared-web","tools"],["shared-web","vault"],["sql-server-schema","auth"],["sql-server-schema","shared-kernel"],["tools","admin-console"],["tools","auth"],["tools","billing"],["tools","data-insights"],["tools","key-management"],["tools","platform"],["tools","shared-kernel"],["tools","vault"],["vault","admin-console"],["vault","auth"],["vault","billing"],["vault","data-insights"],["vault","key-management"],["vault","notification-center"],["vault","platform"],["vault","shared-kernel"]],"ports":[{"from":"admin-console","to":"dapper","interfaces":["ICollectionRepository","IGroupRepository","IOrganizationInviteLinkRepository","IOrganizationRepository","IOrganizationUserRepository","IPolicyRepository","IProviderOrganizationRepository","IProviderRepository","IProviderUserRepository"]},{"from":"admin-console","to":"entity-framework","interfaces":["ICollectionRepository","IGroupRepository","IOrganizationInviteLinkRepository","IOrganizationRepository","IOrganizationUserRepository","IPolicyRepository","IProviderOrganizationRepository","IProviderRepository","IProviderUserRepository"]},{"from":"auth","to":"dapper","interfaces":["IAuthRequestRepository","IEmergencyAccessRepository","IGrantRepository","ISsoConfigRepository","ISsoUserRepository","IWebAuthnCredentialRepository"]},{"from":"auth","to":"entity-framework","interfaces":["IAuthRequestRepository","IEmergencyAccessRepository","IGrantRepository","ISsoConfigRepository","ISsoUserRepository","IWebAuthnCredentialRepository"]},{"from":"billing","to":"dapper","interfaces":["IClientOrganizationMigrationRecordRepository","IOrganizationInstallationRepository","IOrganizationPlanMigrationCohortAssignmentRepository","IOrganizationPlanMigrationCohortRepository","IProviderInvoiceItemRepository","IProviderPlanRepository","ISubscriptionDiscountRepository"]},{"from":"billing","to":"entity-framework","interfaces":["IClientOrganizationMigrationRecordRepository","IOrganizationInstallationRepository","IOrganizationPlanMigrationCohortAssignmentRepository","IOrganizationPlanMigrationCohortRepository","IProviderInvoiceItemRepository","IProviderPlanRepository","ISubscriptionDiscountRepository"]},{"from":"data-insights","to":"dapper","interfaces":["IEventRepository","IOrganizationApplicationRepository","IOrganizationIntegrationConfigurationRepository","IOrganizationIntegrationRepository","IOrganizationMemberBaseDetailRepository","IOrganizationReportRepository","IPasswordHealthReportApplicationRepository"]},{"from":"data-insights","to":"entity-framework","interfaces":["IEventRepository","IOrganizationApplicationRepository","IOrganizationIntegrationConfigurationRepository","IOrganizationIntegrationRepository","IOrganizationMemberBaseDetailRepository","IOrganizationReportRepository","IPasswordHealthReportApplicationRepository"]},{"from":"key-management","to":"dapper","interfaces":["IUserAsymmetricKeysRepository","IUserSignatureKeyPairRepository"]},{"from":"key-management","to":"entity-framework","interfaces":["IUserAsymmetricKeysRepository","IUserSignatureKeyPairRepository"]},{"from":"notification-center","to":"dapper","interfaces":["INotificationRepository","INotificationStatusRepository"]},{"from":"notification-center","to":"entity-framework","interfaces":["INotificationRepository","INotificationStatusRepository"]},{"from":"pam","to":"dapper","interfaces":["IAccessLeaseRepository","IAccessRequestRepository","IAccessRuleRepository"]},{"from":"pam","to":"entity-framework","interfaces":["IAccessLeaseRepository","IAccessRequestRepository","IAccessRuleRepository"]},{"from":"platform","to":"dapper","interfaces":["IInstallationRepository"]},{"from":"secrets-manager","to":"dapper","interfaces":["IApiKeyRepository"]},{"from":"secrets-manager","to":"entity-framework","interfaces":["IAccessPolicyRepository","IApiKeyRepository","IProjectRepository","ISecretRepository","ISecretVersionRepository","IServiceAccountRepository"]},{"from":"shared-kernel","to":"dapper","interfaces":["ICollectionCipherRepository","IDeviceRepository","IMaintenanceRepository","IOrganizationApiKeyRepository","IOrganizationConnectionRepository","IOrganizationDomainRepository","IOrganizationSponsorshipRepository","IPlayItemRepository","ITransactionRepository","IUserRepository"]},{"from":"shared-kernel","to":"entity-framework","interfaces":["ICollectionCipherRepository","IDeviceRepository","IMaintenanceRepository","IOrganizationApiKeyRepository","IOrganizationConnectionRepository","IOrganizationDomainRepository","IOrganizationSponsorshipRepository","IPlayItemRepository","ITransactionRepository","IUserRepository"]},{"from":"shared-kernel","to":"sql-server-schema","interfaces":["IDbMigrator"]},{"from":"shared-kernel","to":"vault","interfaces":["IAttachmentStorageService"]},{"from":"tools","to":"dapper","interfaces":["ISendRepository"]},{"from":"tools","to":"entity-framework","interfaces":["ISendRepository"]},{"from":"vault","to":"dapper","interfaces":["ICipherRepository","IFolderRepository","ISecurityTaskRepository"]},{"from":"vault","to":"entity-framework","interfaces":["ICipherRepository","IFolderRepository","ISecurityTaskRepository"]}],"symbols":[{"file":"src/Api/Vault/Controllers/FoldersController.cs","line":116,"kind":"endpoint","name":"HttpDelete","delta":"added"},{"file":"src/Api/Vault/Controllers/FoldersController.cs","line":118,"kind":"method","name":"DeleteMany","delta":"added"},{"file":"src/Api/Vault/Models/Request/FolderRequestModel.cs","line":32,"kind":"class","name":"FolderBulkDeleteRequestModel","delta":"added"},{"file":"src/Api/Vault/Models/Request/FolderRequestModel.cs","line":35,"kind":"method","name":"IEnumerable","delta":"added"},{"file":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs","line":8,"kind":"class","name":"DeleteManyFoldersCommand","delta":"added"},{"file":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs","line":13,"kind":"method","name":"DeleteManyAsync","delta":"added"},{"file":"src/Core/Vault/Commands/Interfaces/IDeleteManyFoldersCommand.cs","line":3,"kind":"interface","name":"IDeleteManyFoldersCommand","delta":"added"},{"file":"src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs","line":51,"kind":"method","name":"DeleteManyAsync","delta":"added"},{"file":"src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs","line":48,"kind":"method","name":"DeleteAsync","delta":"added"},{"file":"src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs","line":54,"kind":"method","name":"DeleteManyAsync","delta":"added"}],"stats":{"files":13,"additions":710,"deletions":2,"testAdditions":340,"testDeletions":0,"unmapped":[],"unresolved":0,"newViolations":0,"codeLines":372,"mappedLines":372},"notes":["PR 8157 has no merge ref (merged): explained as 'vault/pm-41472/add-bulk-folder-delete-endpoint' against its merge base with 'main'."],"openspec":null,"outline":{"story":[{"about":"Vault changed","view":"architecture","focus":["vault"],"code":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1-35"},{"about":"Entity Framework changed","view":"architecture","focus":["entity-framework"],"code":"src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:45-117"},{"about":"Dapper (SQL Server) changed","view":"architecture","focus":["dapper"],"code":"src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:47-76"},{"about":"API changed","view":"architecture","focus":["api"],"code":"src/Api/Vault/Controllers/FoldersController.cs:113-131"},{"about":"the data model","view":"data","focus":[],"code":"util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql:1-95"},{"about":"overview: the whole change in one step","view":"architecture","focus":[],"code":null}],"flows":[],"keyDependencyCandidates":[{"from":"api","to":"vault"},{"from":"api","to":"shared-kernel"},{"from":"api","to":"auth"},{"from":"entity-framework","to":"shared-kernel"},{"from":"vault","to":"platform"},{"from":"vault","to":"shared-kernel"}],"dataFiles":["util/Migrator/DbScripts/2026-08-12_00_AddFolderDeleteByIds.sql"]}},"explanation":{"version":5,"key":"8178ed1409572ef1","lang":"en","tldr":"Users can now delete many folders in a single request. The items in those folders stay in the vault with no folder, on SQL Server and on the EF databases.","goal":"Let a client clean up many folders at once, in place of 1 delete request per folder.","story":[{"heading":"1 port, 2 adapters: IFolderRepository.DeleteManyAsync","body":"The Vault port now deletes many folders. Dapper implements it on SQL Server and Entity Framework on PostgreSQL, MySQL and SQLite.","view":"architecture","focus":["vault","dapper","entity-framework"],"code":"src/Core/Vault/Repositories/IFolderRepository.cs:6-22"},{"heading":"DELETE /folders added","body":"The endpoint takes a list of folder ids. Cloud requests take up to 500 ids. The VFO1Foundation feature flag gates it.","view":"flow:delete-folders","focus":["#1"],"code":"src/Api/Vault/Controllers/FoldersController.cs:113-131"},{"heading":"DeleteManyFoldersCommand added to Vault","body":"It keeps only the folders the user owns, deletes them and pushes a single vault sync to the user's clients.","view":"flow:delete-folders","focus":["#2","#5"],"code":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1-35"},{"heading":"Both adapters clear the items, then delete the folders","body":"Dapper calls Folder_DeleteByIds, which clears each item with JSON_MODIFY in a transaction. Entity Framework does the same in LINQ.","view":"architecture","focus":["dapper","entity-framework","sql-server-schema"],"code":"src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql:1-94"},{"heading":"The whole change","body":"The change follows the ports and adapters rule: API, then Vault, then 2 adapters. Core references no infrastructure.","view":"architecture","focus":[]}],"keyDependencies":[{"from":"api","to":"vault","label":"IDeleteManyFoldersCommand"}],"components":[{"id":"api","summary":"New DELETE /folders endpoint and FolderBulkDeleteRequestModel, with a limit of 500 ids on cloud."},{"id":"vault","summary":"New DeleteManyFoldersCommand; IFolderRepository gets DeleteManyAsync."},{"id":"dapper","summary":"FolderRepository.DeleteManyAsync calls Folder_DeleteByIds in a transaction."},{"id":"entity-framework","summary":"FolderRepository.DeleteManyAsync removes the folders and clears them from filed items; DeleteAsync uses it."},{"id":"sql-server-schema","summary":"New Folder_DeleteByIds stored procedure and its migration script."}],"decisions":[{"title":"1 port, 2 adapters","why":"Core references no infrastructure. The port in Vault defines the behavior, and Dapper and EF give it to SQL Server and to PostgreSQL, MySQL and SQLite.","basis":"inferred","alternative":"Call DeleteAsync once per folder from the command.","evidence":"src/Core/Vault/Repositories/IFolderRepository.cs:12-18"},{"title":"SQL Server does the work in a stored procedure","why":"A single round trip updates the items and deletes the folders in a single transaction, as the other SQL Server repositories do.","basis":"code","alternative":"Load the items in C# and update them, as EF does.","evidence":"src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:50-72"},{"title":"Ids the user does not own are ignored","why":"The command filters the user's own folders. A request with other ids deletes nothing else and does not fail.","basis":"code","alternative":"Refuse the whole request when an id is not the user's.","evidence":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:19-25"},{"title":"A single vault sync in place of 1 notification per folder","why":"A delete also moves the items out of the folders. The clients need the whole vault again, not only the folder ids.","basis":"inferred","alternative":"Push 1 folder delete notification per folder.","evidence":"src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:27-30"},{"title":"A limit of 500 ids, on cloud only","why":"The cloud API caps the cost of a request. A self-hosted server has no limit.","basis":"inferred","alternative":"The same limit for every server.","evidence":"src/Api/Vault/Controllers/FoldersController.cs:119-122"}],"flows":[{"id":"delete-folders","title":"Delete folders in bulk","trigger":"DELETE /folders","steps":[{"from":"api","to":"vault","call":"IDeleteManyFoldersCommand.DeleteManyAsync","delta":"added","verified":true,"port":false,"via":null},{"from":"vault","to":"vault","call":"folderRepository.GetManyByUserIdAsync","delta":"unchanged","verified":true,"port":false,"via":null},{"from":"vault","to":"dapper","call":"IFolderRepository.DeleteManyAsync","delta":"added","verified":true,"port":true,"via":"IFolderRepository"},{"from":"dapper","to":"sql-server-schema","call":"Folder_DeleteByIds","delta":"added","data":{"type":"Cipher","fields":["~Folders: user's entry removed"]},"verified":true,"port":false,"via":null},{"from":"vault","to":"platform","call":"pushService.PushSyncVaultAsync","delta":"added","verified":true,"port":false,"via":null}]}],"dataModel":{"entities":[{"id":"folder","name":"Folder","component":"vault","delta":"unchanged","fields":[]},{"id":"cipher","name":"Cipher","component":"vault","delta":"unchanged","fields":[]}],"relations":[{"from":"cipher","to":"folder","label":"Folders: user id → folder id","delta":"unchanged"}]},"requirements":[]},"state":"valid","issues":[]}</script>
 <script>(() => {
   // report/bulb.svg
   var bulb_default = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="explain-change">
@@ -1087,6 +1087,487 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       entById[e.id] = e;
   var isNewViolation = (e) => Boolean(e.violation && !e.violation.preexisting);
 
+  // report/ui.ts
+  function onOpen(el, path) {
+    const url = prFileUrl2(path);
+    if (url) {
+      el.classList.add("linked");
+      el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
+    }
+    return el;
+  }
+  function fileLink(ref, label) {
+    const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
+    const url = prFileUrl2(path);
+    return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref }) : h("code", { class: "ref", text: label || ref });
+  }
+  function sectionShell(id, title, body, lead) {
+    return h("section", { class: "section", id }, h("div", { class: "section-head" }, h("h2", { text: title }), lead ? h("span", { class: "section-lead", text: lead }) : null), body);
+  }
+  function legendItem(kind, color, label) {
+    if (kind === "swatch")
+      return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
+    return h("span", null, h("i", {
+      class: `legend-line${kind.includes("anim") ? " anim" : ""}`,
+      style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`
+    }), label);
+  }
+  function chip(v, label, cls) {
+    return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
+  }
+  var mapApi = {};
+  function fieldDelta(f) {
+    const c = f.trim().charAt(0);
+    return c === "+" ? "added" : c === "-" || c === "−" ? "removed" : c === "~" ? "changed" : "unchanged";
+  }
+  var fieldText = (f) => /^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim();
+  var FIELD_MARK = { added: "+", removed: "−", changed: "~", unchanged: "" };
+
+  // report/header.ts
+  function renderHeader() {
+    const states = {
+      stale: [T.staleExplanation, T.staleText],
+      invalid: [T.invalidExplanation, T.invalidText],
+      draft: [T.draftExplanation, T.draftExplanationText]
+    };
+    const [noticeTitle, noticeText] = states[DATA.state] ?? [T.noExplanation, T.noExplanationText];
+    const notice = ex ? null : h("div", { class: "notice" }, h("span", { class: "notice-icon", text: "i" }), h("div", null, h("b", { text: noticeTitle }), " ", noticeText, DATA.state === "invalid" ? h("ul", null, DATA.issues.slice(0, 20).map((e) => h("li", { text: `${e.path}: ${e.message}` }))) : null));
+    const counts = { added: 0, changed: 0, removed: 0 };
+    for (const c of facts.components)
+      if (c.delta !== "unchanged")
+        counts[c.delta]++;
+    const srcLabel = src.kind === "pr" ? `${T.pr} #${src.prId}` : T.local;
+    const coverage = st.codeLines ? Math.round(100 * (st.mappedLines || 0) / st.codeLines) : 100;
+    const part = (v, label, cls) => [
+      h("b", { class: cls || "", text: String(v) }),
+      h("span", { text: label })
+    ];
+    function group(parts, title, href) {
+      const el = h(href ? "a" : "span", { class: "stat-chip", title: title || null, href: href || null });
+      parts.filter(Boolean).forEach((pt, i) => {
+        if (i)
+          el.appendChild(h("span", { class: "sep", text: "·" }));
+        append(el, pt);
+      });
+      return el;
+    }
+    const moved = [
+      counts.added ? part(counts.added, counts.added === 1 ? T.lAdded : T.nAdded, "added") : null,
+      counts.changed ? part(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
+      counts.removed ? part(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null
+    ].filter(Boolean);
+    const chips = [
+      group([
+        part(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
+        [
+          h("b", null, h("span", { class: "add", text: `+${fmt(st.additions)}` }), " ", h("span", { class: "del", text: `−${fmt(st.deletions)}` })),
+          h("span", { text: T.kLines })
+        ]
+      ]),
+      moved.length ? group(moved, null, "#changes") : null,
+      coverage < 100 ? h("span", { class: "stat-chip", title: T.coverageHint }, h("b", { text: `${coverage}%` }), h("span", { text: T.onMap })) : null,
+      st.newViolations ? chip(st.newViolations, st.newViolations === 1 ? T.brokenRule : T.brokenRules, "violation") : null
+    ];
+    if (OS) {
+      let done = 0;
+      let total = 0;
+      for (const c of OS.changes) {
+        if (c.tasks) {
+          done += c.tasks.done;
+          total += c.tasks.total;
+        }
+      }
+      const spec = [
+        REQS.length ? part(REQS.length, T.kReqs, "accent") : null,
+        total ? part(`${done}/${total}`, T.kTasks, done === total ? "ok" : "warn") : null
+      ].filter(Boolean);
+      if (spec.length)
+        chips.push(group(spec, null, "#sdd"));
+    }
+    return h("header", { class: "page-head", id: "summary" }, cfg.inferred ? h("div", { class: "config-warn", role: "note" }, h("span", { class: "config-warn-icon", text: "!" }), h("div", null, h("b", { text: T.noConfig }), " ", h("span", { text: T.noConfigText }))) : null, h("div", { class: "eyebrow" }, h("span", { text: cfg.name }), h("span", { class: "faint", text: "·" }), src.url ? h("a", { href: src.url, text: srcLabel }) : h("span", { text: srcLabel }), h("span", { class: "faint", text: "·" }), h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.baseRef })), h("span", {
+      class: "faint",
+      text: `${src.commits} ${src.commits === 1 ? T.commit : T.commits}${src.headDate ? ` · ${src.headDate.slice(0, 10)}` : ""}`
+    })), h("h1", { class: "title", text: src.title }), ex ? h("p", { class: "goal" }, h("b", { text: T.goal }), ex.goal) : null, ex ? h("p", { class: "tldr", text: ex.tldr }) : null, notice, h("div", { class: "chips" }, chips), facts.notes.map((n) => h("p", { class: "note faint", text: n })));
+  }
+
+  // report/story.ts
+  var keyPairs = {};
+  if (ex)
+    for (const x of ex.keyDependencies)
+      keyPairs[`${x.from}>${x.to}`] = x.label ?? "";
+  var VIEWS = [{ id: "architecture", title: T.architecture }];
+  for (const fl of ex?.flows ?? [])
+    VIEWS.push({ id: `flow:${fl.id}`, title: fl.title, flow: fl });
+  if (DM)
+    VIEWS.push({ id: "data", title: T.dataView });
+  var flowById = {};
+  for (const fl of ex?.flows ?? [])
+    flowById[fl.id] = fl;
+  function viewTitle(view) {
+    if (view === "requirements")
+      return T.reqs;
+    return VIEWS.find((v) => v.id === view)?.title ?? T.architecture;
+  }
+  function autoStory() {
+    const steps = [];
+    const touched = facts.components.filter((c) => c.delta !== "unchanged");
+    const layers = new Set(touched.map((c) => compById[c.id]?.layer));
+    steps.push({
+      heading: tf("autoOverviewH", { n: touched.length, m: layers.size }),
+      body: tf("autoOverviewB", { f: st.files, a: fmt(st.additions), d: fmt(st.deletions) }),
+      view: "architecture",
+      focus: []
+    });
+    for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
+      steps.push({
+        heading: tf("autoViolH", { a: compName(e.from), b: compName(e.to) }),
+        body: e.violation?.rule ?? "",
+        view: "architecture",
+        focus: [e.from, e.to],
+        code: e.examples[0]
+      });
+    }
+    for (const c of touched.filter((c) => c.delta === "added").slice(0, 2)) {
+      steps.push({
+        heading: tf("autoNewH", { x: compName(c.id) }),
+        body: tf("autoNewB", { l: layerName(c.id) }),
+        view: "architecture",
+        focus: [c.id]
+      });
+    }
+    for (const c of touched.filter((c) => c.delta === "removed").slice(0, 1)) {
+      steps.push({
+        heading: tf("autoRemovedH", { x: compName(c.id) }),
+        body: T.autoRemovedB,
+        view: "architecture",
+        focus: [c.id]
+      });
+    }
+    touched.filter((c) => c.delta === "changed").sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions) || byCompRank(a.id, b.id)).slice(0, Math.max(0, 5 - steps.length)).forEach((c) => {
+      steps.push({
+        heading: tf("autoChangedH", { x: compName(c.id) }),
+        body: tf("autoChangedB", { n: c.files, a: c.additions, d: c.deletions }),
+        view: "architecture",
+        focus: [c.id]
+      });
+    });
+    if (OS && REQS.length) {
+      for (const c of OS.changes) {
+        if (c.requirements.length) {
+          steps.push({
+            heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }),
+            body: c.why || T.autoSpecB,
+            view: "requirements",
+            focus: c.requirements.map((r) => r.id)
+          });
+        }
+      }
+    }
+    return steps;
+  }
+  var STORY = ex?.story.length ? ex.story : autoStory();
+  var storyIsAuto = !ex?.story.length;
+  var MEANINGFUL = new Set;
+  for (const e of facts.dependencies) {
+    if (e.delta === "added" || e.delta === "removed" || isNewViolation(e) || keyPairs[`${e.from}>${e.to}`] !== undefined) {
+      MEANINGFUL.add(e.from);
+      MEANINGFUL.add(e.to);
+    }
+  }
+  for (const step of STORY)
+    if ((step.view ?? "architecture") === "architecture")
+      for (const id of step.focus ?? [])
+        MEANINGFUL.add(id);
+  for (const m of Object.values(specMap))
+    for (const id of m.components ?? [])
+      MEANINGFUL.add(id);
+  var isContext = (c) => c.delta === "unchanged" && !MEANINGFUL.has(c.id);
+  var CONTEXT_COUNT = facts.components.filter(isContext).length;
+
+  // report/svg-view.ts
+  function newView(id, W, H) {
+    const svg = s("svg", {
+      class: `view-svg view-${id.split(":")[0]}`,
+      role: "img",
+      preserveAspectRatio: "xMidYMid meet"
+    });
+    return { id, svg, W, H, geo: {}, keyOf: (x) => x, expand: (set) => set };
+  }
+  function markers(svg, prefix, kinds) {
+    const defs = s("defs");
+    for (const k of kinds) {
+      defs.appendChild(s("marker", {
+        id: prefix + k,
+        viewBox: "0 0 10 10",
+        refX: "8",
+        refY: "5",
+        markerWidth: "10",
+        markerHeight: "10",
+        markerUnits: "userSpaceOnUse",
+        orient: "auto-start-reverse"
+      }, s("path", { d: "M0,0 L10,5 L0,10 z", class: `arrow arrow-${k}` })));
+    }
+    svg.appendChild(defs);
+  }
+
+  // report/arch.ts
+  function layoutArch(nodes, edges, compact) {
+    const W = compact ? 380 : 1160;
+    const LABEL = compact ? 0 : 156;
+    const NW = compact ? 168 : 200;
+    const NH = 66;
+    const GX = compact ? 12 : 34;
+    const GY = 22;
+    const PADY = 24;
+    const TOPL = compact ? 30 : 0;
+    const perRow = Math.max(1, Math.floor((W - LABEL - 24 + GX) / (NW + GX)));
+    const layerOf = (id) => compById[id]?.layer;
+    const layers = cfg.layers.filter((l) => nodes.some((n) => layerOf(n.id) === l.id));
+    const byLayer = {};
+    const idx = {};
+    const adj = {};
+    for (const l of layers) {
+      byLayer[l.id] = nodes.filter((n) => layerOf(n.id) === l.id).sort((a, b) => Number(a.delta === "unchanged") - Number(b.delta === "unchanged") || byCompRank(a.id, b.id));
+    }
+    for (const e of edges) {
+      listAt(adj, e.from).push(e.to);
+      listAt(adj, e.to).push(e.from);
+    }
+    const reindex = (l) => {
+      const arr = byLayer[l.id] ?? [];
+      arr.forEach((n, i) => {
+        idx[n.id] = (i + 0.5) / arr.length;
+      });
+    };
+    layers.forEach(reindex);
+    for (let it = 0;it < 4; it++) {
+      for (const l of it % 2 ? [...layers].reverse() : layers) {
+        const bc = {};
+        for (const n of byLayer[l.id] ?? []) {
+          const nb = (adj[n.id] ?? []).filter((x) => idx[x] !== undefined && layerOf(x) !== l.id);
+          bc[n.id] = nb.length ? nb.reduce((a, x) => a + idx[x], 0) / nb.length : idx[n.id];
+        }
+        (byLayer[l.id] ?? []).sort((a, b) => bc[a.id] - bc[b.id] || byCompRank(a.id, b.id));
+        reindex(l);
+      }
+    }
+    const bands = [];
+    const pos = {};
+    let y = 0;
+    for (const layer of layers) {
+      const inLayer = byLayer[layer.id] ?? [];
+      const rows = Math.ceil(inLayer.length / perRow);
+      const ids = inLayer.map((n) => n.id);
+      const ARC = edges.some((e) => ids.includes(e.from) && ids.includes(e.to)) ? 40 : 0;
+      const top = TOPL + ARC;
+      const bh = rows * NH + (rows - 1) * GY + PADY * 2 + top;
+      bands.push({ layer, y, h: bh, n: inLayer.length });
+      inLayer.forEach((n, i) => {
+        const row = Math.floor(i / perRow);
+        const col = i % perRow;
+        const inRow = Math.min(perRow, inLayer.length - row * perRow);
+        const rowW = inRow * NW + (inRow - 1) * GX;
+        const x0 = LABEL + (W - LABEL - rowW) / 2;
+        pos[n.id] = { x: x0 + col * (NW + GX), y: y + top + PADY + row * (NH + GY), w: NW, h: NH };
+      });
+      y += bh + 12;
+    }
+    return { W, H: Math.max(y - 12, 60), bands, pos, compact, GX };
+  }
+  function edgePaths(edges, pos, L) {
+    const ports = {};
+    const addPort = (node, side, edgeKey, otherX) => {
+      const k = `${node}|${side}`;
+      listAt(ports, k).push({ key: edgeKey, x: otherX });
+    };
+    const geo = edges.map((e) => {
+      const a = pos[e.from];
+      const b = pos[e.to];
+      const down = b.y > a.y + 1;
+      const up = b.y + 1 < a.y;
+      const g = { e, key: `${e.from}>${e.to}`, a, b, sa: "top", sb: "top" };
+      if (down)
+        [g.sa, g.sb] = ["bottom", "top"];
+      else if (up)
+        [g.sa, g.sb] = ["top", "bottom"];
+      addPort(e.from, g.sa, g.key, b.x);
+      addPort(e.to, g.sb, g.key, a.x);
+      return g;
+    });
+    function portX(node, side, key) {
+      const list = [...ports[`${node}|${side}`] ?? []].sort((p, q) => p.x - q.x || (p.key < q.key ? -1 : 1));
+      const i = list.findIndex((p) => p.key === key);
+      const r = pos[node];
+      return r.x + r.w * (i + 1) / (list.length + 1);
+    }
+    function obstacles(g, x1, x2, yTop, yBot) {
+      const lo = Math.min(x1, x2) - 8;
+      const hi = Math.max(x1, x2) + 8;
+      return Object.keys(pos).filter((id) => {
+        if (id === g.e.from || id === g.e.to)
+          return false;
+        const r = pos[id];
+        return r.y < yBot && r.y + r.h > yTop && r.x < hi && r.x + r.w > lo;
+      }).map((id) => pos[id]);
+    }
+    const laneUse = {};
+    return geo.map((g) => {
+      const x1 = portX(g.e.from, g.sa, g.key);
+      const x2 = portX(g.e.to, g.sb, g.key);
+      const y1 = g.sa === "bottom" ? g.a.y + g.a.h : g.a.y;
+      const y2 = g.sb === "top" ? g.b.y - 4 : g.b.y + g.b.h + 4;
+      if (g.sa === "top" && g.sb === "top") {
+        const lift = Math.min(34, 22 + Math.abs(x2 - x1) / 10);
+        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(y1 - lift)} ${r1(x2)},${r1(y2 - lift)} ${r1(x2)},${y2}`;
+        return { e: g.e, d, mx: (x1 + x2) / 2, my: Math.min(y1, y2) - lift * 0.75 };
+      }
+      const dir = y2 > y1 ? 1 : -1;
+      let blockers = obstacles(g, x1, x2, Math.min(y1, y2), Math.max(y1, y2));
+      if (!blockers.length) {
+        const my = (y1 + y2) / 2;
+        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(my)} ${r1(x2)},${r1(my)} ${r1(x2)},${y2}`;
+        return { e: g.e, d, mx: (x1 + x2) / 2, my };
+      }
+      const gap = (L.GX || 20) / 2;
+      const mid = (x1 + x2) / 2;
+      const yTop = Math.min(y1, y2);
+      const yBot = Math.max(y1, y2);
+      let lane = 0;
+      let right = 0;
+      let left = 0;
+      for (let guard = 0;guard < 12; guard++) {
+        right = Math.max(...blockers.map((r) => r.x + r.w)) + gap;
+        left = Math.min(...blockers.map((r) => r.x)) - gap;
+        lane = Math.abs(right - mid) <= Math.abs(left - mid) && right < L.W - 4 || left < 4 ? right : left;
+        const hit = obstacles(g, lane, lane, yTop, yBot).filter((r) => !blockers.includes(r));
+        if (!hit.length)
+          break;
+        blockers = blockers.concat(hit);
+      }
+      const used = (laneUse[Math.round(lane)] ?? 0) + 1;
+      laneUse[Math.round(lane)] = used;
+      lane += (lane === right ? 1 : -1) * (used - 1) * 4;
+      const ra = y1 + dir * 26;
+      const rb = y2 - dir * 26;
+      const d = `M${r1(x1)},${y1} C${r1(x1)},${y1 + dir * 18} ${r1(lane)},${y1 + dir * 8} ${r1(lane)},${ra}` + ` L${r1(lane)},${rb} C${r1(lane)},${y2 - dir * 8} ${r1(x2)},${y2 - dir * 18} ${r1(x2)},${y2}`;
+      return { e: g.e, d, mx: lane, my: (y1 + y2) / 2 };
+    });
+  }
+  function buildArchitecture(mode, compact, withContext, onNode) {
+    const nodes = facts.components.filter((n) => !(mode === "before" && n.delta === "added") && !(mode === "after" && n.delta === "removed") && (withContext || !isContext(n)));
+    const vis = new Set(nodes.map((n) => n.id));
+    const edges = facts.dependencies.filter((e) => {
+      if (!vis.has(e.from) || !vis.has(e.to))
+        return false;
+      if (mode === "before")
+        return e.delta !== "added";
+      if (mode === "after")
+        return e.delta !== "removed";
+      return true;
+    });
+    const L = layoutArch(nodes, edges, compact);
+    const V = newView("architecture", L.W, L.H);
+    const svg = V.svg;
+    svg.classList.add(`mode-${mode}`);
+    if (!nodes.length) {
+      V.empty = T.archEmpty;
+      return V;
+    }
+    markers(svg, "ar-", ["unchanged", "added", "changed", "removed", "violation", "key"]);
+    for (const b of L.bands) {
+      svg.appendChild(s("rect", { x: 0, y: b.y, width: L.W, height: b.h, rx: 14, class: "band" }));
+      if (L.compact)
+        svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: trunc(b.layer.name, 40) }));
+      else {
+        svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 - 2, class: "band-label", text: trunc(b.layer.name, 18) }));
+        svg.appendChild(s("text", {
+          x: 18,
+          y: b.y + b.h / 2 + 14,
+          class: "band-sub",
+          text: `${b.n} ${b.n === 1 ? T.component : T.kComponents}`
+        }));
+      }
+    }
+    const edgeLayer = s("g", { class: "edges" });
+    const labelLayer = s("g", { class: "edge-labels" });
+    const labels = [];
+    const freeSpot = (cx, cy, w, h) => {
+      const covers = (x, y) => [...Object.values(L.pos), ...labels].some((b) => x - w / 2 < b.x + b.w + 4 && x + w / 2 > b.x - 4 && y - h / 2 < b.y + b.h + 4 && y + h / 2 > b.y - 4);
+      for (const dy of [0, -14, 14, -28, 28, -42, 42, -56, 56]) {
+        for (const dx of [0, -(w / 2 + 14), w / 2 + 14])
+          if (!covers(cx + dx, cy + dy))
+            return [cx + dx, cy + dy];
+      }
+      return [cx, cy];
+    };
+    edgePaths(edges, L.pos, L).forEach((p, i) => {
+      const e = p.e;
+      const k = isNewViolation(e) || e.violation && withContext ? "violation" : e.delta;
+      const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
+      const tip = `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` + (e.examples[0] ? ` · ${e.examples[0]}` : "") + (e.violation ? ` · ⚠ ${e.violation.rule}` : "");
+      const pid = `ep-${i}`;
+      const g = s("g", { class: `edge-g${isKey ? " key" : ""}`, "data-k": `e:${e.from}>${e.to}`, "data-a": e.from, "data-b": e.to }, s("title", { text: tip }), s("path", { d: p.d, class: "edge-hit" }), isKey ? s("path", { d: p.d, class: "edge-glow" }) : null, s("path", {
+        id: pid,
+        d: p.d,
+        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
+        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`
+      }));
+      if ((isKey || e.delta === "added") && e.delta !== "removed") {
+        g.appendChild(s("circle", { r: isKey ? 4.5 : 3, class: `pulse${isKey ? " key" : ""}` }, s("animateMotion", { dur: isKey ? "2.2s" : "3s", repeatCount: "indefinite", begin: `-${r1(i % 5 * 0.4)}s` }, s("mpath", { href: `#${pid}` }))));
+      }
+      edgeLayer.appendChild(g);
+      const keyLabel = keyPairs[`${e.from}>${e.to}`];
+      if (isKey && keyLabel) {
+        const label = trunc(keyLabel, 40);
+        const lw = Math.ceil(textWidth(label, "600 11.5px")) + 20;
+        const [cx, cy] = freeSpot(p.mx, p.my, lw, 22);
+        labels.push({ x: cx - lw / 2, y: cy - 11, w: lw, h: 22 });
+        labelLayer.appendChild(s("g", { class: "edge-label", "data-a": e.from, "data-b": e.to }, s("rect", { x: r1(cx - lw / 2), y: r1(cy - 11), width: r1(lw), height: 22, rx: 11 }), s("text", { x: r1(cx), y: r1(cy + 4), "text-anchor": "middle", text: label })));
+      }
+    });
+    svg.appendChild(edgeLayer);
+    for (const n of nodes) {
+      const r = L.pos[n.id];
+      const c = compById[n.id];
+      V.geo[n.id] = r;
+      const nreq = reqsOfComp(n.id).length;
+      const neighbor = n.delta === "unchanged";
+      const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}${nreq ? ` · ◆ ${nreq}` : ""}`;
+      const g = s("g", {
+        class: `node st-${n.delta}`,
+        "data-k": n.id,
+        tabindex: "0",
+        role: "button",
+        "aria-label": `${c.name}, ${deltaLabel(n.delta, true)}`
+      }, s("title", { text: c.name + (summaryOf[n.id] ? `
+${summaryOf[n.id]}` : c.desc ? `
+${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12, class: "box" }), s("text", { x: r.x + 14, y: r.y + 19, class: "tag", text: neighbor ? "" : deltaLabel(n.delta).toUpperCase() }), neighbor ? null : s("text", { x: r.x + r.w - 12, y: r.y + 19, "text-anchor": "end", class: "delta" }, s("tspan", { class: "add", text: `+${n.additions}` }), s("tspan", { class: "del", text: ` −${n.deletions}` })), s("text", {
+        x: r.x + 14,
+        y: r.y + 39,
+        class: "name",
+        text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28)
+      }), s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }));
+      onNode?.(g, n.id);
+      svg.appendChild(g);
+    }
+    svg.appendChild(labelLayer);
+    V.expand = (set) => {
+      const keys = Object.keys(set);
+      const only = keys[0];
+      if (keys.length === 1 && only !== undefined && vis.has(only)) {
+        for (const e of edges) {
+          if (e.from === only)
+            set[e.to] = true;
+          if (e.to === only)
+            set[e.from] = true;
+        }
+      }
+      return set;
+    };
+    V.focusBoxKeys = (ids) => ids.filter((x) => vis.has(x));
+    return V;
+  }
+
   // report/camera.ts
   function createCamera(viewport, view) {
     let vb = null;
@@ -1202,42 +1683,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     return { apply, frame, fly, zoom, fullBox, box };
   }
 
-  // report/ui.ts
-  function onOpen(el, path) {
-    const url = prFileUrl2(path);
-    if (url) {
-      el.classList.add("linked");
-      el.addEventListener("click", () => window.open(url, "_blank", "noopener"));
-    }
-    return el;
-  }
-  function fileLink(ref, label) {
-    const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
-    const url = prFileUrl2(path);
-    return url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref }) : h("code", { class: "ref", text: label || ref });
-  }
-  function sectionShell(id, title, body, lead) {
-    return h("section", { class: "section", id }, h("div", { class: "section-head" }, h("h2", { text: title }), lead ? h("span", { class: "section-lead", text: lead }) : null), body);
-  }
-  function legendItem(kind, color, label) {
-    if (kind === "swatch")
-      return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
-    return h("span", null, h("i", {
-      class: `legend-line${kind.includes("anim") ? " anim" : ""}`,
-      style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`
-    }), label);
-  }
-  function chip(v, label, cls) {
-    return h("span", { class: `stat-chip ${cls || ""}` }, h("b", { text: String(v) }), h("span", { text: label }));
-  }
-  var mapApi = {};
-  function fieldDelta(f) {
-    const c = f.trim().charAt(0);
-    return c === "+" ? "added" : c === "-" || c === "−" ? "removed" : c === "~" ? "changed" : "unchanged";
-  }
-  var fieldText = (f) => /^[+\-−~]/.test(f.trim()) ? f.trim().slice(1).trim() : f.trim();
-  var FIELD_MARK = { added: "+", removed: "−", changed: "~", unchanged: "" };
-
   // report/code.ts
   function codeExcerpt(ref) {
     const m = /^(.+?):(\d+)(?:-(\d+))?$/.exec(ref || "");
@@ -1286,6 +1731,128 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
         n++;
     }
     return frag;
+  }
+
+  // report/data-view.ts
+  function buildData(onNode) {
+    const dm = DM;
+    const EW = 250;
+    const GX = 90;
+    const GY = 70;
+    const PER = 3;
+    const order = { added: 0, changed: 1, removed: 2, unchanged: 3 };
+    const ents = [...dm.entities].sort((a, b) => order[a.delta] - order[b.delta] || byCompRank(a.component ?? "", b.component ?? "") || (a.name < b.name ? -1 : 1));
+    const migrations = facts.files.filter((f) => f.category === "migration");
+    const top = migrations.length ? 34 + Math.min(migrations.length, 4) * 20 + 30 : 10;
+    const heights = ents.map((e) => 52 + Math.max(1, (e.fields ?? []).length) * 19 + 10);
+    const rows = Math.ceil(ents.length / PER);
+    const rowH = [];
+    for (let r = 0;r < rows; r++)
+      rowH.push(Math.max(...heights.slice(r * PER, r * PER + PER)));
+    const cols = Math.min(PER, ents.length);
+    const W = Math.max(cols * EW + (cols - 1) * GX, 600);
+    const pos = {};
+    let y = top;
+    ents.forEach((e, i) => {
+      const r = Math.floor(i / PER);
+      const c = i % PER;
+      const inRow = Math.min(PER, ents.length - r * PER);
+      const x0 = (W - (inRow * EW + (inRow - 1) * GX)) / 2;
+      const ry = top + rowH.slice(0, r).reduce((a, v) => a + v + GY, 0);
+      pos[e.id] = { x: x0 + c * (EW + GX), y: ry, w: EW, h: heights[i] };
+      y = Math.max(y, ry + heights[i]);
+    });
+    const V = newView("data", W, y + 10);
+    const svg = V.svg;
+    if (migrations.length) {
+      const mg = s("g", { class: "migrations" }, s("text", { x: 0, y: 14, class: "col-label", text: T.migrations.toUpperCase() }));
+      migrations.slice(0, 4).forEach((f, i) => {
+        const letter = gitLetter(f);
+        const text = s("text", { x: 0, y: 38 + i * 20, class: "mig" }, s("tspan", { class: `gs-${letter}`, text: `${letter}  ` }), s("tspan", { text: trunc(f.path, 90) }));
+        mg.appendChild(onOpen(text, f.path));
+      });
+      if (migrations.length > 4)
+        mg.appendChild(s("text", { x: 0, y: 38 + 4 * 20, class: "info", text: `+${migrations.length - 4}` }));
+      svg.appendChild(mg);
+    }
+    const links = s("g", { class: "links" });
+    svg.appendChild(links);
+    V.links = [];
+    for (const rl of dm.relations) {
+      const a = pos[rl.from];
+      const b = pos[rl.to];
+      if (!a || !b)
+        continue;
+      const ax = a.x + a.w / 2;
+      const ay = a.y + a.h / 2;
+      const bx = b.x + b.w / 2;
+      const by = b.y + b.h / 2;
+      let d;
+      let x1;
+      let y1;
+      let x2;
+      let y2;
+      if (Math.abs(ay - by) < 10 || Math.abs(bx - ax) > Math.abs(by - ay)) {
+        x1 = bx > ax ? a.x + a.w : a.x;
+        x2 = bx > ax ? b.x : b.x + b.w;
+        y1 = a.y + 26;
+        y2 = b.y + 26;
+        const mx = (x1 + x2) / 2;
+        d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+      } else {
+        x1 = ax;
+        x2 = bx;
+        y1 = by > ay ? a.y + a.h : a.y;
+        y2 = by > ay ? b.y : b.y + b.h;
+        const my = (y1 + y2) / 2;
+        d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+      }
+      links.appendChild(s("path", { d, class: `rel rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }));
+      if (rl.label) {
+        const lx = (x1 + x2) / 2;
+        const ly = (y1 + y2) / 2;
+        const lw = Math.ceil(textWidth(rl.label, "11px", MONO)) + 16;
+        links.appendChild(s("g", { class: `rel-label rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }, s("rect", { x: r1(lx - lw / 2), y: r1(ly - 10), width: r1(lw), height: 20, rx: 10 }), s("text", { x: r1(lx), y: r1(ly + 4), "text-anchor": "middle", text: rl.label })));
+      }
+      V.links.push([`ent:${rl.from}`, `ent:${rl.to}`]);
+    }
+    for (const e of ents) {
+      const b = pos[e.id];
+      const key = `ent:${e.id}`;
+      V.geo[key] = b;
+      const fields = e.fields ?? [];
+      const g = s("g", { class: `entity st-${e.delta}`, "data-k": key, tabindex: "0", role: "button" }, s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 12, class: "box" }), s("rect", { x: b.x, y: b.y, width: b.w, height: 40, rx: 12, class: "head" }), s("rect", { x: b.x, y: b.y + 28, width: b.w, height: 12, class: "head" }), s("text", { x: b.x + 14, y: b.y + 25, class: "name", text: trunc(e.name, 24) }), s("text", {
+        x: b.x + b.w - 12,
+        y: b.y + 25,
+        "text-anchor": "end",
+        class: "tag",
+        text: e.delta === "unchanged" ? "" : deltaLabel(e.delta).toUpperCase()
+      }));
+      if (!fields.length) {
+        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62, class: "info", text: e.component ? compName(e.component) : "" }));
+      }
+      fields.forEach((f, i) => {
+        const k = fieldDelta(f);
+        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62 + i * 19, class: `field f-${k}` }, s("tspan", { class: "fmark", text: `${FIELD_MARK[k] || " "} ` }), s("tspan", { text: trunc(fieldText(f), 28) })));
+      });
+      onNode?.(g, key);
+      svg.appendChild(g);
+    }
+    V.keyOf = (id) => id.slice(0, 4) === "ent:" ? id : `ent:${id}`;
+    V.expand = (set) => {
+      const add = {};
+      if (Object.keys(set).length === 1) {
+        for (const l of V.links ?? []) {
+          if (set[l[0]])
+            add[l[1]] = true;
+          if (set[l[1]])
+            add[l[0]] = true;
+        }
+      }
+      Object.assign(set, add);
+      return set;
+    };
+    return V;
   }
 
   // report/sdd.ts
@@ -1584,433 +2151,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     ], tf("leadSpec", { n: REQS.length, i: REQS.filter((r) => reqStatus(r) === "implemented").length }));
   }
 
-  // report/inspector.ts
-  function componentDetails(id, nav) {
-    const c = compById[id];
-    const n = changeComp[id] ?? { id, delta: "unchanged", files: 0, additions: 0, deletions: 0 };
-    const files = facts.files.filter((f) => f.component === id);
-    const syms = facts.symbols.filter((sy) => files.some((f) => f.path === sy.file));
-    const outE = facts.dependencies.filter((e) => e.from === id);
-    const inE = facts.dependencies.filter((e) => e.to === id);
-    const reqs = reqsOfComp(id);
-    return [
-      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
-      h("div", { class: "insp-title" }, h("span", { class: `badge ${n.delta}`, text: deltaLabel(n.delta, true) }), h("h3", { text: c ? c.name : id })),
-      h("div", {
-        class: "faint",
-        text: layerName(id) + (n.delta !== "unchanged" ? ` · ${n.files} ${n.files === 1 ? T.file : T.kFiles} · +${n.additions} −${n.deletions}` : "")
-      }),
-      summaryOf[id] ? h("p", { class: "insp-summary", text: summaryOf[id] }) : c?.desc ? h("p", { class: "insp-summary muted", text: c.desc }) : null,
-      files.length ? inspList(T.files, files.map((f) => h("div", { class: "insp-row" }, h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }), fileLink(f.path, f.path.split("/").pop()), h("span", { class: "nums" }, h("span", { class: "add", text: `+${f.additions}` }), " ", h("span", { class: "del", text: `−${f.deletions}` }))))) : null,
-      syms.length ? inspList(T.symbols, syms.slice(0, 12).map((sy) => h("div", { class: "insp-row" }, h("span", {
-        class: `badge ${sy.delta}`,
-        text: sy.delta === "added" ? "+" : sy.delta === "removed" ? "−" : "~"
-      }), fileLink(`${sy.file}:${sy.line}`, sy.name)))) : null,
-      outE.length ? inspList(T.dependsOn, outE.map(edgeRow((e) => e.to, nav))) : null,
-      inE.length ? inspList(T.usedBy, inE.map(edgeRow((e) => e.from, nav))) : null,
-      reqs.length ? inspList(T.reqs, reqs.map(reqRow)) : null
-    ];
-  }
-  function entityDetails(eid, nav) {
-    const e = entById[eid];
-    const dm = DM;
-    const rels = dm.relations.filter((r) => r.from === eid || r.to === eid);
-    const fields = e.fields ?? [];
-    return [
-      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
-      h("div", { class: "insp-title" }, h("span", { class: `badge ${e.delta}`, text: deltaLabel(e.delta) }), h("h3", { text: e.name })),
-      e.component ? h("div", null, h("a", {
-        href: "#",
-        class: "faint",
-        text: compName(e.component),
-        onclick: (ev) => {
-          ev.preventDefault();
-          nav.inspect(e.component);
-        }
-      })) : null,
-      fields.length ? inspList(T.fields, fields.map((f) => {
-        const k = fieldDelta(f);
-        return h("div", { class: `insp-row field-row f-${k}` }, h("span", { class: "fmark", text: FIELD_MARK[k] || "·" }), h("code", { text: fieldText(f) }));
-      })) : null,
-      rels.length ? inspList(T.relations, rels.map((r) => {
-        const other = r.from === eid ? r.to : r.from;
-        return h("div", { class: "insp-row" }, h("span", { class: `badge ${r.delta}`, text: r.label || "—" }), h("a", {
-          href: "#",
-          text: entById[other]?.name ?? other,
-          onclick: (ev) => {
-            ev.preventDefault();
-            nav.entity(other);
-          }
-        }));
-      })) : null,
-      e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null
-    ];
-  }
-  function edgeRow(other, nav) {
-    return (e) => {
-      const k = isNewViolation(e) ? "violation" : e.delta;
-      const mark = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
-      return h("div", { class: "insp-row" }, h("span", { class: `badge ${k}`, text: mark[k] }), h("a", {
-        href: "#",
-        text: compName(other(e)),
-        onclick: (ev) => {
-          ev.preventDefault();
-          nav.inspect(other(e));
-        }
-      }), e.examples[0] ? fileLink(e.examples[0], e.examples[0].split("/").pop()) : null);
-    };
-  }
-
-  // report/app.ts
-  function renderHeader() {
-    const states = {
-      stale: [T.staleExplanation, T.staleText],
-      invalid: [T.invalidExplanation, T.invalidText],
-      draft: [T.draftExplanation, T.draftExplanationText]
-    };
-    const [noticeTitle, noticeText] = states[DATA.state] ?? [T.noExplanation, T.noExplanationText];
-    const notice = ex ? null : h("div", { class: "notice" }, h("span", { class: "notice-icon", text: "i" }), h("div", null, h("b", { text: noticeTitle }), " ", noticeText, DATA.state === "invalid" ? h("ul", null, DATA.issues.slice(0, 20).map((e) => h("li", { text: `${e.path}: ${e.message}` }))) : null));
-    const counts = { added: 0, changed: 0, removed: 0 };
-    for (const c of facts.components)
-      if (c.delta !== "unchanged")
-        counts[c.delta]++;
-    const srcLabel = src.kind === "pr" ? `${T.pr} #${src.prId}` : T.local;
-    const coverage = st.codeLines ? Math.round(100 * (st.mappedLines || 0) / st.codeLines) : 100;
-    const part = (v, label, cls) => [
-      h("b", { class: cls || "", text: String(v) }),
-      h("span", { text: label })
-    ];
-    function group(parts, title, href) {
-      const el = h(href ? "a" : "span", { class: "stat-chip", title: title || null, href: href || null });
-      parts.filter(Boolean).forEach((pt, i) => {
-        if (i)
-          el.appendChild(h("span", { class: "sep", text: "·" }));
-        append(el, pt);
-      });
-      return el;
-    }
-    const moved = [
-      counts.added ? part(counts.added, counts.added === 1 ? T.lAdded : T.nAdded, "added") : null,
-      counts.changed ? part(counts.changed, counts.changed === 1 ? T.lChanged : T.nChanged, "changed") : null,
-      counts.removed ? part(counts.removed, counts.removed === 1 ? T.lRemoved : T.nRemoved, "removed") : null
-    ].filter(Boolean);
-    const chips = [
-      group([
-        part(fmt(st.files), st.files === 1 ? T.file : T.kFiles),
-        [
-          h("b", null, h("span", { class: "add", text: `+${fmt(st.additions)}` }), " ", h("span", { class: "del", text: `−${fmt(st.deletions)}` })),
-          h("span", { text: T.kLines })
-        ]
-      ]),
-      moved.length ? group(moved, null, "#changes") : null,
-      coverage < 100 ? h("span", { class: "stat-chip", title: T.coverageHint }, h("b", { text: `${coverage}%` }), h("span", { text: T.onMap })) : null,
-      st.newViolations ? chip(st.newViolations, st.newViolations === 1 ? T.brokenRule : T.brokenRules, "violation") : null
-    ];
-    if (OS) {
-      let done = 0;
-      let total = 0;
-      for (const c of OS.changes) {
-        if (c.tasks) {
-          done += c.tasks.done;
-          total += c.tasks.total;
-        }
-      }
-      const spec = [
-        REQS.length ? part(REQS.length, T.kReqs, "accent") : null,
-        total ? part(`${done}/${total}`, T.kTasks, done === total ? "ok" : "warn") : null
-      ].filter(Boolean);
-      if (spec.length)
-        chips.push(group(spec, null, "#sdd"));
-    }
-    return h("header", { class: "page-head", id: "summary" }, cfg.inferred ? h("div", { class: "config-warn", role: "note" }, h("span", { class: "config-warn-icon", text: "!" }), h("div", null, h("b", { text: T.noConfig }), " ", h("span", { text: T.noConfigText }))) : null, h("div", { class: "eyebrow" }, h("span", { text: cfg.name }), h("span", { class: "faint", text: "·" }), src.url ? h("a", { href: src.url, text: srcLabel }) : h("span", { text: srcLabel }), h("span", { class: "faint", text: "·" }), h("span", null, h("code", { text: src.branch }), " → ", h("code", { text: src.baseRef })), h("span", {
-      class: "faint",
-      text: `${src.commits} ${src.commits === 1 ? T.commit : T.commits}${src.headDate ? ` · ${src.headDate.slice(0, 10)}` : ""}`
-    })), h("h1", { class: "title", text: src.title }), ex ? h("p", { class: "goal" }, h("b", { text: T.goal }), ex.goal) : null, ex ? h("p", { class: "tldr", text: ex.tldr }) : null, notice, h("div", { class: "chips" }, chips), facts.notes.map((n) => h("p", { class: "note faint", text: n })));
-  }
-  function newView(id, W, H) {
-    const svg = s("svg", {
-      class: `view-svg view-${id.split(":")[0]}`,
-      role: "img",
-      preserveAspectRatio: "xMidYMid meet"
-    });
-    return { id, svg, W, H, geo: {}, keyOf: (x) => x, expand: (set) => set };
-  }
-  function markers(svg, prefix, kinds) {
-    const defs = s("defs");
-    for (const k of kinds) {
-      defs.appendChild(s("marker", {
-        id: prefix + k,
-        viewBox: "0 0 10 10",
-        refX: "8",
-        refY: "5",
-        markerWidth: "10",
-        markerHeight: "10",
-        markerUnits: "userSpaceOnUse",
-        orient: "auto-start-reverse"
-      }, s("path", { d: "M0,0 L10,5 L0,10 z", class: `arrow arrow-${k}` })));
-    }
-    svg.appendChild(defs);
-  }
-  var keyPairs = {};
-  if (ex)
-    for (const x of ex.keyDependencies)
-      keyPairs[`${x.from}>${x.to}`] = x.label ?? "";
-  function layoutArch(nodes, edges, compact) {
-    const W = compact ? 380 : 1160;
-    const LABEL = compact ? 0 : 156;
-    const NW = compact ? 168 : 200;
-    const NH = 66;
-    const GX = compact ? 12 : 34;
-    const GY = 22;
-    const PADY = 24;
-    const TOPL = compact ? 30 : 0;
-    const perRow = Math.max(1, Math.floor((W - LABEL - 24 + GX) / (NW + GX)));
-    const layerOf = (id) => compById[id]?.layer;
-    const layers = cfg.layers.filter((l) => nodes.some((n) => layerOf(n.id) === l.id));
-    const byLayer = {};
-    const idx = {};
-    const adj = {};
-    for (const l of layers) {
-      byLayer[l.id] = nodes.filter((n) => layerOf(n.id) === l.id).sort((a, b) => Number(a.delta === "unchanged") - Number(b.delta === "unchanged") || byCompRank(a.id, b.id));
-    }
-    for (const e of edges) {
-      listAt(adj, e.from).push(e.to);
-      listAt(adj, e.to).push(e.from);
-    }
-    const reindex = (l) => {
-      const arr = byLayer[l.id] ?? [];
-      arr.forEach((n, i) => {
-        idx[n.id] = (i + 0.5) / arr.length;
-      });
-    };
-    layers.forEach(reindex);
-    for (let it = 0;it < 4; it++) {
-      for (const l of it % 2 ? [...layers].reverse() : layers) {
-        const bc = {};
-        for (const n of byLayer[l.id] ?? []) {
-          const nb = (adj[n.id] ?? []).filter((x) => idx[x] !== undefined && layerOf(x) !== l.id);
-          bc[n.id] = nb.length ? nb.reduce((a, x) => a + idx[x], 0) / nb.length : idx[n.id];
-        }
-        (byLayer[l.id] ?? []).sort((a, b) => bc[a.id] - bc[b.id] || byCompRank(a.id, b.id));
-        reindex(l);
-      }
-    }
-    const bands = [];
-    const pos = {};
-    let y = 0;
-    for (const layer of layers) {
-      const inLayer = byLayer[layer.id] ?? [];
-      const rows = Math.ceil(inLayer.length / perRow);
-      const ids = inLayer.map((n) => n.id);
-      const ARC = edges.some((e) => ids.includes(e.from) && ids.includes(e.to)) ? 40 : 0;
-      const top = TOPL + ARC;
-      const bh = rows * NH + (rows - 1) * GY + PADY * 2 + top;
-      bands.push({ layer, y, h: bh, n: inLayer.length });
-      inLayer.forEach((n, i) => {
-        const row = Math.floor(i / perRow);
-        const col = i % perRow;
-        const inRow = Math.min(perRow, inLayer.length - row * perRow);
-        const rowW = inRow * NW + (inRow - 1) * GX;
-        const x0 = LABEL + (W - LABEL - rowW) / 2;
-        pos[n.id] = { x: x0 + col * (NW + GX), y: y + top + PADY + row * (NH + GY), w: NW, h: NH };
-      });
-      y += bh + 12;
-    }
-    return { W, H: Math.max(y - 12, 60), bands, pos, compact, GX };
-  }
-  function edgePaths(edges, pos, L) {
-    const ports = {};
-    const addPort = (node, side, edgeKey, otherX) => {
-      const k = `${node}|${side}`;
-      listAt(ports, k).push({ key: edgeKey, x: otherX });
-    };
-    const geo = edges.map((e) => {
-      const a = pos[e.from];
-      const b = pos[e.to];
-      const down = b.y > a.y + 1;
-      const up = b.y + 1 < a.y;
-      const g = { e, key: `${e.from}>${e.to}`, a, b, sa: "top", sb: "top" };
-      if (down)
-        [g.sa, g.sb] = ["bottom", "top"];
-      else if (up)
-        [g.sa, g.sb] = ["top", "bottom"];
-      addPort(e.from, g.sa, g.key, b.x);
-      addPort(e.to, g.sb, g.key, a.x);
-      return g;
-    });
-    function portX(node, side, key) {
-      const list = [...ports[`${node}|${side}`] ?? []].sort((p, q) => p.x - q.x || (p.key < q.key ? -1 : 1));
-      const i = list.findIndex((p) => p.key === key);
-      const r = pos[node];
-      return r.x + r.w * (i + 1) / (list.length + 1);
-    }
-    function obstacles(g, x1, x2, yTop, yBot) {
-      const lo = Math.min(x1, x2) - 8;
-      const hi = Math.max(x1, x2) + 8;
-      return Object.keys(pos).filter((id) => {
-        if (id === g.e.from || id === g.e.to)
-          return false;
-        const r = pos[id];
-        return r.y < yBot && r.y + r.h > yTop && r.x < hi && r.x + r.w > lo;
-      }).map((id) => pos[id]);
-    }
-    const laneUse = {};
-    return geo.map((g) => {
-      const x1 = portX(g.e.from, g.sa, g.key);
-      const x2 = portX(g.e.to, g.sb, g.key);
-      const y1 = g.sa === "bottom" ? g.a.y + g.a.h : g.a.y;
-      const y2 = g.sb === "top" ? g.b.y - 4 : g.b.y + g.b.h + 4;
-      if (g.sa === "top" && g.sb === "top") {
-        const lift = Math.min(34, 22 + Math.abs(x2 - x1) / 10);
-        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(y1 - lift)} ${r1(x2)},${r1(y2 - lift)} ${r1(x2)},${y2}`;
-        return { e: g.e, d, mx: (x1 + x2) / 2, my: Math.min(y1, y2) - lift * 0.75 };
-      }
-      const dir = y2 > y1 ? 1 : -1;
-      let blockers = obstacles(g, x1, x2, Math.min(y1, y2), Math.max(y1, y2));
-      if (!blockers.length) {
-        const my = (y1 + y2) / 2;
-        const d = `M${r1(x1)},${y1} C${r1(x1)},${r1(my)} ${r1(x2)},${r1(my)} ${r1(x2)},${y2}`;
-        return { e: g.e, d, mx: (x1 + x2) / 2, my };
-      }
-      const gap = (L.GX || 20) / 2;
-      const mid = (x1 + x2) / 2;
-      const yTop = Math.min(y1, y2);
-      const yBot = Math.max(y1, y2);
-      let lane = 0;
-      let right = 0;
-      let left = 0;
-      for (let guard = 0;guard < 12; guard++) {
-        right = Math.max(...blockers.map((r) => r.x + r.w)) + gap;
-        left = Math.min(...blockers.map((r) => r.x)) - gap;
-        lane = Math.abs(right - mid) <= Math.abs(left - mid) && right < L.W - 4 || left < 4 ? right : left;
-        const hit = obstacles(g, lane, lane, yTop, yBot).filter((r) => !blockers.includes(r));
-        if (!hit.length)
-          break;
-        blockers = blockers.concat(hit);
-      }
-      const used = (laneUse[Math.round(lane)] ?? 0) + 1;
-      laneUse[Math.round(lane)] = used;
-      lane += (lane === right ? 1 : -1) * (used - 1) * 4;
-      const ra = y1 + dir * 26;
-      const rb = y2 - dir * 26;
-      const d = `M${r1(x1)},${y1} C${r1(x1)},${y1 + dir * 18} ${r1(lane)},${y1 + dir * 8} ${r1(lane)},${ra}` + ` L${r1(lane)},${rb} C${r1(lane)},${y2 - dir * 8} ${r1(x2)},${y2 - dir * 18} ${r1(x2)},${y2}`;
-      return { e: g.e, d, mx: lane, my: (y1 + y2) / 2 };
-    });
-  }
-  function buildArchitecture(mode, compact, withContext, onNode) {
-    const nodes = facts.components.filter((n) => !(mode === "before" && n.delta === "added") && !(mode === "after" && n.delta === "removed") && (withContext || !isContext(n)));
-    const vis = new Set(nodes.map((n) => n.id));
-    const edges = facts.dependencies.filter((e) => {
-      if (!vis.has(e.from) || !vis.has(e.to))
-        return false;
-      if (mode === "before")
-        return e.delta !== "added";
-      if (mode === "after")
-        return e.delta !== "removed";
-      return true;
-    });
-    const L = layoutArch(nodes, edges, compact);
-    const V = newView("architecture", L.W, L.H);
-    const svg = V.svg;
-    svg.classList.add(`mode-${mode}`);
-    if (!nodes.length) {
-      V.empty = T.archEmpty;
-      return V;
-    }
-    markers(svg, "ar-", ["unchanged", "added", "changed", "removed", "violation", "key"]);
-    for (const b of L.bands) {
-      svg.appendChild(s("rect", { x: 0, y: b.y, width: L.W, height: b.h, rx: 14, class: "band" }));
-      if (L.compact)
-        svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: trunc(b.layer.name, 40) }));
-      else {
-        svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 - 2, class: "band-label", text: trunc(b.layer.name, 18) }));
-        svg.appendChild(s("text", {
-          x: 18,
-          y: b.y + b.h / 2 + 14,
-          class: "band-sub",
-          text: `${b.n} ${b.n === 1 ? T.component : T.kComponents}`
-        }));
-      }
-    }
-    const edgeLayer = s("g", { class: "edges" });
-    const labelLayer = s("g", { class: "edge-labels" });
-    const labels = [];
-    const freeSpot = (cx, cy, w, h) => {
-      const covers = (x, y) => [...Object.values(L.pos), ...labels].some((b) => x - w / 2 < b.x + b.w + 4 && x + w / 2 > b.x - 4 && y - h / 2 < b.y + b.h + 4 && y + h / 2 > b.y - 4);
-      for (const dy of [0, -14, 14, -28, 28, -42, 42, -56, 56]) {
-        for (const dx of [0, -(w / 2 + 14), w / 2 + 14])
-          if (!covers(cx + dx, cy + dy))
-            return [cx + dx, cy + dy];
-      }
-      return [cx, cy];
-    };
-    edgePaths(edges, L.pos, L).forEach((p, i) => {
-      const e = p.e;
-      const k = isNewViolation(e) || e.violation && withContext ? "violation" : e.delta;
-      const isKey = keyPairs[`${e.from}>${e.to}`] !== undefined;
-      const tip = `${compName(e.from)} → ${compName(e.to)} · ${e.headCount || e.baseCount} ${T.refs}` + (e.examples[0] ? ` · ${e.examples[0]}` : "") + (e.violation ? ` · ⚠ ${e.violation.rule}` : "");
-      const pid = `ep-${i}`;
-      const g = s("g", { class: `edge-g${isKey ? " key" : ""}`, "data-k": `e:${e.from}>${e.to}`, "data-a": e.from, "data-b": e.to }, s("title", { text: tip }), s("path", { d: p.d, class: "edge-hit" }), isKey ? s("path", { d: p.d, class: "edge-glow" }) : null, s("path", {
-        id: pid,
-        d: p.d,
-        class: `edge e-${k}${k === "violation" && e.violation?.preexisting ? " existing" : ""}`,
-        "marker-end": `url(#ar-${isKey && k !== "violation" ? "key" : k})`
-      }));
-      if ((isKey || e.delta === "added") && e.delta !== "removed") {
-        g.appendChild(s("circle", { r: isKey ? 4.5 : 3, class: `pulse${isKey ? " key" : ""}` }, s("animateMotion", { dur: isKey ? "2.2s" : "3s", repeatCount: "indefinite", begin: `-${r1(i % 5 * 0.4)}s` }, s("mpath", { href: `#${pid}` }))));
-      }
-      edgeLayer.appendChild(g);
-      const keyLabel = keyPairs[`${e.from}>${e.to}`];
-      if (isKey && keyLabel) {
-        const label = trunc(keyLabel, 40);
-        const lw = Math.ceil(textWidth(label, "600 11.5px")) + 20;
-        const [cx, cy] = freeSpot(p.mx, p.my, lw, 22);
-        labels.push({ x: cx - lw / 2, y: cy - 11, w: lw, h: 22 });
-        labelLayer.appendChild(s("g", { class: "edge-label", "data-a": e.from, "data-b": e.to }, s("rect", { x: r1(cx - lw / 2), y: r1(cy - 11), width: r1(lw), height: 22, rx: 11 }), s("text", { x: r1(cx), y: r1(cy + 4), "text-anchor": "middle", text: label })));
-      }
-    });
-    svg.appendChild(edgeLayer);
-    for (const n of nodes) {
-      const r = L.pos[n.id];
-      const c = compById[n.id];
-      V.geo[n.id] = r;
-      const nreq = reqsOfComp(n.id).length;
-      const neighbor = n.delta === "unchanged";
-      const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}${nreq ? ` · ◆ ${nreq}` : ""}`;
-      const g = s("g", {
-        class: `node st-${n.delta}`,
-        "data-k": n.id,
-        tabindex: "0",
-        role: "button",
-        "aria-label": `${c.name}, ${deltaLabel(n.delta, true)}`
-      }, s("title", { text: c.name + (summaryOf[n.id] ? `
-${summaryOf[n.id]}` : c.desc ? `
-${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12, class: "box" }), s("text", { x: r.x + 14, y: r.y + 19, class: "tag", text: neighbor ? "" : deltaLabel(n.delta).toUpperCase() }), neighbor ? null : s("text", { x: r.x + r.w - 12, y: r.y + 19, "text-anchor": "end", class: "delta" }, s("tspan", { class: "add", text: `+${n.additions}` }), s("tspan", { class: "del", text: ` −${n.deletions}` })), s("text", {
-        x: r.x + 14,
-        y: r.y + 39,
-        class: "name",
-        text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28)
-      }), s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }));
-      onNode?.(g, n.id);
-      svg.appendChild(g);
-    }
-    svg.appendChild(labelLayer);
-    V.expand = (set) => {
-      const keys = Object.keys(set);
-      const only = keys[0];
-      if (keys.length === 1 && only !== undefined && vis.has(only)) {
-        for (const e of edges) {
-          if (e.from === only)
-            set[e.to] = true;
-          if (e.to === only)
-            set[e.from] = true;
-        }
-      }
-      return set;
-    };
-    V.focusBoxKeys = (ids) => ids.filter((x) => vis.has(x));
-    return V;
-  }
+  // report/flow.ts
   function buildFlow(fl) {
     const parts = [];
     for (const x of fl.steps)
@@ -2169,214 +2310,122 @@ ${fields.join(`
     g.appendChild(text);
     return g;
   }
-  function buildData(onNode) {
+  function flowNotes(fl) {
+    const out = [];
+    if (fl.trigger)
+      out.push(h("span", { class: "flow-trigger" }, h("b", { text: `${T.startsAt} ` }), h("code", { text: fl.trigger })));
+    const ref = cfg.referenceFlows.find((f) => f.id === fl.id);
+    if (fl.scenario) {
+      const [rid, sid] = fl.scenario.split("#");
+      const r = reqById[rid];
+      const sc = r?.scenarios.find((x) => x.id === sid);
+      if (r && sc)
+        out.push(scenarioStrip(r, sc, true));
+    }
+    if (ref) {
+      const diff = (a, b) => {
+        const pool = b.map((x) => `${x.from}>${x.to}`);
+        return a.filter((x) => {
+          const i = pool.indexOf(`${x.from}>${x.to}`);
+          if (i < 0)
+            return true;
+          pool.splice(i, 1);
+          return false;
+        });
+      };
+      const extra = diff(fl.steps, ref.steps);
+      const missing = diff(ref.steps, fl.steps);
+      out.push(h("span", { class: "muted" }, h("b", { text: `${T.vsReference} “${ref.title || ref.id}”: ` }), !extra.length && !missing.length ? T.matchesReference : [
+        extra.length ? `${extra.length} ${T.extraSteps}` : "",
+        extra.length && missing.length ? " · " : "",
+        missing.length ? `${missing.length} ${T.missingSteps} (${missing.map((x) => `${compName(x.from)}→${compName(x.to)}${x.message ? `: ${x.message}` : ""}`).join("; ")})` : ""
+      ]));
+    }
+    const unverified = fl.steps.filter((x) => !x.verified);
+    if (unverified.length) {
+      out.push(h("span", { class: "warn-text" }, `? ${T.unverifiedNote} ${unverified.map((x) => `${compName(x.from)} → ${compName(x.to)}`).join(", ")}`));
+    }
+    return out;
+  }
+
+  // report/inspector.ts
+  function componentDetails(id, nav) {
+    const c = compById[id];
+    const n = changeComp[id] ?? { id, delta: "unchanged", files: 0, additions: 0, deletions: 0 };
+    const files = facts.files.filter((f) => f.component === id);
+    const syms = facts.symbols.filter((sy) => files.some((f) => f.path === sy.file));
+    const outE = facts.dependencies.filter((e) => e.from === id);
+    const inE = facts.dependencies.filter((e) => e.to === id);
+    const reqs = reqsOfComp(id);
+    return [
+      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
+      h("div", { class: "insp-title" }, h("span", { class: `badge ${n.delta}`, text: deltaLabel(n.delta, true) }), h("h3", { text: c ? c.name : id })),
+      h("div", {
+        class: "faint",
+        text: layerName(id) + (n.delta !== "unchanged" ? ` · ${n.files} ${n.files === 1 ? T.file : T.kFiles} · +${n.additions} −${n.deletions}` : "")
+      }),
+      summaryOf[id] ? h("p", { class: "insp-summary", text: summaryOf[id] }) : c?.desc ? h("p", { class: "insp-summary muted", text: c.desc }) : null,
+      files.length ? inspList(T.files, files.map((f) => h("div", { class: "insp-row" }, h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }), fileLink(f.path, f.path.split("/").pop()), h("span", { class: "nums" }, h("span", { class: "add", text: `+${f.additions}` }), " ", h("span", { class: "del", text: `−${f.deletions}` }))))) : null,
+      syms.length ? inspList(T.symbols, syms.slice(0, 12).map((sy) => h("div", { class: "insp-row" }, h("span", {
+        class: `badge ${sy.delta}`,
+        text: sy.delta === "added" ? "+" : sy.delta === "removed" ? "−" : "~"
+      }), fileLink(`${sy.file}:${sy.line}`, sy.name)))) : null,
+      outE.length ? inspList(T.dependsOn, outE.map(edgeRow((e) => e.to, nav))) : null,
+      inE.length ? inspList(T.usedBy, inE.map(edgeRow((e) => e.from, nav))) : null,
+      reqs.length ? inspList(T.reqs, reqs.map(reqRow)) : null
+    ];
+  }
+  function entityDetails(eid, nav) {
+    const e = entById[eid];
     const dm = DM;
-    const EW = 250;
-    const GX = 90;
-    const GY = 70;
-    const PER = 3;
-    const order = { added: 0, changed: 1, removed: 2, unchanged: 3 };
-    const ents = [...dm.entities].sort((a, b) => order[a.delta] - order[b.delta] || byCompRank(a.component ?? "", b.component ?? "") || (a.name < b.name ? -1 : 1));
-    const migrations = facts.files.filter((f) => f.category === "migration");
-    const top = migrations.length ? 34 + Math.min(migrations.length, 4) * 20 + 30 : 10;
-    const heights = ents.map((e) => 52 + Math.max(1, (e.fields ?? []).length) * 19 + 10);
-    const rows = Math.ceil(ents.length / PER);
-    const rowH = [];
-    for (let r = 0;r < rows; r++)
-      rowH.push(Math.max(...heights.slice(r * PER, r * PER + PER)));
-    const cols = Math.min(PER, ents.length);
-    const W = Math.max(cols * EW + (cols - 1) * GX, 600);
-    const pos = {};
-    let y = top;
-    ents.forEach((e, i) => {
-      const r = Math.floor(i / PER);
-      const c = i % PER;
-      const inRow = Math.min(PER, ents.length - r * PER);
-      const x0 = (W - (inRow * EW + (inRow - 1) * GX)) / 2;
-      const ry = top + rowH.slice(0, r).reduce((a, v) => a + v + GY, 0);
-      pos[e.id] = { x: x0 + c * (EW + GX), y: ry, w: EW, h: heights[i] };
-      y = Math.max(y, ry + heights[i]);
-    });
-    const V = newView("data", W, y + 10);
-    const svg = V.svg;
-    if (migrations.length) {
-      const mg = s("g", { class: "migrations" }, s("text", { x: 0, y: 14, class: "col-label", text: T.migrations.toUpperCase() }));
-      migrations.slice(0, 4).forEach((f, i) => {
-        const letter = gitLetter(f);
-        const text = s("text", { x: 0, y: 38 + i * 20, class: "mig" }, s("tspan", { class: `gs-${letter}`, text: `${letter}  ` }), s("tspan", { text: trunc(f.path, 90) }));
-        mg.appendChild(onOpen(text, f.path));
-      });
-      if (migrations.length > 4)
-        mg.appendChild(s("text", { x: 0, y: 38 + 4 * 20, class: "info", text: `+${migrations.length - 4}` }));
-      svg.appendChild(mg);
-    }
-    const links = s("g", { class: "links" });
-    svg.appendChild(links);
-    V.links = [];
-    for (const rl of dm.relations) {
-      const a = pos[rl.from];
-      const b = pos[rl.to];
-      if (!a || !b)
-        continue;
-      const ax = a.x + a.w / 2;
-      const ay = a.y + a.h / 2;
-      const bx = b.x + b.w / 2;
-      const by = b.y + b.h / 2;
-      let d;
-      let x1;
-      let y1;
-      let x2;
-      let y2;
-      if (Math.abs(ay - by) < 10 || Math.abs(bx - ax) > Math.abs(by - ay)) {
-        x1 = bx > ax ? a.x + a.w : a.x;
-        x2 = bx > ax ? b.x : b.x + b.w;
-        y1 = a.y + 26;
-        y2 = b.y + 26;
-        const mx = (x1 + x2) / 2;
-        d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-      } else {
-        x1 = ax;
-        x2 = bx;
-        y1 = by > ay ? a.y + a.h : a.y;
-        y2 = by > ay ? b.y : b.y + b.h;
-        const my = (y1 + y2) / 2;
-        d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
-      }
-      links.appendChild(s("path", { d, class: `rel rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }));
-      if (rl.label) {
-        const lx = (x1 + x2) / 2;
-        const ly = (y1 + y2) / 2;
-        const lw = Math.ceil(textWidth(rl.label, "11px", MONO)) + 16;
-        links.appendChild(s("g", { class: `rel-label rc-${rl.delta}`, "data-a": `ent:${rl.from}`, "data-b": `ent:${rl.to}` }, s("rect", { x: r1(lx - lw / 2), y: r1(ly - 10), width: r1(lw), height: 20, rx: 10 }), s("text", { x: r1(lx), y: r1(ly + 4), "text-anchor": "middle", text: rl.label })));
-      }
-      V.links.push([`ent:${rl.from}`, `ent:${rl.to}`]);
-    }
-    for (const e of ents) {
-      const b = pos[e.id];
-      const key = `ent:${e.id}`;
-      V.geo[key] = b;
-      const fields = e.fields ?? [];
-      const g = s("g", { class: `entity st-${e.delta}`, "data-k": key, tabindex: "0", role: "button" }, s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 12, class: "box" }), s("rect", { x: b.x, y: b.y, width: b.w, height: 40, rx: 12, class: "head" }), s("rect", { x: b.x, y: b.y + 28, width: b.w, height: 12, class: "head" }), s("text", { x: b.x + 14, y: b.y + 25, class: "name", text: trunc(e.name, 24) }), s("text", {
-        x: b.x + b.w - 12,
-        y: b.y + 25,
-        "text-anchor": "end",
-        class: "tag",
-        text: e.delta === "unchanged" ? "" : deltaLabel(e.delta).toUpperCase()
-      }));
-      if (!fields.length) {
-        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62, class: "info", text: e.component ? compName(e.component) : "" }));
-      }
-      fields.forEach((f, i) => {
+    const rels = dm.relations.filter((r) => r.from === eid || r.to === eid);
+    const fields = e.fields ?? [];
+    return [
+      h("button", { class: "back", text: `← ${T.back}`, onclick: nav.back }),
+      h("div", { class: "insp-title" }, h("span", { class: `badge ${e.delta}`, text: deltaLabel(e.delta) }), h("h3", { text: e.name })),
+      e.component ? h("div", null, h("a", {
+        href: "#",
+        class: "faint",
+        text: compName(e.component),
+        onclick: (ev) => {
+          ev.preventDefault();
+          nav.inspect(e.component);
+        }
+      })) : null,
+      fields.length ? inspList(T.fields, fields.map((f) => {
         const k = fieldDelta(f);
-        g.appendChild(s("text", { x: b.x + 14, y: b.y + 62 + i * 19, class: `field f-${k}` }, s("tspan", { class: "fmark", text: `${FIELD_MARK[k] || " "} ` }), s("tspan", { text: trunc(fieldText(f), 28) })));
-      });
-      onNode?.(g, key);
-      svg.appendChild(g);
-    }
-    V.keyOf = (id) => id.slice(0, 4) === "ent:" ? id : `ent:${id}`;
-    V.expand = (set) => {
-      const add = {};
-      if (Object.keys(set).length === 1) {
-        for (const l of V.links ?? []) {
-          if (set[l[0]])
-            add[l[1]] = true;
-          if (set[l[1]])
-            add[l[0]] = true;
+        return h("div", { class: `insp-row field-row f-${k}` }, h("span", { class: "fmark", text: FIELD_MARK[k] || "·" }), h("code", { text: fieldText(f) }));
+      })) : null,
+      rels.length ? inspList(T.relations, rels.map((r) => {
+        const other = r.from === eid ? r.to : r.from;
+        return h("div", { class: "insp-row" }, h("span", { class: `badge ${r.delta}`, text: r.label || "—" }), h("a", {
+          href: "#",
+          text: entById[other]?.name ?? other,
+          onclick: (ev) => {
+            ev.preventDefault();
+            nav.entity(other);
+          }
+        }));
+      })) : null,
+      e.evidence ? h("div", { class: "insp-list" }, h("h4", { text: T.evidence }), codeExcerpt(e.evidence)) : null
+    ];
+  }
+  function edgeRow(other, nav) {
+    return (e) => {
+      const k = isNewViolation(e) ? "violation" : e.delta;
+      const mark = { added: "+", removed: "−", changed: "~", unchanged: "=", violation: "!" };
+      return h("div", { class: "insp-row" }, h("span", { class: `badge ${k}`, text: mark[k] }), h("a", {
+        href: "#",
+        text: compName(other(e)),
+        onclick: (ev) => {
+          ev.preventDefault();
+          nav.inspect(other(e));
         }
-      }
-      Object.assign(set, add);
-      return set;
+      }), e.examples[0] ? fileLink(e.examples[0], e.examples[0].split("/").pop()) : null);
     };
-    return V;
   }
-  var VIEWS = [{ id: "architecture", title: T.architecture }];
-  for (const fl of ex?.flows ?? [])
-    VIEWS.push({ id: `flow:${fl.id}`, title: fl.title, flow: fl });
-  if (DM)
-    VIEWS.push({ id: "data", title: T.dataView });
-  var flowById = {};
-  for (const fl of ex?.flows ?? [])
-    flowById[fl.id] = fl;
-  function viewTitle(view) {
-    if (view === "requirements")
-      return T.reqs;
-    return VIEWS.find((v) => v.id === view)?.title ?? T.architecture;
-  }
-  function autoStory() {
-    const steps = [];
-    const touched = facts.components.filter((c) => c.delta !== "unchanged");
-    const layers = new Set(touched.map((c) => compById[c.id]?.layer));
-    steps.push({
-      heading: tf("autoOverviewH", { n: touched.length, m: layers.size }),
-      body: tf("autoOverviewB", { f: st.files, a: fmt(st.additions), d: fmt(st.deletions) }),
-      view: "architecture",
-      focus: []
-    });
-    for (const e of facts.dependencies.filter((e) => e.violation && !e.violation.preexisting).slice(0, 2)) {
-      steps.push({
-        heading: tf("autoViolH", { a: compName(e.from), b: compName(e.to) }),
-        body: e.violation?.rule ?? "",
-        view: "architecture",
-        focus: [e.from, e.to],
-        code: e.examples[0]
-      });
-    }
-    for (const c of touched.filter((c) => c.delta === "added").slice(0, 2)) {
-      steps.push({
-        heading: tf("autoNewH", { x: compName(c.id) }),
-        body: tf("autoNewB", { l: layerName(c.id) }),
-        view: "architecture",
-        focus: [c.id]
-      });
-    }
-    for (const c of touched.filter((c) => c.delta === "removed").slice(0, 1)) {
-      steps.push({
-        heading: tf("autoRemovedH", { x: compName(c.id) }),
-        body: T.autoRemovedB,
-        view: "architecture",
-        focus: [c.id]
-      });
-    }
-    touched.filter((c) => c.delta === "changed").sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions) || byCompRank(a.id, b.id)).slice(0, Math.max(0, 5 - steps.length)).forEach((c) => {
-      steps.push({
-        heading: tf("autoChangedH", { x: compName(c.id) }),
-        body: tf("autoChangedB", { n: c.files, a: c.additions, d: c.deletions }),
-        view: "architecture",
-        focus: [c.id]
-      });
-    });
-    if (OS && REQS.length) {
-      for (const c of OS.changes) {
-        if (c.requirements.length) {
-          steps.push({
-            heading: tf("autoSpecH", { n: c.requirements.length, id: c.id }),
-            body: c.why || T.autoSpecB,
-            view: "requirements",
-            focus: c.requirements.map((r) => r.id)
-          });
-        }
-      }
-    }
-    return steps;
-  }
-  var STORY = ex?.story.length ? ex.story : autoStory();
-  var storyIsAuto = !ex?.story.length;
-  var MEANINGFUL = new Set;
-  for (const e of facts.dependencies) {
-    if (e.delta === "added" || e.delta === "removed" || isNewViolation(e) || keyPairs[`${e.from}>${e.to}`] !== undefined) {
-      MEANINGFUL.add(e.from);
-      MEANINGFUL.add(e.to);
-    }
-  }
-  for (const step of STORY)
-    if ((step.view ?? "architecture") === "architecture")
-      for (const id of step.focus ?? [])
-        MEANINGFUL.add(id);
-  for (const m of Object.values(specMap))
-    for (const id of m.components ?? [])
-      MEANINGFUL.add(id);
-  var isContext = (c) => c.delta === "unchanged" && !MEANINGFUL.has(c.id);
-  var CONTEXT_COUNT = facts.components.filter(isContext).length;
+
+  // report/map.ts
   function renderMap() {
     const compactQ = window.matchMedia ? window.matchMedia("(max-width: 720px)") : { matches: false };
     let archMode = store("ec:arch-mode") ?? "delta";
@@ -2864,43 +2913,8 @@ ${fields.join(`
     };
     return root;
   }
-  function flowNotes(fl) {
-    const out = [];
-    if (fl.trigger)
-      out.push(h("span", { class: "flow-trigger" }, h("b", { text: `${T.startsAt} ` }), h("code", { text: fl.trigger })));
-    const ref = cfg.referenceFlows.find((f) => f.id === fl.id);
-    if (fl.scenario) {
-      const [rid, sid] = fl.scenario.split("#");
-      const r = reqById[rid];
-      const sc = r?.scenarios.find((x) => x.id === sid);
-      if (r && sc)
-        out.push(scenarioStrip(r, sc, true));
-    }
-    if (ref) {
-      const diff = (a, b) => {
-        const pool = b.map((x) => `${x.from}>${x.to}`);
-        return a.filter((x) => {
-          const i = pool.indexOf(`${x.from}>${x.to}`);
-          if (i < 0)
-            return true;
-          pool.splice(i, 1);
-          return false;
-        });
-      };
-      const extra = diff(fl.steps, ref.steps);
-      const missing = diff(ref.steps, fl.steps);
-      out.push(h("span", { class: "muted" }, h("b", { text: `${T.vsReference} “${ref.title || ref.id}”: ` }), !extra.length && !missing.length ? T.matchesReference : [
-        extra.length ? `${extra.length} ${T.extraSteps}` : "",
-        extra.length && missing.length ? " · " : "",
-        missing.length ? `${missing.length} ${T.missingSteps} (${missing.map((x) => `${compName(x.from)}→${compName(x.to)}${x.message ? `: ${x.message}` : ""}`).join("; ")})` : ""
-      ]));
-    }
-    const unverified = fl.steps.filter((x) => !x.verified);
-    if (unverified.length) {
-      out.push(h("span", { class: "warn-text" }, `? ${T.unverifiedNote} ${unverified.map((x) => `${compName(x.from)} → ${compName(x.to)}`).join(", ")}`));
-    }
-    return out;
-  }
+
+  // report/sections.ts
   function renderDecisions() {
     if (!ex?.decisions.length)
       return null;
@@ -2943,6 +2957,8 @@ ${fields.join(`
       outside.length ? group(null, T.outsideMap, null, null, outside) : null
     ]), tf("leadChanges", { c: comps.length, f: nFiles }));
   }
+
+  // report/app.ts
   function themeButton() {
     const modes = ["auto", "light", "dark"];
     let cur = store("ec:theme") ?? "auto";

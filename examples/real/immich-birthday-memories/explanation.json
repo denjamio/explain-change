@@ -103,7 +103,7 @@
     {
       "title": "At most 25 photos, spread over the years",
       "why": "A person with many birthdays gets 1 photo from 25 random years, not only the latest years.",
-      "basis": "inferred",
+      "basis": "pr",
       "alternative": "The 25 most recent photos.",
       "evidence": "server/src/services/memory.service.ts:84-151"
     },

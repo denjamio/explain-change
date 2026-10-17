@@ -138,6 +138,21 @@ describe("GitHub", () => {
     throwsUser(() => prSource(path, fakeHosts().github, "42", []), "gh auth login");
   });
 
+  test("a merged PR without a merge ref: its head against the target before the merge commit", () => {
+    const server = repo();
+    server.git("update-ref", "refs/pull/42/head", "feature");
+    server.git("checkout", "-q", "main");
+    server.git("merge", "-q", "--no-ff", "feature", "-m", "Merge PR 42");
+    const clone = repo({ empty: true });
+    const path = `${clone.path}/c`;
+    spawnSync("git", ["clone", "-q", server.path, path], { env: process.env });
+    const notes: string[] = [];
+    const merged = { ...pr, state: "MERGED", mergeable: "UNKNOWN" };
+    const src = prSource(path, fakeHosts({ gh: new FakeGh([ok(merged)]) }).github, "42", notes);
+    expect(changed(path, src)).toEqual(["app/models/order.rb"]);
+    expect(notes[0]).toContain("merged");
+  });
+
   test("`pr` without an id finds the branch's open PR", () => {
     const r = repo();
     const gh = new FakeGh([ok([{ number: 42, baseRefName: "main" }])]);

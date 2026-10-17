@@ -81,7 +81,7 @@
     {
       "title": "A flag on the listing, not a deleted listing",
       "why": "Staff hide a variant in a channel and keep its price, cost and prior price for when they show it again.",
-      "basis": "inferred",
+      "basis": "pr",
       "alternative": "Delete the variant channel listing.",
       "evidence": "saleor/product/models.py:552-555"
     },

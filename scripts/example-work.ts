@@ -62,7 +62,7 @@ if (command === "open") {
   await buildAssets();
   ensureDir(dir);
   const repo = target.build(dir);
-  const p = cli(["local", "--base", target.base], repo);
+  const p = cli(target.args, repo);
   if (p.status !== 0) throw new Error(p.stdout + p.stderr);
   if (existsSync(target.explanation))
     writeFileSync(join(repo, ".explain-change", "reference.json"), readFileSync(target.explanation));

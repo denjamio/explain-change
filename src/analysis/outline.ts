@@ -3,7 +3,7 @@ import type { DetectedFlow, Facts, FileFacts, Hunk, Outline } from "../contract/
 import { LOCATION_RE } from "../contract/facts.ts";
 import { langOf } from "../core/lang.ts";
 import { basename } from "../core/paths.ts";
-import { byKeys } from "../core/text.ts";
+import { byKeys, escapeRegExp } from "../core/text.ts";
 import { mappableRequirements } from "./openspec.ts";
 import { declarationOf } from "./symbols.ts";
 
@@ -35,30 +35,81 @@ export const locationFile = (loc: string) => LOCATION_RE.exec(loc)?.[1] ?? loc;
 export interface HunkContext {
   symbolLines: Set<string>; // "file\0line"
   crossFiles: Set<string>; // files whose references create, remove or break a dependency
+  crossLines: Set<string>; // "file\0line" of those references
 }
 
 export function hunkContext(facts: Pick<FactsCore, "symbols" | "dependencies">): HunkContext {
+  const examples = facts.dependencies
+    .filter((e) => e.delta !== "unchanged" || e.violation)
+    .flatMap((e) => e.examples)
+    .map((loc) => LOCATION_RE.exec(loc))
+    .filter((m): m is RegExpExecArray => Boolean(m));
   return {
     symbolLines: new Set(facts.symbols.map((s) => `${s.file}\0${s.line}`)),
-    crossFiles: new Set(
-      facts.dependencies
-        .filter((e) => e.delta !== "unchanged" || e.violation)
-        .flatMap((e) => e.examples.map(locationFile)),
-    ),
+    crossFiles: new Set(examples.map((m) => m[1] as string)),
+    crossLines: new Set(examples.map((m) => `${m[1]}\0${m[2]}`)),
   };
 }
 
-/** 0 = never shown. Code in a component beats config and migrations, which beat unmapped code; public symbols and dependency changes add to it. */
+/**
+ * Files a framework asks for that only register or re-export what other files declare: their public symbols say
+ * nothing about the change (Django's AppConfig in apps.py, a package's __init__.py, .NET's assembly attributes).
+ */
+const WIRING_FILES = new Set(["apps.py", "__init__.py", "AssemblyInfo.cs", "GlobalUsings.cs"]);
+
+/** An import, require or using line: the digest already lists the dependency it creates. */
+const IMPORT_LINE_RE = /^\s*(?:import|from\s+\S+\s+import|require(?:_relative)?|using|export\s+.*\bfrom)\b/;
+
+/** The names an import line brings in: a, b and c from `from m import a, b as c` or `import { a, b as c } from "m"`. */
+function importedNames(line: string): string[] {
+  const m = /^\s*(?:from\s+\S+\s+import|import|export)\s+(.*?)(?:\s+from\s.*)?;?\s*$/.exec(line);
+  return (m?.[1] ?? "").match(/[A-Za-z_$][\w$]*/g)?.filter((w) => !IMPORT_WORDS.has(w)) ?? [];
+}
+const IMPORT_WORDS = new Set(["as", "type", "typeof", "from", "import", "export"]);
+
+/** The names the change's added import lines bring into a file: a hunk that uses one holds the new dependency. */
+function addedImports(f: FileFacts): RegExp | null {
+  const names = new Set(
+    f.hunks.flatMap((h) =>
+      h.lines
+        .filter(([mark, body]) => mark === "+" && IMPORT_LINE_RE.test(body))
+        .flatMap(([, body]) => importedNames(body)),
+    ),
+  );
+  return names.size ? new RegExp(`(?<![\\w$])(?:${[...names].map(escapeRegExp).join("|")})(?![\\w$])`) : null;
+}
+
+/** Whether every changed line of a hunk is an import or blank: the dependency without the code that uses it. */
+const importsOnly = (h: Hunk) => {
+  const changed = h.lines.filter(([mark, body]) => mark !== " " && body.trim());
+  return changed.length > 0 && changed.every(([, body]) => IMPORT_LINE_RE.test(body));
+};
+
+/**
+ * 0 = never shown. Code in a component beats config and migrations, which beat unmapped code; public symbols and
+ * dependency changes add to it, most for the hunk that holds the reference (or uses a name the change imports). A
+ * hunk of imports only, or of a file a framework asks for (WIRING_FILES), shows the least: what it says is already in
+ * the digest's dependencies.
+ */
 export function hunkScore(f: FileFacts, h: Hunk, ctx: HunkContext): number {
   if (f.category === "test" || f.category === "docs" || f.category === "ignored") return 0;
+  if (WIRING_FILES.has(basename(f.path)) || importsOnly(h)) return 1;
   let score = f.category === "code" ? (f.component ? 3 : 1) : 2;
+  let symbol = false;
+  let reference = false;
   for (let n = h.newStart; n < h.newStart + Math.max(h.newLines, 1); n++) {
-    if (ctx.symbolLines.has(`${f.path}\0${n}`)) {
-      score += 3;
-      break;
-    }
+    symbol ||= ctx.symbolLines.has(`${f.path}\0${n}`);
+    reference ||= ctx.crossLines.has(`${f.path}\0${n}`);
   }
-  if (ctx.crossFiles.has(f.path)) score += 2;
+  if (symbol) score += 3;
+  if (!reference && ctx.crossFiles.has(f.path)) {
+    const uses = addedImports(f);
+    reference = Boolean(
+      uses && h.lines.some(([mark, body]) => mark === "+" && !IMPORT_LINE_RE.test(body) && uses.test(body)),
+    );
+  }
+  if (reference) score += 2;
+  else if (ctx.crossFiles.has(f.path)) score += 1;
   return score;
 }
 
@@ -121,6 +172,10 @@ function storyWeight(facts: FactsCore, id: string): [number, number] {
   return [symbols * 3 + deps * 2 + model, code];
 }
 
+/** A component that rewrites at least this many lines, and this share of the change's code, earns a story step. */
+const REWRITE_MIN_LINES = 50;
+const REWRITE_SHARE = 0.3;
+
 /**
  * Where a component's lane puts it in the story: 0 for the inner lanes, 1 for the entry lane (the top one), 2 for
  * the bottom one with 3 lanes or more (the shared kernel or the platform; with 2, the bottom lane is the domain).
@@ -146,7 +201,6 @@ const ENTRY_RES: [string, RegExp][] = [
   ["command", /(?:^|\/)(?:management\/commands|commands|lib\/tasks|bin)\//],
 ];
 const NOT_ENTRY_RE = /\.(?:erb|haml|slim|html?|jinja2?|j2|hbs|mustache|liquid|txt|md)$/;
-const IMPORT_LINE_RE = /^\s*(?:import|from\s+\S+\s+import|require(?:_relative)?|using|export\s+.*\bfrom)\b/;
 const CALL_RE = /(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*(?:\.[a-z_]\w*[?!]?)?|\b[a-z_]\w*\.[a-z_]\w*[?!]?(?=\()/;
 const SCOPE_KINDS = new Set(["class", "module", "interface", "record", "struct"]);
 
@@ -293,13 +347,19 @@ export function outline(facts: FactsCore): Outline {
   // folder of locales is no headline). The lane decides first, so every change reads the same way: the story
   // opens where the behavior is decided (the inner lanes), then its entry points, then the bottom lane. Weight only
   // orders a lane. A component with no weight (no public symbol, dependency gained or lost, or migration) gets no
-  // step of its own unless nothing else does: its summary and the overview say it, so the story stays short.
+  // step of its own unless nothing else does, or unless it holds a large share of the code the change rewrites (a
+  // refactor inside existing functions has no new symbol): its summary and the overview say it, so the story stays
+  // short.
   const lane = laneOf(facts);
-  const ranked = touched
-    .map((c) => {
-      const [weight, code] = storyWeight(facts, c.id);
-      return { c, weight: weight + (c.delta === "changed" ? 0 : 2), code };
-    })
+  const weights = touched.map((c) => ({ c, w: storyWeight(facts, c.id) }));
+  const churn = weights.reduce((n, x) => n + x.w[1], 0);
+  const rewrites = (code: number) => code >= REWRITE_MIN_LINES && code >= churn * REWRITE_SHARE;
+  const ranked = weights
+    .map(({ c, w: [weight, code] }) => ({
+      c,
+      weight: weight + (c.delta === "changed" ? 0 : 2) + (rewrites(code) ? 1 : 0),
+      code,
+    }))
     .sort(byKeys((x) => [x.weight > 0 ? lane(x.c.id) : 3, -x.weight, -x.code, x.c.id]));
   const weighted = ranked.filter((x) => x.weight > 0);
   for (const { c } of (weighted.length ? weighted : ranked.slice(0, 1)).slice(0, Math.max(0, 4 - story.length))) {

@@ -271,6 +271,9 @@ export function smoke(html: string, onReady?: (app: FakeNode) => void): SmokeRes
     RegExp,
     Error,
     encodeURIComponent,
+    TextEncoder, // the PR's file links hash their path (GitHub's diff anchors)
+    Uint8Array,
+    Uint32Array,
   };
   win.window = win;
   runInNewContext(js, win, { filename: "report.js" });

@@ -80,17 +80,25 @@ code { font-family: var(--mono); font-size: .9em; }
 </svg></span>explain-change</div>
 <h1>See what a code change does</h1>
 <p class="lead">Its architecture, data flows and design decisions, in one page. Each example below is a real pull request of an open-source product, rendered as one offline HTML file. The CLI computes the facts; an agent writes the prose.</p>
-<div class="actions"><a class="btn primary" href="real-bitwarden-dotnet-bulk-folder-delete.html">Open an example</a><a class="btn" href="https://github.com/denjamio/explain-change#quick-start">Install</a><a class="btn" href="https://github.com/denjamio/explain-change">GitHub</a></div>
+<div class="actions"><a class="btn primary" href="real-ark-ts-dashboard-url-params.html">Open an example</a><a class="btn" href="https://github.com/denjamio/explain-change#quick-start">Install</a><a class="btn" href="https://github.com/denjamio/explain-change">GitHub</a></div>
 </header>
 <ul class="reading"><li><b>The map</b>Your layers as lanes and components as boxes. Green is added, blue changed, gray removed; a red arrow breaks one of your rules.</li><li><b>The story</b>A few steps walk through the change. Each one moves the map to what changed and shows the code.</li><li><b>The why</b>Design decisions with the alternative not taken, then each changed component and its files.</li></ul>
 <section id="real"><h2>Real pull requests</h2><p class="section-lead">2 pull requests from each of 5 open-source products, in Rails, Django, TypeScript and .NET. Each product's config was written with the configure skill, each story by an agent.</p><div class="grid"><article class="card">
+<div class="eyebrow">TypeScript · OpenSpec</div>
+<h3><a class="open" href="real-ark-ts-dashboard-url-params.html">Ark</a></h3>
+<p class="change">Dashboard URL params per page (#3147)</p>
+<p class="shows">A spec-driven PR: an OpenSpec change archived into the main spec, its 8 requirements mapped to code and tests, and decisions taken from its design.</p>
+<ul class="chips"><li>6-step story</li><li>5 decisions</li><li>OpenSpec</li><li>Glossary</li></ul>
+<div class="foot-row"><span class="stats">48 files · <span class="add">+1255</span> <span class="del">−356</span> · 3 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
+<div class="links"><a href="https://github.com/mckinsey/agents-at-scale-ark/pull/3147">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/ark-dashboard-url-params">Config and explanation ↗</a></div>
+</article><article class="card">
 <div class="eyebrow">C# / .NET</div>
 <h3><a class="open" href="real-bitwarden-dotnet-bulk-folder-delete.html">Bitwarden</a></h3>
 <p class="change">Bulk folder delete (#8157)</p>
 <p class="shows">Ports and adapters in 1 change: an endpoint, a Core command, 1 repository port and its 2 adapters, Dapper and Entity Framework.</p>
 <ul class="chips"><li>5-step story</li><li>1 data flow</li><li>Data model</li><li>5 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">13 files · <span class="add">+710</span> <span class="del">−2</span> · 5 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/bitwarden/server/commit/e93b962371d80964556f5590c6615f5160a437a1">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/bitwarden-bulk-folder-delete">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/bitwarden/server/pull/8157">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/bitwarden-bulk-folder-delete">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">C# / .NET</div>
 <h3><a class="open" href="real-bitwarden-dotnet-invite-staged-users.html">Bitwarden</a></h3>
@@ -98,7 +106,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">A bulk command with per-member results, seat reservation with rollback, and a new read on both repository adapters.</p>
 <ul class="chips"><li>5-step story</li><li>2 data flows</li><li>Data model</li><li>5 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">18 files · <span class="add">+2393</span> <span class="del">−9</span> · 5 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/bitwarden/server/commit/c30db9c7efc892796a72984d8e058b8801b0dd92">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/bitwarden-invite-staged-users">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/bitwarden/server/pull/8283">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/bitwarden-invite-staged-users">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">Ruby on Rails</div>
 <h3><a class="open" href="real-chatwoot-rails-branded-email-layouts.html">Chatwoot</a></h3>
@@ -106,7 +114,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">Per-inbox Liquid layouts: a 3-scope template lookup in the view resolver, partial unique indexes and a feature flag.</p>
 <ul class="chips"><li>5-step story</li><li>2 data flows</li><li>Data model</li><li>5 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">25 files · <span class="add">+1018</span> <span class="del">−21</span> · 4 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/chatwoot/chatwoot/commit/c420edce58f03b1f3d43932dcea968991935c89e">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/chatwoot-branded-email-layouts">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/chatwoot/chatwoot/pull/14936">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/chatwoot-branded-email-layouts">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">Ruby on Rails</div>
 <h3><a class="open" href="real-chatwoot-rails-whatsapp-number-health.html">Chatwoot</a></h3>
@@ -114,7 +122,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">A scheduled sync through the WhatsApp channel adapter: an hourly scheduler, 1 job per channel, guarded writes and new channel columns.</p>
 <ul class="chips"><li>5-step story</li><li>1 data flow</li><li>Data model</li><li>5 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">19 files · <span class="add">+1274</span> <span class="del">−161</span> · 4 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/chatwoot/chatwoot/commit/d644c207f021cac7e692bac8a1c32492af350846">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/chatwoot-whatsapp-number-health">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/chatwoot/chatwoot/pull/15100">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/chatwoot-whatsapp-number-health">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">TypeScript</div>
 <h3><a class="open" href="real-immich-ts-birthday-memories.html">Immich</a></h3>
@@ -122,7 +130,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">A new kind of memory: a nightly job reads people from another context and their photos, with a leap-day rule.</p>
 <ul class="chips"><li>5-step story</li><li>1 data flow</li><li>Data model</li><li>5 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">23 files · <span class="add">+1101</span> <span class="del">−55</span> · 7 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/immich-app/immich/commit/d6d094738366aaf4d2fcefdfe2702f50c72ba5b0">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/immich-birthday-memories">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/immich-app/immich/pull/30831">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/immich-birthday-memories">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">TypeScript</div>
 <h3><a class="open" href="real-immich-ts-workflow-logging.html">Immich</a></h3>
@@ -130,7 +138,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">A run log through every layer: SvelteKit modal, generated SDK, NestJS endpoint, service, Kysely repository and a new table.</p>
 <ul class="chips"><li>5-step story</li><li>2 data flows</li><li>Data model</li><li>4 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">20 files · <span class="add">+636</span> <span class="del">−19</span> · 9 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/immich-app/immich/commit/447cc40a509e22fa34fed76d14552cd48be128e5">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/immich-workflow-logging">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/immich-app/immich/pull/29878">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/immich-workflow-logging">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">Ruby on Rails</div>
 <h3><a class="open" href="real-maybe-rails-balance-sheet-cache.html">maybe</a></h3>
@@ -138,7 +146,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">Cache invalidation by design: sync transitions touch 2 family timestamps that key the balance sheet, sync status and sparkline caches.</p>
 <ul class="chips"><li>5-step story</li><li>2 data flows</li><li>Data model</li><li>4 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">35 files · <span class="add">+528</span> <span class="del">−467</span> · 9 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/maybe-finance/maybe/commit/10ce2c8e23b4695030982351f5bf09d5a6e4e803">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/maybe-balance-sheet-cache">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/maybe-finance/maybe/pull/2356">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/maybe-balance-sheet-cache">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">Ruby on Rails</div>
 <h3><a class="open" href="real-maybe-rails-data-exports.html">maybe</a></h3>
@@ -146,7 +154,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">A family data export: a thin controller, a background job, a PORO in the Family namespace and a new FamilyExport table.</p>
 <ul class="chips"><li>5-step story</li><li>2 data flows</li><li>Data model</li><li>4 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">20 files · <span class="add">+706</span> <span class="del">−1</span> · 5 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/maybe-finance/maybe/commit/0329a5f211fac5fb2b2d2383fbaa571880f5caee">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/maybe-data-exports">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/maybe-finance/maybe/pull/2517">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/maybe-data-exports">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">Django</div>
 <h3><a class="open" href="real-saleor-django-variant-channel-availability.html">Saleor</a></h3>
@@ -154,7 +162,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">1 new flag, 1 definition of a sellable listing: the Catalog API sets it, and Checkout and Discounts read it.</p>
 <ul class="chips"><li>5-step story</li><li>2 data flows</li><li>Data model</li><li>5 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">27 files · <span class="add">+1588</span> <span class="del">−55</span> · 5 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/saleor/saleor/commit/925b69959a97c9deda7cdc85092494896d0aa1f4">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/saleor-variant-channel-availability">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/saleor/saleor/pull/19911">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/saleor-variant-channel-availability">Config and explanation ↗</a></div>
 </article><article class="card">
 <div class="eyebrow">Django</div>
 <h3><a class="open" href="real-saleor-django-webhook-payload-generation.html">Saleor</a></h3>
@@ -162,7 +170,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <p class="shows">An opt-out from deferred webhook payloads across the API, the app manifest and the async transport, with its ADR.</p>
 <ul class="chips"><li>4-step story</li><li>2 data flows</li><li>Data model</li><li>4 decisions</li><li>Glossary</li></ul>
 <div class="foot-row"><span class="stats">22 files · <span class="add">+1057</span> <span class="del">−18</span> · 3 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
-<div class="links"><a href="https://github.com/saleor/saleor/commit/3dd4bf79a46132ed2f8e6225a9863f5ef8dc243b">Upstream commit ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/saleor-webhook-payload-generation">Config and explanation ↗</a></div>
+<div class="links"><a href="https://github.com/saleor/saleor/pull/19920">Upstream PR ↗</a><a href="https://github.com/denjamio/explain-change/tree/main/examples/real/saleor-webhook-payload-generation">Config and explanation ↗</a></div>
 </article></div></section>
 <section id="sdd"><h2>Spec-driven development</h2><p class="section-lead">A change that carries its OpenSpec proposal, design, tasks and spec deltas, each requirement traced to the code and the tests that implement it.</p><div class="grid"><article class="card">
 <div class="eyebrow">Django · OpenSpec</div>
@@ -173,7 +181,7 @@ code { font-family: var(--mono); font-size: .9em; }
 <div class="foot-row"><span class="stats">22 files · <span class="add">+324</span> <span class="del">−3</span> · 7 components</span><span class="cta" aria-hidden="true">Open report →</span></div>
 <div class="links"><a href="https://github.com/denjamio/explain-change/tree/main/examples/scenarios/03-orders-django-openspec">Scenario source ↗</a></div>
 </article></div></section>
-<section id="matrix"><h2>What each example shows</h2><p class="section-lead">Counted from the data each report embeds: story steps, data flows, data model entities, design decisions, dependency rules, glossary terms and OpenSpec requirements.</p><div class="table-wrap"><table><thead><tr><th scope="col">Example</th><th scope="col">Config</th><th scope="col">Story</th><th scope="col">Flows</th><th scope="col">Entities</th><th scope="col">Decisions</th><th scope="col">Rules</th><th scope="col">Glossary</th><th scope="col">OpenSpec</th></tr></thead><tbody><tr><th scope="row"><a href="real-bitwarden-dotnet-bulk-folder-delete.html">Bitwarden</a><div class="sub">C# / .NET</div></th><td>Configured</td><td>5</td><td>1</td><td>2</td><td>5</td><td>9</td><td>9</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-bitwarden-dotnet-invite-staged-users.html">Bitwarden</a><div class="sub">C# / .NET</div></th><td>Configured</td><td>5</td><td>2</td><td>2</td><td>5</td><td>9</td><td>9</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-chatwoot-rails-branded-email-layouts.html">Chatwoot</a><div class="sub">Ruby on Rails</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>5</td><td>22</td><td>11</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-chatwoot-rails-whatsapp-number-health.html">Chatwoot</a><div class="sub">Ruby on Rails</div></th><td>Configured</td><td>5</td><td>1</td><td>2</td><td>5</td><td>22</td><td>11</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-immich-ts-birthday-memories.html">Immich</a><div class="sub">TypeScript</div></th><td>Configured</td><td>5</td><td>1</td><td>3</td><td>5</td><td>9</td><td>11</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-immich-ts-workflow-logging.html">Immich</a><div class="sub">TypeScript</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>4</td><td>9</td><td>11</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-maybe-rails-balance-sheet-cache.html">maybe</a><div class="sub">Ruby on Rails</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>4</td><td>14</td><td>12</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-maybe-rails-data-exports.html">maybe</a><div class="sub">Ruby on Rails</div></th><td>Configured</td><td>5</td><td>2</td><td>2</td><td>4</td><td>14</td><td>12</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-saleor-django-variant-channel-availability.html">Saleor</a><div class="sub">Django</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>5</td><td>10</td><td>12</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-saleor-django-webhook-payload-generation.html">Saleor</a><div class="sub">Django</div></th><td>Configured</td><td>4</td><td>2</td><td>3</td><td>4</td><td>10</td><td>12</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="03-orders-django-openspec.html">Larder</a><div class="sub">Django · OpenSpec</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>5</td><td>8</td><td>6</td><td>4</td></tr></tbody></table></div></section>
+<section id="matrix"><h2>What each example shows</h2><p class="section-lead">Counted from the data each report embeds: story steps, data flows, data model entities, design decisions, dependency rules, glossary terms and OpenSpec requirements.</p><div class="table-wrap"><table><thead><tr><th scope="col">Example</th><th scope="col">Config</th><th scope="col">Story</th><th scope="col">Flows</th><th scope="col">Entities</th><th scope="col">Decisions</th><th scope="col">Rules</th><th scope="col">Glossary</th><th scope="col">OpenSpec</th></tr></thead><tbody><tr><th scope="row"><a href="real-ark-ts-dashboard-url-params.html">Ark</a><div class="sub">TypeScript · OpenSpec</div></th><td>Configured</td><td>6</td><td><span class="none">—</span></td><td><span class="none">—</span></td><td>5</td><td>7</td><td>9</td><td>8</td></tr><tr><th scope="row"><a href="real-bitwarden-dotnet-bulk-folder-delete.html">Bitwarden</a><div class="sub">C# / .NET</div></th><td>Configured</td><td>5</td><td>1</td><td>2</td><td>5</td><td>9</td><td>9</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-bitwarden-dotnet-invite-staged-users.html">Bitwarden</a><div class="sub">C# / .NET</div></th><td>Configured</td><td>5</td><td>2</td><td>2</td><td>5</td><td>9</td><td>9</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-chatwoot-rails-branded-email-layouts.html">Chatwoot</a><div class="sub">Ruby on Rails</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>5</td><td>22</td><td>11</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-chatwoot-rails-whatsapp-number-health.html">Chatwoot</a><div class="sub">Ruby on Rails</div></th><td>Configured</td><td>5</td><td>1</td><td>2</td><td>5</td><td>22</td><td>11</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-immich-ts-birthday-memories.html">Immich</a><div class="sub">TypeScript</div></th><td>Configured</td><td>5</td><td>1</td><td>3</td><td>5</td><td>9</td><td>11</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-immich-ts-workflow-logging.html">Immich</a><div class="sub">TypeScript</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>4</td><td>9</td><td>11</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-maybe-rails-balance-sheet-cache.html">maybe</a><div class="sub">Ruby on Rails</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>4</td><td>14</td><td>12</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-maybe-rails-data-exports.html">maybe</a><div class="sub">Ruby on Rails</div></th><td>Configured</td><td>5</td><td>2</td><td>2</td><td>4</td><td>14</td><td>12</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-saleor-django-variant-channel-availability.html">Saleor</a><div class="sub">Django</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>5</td><td>10</td><td>12</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="real-saleor-django-webhook-payload-generation.html">Saleor</a><div class="sub">Django</div></th><td>Configured</td><td>4</td><td>2</td><td>3</td><td>4</td><td>10</td><td>12</td><td><span class="none">—</span></td></tr><tr><th scope="row"><a href="03-orders-django-openspec.html">Larder</a><div class="sub">Django · OpenSpec</div></th><td>Configured</td><td>5</td><td>2</td><td>3</td><td>5</td><td>8</td><td>6</td><td>4</td></tr></tbody></table></div></section>
 <footer>Built with <a href="https://github.com/denjamio/explain-change">explain-change</a> 0.7.0 by <code>scripts/build-examples.ts</code>.</footer>
 </main>
 </html>

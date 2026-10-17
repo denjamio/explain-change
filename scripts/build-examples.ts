@@ -4,10 +4,11 @@
  * rendered with its explanation.json. Dates and identities are fixed, so the output is byte-identical every time.
  *
  *   bun scripts/build-examples.ts            rebuild the synthetic reports and the gallery
- *   bun scripts/build-examples.ts --real     also rebuild the reports of real PRs (clones them: needs the network)
+ *   bun scripts/build-examples.ts --real     also rebuild the reports of real PRs (needs the network and `gh`)
  *
- * A real example lives in examples/real/<name>/: real.json (repository, commit, gallery card), the team's
- * explain-change.toml and the agent's explanation.json.
+ * A real example lives in examples/real/<name>/: real.json (repository, PR, its head and merge base, gallery card),
+ * the team's explain-change.toml and the agent's explanation.json. It is explained the way a user does it: a clone
+ * of the repository, then `explain-change pr <url>`, which reads the PR from GitHub (title, description, refs).
  */
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -100,7 +101,11 @@ export const REAL_DIR = join(ROOT, "examples/real");
 
 export interface RealMeta {
   repository: string;
-  commit: string;
+  /** The PR number on GitHub. */
+  pr: number;
+  /** The PR's last commit and its merge base with the target: a build stops when GitHub says otherwise. */
+  head: string;
+  base: string;
   report: string;
   project: string;
   title: string;
@@ -117,24 +122,55 @@ export const realExamples = () =>
     }))
     .sort((a, b) => (a.name < b.name ? -1 : 1));
 
-/** The PR's commit and its parent, cloned under `tmp` with the team's config. Returns the repository. */
+/** owner/name of a GitHub repository URL. */
+const slugOf = (repository: string) => repository.replace(/^https:\/\/github\.com\//, "").replace(/\.git$/, "");
+
+export const prUrl = (meta: RealMeta) => `https://github.com/${slugOf(meta.repository)}/pull/${meta.pr}`;
+
+const ghApi = (path: string, jq: string) => sh(["gh", "api", path, "--jq", jq], ROOT).trim();
+
+/**
+ * A clone of the PR's repository as a user has it, cut to what the PR needs: the recent history of its target and
+ * of the PR, deep enough to hold their merge base, without blobs except at the checkout. `explain-change pr` then
+ * fetches the PR itself. The merge base is checked out, so the analysis finds the blobs of both sides there.
+ */
 export function buildRealRepo(name: string, meta: RealMeta, tmp: string): string {
   const repo = join(tmp, name);
   ensureDir(repo);
+  const target = ghApi(`repos/${slugOf(meta.repository)}/pulls/${meta.pr}`, ".base.ref");
+  const refs = [
+    `+refs/heads/${target}:refs/remotes/origin/${target}`,
+    `+refs/pull/${meta.pr}/head:refs/remotes/origin/pr`,
+  ];
   sh(["git", "init", "-q"], repo);
   sh(["git", "remote", "add", "origin", meta.repository], repo);
-  sh(["git", "fetch", "-q", "--depth", "2", "origin", meta.commit], repo);
-  sh(["git", "checkout", "-q", "FETCH_HEAD"], repo);
+  sh(["git", "config", "remote.origin.promisor", "true"], repo);
+  sh(["git", "config", "remote.origin.partialclonefilter", "blob:none"], repo);
+  const mergeBase = () =>
+    spawnSync("git", ["merge-base", `origin/${target}`, "origin/pr"], { cwd: repo, encoding: "utf8" }).stdout.trim();
+  sh(["git", "fetch", "-q", "--filter=blob:none", "--depth=200", "origin", ...refs], repo);
+  for (let i = 0; i < 10 && mergeBase() !== meta.base; i++) {
+    sh(["git", "fetch", "-q", "--filter=blob:none", "--deepen=500", "origin", ...refs], repo);
+  }
+  if (mergeBase() !== meta.base) throw new Error(`${name}: the merge base of PR ${meta.pr} is not ${meta.base}`);
+  sh(["git", "-c", "advice.detachedHead=false", "checkout", "-q", meta.head], repo);
+  sh(["git", "-c", "advice.detachedHead=false", "checkout", "-q", meta.base], repo);
   cpSync(join(REAL_DIR, name, "explain-change.toml"), join(repo, ".explain-change.toml"));
   return repo;
 }
 
-/** Clones the PR's commit and its parent, then explains it with the team's config and the agent's explanation. */
+/** `explain-change pr <url>` in a clone of the PR's repository, then its explanation rendered. */
 function buildReal(name: string, meta: RealMeta, tmp: string): void {
   const repo = buildRealRepo(name, meta, tmp);
   const out = join(ROOT, "examples", meta.report);
-  sh(["bun", CLI, "local", "--base", "HEAD~1", "--no-open", "--out", out, "--json"], repo);
+  sh(["bun", CLI, "pr", prUrl(meta), "--no-open", "--out", out, "--json"], repo);
   const facts = JSON.parse(readFileSync(join(repo, ".explain-change/facts.json"), "utf8")) as Facts;
+  if (facts.source.headSha !== meta.head || facts.source.mergeBase !== meta.base) {
+    throw new Error(
+      `${name}: GitHub now gives PR ${meta.pr} as ${facts.source.mergeBase}..${facts.source.headSha}, ` +
+        `not ${meta.base}..${meta.head}: update real.json and its explanation`,
+    );
+  }
   const body = JSON.parse(readFileSync(join(REAL_DIR, name, "explanation.json"), "utf8"));
   writeFileSync(
     join(repo, ".explain-change/explanation.json"),
@@ -148,12 +184,14 @@ function buildReal(name: string, meta: RealMeta, tmp: string): void {
   if (p.status !== 0) throw new Error(`${name}: explanation rejected\n${p.stdout}${p.stderr}`);
 }
 
-/** Every example an agent explains: the scenarios (against main) and the real PRs (against their parent). */
+/** Every example an agent explains: the scenarios (a branch against main) and the real PRs (by their URL). */
 export interface ExampleTarget {
   name: string;
   kind: "scenario" | "real";
-  /** The base `local` compares with. */
-  base: string;
+  /** What the user asks the agent, in the user's words. */
+  request: string;
+  /** The CLI command that request leads to. */
+  args: string[];
   /** The committed explanation (absent for a scenario without an agent). */
   explanation: string;
   /** Builds its repository under `tmp`; returns its path. */
@@ -165,14 +203,16 @@ export function exampleTargets(): ExampleTarget[] {
     ...scenarioNames().map((name) => ({
       name,
       kind: "scenario" as const,
-      base: "main",
+      request: "Explain my changes on this branch with explain-change.",
+      args: ["local", "--base", "main"],
       explanation: join(SCENARIOS_DIR, name, "explanation.json"),
       build: (tmp: string) => buildScenarioRepo(name, tmp),
     })),
     ...realExamples().map(({ name, meta }) => ({
       name,
       kind: "real" as const,
-      base: "HEAD~1",
+      request: `Explain ${prUrl(meta)} with explain-change.`,
+      args: ["pr", prUrl(meta)],
       explanation: join(REAL_DIR, name, "explanation.json"),
       build: (tmp: string) => buildRealRepo(name, meta, tmp),
     })),
@@ -207,7 +247,7 @@ if (import.meta.main) {
     .filter(({ meta }) => existsSync(join(ROOT, "examples", meta.report)))
     .map(({ name, meta }) =>
       readExample(join(ROOT, "examples"), meta.report, meta, [
-        ["Upstream commit", `${meta.repository.replace(/\.git$/, "")}/commit/${meta.commit}`],
+        ["Upstream PR", prUrl(meta)],
         ["Config and explanation", `${SOURCE}/real/${name}`],
       ]),
     );
