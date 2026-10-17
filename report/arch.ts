@@ -4,6 +4,7 @@
 
 import type { ComponentFacts, DependencyFacts } from "../src/contract/facts.ts";
 import { fit, listAt, r1, s, textWidth, trunc } from "./dom.ts";
+import { iconAt } from "./icons.ts";
 import {
   byCompRank,
   cfg,
@@ -12,13 +13,48 @@ import {
   deltaLabel,
   facts,
   isNewViolation,
+  reqStatus,
   reqsOfComp,
+  rsLabel,
   summaryOf,
 } from "./model.ts";
 import { isContext, keyPairs } from "./story.ts";
 import { markers, newView } from "./svg-view.ts";
-import type { Box, View } from "./ui.ts";
-import { T } from "./words.ts";
+import { type Box, mapApi, type View } from "./ui.ts";
+import { T, tf } from "./words.ts";
+
+/**
+ * How a component meets the requirements mapped to it: the spec icon and implemented / mapped ("2/3"), colored by
+ * the worst status (partial amber, missing red). Its right end at x, on the baseline y. Opens the requirements view.
+ */
+function reqBadge(id: string, x: number, y: number): SVGElement | null {
+  const reqs = reqsOfComp(id);
+  const statuses = reqs.map(reqStatus).filter((v) => v !== "not-applicable" && v !== "none");
+  if (!statuses.length) return null;
+  const count = (v: string) => statuses.filter((x) => x === v).length;
+  const worst = count("missing") ? "missing" : count("partial") ? "partial" : "implemented";
+  const label = `${count("implemented")}/${statuses.length}`;
+  const tip = [tf("reqBadgeTip", { d: count("implemented"), n: statuses.length })]
+    .concat((["partial", "missing"] as const).filter((v) => count(v)).map((v) => `${count(v)} ${rsLabel(v)}`))
+    .join(" · ");
+  const w = textWidth(label, "600 11.5px");
+  return s(
+    "g",
+    {
+      class: `req-badge rs-${worst}`,
+      onclick: (ev: Event) => {
+        ev.stopPropagation();
+        mapApi.focus?.(
+          "requirements",
+          reqs.map((r) => r.id),
+        );
+      },
+    },
+    s("title", { text: tip }),
+    iconAt("spec", x - w - 15, y - 10, 12),
+    s("text", { x, y, "text-anchor": "end", text: label }),
+  );
+}
 
 // ── Architecture: lanes (layers, top = entry), components ordered to cut crossings ──
 
@@ -300,11 +336,8 @@ export function buildArchitecture(
     const r = L.pos[n.id] as Box;
     const c = compById[n.id] as (typeof cfg.components)[number];
     V.geo[n.id] = r;
-    const nreq = reqsOfComp(n.id).length;
     const neighbor = n.delta === "unchanged";
-    const info = neighbor
-      ? T.lNeighbor
-      : `${n.files} ${n.files === 1 ? T.file : T.kFiles}${nreq ? ` · ◆ ${nreq}` : ""}`;
+    const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}`;
     const g = s(
       "g",
       {
@@ -332,6 +365,7 @@ export function buildArchitecture(
         text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28),
       }),
       s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }),
+      neighbor ? null : reqBadge(n.id, r.x + r.w - 12, r.y + 56),
     );
     onNode?.(g, n.id);
     svg.appendChild(g);

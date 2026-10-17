@@ -241,7 +241,7 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .story-step.active .step-body { display: block; }
 .step-meta { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s2); }
 .step-view { font-size: 12px; color: var(--muted); }
-.step-view::before { content: "◇ "; color: var(--accent); }
+.step-view .icon { color: var(--accent); }
 .step-next { margin-left: auto; color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 .step-link { margin-top: 0; }
 .step-code { margin-top: var(--s2); }
@@ -290,6 +290,12 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .node .delta .add { fill: var(--added); } .node .delta .del { fill: var(--violation); }
 .node .name { font-size: 14px; font-weight: 650; }
 .node .info { font-size: 11.5px; fill: var(--muted) !important; }
+.req-badge { cursor: pointer; color: var(--muted); }
+.req-badge text { font-size: 11.5px; font-weight: 600; fill: currentColor !important; }
+.req-badge.rs-partial { color: var(--warn); } .req-badge.rs-missing { color: var(--violation); }
+.req-badge:hover { color: var(--accent); }
+.icon-path { fill: none; stroke: currentColor; stroke-width: 1.5px; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+.icon { flex: none; vertical-align: -2px; margin-right: 5px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .node.st-added rect.box { fill: color-mix(in srgb, var(--added-bg) 100%, var(--surface)); stroke: var(--added); }
 .node.st-added .tag { fill: var(--added); }
 .node.st-changed rect.box { fill: var(--changed-bg); stroke: var(--changed); }
@@ -871,6 +877,9 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
     lgDependencies: "Dependencies",
     lgSteps: "Steps",
     lgEntities: "Entities",
+    lgRequirements: "Requirements",
+    lReqBadge: "implemented / mapped",
+    reqBadgeTip: "{d} of {n} requirements implemented",
     nextStep: "Next",
     restart: "Back to the start",
     modeDelta: "Base and head together: what was added, changed and removed",
@@ -1087,6 +1096,26 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       entById[e.id] = e;
   var isNewViolation = (e) => Boolean(e.violation && !e.violation.preexisting);
 
+  // report/icons.ts
+  var PATHS = {
+    spec: "M4 1.5h5.5l3 3v10H4Z M9.5 1.5v3h3 M6.2 9.6l1.5 1.5 2.8-3",
+    locate: "M8 1.5v3 M8 11.5v3 M1.5 8h3 M11.5 8h3 M4.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0",
+    architecture: "M1.5 2.5h5v4h-5Z M9.5 2.5h5v4h-5Z M5.5 9.5h5v4h-5Z M4 6.5v1.5h8V6.5 M8 8v1.5",
+    flow: "M2 5h10 M9.5 2.5 12 5 9.5 7.5 M14 11H4 M6.5 8.5 4 11l2.5 2.5",
+    data: "M3 4c0-1.1 2.2-2 5-2s5 .9 5 2-2.2 2-5 2-5-.9-5-2Z M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4 M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"
+  };
+  function icon(name) {
+    return s("svg", { class: `icon icon-${name}`, viewBox: "0 0 16 16", width: "14", height: "14", "aria-hidden": "true" }, s("path", { d: PATHS[name] }));
+  }
+  function iconAt(name, x, y, size) {
+    return s("path", {
+      class: `icon-path icon-${name}`,
+      d: PATHS[name],
+      transform: `translate(${x} ${y}) scale(${size / 16})`
+    });
+  }
+  var viewIcon = (view) => view === "requirements" ? "spec" : view === "data" ? "data" : view.startsWith("flow:") ? "flow" : "architecture";
+
   // report/ui.ts
   function onOpen(el, path) {
     const url = prFileUrl2(path);
@@ -1107,6 +1136,8 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   function legendItem(kind, color, label) {
     if (kind === "swatch")
       return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
+    if (kind === "spec")
+      return h("span", null, icon("spec"), label);
     return h("span", null, h("i", {
       class: `legend-line${kind.includes("anim") ? " anim" : ""}`,
       style: `border-top-color:${color}${kind.includes("dashed") ? ";border-top-style:dashed" : ""}`
@@ -1311,6 +1342,24 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
   }
 
   // report/arch.ts
+  function reqBadge(id, x, y) {
+    const reqs = reqsOfComp(id);
+    const statuses = reqs.map(reqStatus).filter((v) => v !== "not-applicable" && v !== "none");
+    if (!statuses.length)
+      return null;
+    const count = (v) => statuses.filter((x) => x === v).length;
+    const worst = count("missing") ? "missing" : count("partial") ? "partial" : "implemented";
+    const label = `${count("implemented")}/${statuses.length}`;
+    const tip = [tf("reqBadgeTip", { d: count("implemented"), n: statuses.length })].concat(["partial", "missing"].filter((v) => count(v)).map((v) => `${count(v)} ${rsLabel(v)}`)).join(" · ");
+    const w = textWidth(label, "600 11.5px");
+    return s("g", {
+      class: `req-badge rs-${worst}`,
+      onclick: (ev) => {
+        ev.stopPropagation();
+        mapApi.focus?.("requirements", reqs.map((r) => r.id));
+      }
+    }, s("title", { text: tip }), iconAt("spec", x - w - 15, y - 10, 12), s("text", { x, y, "text-anchor": "end", text: label }));
+  }
   function layoutArch(nodes, edges, compact) {
     const W = compact ? 380 : 1160;
     const LABEL = compact ? 0 : 156;
@@ -1530,9 +1579,8 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
       const r = L.pos[n.id];
       const c = compById[n.id];
       V.geo[n.id] = r;
-      const nreq = reqsOfComp(n.id).length;
       const neighbor = n.delta === "unchanged";
-      const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}${nreq ? ` · ◆ ${nreq}` : ""}`;
+      const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}`;
       const g = s("g", {
         class: `node st-${n.delta}`,
         "data-k": n.id,
@@ -1546,7 +1594,7 @@ ${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12
         y: r.y + 39,
         class: "name",
         text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28)
-      }), s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }));
+      }), s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }), neighbor ? null : reqBadge(n.id, r.x + r.w - 12, r.y + 56));
       onNode?.(g, n.id);
       svg.appendChild(g);
     }
@@ -1902,12 +1950,7 @@ ${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12
     return g;
   }
   function flowButtons(r, sc) {
-    return (ex?.flows ?? []).filter((f) => f.scenario === `${r.id}#${sc.id}`).map((f) => h("button", {
-      class: "chip flow-chip",
-      title: f.title,
-      text: `▶ ${T.showFlow}`,
-      onclick: () => mapApi.showFlow?.(f.id)
-    }));
+    return (ex?.flows ?? []).filter((f) => f.scenario === `${r.id}#${sc.id}`).map((f) => h("button", { class: "chip flow-chip", title: f.title, onclick: () => mapApi.showFlow?.(f.id) }, icon("flow"), T.showFlow));
   }
   var GWT_ICON = { GIVEN: "●", WHEN: "▶", THEN: "✓" };
   var GWT_FR = { GIVEN: "1fr", WHEN: ".85fr", THEN: "1.15fr" };
@@ -2114,11 +2157,7 @@ ${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12
       }), comps.map((c) => {
         const on = mComps.includes(c);
         return h("span", { class: "sdd-cell", title: on ? compName(c) : null }, on ? h("i", { class: `cell-dot rs-${v}` }) : null);
-      })), h("div", { class: "sdd-detail" }, r.text ? h("p", { class: "sdd-text", text: r.text }) : null, m?.note ? h("div", { class: `sdd-note rs-${v}` }, h("b", { text: `${RS_ICON[v]} ${cap(rsLabel(v))}` }), ` ${m.note}`) : null, mComps.length ? h("div", { class: "sdd-comps-m" }, mComps.map((c) => h("span", { class: `badge ${changeComp[c]?.delta ?? "unchanged"}`, text: compName(c) }))) : null, r.scenarios.length ? scenarioView(r) : null, h("div", { class: "sdd-foot" }, tests.map((x) => h("span", { class: "test-ref" }, "⚗ ", fileLink(x, x.split("/").pop()))), h("span", { class: "faint" }, "spec ", fileLink(`${r.file}:${r.line}`, r.file.split("/").slice(-3).join("/"))), mComps.length ? h("button", {
-        class: "chip",
-        text: `◇ ${T.showOnMap}`,
-        onclick: () => mapApi.focus?.("architecture", mComps)
-      }) : null)));
+      })), h("div", { class: "sdd-detail" }, r.text ? h("p", { class: "sdd-text", text: r.text }) : null, m?.note ? h("div", { class: `sdd-note rs-${v}` }, h("b", { text: `${RS_ICON[v]} ${cap(rsLabel(v))}` }), ` ${m.note}`) : null, mComps.length ? h("div", { class: "sdd-comps-m" }, mComps.map((c) => h("span", { class: `badge ${changeComp[c]?.delta ?? "unchanged"}`, text: compName(c) }))) : null, r.scenarios.length ? scenarioView(r) : null, h("div", { class: "sdd-foot" }, tests.map((x) => h("span", { class: "test-ref" }, "⚗ ", fileLink(x, x.split("/").pop()))), h("span", { class: "faint" }, "spec ", fileLink(`${r.file}:${r.line}`, r.file.split("/").slice(-3).join("/"))), mComps.length ? h("button", { class: "chip", onclick: () => mapApi.focus?.("architecture", mComps) }, icon("locate"), T.showOnMap) : null)));
       det.comps = mComps;
       det.rid = r.id;
       det.addEventListener("mouseenter", () => lightRow(det, true));
@@ -2634,7 +2673,8 @@ ${fields.join(`
           ["line", "var(--unchanged)", T.lUnchanged, ".edge.e-unchanged"],
           ["line dashed", "var(--removed)", T.lRemoved, ".edge.e-removed"],
           ["line", "var(--violation)", T.lViolation, ".edge.e-violation"],
-          ["line", "var(--accent)", T.lKey, ".edge-g.key"]
+          ["line", "var(--accent)", T.lKey, ".edge-g.key"],
+          ["spec", "", T.lReqBadge, ".req-badge", T.lgRequirements]
         ],
         flow: [
           ["line", "var(--added)", T.lAdded, ".msg.st-added", T.lgSteps],
@@ -2682,7 +2722,7 @@ ${fields.join(`
     const inspector = h("div", { class: "inspector", hidden: true });
     const side = h("aside", { class: "map-side" }, storyPane, inspector);
     const items = STORY.map((stp, i) => {
-      const li = h("li", { class: "story-step", tabindex: "0" }, h("button", { class: "step-head", onclick: () => step(i) }, h("span", { class: "step-n", text: String(i + 1) }), h("span", { class: "step-h", text: stp.heading })), h("div", { class: "step-body" }, h("p", { text: stp.body }), h("div", { class: "step-meta" }, h("span", { class: "step-view", text: viewTitle(stp.view ?? "architecture") }), stp.view === "requirements" ? h("button", {
+      const li = h("li", { class: "story-step", tabindex: "0" }, h("button", { class: "step-head", onclick: () => step(i) }, h("span", { class: "step-n", text: String(i + 1) }), h("span", { class: "step-h", text: stp.heading })), h("div", { class: "step-body" }, h("p", { text: stp.body }), h("div", { class: "step-meta" }, h("span", { class: "step-view" }, icon(viewIcon(stp.view ?? "architecture")), viewTitle(stp.view ?? "architecture")), stp.view === "requirements" ? h("button", {
         class: "chip step-link",
         text: `${T.seeReqs} ↓`,
         onclick: () => sddApi.open((stp.focus ?? []).filter((x) => reqById[x]))
@@ -2945,7 +2985,7 @@ ${fields.join(`
     const sum = (fs, k) => fs.reduce((a, f) => a + f[k], 0);
     const fileRows = (fs) => h("div", { class: "chg-files" }, fs.map((f) => h("div", { class: "insp-row" }, h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }), fileLink(f.path), nums(f.additions, f.deletions))));
     function group(badge, name, meta, summary, fs, onMap) {
-      return h("details", { class: "chg", open }, h("summary", { class: "chg-head" }, h("span", { class: "chg-line" }, badge, h("b", { class: "chg-name", text: name }), meta ? h("span", { class: "faint", text: meta }) : null, h("span", { class: "chg-count faint", text: `${fs.length} ${fs.length === 1 ? T.file : T.kFiles}` }), nums(sum(fs, "additions"), sum(fs, "deletions"))), summary ? h("span", { class: "chg-summary", text: summary }) : null), fileRows(fs), onMap ? h("button", { class: "chip", text: T.showOnMap, onclick: onMap }) : null);
+      return h("details", { class: "chg", open }, h("summary", { class: "chg-head" }, h("span", { class: "chg-line" }, badge, h("b", { class: "chg-name", text: name }), meta ? h("span", { class: "faint", text: meta }) : null, h("span", { class: "chg-count faint", text: `${fs.length} ${fs.length === 1 ? T.file : T.kFiles}` }), nums(sum(fs, "additions"), sum(fs, "deletions"))), summary ? h("span", { class: "chg-summary", text: summary }) : null), fileRows(fs), onMap ? h("button", { class: "chip", onclick: onMap }, icon("locate"), T.showOnMap) : null);
     }
     return sectionShell("changes", T.changesTitle, h("div", { class: "card chg-list" }, [
       comps.filter((id) => byComp[id]).map((id) => {

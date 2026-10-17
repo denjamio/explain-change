@@ -8,6 +8,7 @@ import { codeExcerpt } from "./code.ts";
 import { buildData } from "./data-view.ts";
 import { append, cap, h, store } from "./dom.ts";
 import { buildFlow, flowNotes } from "./flow.ts";
+import { icon, viewIcon } from "./icons.ts";
 import { componentDetails, entityDetails, type InspectorNav } from "./inspector.ts";
 import { changeComp, type NFlow, REDUCED, reqById, type StoryStep, specComponents, st } from "./model.ts";
 import { sddApi } from "./sdd.ts";
@@ -245,6 +246,7 @@ export function renderMap(): HTMLElement {
         ["line dashed", "var(--removed)", T.lRemoved, ".edge.e-removed"],
         ["line", "var(--violation)", T.lViolation, ".edge.e-violation"],
         ["line", "var(--accent)", T.lKey, ".edge-g.key"],
+        ["spec", "", T.lReqBadge, ".req-badge", T.lgRequirements],
       ],
       flow: [
         ["line", "var(--added)", T.lAdded, ".msg.st-added", T.lgSteps],
@@ -321,7 +323,12 @@ export function renderMap(): HTMLElement {
         h(
           "div",
           { class: "step-meta" },
-          h("span", { class: "step-view", text: viewTitle(stp.view ?? "architecture") }),
+          h(
+            "span",
+            { class: "step-view" },
+            icon(viewIcon(stp.view ?? "architecture")),
+            viewTitle(stp.view ?? "architecture"),
+          ),
           stp.view === "requirements"
             ? h("button", {
                 class: "chip step-link",

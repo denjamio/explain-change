@@ -4,6 +4,7 @@
 
 import type { ComponentFacts, FileFacts } from "../src/contract/facts.ts";
 import { fmt, h, listAt } from "./dom.ts";
+import { icon } from "./icons.ts";
 import {
   byCompRank,
   changeComp,
@@ -115,7 +116,7 @@ export function renderChanges(): HTMLElement | null {
         summary ? h("span", { class: "chg-summary", text: summary }) : null,
       ),
       fileRows(fs),
-      onMap ? h("button", { class: "chip", text: T.showOnMap, onclick: onMap }) : null,
+      onMap ? h("button", { class: "chip", onclick: onMap }, icon("locate"), T.showOnMap) : null,
     );
   }
   return sectionShell(
