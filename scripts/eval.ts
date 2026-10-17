@@ -1,43 +1,69 @@
 /**
  * Evaluates the skill end to end: a real agent explains each example, and the result is measured. Costs tokens.
  *
- *   bun scripts/eval.ts [--model haiku|sonnet|opus] [--agent "claude -p"] [--runs N] [--judge MODEL] [example…]
+ *   bun scripts/eval.ts [--model haiku|sonnet|opus] [--agent "claude -p"] [--runs N] [--judge MODEL] [--discover]
+ *                       [--out results.json] [example…]
  *
  * The examples are the real PRs (examples/real/<name>), each asked for by its GitHub URL, as a user does (needs
  * the network and `gh`). A test fixture (examples/scenarios/<name>, asked as "explain my changes") runs only by
  * name. For each one: its git repository is built in a temp folder, `explain-change` (this checkout) is put on
  * PATH, and the agent gets the user's request plus skills/explain-change/SKILL.md (the skill itself, without its
- * front matter). Then `explain-change status --json` says whether the explanation is valid.
- * Reported per example: the final state, the issues left, the agent's turns, cost and time (from
- * `claude -p --output-format json`), and its fidelity to the example's committed explanation (fidelity()). The
- * references are the committed explanations: rewrite them with the current tool (scripts/example-work.ts) first.
+ * front matter). With --discover the skills are installed in the repository's .claude/skills instead, and nothing
+ * names them: the agent must load explain-change from its description, as in a user's session (`skill` reports
+ * whether it did). Then `explain-change status --json` says whether the explanation is valid.
+ *
+ * Reported per run (scripts/eval-metrics.ts):
+ * - state and issues left; turns, cost, time, prompt and output tokens, `explain-change render` calls (1 = valid
+ *   at the first try) and source files read outside the work folder, from the agent's transcript;
+ * - fidelity: the F1 of key dependencies, flow edges, the components the story lights and the files the decisions
+ *   cite, against the example's committed explanation (rewrite them with scripts/example-work.ts first);
+ * - draft: the same F1 for the draft the CLI wrote, which already holds the outline's focus, key dependency and
+ *   flows, so it is what an agent that changes nothing scores; lift: what the agent adds to it (fidelity − draft,
+ *   over the parts both measure);
+ * - digest: the size of the digest the agent read, in characters.
  *
  * --runs N explains each example N times and reports the mean and the standard deviation: 1 run of an agent is a
  * sample, not a score. --judge MODEL asks a second agent, per decision, whether the source its basis names (the PR
  * description, the spec, the code at the evidence) states its why; `grounded` is the share it confirms, and
- * `inferred` the share the agent labelled as its own reading.
+ * `inferred` the share the agent labelled as its own reading. A judge whose answer cannot be read is counted, not
+ * hidden. --out writes every run and the summary as JSON, to compare a version with the last one.
  */
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  chmodSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { parseArgs } from "node:util";
 import type { Explanation } from "../src/contract/explanation.ts";
+import type { Facts } from "../src/contract/facts.ts";
 import { removeTree } from "../src/core/fs.ts";
+import { draftExplanation } from "../src/explanation/draft.ts";
 import { buildAssets } from "./build.ts";
 import { exampleTargets, GIT_ENV } from "./build-examples.ts";
+import { argv, fidelity, lift, readTranscript, round, spread } from "./eval-metrics.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    model: { type: "string", default: "sonnet" },
+    model: { type: "string", default: "haiku" },
     agent: { type: "string", default: "claude -p" },
     runs: { type: "string", default: "1" },
     judge: { type: "string" },
+    discover: { type: "boolean", default: false },
+    out: { type: "string" },
   },
   allowPositionals: true,
 });
+const [agentCmd, ...agentArgs] = argv(values.agent as string) as [string, ...string[]];
 await buildAssets();
 const tmp = mkdtempSync(join(tmpdir(), "explain-change-eval-"));
 const bin = join(tmp, "bin");
@@ -48,50 +74,26 @@ chmodSync(shim, 0o755);
 const env = { ...process.env, ...GIT_ENV, PATH: `${bin}${delimiter}${process.env.PATH}` };
 const prompt = readFileSync(join(ROOT, "skills/explain-change/SKILL.md"), "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
 
-const readJson = (path: string): Explanation | null => {
+const readJson = <T>(path: string): T | null => {
   try {
-    return JSON.parse(readFileSync(path, "utf8")) as Explanation;
+    return JSON.parse(readFileSync(path, "utf8")) as T;
   } catch {
     return null;
   }
 };
 
-/**
- * F1 of the agent's items against the reference's: recall (the reference's items the agent has) and precision (the
- * agent's items the reference has) together, so naming everything does not score. null when both are empty.
- */
-function f1(reference: string[], agent: string[]): number | null {
-  const want = new Set(reference);
-  const have = new Set(agent);
-  if (!want.size && !have.size) return null;
-  const hit = [...have].filter((x) => want.has(x)).length;
-  return hit ? (2 * hit) / (want.size + have.size) : 0;
+/** The skills as a user's project has them: in .claude/skills, kept out of git status. */
+function installSkills(repo: string): void {
+  for (const skill of ["explain-change", "explain-change-configure"]) {
+    cpSync(join(ROOT, "skills", skill), join(repo, ".claude", "skills", skill), { recursive: true });
+  }
+  appendFileSync(join(repo, ".git", "info", "exclude"), "\n.claude/\n");
 }
 
-/**
- * How close the agent's explanation is to the reference one, on what the facts let both see: the key dependencies,
- * the flow edges, the components the story lights and the files the decisions cite. Each is an F1 in 0-1; the
- * mean is the score. It measures structure, not wording: a valid explanation that tells another story scores low.
- */
-function fidelity(reference: Explanation | null, agent: Explanation | null): Record<string, number | null> {
-  if (!reference || !agent) return { fidelity: null };
-  const keyDeps = (e: Explanation) => (e.keyDependencies ?? []).map((k) => `${k.from}->${k.to}`);
-  const edges = (e: Explanation) => (e.flows ?? []).flatMap((f) => f.steps.map((s) => `${s.from}->${s.to}`));
-  const focus = (e: Explanation) =>
-    e.story.filter((s) => (s.view ?? "architecture") === "architecture").flatMap((s) => s.focus ?? []);
-  const evidence = (e: Explanation) => (e.decisions ?? []).map((d) => (d.evidence ?? "").split(":")[0] as string);
-  const parts = {
-    keyDeps: f1(keyDeps(reference), keyDeps(agent)),
-    flowEdges: f1(edges(reference), edges(agent)),
-    storyFocus: f1(focus(reference), focus(agent)),
-    decisionFiles: f1(evidence(reference).filter(Boolean), evidence(agent).filter(Boolean)),
-  };
-  const known = Object.values(parts).filter((v): v is number => v !== null);
-  const round = (v: number | null) => (v === null ? null : Math.round(v * 100) / 100);
-  return {
-    fidelity: round(known.length ? known.reduce((a, b) => a + b, 0) / known.length : null),
-    ...Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, round(v)])),
-  };
+/** The draft the CLI wrote for the facts the agent got, or null when the agent never collected the change. */
+function draftOf(repo: string): Explanation | null {
+  const facts = readJson<Facts>(join(repo, ".explain-change", "facts.json"));
+  return facts ? (draftExplanation(facts) as unknown as Explanation) : null;
 }
 
 /** The lines a location points at, from the repository the agent worked in. */
@@ -111,17 +113,18 @@ function excerpt(repo: string, location: string): string {
 /**
  * Asks the judge, for each decision with a basis other than inferred, whether its source states the why. The
  * source is the PR description (pr), the OpenSpec section of the digest (spec) or the code at the evidence (code).
+ * `judgeError` is true when its answer cannot be read: that run has no `grounded`, and the summary counts it.
  */
 function judge(
   repo: string,
   ex: Explanation | null,
   model: string,
-): { grounded: number | null; inferred: number | null } {
+): { grounded: number | null; inferred: number | null; judgeError: boolean } {
   const decisions = ex?.decisions ?? [];
-  if (!decisions.length) return { grounded: null, inferred: null };
-  const inferred = decisions.filter((d) => d.basis === "inferred").length / decisions.length;
+  if (!decisions.length) return { grounded: null, inferred: null, judgeError: false };
+  const inferred = round(decisions.filter((d) => d.basis === "inferred").length / decisions.length);
   const claims = decisions.filter((d) => d.basis !== "inferred");
-  if (!claims.length) return { grounded: null, inferred };
+  if (!claims.length) return { grounded: null, inferred, judgeError: false };
   const digest = readFileSync(join(repo, ".explain-change", "digest.md"), "utf8");
   const items = claims.map((d, i) => ({
     i,
@@ -139,28 +142,18 @@ function judge(
     "\n</digest>\n\n<decisions>\n" +
     JSON.stringify(items, null, 1) +
     "\n</decisions>";
-  const [cmd, ...args] = (values.agent as string).split(" ");
-  const run = spawnSync(cmd as string, [...args, ask, "--model", model, "--output-format", "json"], {
+  const run = spawnSync(agentCmd, [...agentArgs, ask, "--model", model, "--output-format", "json"], {
     encoding: "utf8",
     timeout: 5 * 60_000,
   });
   try {
     const text = String(JSON.parse(run.stdout).result ?? "");
     const verdicts = JSON.parse(text.slice(text.indexOf("["), text.lastIndexOf("]") + 1)) as { supported: boolean }[];
-    return { grounded: verdicts.filter((v) => v.supported).length / claims.length, inferred };
+    if (verdicts.length !== claims.length) throw new Error("a verdict per claim");
+    return { grounded: round(verdicts.filter((v) => v.supported).length / claims.length), inferred, judgeError: false };
   } catch {
-    return { grounded: null, inferred };
+    return { grounded: null, inferred, judgeError: true };
   }
-}
-
-const round = (v: number) => Math.round(v * 100) / 100;
-/** "mean ± sd" of the numbers in `xs`, or null when there are none. */
-function spread(xs: unknown[]): string | null {
-  const n = xs.filter((x): x is number => typeof x === "number");
-  if (!n.length) return null;
-  const mean = n.reduce((a, b) => a + b, 0) / n.length;
-  const sd = Math.sqrt(n.reduce((a, b) => a + (b - mean) ** 2, 0) / n.length);
-  return n.length > 1 ? `${round(mean)} ± ${round(sd)}` : String(round(mean));
 }
 
 const runs = Math.max(1, Number(values.runs) || 1);
@@ -175,49 +168,52 @@ try {
       const runDir = join(tmp, `run-${r}`);
       mkdirSync(runDir, { recursive: true });
       const repo = target.build(runDir);
-      const [cmd, ...args] = (values.agent as string).split(" ");
+      if (values.discover) installSkills(repo);
       const started = Date.now();
       const run = spawnSync(
-        cmd as string,
+        agentCmd,
         [
-          ...args,
+          ...agentArgs,
           target.request,
           "--model",
           values.model as string,
           "--output-format",
-          "json",
-          "--append-system-prompt",
-          prompt,
+          "stream-json",
+          "--verbose",
+          ...(values.discover ? [] : ["--append-system-prompt", prompt]),
           "--allowedTools",
           "Bash(explain-change:*)",
           "Read",
           "Edit",
           "Write",
+          ...(values.discover ? ["Skill"] : []),
         ],
-        { cwd: repo, env, encoding: "utf8", timeout: 15 * 60_000 },
+        { cwd: repo, env, encoding: "utf8", timeout: 15 * 60_000, maxBuffer: 256 * 1024 * 1024 },
       );
-      let agent: { num_turns?: number; total_cost_usd?: number } = {};
-      try {
-        agent = JSON.parse(run.stdout);
-      } catch {
-        // not claude's JSON: only the outcome is measured
-      }
+      const { skills, ...transcript } = readTranscript(run.stdout ?? "");
       const status = spawnSync("bun", [join(ROOT, "src/cli/bin.ts"), "status", "--json"], {
         cwd: repo,
         env,
         encoding: "utf8",
       });
       const out = JSON.parse(status.stdout || "{}");
-      const written = readJson(join(repo, ".explain-change", "explanation.json"));
+      const written = readJson<Explanation>(join(repo, ".explain-change", "explanation.json"));
+      const reference = readJson<Explanation>(target.explanation);
+      const agentFit = fidelity(reference, written);
+      const draftFit = fidelity(reference, draftOf(repo));
+      const digest = join(repo, ".explain-change", "digest.md");
       rows.push({
         example: name,
         run: r,
         state: out.explanation?.state ?? "error",
         issues: out.explanation?.issues?.length ?? null,
-        turns: agent.num_turns ?? null,
-        costUsd: agent.total_cost_usd ?? null,
+        ...(values.discover ? { skill: skills.includes("explain-change") } : {}),
+        ...transcript,
         seconds: Math.round((Date.now() - started) / 1000),
-        ...fidelity(readJson(target.explanation), written),
+        digest: existsSync(digest) ? readFileSync(digest, "utf8").length : null,
+        ...agentFit,
+        draft: draftFit.fidelity,
+        lift: lift(agentFit, draftFit),
         ...(values.judge ? judge(repo, written, values.judge) : {}),
       });
       console.log(JSON.stringify(rows[rows.length - 1]));
@@ -227,26 +223,54 @@ try {
   removeTree(tmp);
 }
 
-const valid = rows.filter((r) => r.state === "valid").length;
 const column = (k: string, of = rows) => of.map((r) => r[k]);
+const stat = (k: string, of = rows) => spread(column(k, of)) ?? "n/a";
+const valid = rows.filter((r) => r.state === "valid").length;
+const judged = rows.filter((r) => "judgeError" in r);
+const judgeErrors = judged.filter((r) => r.judgeError).length;
+const cost = column("costUsd").filter((v): v is number => typeof v === "number");
+const summary = {
+  valid,
+  runs: rows.length,
+  fidelity: stat("fidelity"),
+  draft: stat("draft"),
+  lift: stat("lift"),
+  renders: stat("renders"),
+  sourceReads: stat("sourceReads"),
+  tokensIn: stat("tokensIn"),
+  tokensOut: stat("tokensOut"),
+  digest: stat("digest"),
+  costUsd: round(cost.reduce((a, b) => a + b, 0)),
+  ...(values.discover ? { skillLoaded: rows.filter((r) => r.skill).length } : {}),
+  ...(values.judge ? { grounded: stat("grounded"), inferred: stat("inferred"), judgeErrors } : {}),
+};
+
 if (runs > 1) {
   console.log("\nper example (mean ± sd over runs):");
   for (const name of [...new Set(rows.map((r) => r.example as string))]) {
     const own = rows.filter((r) => r.example === name);
     const valids = own.filter((r) => r.state === "valid").length;
-    const judged = values.judge ? `, grounded ${spread(column("grounded", own)) ?? "n/a"}` : "";
+    const grounded = values.judge ? `, grounded ${stat("grounded", own)}` : "";
     console.log(
-      `  ${name}: ${valids}/${own.length} valid, fidelity ${spread(column("fidelity", own)) ?? "n/a"}, ` +
-        `turns ${spread(column("turns", own)) ?? "n/a"}, cost ${spread(column("costUsd", own)) ?? "n/a"}${judged}`,
+      `  ${name}: ${valids}/${own.length} valid, fidelity ${stat("fidelity", own)} (draft ${stat("draft", own)}, ` +
+        `lift ${stat("lift", own)}), renders ${stat("renders", own)}, turns ${stat("turns", own)}, ` +
+        `cost ${stat("costUsd", own)}${grounded}`,
     );
   }
 }
-const cost = column("costUsd").filter((v): v is number => typeof v === "number");
 console.log(
-  `\n${valid}/${rows.length} valid with ${values.model} (${runs} run${runs > 1 ? "s" : ""} per example); ` +
-    `fidelity (F1) ${spread(column("fidelity")) ?? "n/a"}; cost $${round(cost.reduce((a, b) => a + b, 0))}` +
+  `\n${valid}/${rows.length} valid with ${values.model} (${runs} run${runs > 1 ? "s" : ""} per example` +
+    `${values.discover ? `, skill loaded from its description in ${summary.skillLoaded}/${rows.length}` : ""}); ` +
+    `fidelity (F1) ${summary.fidelity}, draft ${summary.draft}, lift ${summary.lift}; ` +
+    `renders ${summary.renders}, source reads ${summary.sourceReads}; ` +
+    `tokens in ${summary.tokensIn}, out ${summary.tokensOut}, digest ${summary.digest} chars; cost $${summary.costUsd}` +
     (values.judge
-      ? `; grounded ${spread(column("grounded")) ?? "n/a"}, inferred ${spread(column("inferred")) ?? "n/a"} (judge ${values.judge})`
+      ? `; grounded ${summary.grounded}, inferred ${summary.inferred} (judge ${values.judge}` +
+        `${judgeErrors ? `, ${judgeErrors}/${judged.length} answers unreadable` : ""})`
       : ""),
 );
+if (values.out) {
+  const options = { model: values.model, runs, discover: values.discover, judge: values.judge ?? null };
+  writeFileSync(values.out, `${JSON.stringify({ options, summary, rows }, null, 2)}\n`);
+}
 process.exitCode = valid === rows.length ? 0 : 1;

@@ -1,0 +1,153 @@
+/**
+ * The measures of the eval (scripts/eval.ts), kept apart so tests can check them without an agent: fidelity to
+ * the reference as F1, the draft's own fidelity (what an agent that changes nothing scores) and the agent's lift
+ * over it, and what an agent's transcript says about its work (turns, renders, tokens, the skill it loaded).
+ */
+import type { Explanation } from "../src/contract/explanation.ts";
+
+export const PARTS = ["keyDeps", "flowEdges", "storyFocus", "decisionFiles"] as const;
+export type Part = (typeof PARTS)[number];
+export type Parts = Record<Part, number | null>;
+
+/**
+ * F1 of the agent's items against the reference's: recall (the reference's items the agent has) and precision (the
+ * agent's items the reference has) together, so naming everything does not score. null when both are empty.
+ */
+export function f1(reference: string[], agent: string[]): number | null {
+  const want = new Set(reference);
+  const have = new Set(agent);
+  if (!want.size && !have.size) return null;
+  const hit = [...have].filter((x) => want.has(x)).length;
+  return hit ? (2 * hit) / (want.size + have.size) : 0;
+}
+
+/** A value the draft leaves to the agent ("<component-id>"): never an item of a measure. */
+const filled = (x: string) => x !== "" && !x.includes("<");
+
+/** The items each part measures, as `from->to`, component ids and file paths. */
+export function items(e: Explanation, part: Part): string[] {
+  const pick = {
+    keyDeps: () => (e.keyDependencies ?? []).map((k) => `${k.from}->${k.to}`),
+    flowEdges: () => (e.flows ?? []).flatMap((f) => (f.steps ?? []).map((s) => `${s.from}->${s.to}`)),
+    storyFocus: () =>
+      (e.story ?? []).filter((s) => (s.view ?? "architecture") === "architecture").flatMap((s) => s.focus ?? []),
+    decisionFiles: () => (e.decisions ?? []).map((d) => (d.evidence ?? "").split(":")[0] as string),
+  }[part];
+  return pick().filter(filled);
+}
+
+export const round = (v: number) => Math.round(v * 100) / 100;
+const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+/**
+ * How close an explanation is to the reference, on what the facts let both see: each part is an F1 in 0-1 and
+ * `fidelity` is the mean of the parts that apply. It measures structure, not wording.
+ */
+export function fidelity(
+  reference: Explanation | null,
+  other: Explanation | null,
+): Parts & { fidelity: number | null } {
+  const parts = Object.fromEntries(
+    PARTS.map((p) => [p, reference && other ? f1(items(reference, p), items(other, p)) : null]),
+  ) as Parts;
+  const known = PARTS.map((p) => parts[p]).filter((v): v is number => v !== null);
+  return {
+    fidelity: known.length ? round(mean(known)) : null,
+    ...(Object.fromEntries(PARTS.map((p) => [p, parts[p] === null ? null : round(parts[p] as number)])) as Parts),
+  };
+}
+
+/**
+ * What the agent adds to the draft: the mean, over the parts both measure, of the agent's F1 minus the draft's.
+ * The draft already holds the outline's focus, key dependency and flows, so the fidelity alone partly measures
+ * whether the agent kept them; 0 is an agent that changed nothing, and below 0 one that moved away from the
+ * reference.
+ */
+export function lift(agent: Parts, draft: Parts): number | null {
+  const both = PARTS.filter((p) => agent[p] !== null && draft[p] !== null);
+  return both.length ? round(mean(both.map((p) => (agent[p] as number) - (draft[p] as number)))) : null;
+}
+
+/** What a `claude -p --output-format stream-json --verbose` transcript says about the agent's work. */
+export interface Transcript {
+  turns: number | null;
+  costUsd: number | null;
+  /** Prompt tokens, cached or not, and output tokens, over the whole run. */
+  tokensIn: number | null;
+  tokensOut: number | null;
+  /** `explain-change render` calls: 1 is a first-time valid explanation, each more is a round of fixes. */
+  renders: number;
+  /** Files the agent read outside the work folder: the digest is meant to be enough. */
+  sourceReads: number;
+  /** The skills the agent loaded with the Skill tool, in order. */
+  skills: string[];
+}
+
+interface Usage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+}
+interface Block {
+  type?: string;
+  name?: string;
+  input?: { command?: string; file_path?: string; skill?: string };
+}
+
+/** Reads a transcript, one JSON event per line; a line that is not JSON is skipped. */
+export function readTranscript(stdout: string): Transcript {
+  const out: Transcript = {
+    turns: null,
+    costUsd: null,
+    tokensIn: null,
+    tokensOut: null,
+    renders: 0,
+    sourceReads: 0,
+    skills: [],
+  };
+  for (const line of stdout.split("\n")) {
+    let event: {
+      type?: string;
+      message?: { content?: Block[] };
+      num_turns?: number;
+      total_cost_usd?: number;
+      usage?: Usage;
+    };
+    try {
+      event = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (event.type === "assistant") {
+      for (const block of event.message?.content ?? []) {
+        if (block.type !== "tool_use") continue;
+        const input = block.input ?? {};
+        if (block.name === "Bash" && /\bexplain-change\s+render\b/.test(input.command ?? "")) out.renders++;
+        if (block.name === "Read" && input.file_path && !/(^|[\\/])\.explain-change[\\/]/.test(input.file_path))
+          out.sourceReads++;
+        if (block.name === "Skill" && input.skill) out.skills.push(input.skill);
+      }
+    } else if (event.type === "result") {
+      const u = event.usage ?? {};
+      out.turns = event.num_turns ?? null;
+      out.costUsd = event.total_cost_usd ?? null;
+      out.tokensIn =
+        (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) || null;
+      out.tokensOut = u.output_tokens ?? null;
+    }
+  }
+  return out;
+}
+
+/** "mean ± sd" of the numbers in `xs`, or null when there are none. */
+export function spread(xs: unknown[]): string | null {
+  const n = xs.filter((x): x is number => typeof x === "number");
+  if (!n.length) return null;
+  const m = mean(n);
+  const sd = Math.sqrt(mean(n.map((x) => (x - m) ** 2)));
+  return n.length > 1 ? `${round(m)} ± ${round(sd)}` : String(round(m));
+}
+
+/** An agent command line as argv: words split on any run of spaces. */
+export const argv = (command: string): string[] => command.trim().split(/\s+/).filter(Boolean);
