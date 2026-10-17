@@ -191,6 +191,9 @@ function agentRun(target: ExampleTarget, r: number): Row {
       "stream-json",
       "--verbose",
       "--strict-mcp-config",
+      // Only the tools the agent may use: the definitions of the others cost ~5k tokens on every turn.
+      "--tools",
+      values.discover ? "Bash,Read,Edit,Write,Skill" : "Bash,Read,Edit,Write",
       ...(values.discover ? [] : ["--append-system-prompt", prompt, "--disable-slash-commands"]),
       "--allowedTools",
       "Bash(explain-change:*)",
