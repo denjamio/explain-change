@@ -95,6 +95,15 @@ export const CODE_NAME_RE = new RegExp(
   "gu",
 );
 
+/**
+ * Counts as digits (ASD-STE100), applied to the page rather than refused: a refusal cost the agent a round of
+ * fixes in most eval runs, and the rewrite is mechanical. Code names (`two_factor`) are words of their own and stay.
+ */
+const NUMBER_WORDS = ["two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+const NUMBER_RE = new RegExp(`(?<![${LETTER}\`])(${NUMBER_WORDS.join("|")})(?![${LETTER}\`])`, "giu");
+export const digits = (text: string): string =>
+  text.replace(NUMBER_RE, (w) => String(NUMBER_WORDS.indexOf(w.toLowerCase()) + 2));
+
 /** One regex per refused group, matching whole words; `word*` matches the word with any ending. */
 export function refusedPatterns(): [string, RegExp][] {
   return REFUSED.map((g) => {
@@ -111,7 +120,7 @@ export function proseRules(names: readonly string[] = []): string {
   return (
     `Simplified Technical English (ASD-STE100): one idea per sentence, at most ${MAX_SENTENCE_WORDS} words; ` +
     "active voice, present tense; the effect, not how good it is; simple verbs (adds, sends, stores, calls, checks, " +
-    "replaces); one word per thing; counts as digits (3 files), and 'a' for a single thing (a ZIP file, not 1 ZIP " +
+    "replaces); one word per thing; counts as digits (3 files, the page writes them so), and 'a' for a single thing (a ZIP file, not 1 ZIP " +
     "file); no idioms. No passive with its agent: 'the job sends it', not 'it is sent by the job'. Code names " +
     "(snake_case, CamelCase, Module::Name, obj.method()) exactly as in the code; the word rules skip them. " +
     (names.length ? `Product names that are not code: ${names.join(", ")}. ` : "") +

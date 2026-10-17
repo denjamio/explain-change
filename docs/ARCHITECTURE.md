@@ -9,9 +9,10 @@ git diff / Azure DevOps PR + .explain-change.toml
         │  explain-change local | pr
         ▼
 facts.json         the change, analyzed: files, components, dependencies, rules, symbols, OpenSpec, outline
-digest.md          ≈4–5k tokens for the agent on a real PR: the facts, the best hunks, the rules of the task
-explanation.json   a draft: ids, views, focus, code references already right; "<…>" for the agent's words
-        │  the agent fills explanation.json
+digest.md          ≈4–5k tokens for the agent on a real PR: the facts, the best hunks, the rules of the task, and
+                   the draft of explanation.json: ids, views, focus, code references already right; "<…>" for the
+                   agent's words (also in draft.json)
+        │  the agent writes explanation.json: the draft, filled, in 1 call
         ▼  explain-change render
 validation         every issue at once, as {path, code, message}; exit 1 until valid
 out/<branch>.html  one self-contained page: the report script, its styles and the data
@@ -95,9 +96,10 @@ skill draws boundaries with; it never changes the facts of a change.
 ## Explanation lifecycle
 
 `local` / `pr` make `explanation.json` belong to the current change: they keep it when it already does, restore the
-one saved for this key in `explanations/`, or write a fresh draft (saving the previous change's work under its own
-key first). `render` validates it; a valid explanation is saved under its key, so explaining a change again costs
-nothing.
+one saved for this key in `explanations/`, or leave it missing for the agent to write from the draft (saving the
+previous change's work under its own key first). The draft is never written to `explanation.json`: an agent that
+has it in the digest writes the file in 1 call, without a turn to read it first. `render` validates it; a valid
+explanation is saved under its key, so explaining a change again costs nothing.
 
 ## Distribution
 

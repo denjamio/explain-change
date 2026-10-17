@@ -32,10 +32,14 @@ export function nextStep(state: ExplanationState, reportPath: string | null, fac
   }
   switch (state) {
     case "missing":
+      return {
+        action: "write-explanation",
+        message: `Read ${WORK_DIR}/${FILES.digest}, write ${explanation} from the draft at its end with every "<…>" filled, then run \`explain-change render\`.`,
+      };
     case "draft":
       return {
         action: "write-explanation",
-        message: `Read ${WORK_DIR}/${FILES.digest}, fill every "<…>" in ${explanation}, then run \`explain-change render\`.`,
+        message: `Read ${WORK_DIR}/${FILES.digest}, fill every "<…>" left in ${explanation}, then run \`explain-change render\`.`,
       };
     case "invalid":
       return {

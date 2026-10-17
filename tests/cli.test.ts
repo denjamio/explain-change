@@ -633,11 +633,13 @@ describe("config, digest and the agent's workflow", () => {
     const r = repo(MODELS_CONFIG);
     const first = r.json(["local", "--base", "main"]);
     expect(first.status).toBe(0);
-    expect(first.out.explanation.state).toBe("draft");
+    // the draft is at the end of the digest and in draft.json: the agent writes explanation.json in 1 call
+    expect(first.out.explanation.state).toBe("missing");
     expect(first.out.explanation.action).toBe("drafted");
+    expect(r.read(".explain-change/digest.md")).toContain('## Draft\n```json\n{\n  "version"');
     expect(first.out.next.action).toBe("write-explanation");
     expect(r.json(["status"]).status).toBe(1);
-    const draft = JSON.parse(r.read(".explain-change/explanation.json"));
+    const draft = JSON.parse(r.read(".explain-change/draft.json"));
     r.write({
       ".explain-change/explanation.json": JSON.stringify({
         ...draft,
@@ -667,7 +669,7 @@ describe("config, digest and the agent's workflow", () => {
     r.git("checkout", "-q", "-b", "other", "main");
     r.write({ "app/models/line_item.rb": "class LineItem\n  belongs_to :order\nend\n" });
     r.commit("other");
-    expect(r.json(["local", "--base", "main"]).out.explanation).toMatchObject({ state: "draft", action: "drafted" });
+    expect(r.json(["local", "--base", "main"]).out.explanation).toMatchObject({ state: "missing", action: "drafted" });
     r.git("checkout", "-q", "feature");
     const back = r.json(["local", "--base", "main"]);
     expect(back.out.explanation).toMatchObject({ state: "valid", action: "restored" });

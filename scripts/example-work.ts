@@ -67,7 +67,7 @@ if (command === "open") {
   if (existsSync(target.explanation))
     writeFileSync(join(repo, ".explain-change", "reference.json"), readFileSync(target.explanation));
   console.log(
-    `${repo}\n  read .explain-change/digest.md, fill .explain-change/explanation.json, then: save ${name} ${dir}`,
+    `${repo}\n  read .explain-change/digest.md, write .explain-change/explanation.json from its draft, then: save ${name} ${dir}`,
   );
 } else {
   const repo = repoIn(dir);
