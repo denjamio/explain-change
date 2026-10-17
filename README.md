@@ -318,13 +318,14 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
   outline's focus, key dependency and flows, so the eval scores the draft too (`draft`: what an agent that changes
   nothing gets) and reports `lift`, what the agent adds to it. `--runs N` repeats each example and reports mean ±
   standard deviation; `--judge haiku` asks a second agent whether each decision's source states its why
-  (`grounded`) and, in the same call, whether the digest shows each statement of the prose (`faithful`); it reports
+  (`grounded`) and, in a 2nd call, whether the digest shows each statement of the prose (`faithful`); it reports
   the share the agent labelled `inferred`, and counts the answers it cannot read.
   `--discover` installs the skills in the repository's `.claude/skills` instead of giving SKILL.md to the agent, and
   reports whether the agent loaded explain-change from its description alone. `--out results.json` keeps every run
   and the summary; `--baseline results.json` compares a new eval with it and fails when a mean drops by more than
-  the noise of either side (use `--runs 3` or more). With no agent, the tests check the draft's fidelity to the
-  scenarios' explanations, and `bun run examples -- --real` prints it for each real PR.
+  the noise (2 standard errors of the difference, at least 0.1; use `--runs 3` or more). With no agent, the tests
+  check the draft's fidelity to the scenarios' explanations, and `bun run examples -- --real` prints it for each
+  real PR.
 - **Versions**: bump `ANALYSIS_VERSION` (`src/core/constants.ts`) when the analysis can produce different facts for
   the same diff, and `CONTRACT_VERSION` when `facts.json` or `explanation.json` change shape. Changes go in
   [CHANGELOG.md](CHANGELOG.md).
