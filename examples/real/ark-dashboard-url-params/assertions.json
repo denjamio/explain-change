@@ -1,0 +1,94 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "62a4cdc8947d54339ce98f2d05b15a1de9a915af"
+  },
+  "assertions": [
+    {
+      "id": "scoped-propagation",
+      "kind": "llm",
+      "text": "Says that URL query params are now scoped by pathname: same-screen navigation keeps all params, while navigating to a different screen keeps only namespace plus params the target href names."
+    },
+    {
+      "id": "single-helper",
+      "kind": "llm",
+      "text": "Says that a single shared helper (buildScopedPath) replaces several duplicated copies of merge-all-params logic in links, the navigation hook and the sidebar."
+    },
+    {
+      "id": "url-writeback",
+      "kind": "llm",
+      "text": "Says that NamespaceProvider writes the resolved namespace back into the URL using history.replaceState, adding no history entry, so refreshes, bookmarks and shared links resolve to the same namespace."
+    },
+    {
+      "id": "base-path-relative",
+      "kind": "llm",
+      "text": "Says that the write-back uses a query-only relative URL so the configured base path prefix is preserved, since native history does not apply the base path."
+    },
+    {
+      "id": "derive-namespace",
+      "kind": "llm",
+      "text": "Says that the namespace is now derived during render instead of mirrored into useState('default'), removing the initial wrong-namespace request on first paint."
+    },
+    {
+      "id": "unreachable-correction",
+      "kind": "llm",
+      "text": "Says that when the requested namespace is unreachable, the URL is corrected to the fallback namespace and a toast explains the substitution, shown only once."
+    },
+    {
+      "id": "context-seed-stale",
+      "kind": "llm",
+      "text": "Says that useGetContext seeds the resolved-namespace query key with the response in hand and uses a short staleTime, avoiding a refetch that would re-trigger the loading gate."
+    },
+    {
+      "id": "back-to-sessions",
+      "kind": "llm",
+      "text": "Says that Back to sessions on the session detail page now uses the scoped navigation, carrying namespace rather than every param the conversation held."
+    },
+    {
+      "id": "not-all-params-dropped",
+      "kind": "llm",
+      "text": "Does not claim that all query params are dropped on every navigation; params are kept when staying on the same screen."
+    },
+    {
+      "id": "not-push-history",
+      "kind": "llm",
+      "text": "Does not claim that the namespace write-back uses router.push or adds browser history entries or reloads the page."
+    },
+    {
+      "id": "m-helper",
+      "kind": "mentions",
+      "text": "names the scoping helper",
+      "any": [
+        "buildScopedPath",
+        "param-scope"
+      ]
+    },
+    {
+      "id": "m-allowlist",
+      "kind": "mentions",
+      "text": "names the app-scoped allowlist",
+      "any": [
+        "APP_SCOPED_PARAMS",
+        "app-scoped"
+      ]
+    },
+    {
+      "id": "m-provider",
+      "kind": "mentions",
+      "text": "names the namespace provider",
+      "any": [
+        "NamespaceProvider"
+      ]
+    },
+    {
+      "id": "m-replace",
+      "kind": "mentions",
+      "text": "names the history API used for write-back",
+      "any": [
+        "replaceState",
+        "history.replaceState"
+      ]
+    }
+  ]
+}

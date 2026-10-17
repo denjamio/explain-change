@@ -1,0 +1,92 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "0d8e0470c0453c0ca568f4a7187cf5787a46d96a"
+  },
+  "assertions": [
+    {
+      "id": "bulk-delete-endpoint",
+      "kind": "llm",
+      "text": "Says that the PR adds a DELETE /folders endpoint that deletes many of a user's folders in one request, replacing one call per folder."
+    },
+    {
+      "id": "unfiles-ciphers",
+      "kind": "llm",
+      "text": "Says that deleting a folder re-assigns the ciphers filed under it to no folder (unfiled) rather than deleting the ciphers."
+    },
+    {
+      "id": "layering",
+      "kind": "llm",
+      "text": "Says that the controller delegates to a DeleteManyFoldersCommand, which calls a new repository DeleteManyAsync method implemented separately for Dapper and Entity Framework."
+    },
+    {
+      "id": "sql-proc",
+      "kind": "llm",
+      "text": "Says that the SQL Server implementation is a new Folder_DeleteByIds stored procedure, added with a migration script, run within a transaction from Dapper."
+    },
+    {
+      "id": "ownership-filter",
+      "kind": "llm",
+      "text": "Says that ids of folders the user does not own are silently ignored, so only the caller's own folders are deleted."
+    },
+    {
+      "id": "push-sync",
+      "kind": "llm",
+      "text": "Says that after deletion the command sends a single full vault sync push instead of per-folder delete notifications, because ciphers were also changed."
+    },
+    {
+      "id": "limit-and-flag",
+      "kind": "llm",
+      "text": "Says that the endpoint is gated behind the VFO1 feature flag and limits cloud requests to 500 folder ids, while self-hosted has no limit."
+    },
+    {
+      "id": "shared-cipher-folders",
+      "kind": "llm",
+      "text": "Says that the user's folder assignment is also cleared on organization ciphers shared with the user, since the folder mapping is stored per user in the cipher's Folders JSON."
+    },
+    {
+      "id": "no-cipher-delete",
+      "kind": "llm",
+      "text": "Does not claim that deleting a folder also deletes the ciphers inside it."
+    },
+    {
+      "id": "no-unbounded-or-other-users",
+      "kind": "llm",
+      "text": "Does not claim that the endpoint can delete other users' folders or raises an error when given ids the user does not own."
+    },
+    {
+      "id": "m-command",
+      "kind": "mentions",
+      "text": "names the new command",
+      "any": [
+        "DeleteManyFoldersCommand",
+        "IDeleteManyFoldersCommand"
+      ]
+    },
+    {
+      "id": "m-proc",
+      "kind": "mentions",
+      "text": "names the stored procedure",
+      "any": [
+        "Folder_DeleteByIds"
+      ]
+    },
+    {
+      "id": "m-repo-method",
+      "kind": "mentions",
+      "text": "names the repository method",
+      "any": [
+        "DeleteManyAsync"
+      ]
+    },
+    {
+      "id": "m-request-model",
+      "kind": "mentions",
+      "text": "names the request model",
+      "any": [
+        "FolderBulkDeleteRequestModel"
+      ]
+    }
+  ]
+}

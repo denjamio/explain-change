@@ -1,0 +1,96 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "e3f15ce8426a803035335fde34cc69c563ceafd5"
+  },
+  "assertions": [
+    {
+      "id": "logs-run-results",
+      "kind": "llm",
+      "text": "Says that each workflow run's outcome (completed, halted or error) is recorded as a log entry, so users can debug and experiment with workflows."
+    },
+    {
+      "id": "ui-logs-modal",
+      "kind": "llm",
+      "text": "Says that logs are viewed through a new Logs action in the workflow editor (and list) that opens a modal listing entries with result and date."
+    },
+    {
+      "id": "opt-in-logging-flag",
+      "kind": "llm",
+      "text": "Says that logging is opt-in per workflow through a new logging flag that defaults to off and can be toggled from the logs modal."
+    },
+    {
+      "id": "new-log-table",
+      "kind": "llm",
+      "text": "Says that a new workflow_log table stores each run's result, workflow, optional step and trigger asset, with a run id, cascading deletion with the workflow."
+    },
+    {
+      "id": "step-and-asset-info",
+      "kind": "llm",
+      "text": "Says that entries identify the step where a run halted or errored and the asset that triggered it, linking to that asset."
+    },
+    {
+      "id": "execution-writes-log",
+      "kind": "llm",
+      "text": "Says that the workflow execution service writes a log entry when a run completes, a step halts it, or a step throws, only if logging is enabled."
+    },
+    {
+      "id": "logs-endpoint-paginated",
+      "kind": "llm",
+      "text": "Says that a new owner-protected endpoint returns a workflow's logs, filterable by result, paginated by a before timestamp and limit, newest first."
+    },
+    {
+      "id": "disable-deletes-logs",
+      "kind": "llm",
+      "text": "Says that disabling logging deletes the workflow's existing log entries."
+    },
+    {
+      "id": "not-always-logged",
+      "kind": "llm",
+      "text": "Does not claim that every workflow run is logged regardless of settings, or that logs are kept after logging is disabled."
+    },
+    {
+      "id": "not-step-output",
+      "kind": "llm",
+      "text": "Does not claim that logs capture detailed per-step output or payloads; they hold only the basic result, step and trigger asset."
+    },
+    {
+      "id": "m-table",
+      "kind": "mentions",
+      "text": "names the new log table or model",
+      "any": [
+        "workflow_log",
+        "WorkflowLogTable",
+        "workflow log table"
+      ]
+    },
+    {
+      "id": "m-result",
+      "kind": "mentions",
+      "text": "names the result enum",
+      "any": [
+        "WorkflowResult"
+      ]
+    },
+    {
+      "id": "m-logging",
+      "kind": "mentions",
+      "text": "names the logging flag",
+      "any": [
+        "logging"
+      ]
+    },
+    {
+      "id": "m-endpoint",
+      "kind": "mentions",
+      "text": "names the logs endpoint or permission",
+      "any": [
+        "getWorkflowLogs",
+        "/workflows/{id}/logs",
+        "workflow.logs",
+        "WorkflowLogs"
+      ]
+    }
+  ]
+}

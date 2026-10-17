@@ -6,6 +6,37 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- The eval grades each run with pass/fail graders, after `claude plugin eval` and skill-creator, and `score` is the
+  share that pass: **structure** (deterministic, against the facts: the story lights at least 80% of the changed
+  code, the key dependency is one the change touches, decision evidence points into the change, flow steps exist in
+  the code, no field repeats another), **content** (each example's `assertions.json`), **prose** (a rubric of
+  PASS/FAIL conditions) and **grounded** (each decision's why against its source). The summary lists the failing
+  graders first, with their evidence: what to fix.
+- `examples/real/<name>/assertions.json`: what any good explanation of that PR says, written once by a model from
+  the PR's title, description and diff, never from the tool's digest or explanation (`bun scripts/eval-assertions.ts`).
+- Train and test splits (`real.json` `eval`, `--split`, train by default): an improvement loop reads the failures
+  of train only and keeps a change when test does not drop.
+- `--calibrate`, the meta-eval: each committed explanation and its mutants (a dropped story step, a key dependency
+  the change does not touch, evidence outside the change, generic prose, a TL;DR that lists files, a goal that
+  repeats it, decisions that restate the change, a made-up why) graded; it reports which defects the graders catch.
+- `--compare results.json`: a blind A/B of 2 evals' explanations, run by run, asked in both orders (a verdict that
+  changes with the order is a tie), with a sign test.
+- `--max-cost USD` stops starting runs past the cost; `--baseline` also lists the graders an iteration fixed or
+  broke.
+
+### Changed
+- The judge's calls are lean (no tools, MCP servers, skills or settings; a 1-line system prompt): about 600 tokens
+  of overhead per call instead of 20k+. Haiku stays the default judge.
+- The agent under test runs with no MCP server and, unless `--discover`, no other skill: each run is isolated from
+  the machine's setup. Tokens do not compare with earlier evals.
+- `fidelity`, `draft` and `lift` stay as a regression check of the structure, not a measure of quality: they compare
+  with the committed explanation, which the same tool wrote.
+
+### Removed
+- `faithful`: it checked the prose against the digest, which is the tool's own selection, and sat near 0.9 in
+  every eval. The content assertions, written from the diff, replace it.
+
 ## [0.9.2] - 2026-10-17
 
 ### Added

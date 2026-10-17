@@ -1,0 +1,80 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "07e37065d9830bbcf8b1ed70208f5e1b90f2ad4b"
+  },
+  "assertions": [
+    {
+      "id": "user-export-zip",
+      "kind": "llm",
+      "text": "Says that admin users can export their family's data (accounts, transactions, trades, categories) as a downloadable zip of CSV files, which can be re-imported via CSV import."
+    },
+    {
+      "id": "background-job",
+      "kind": "llm",
+      "text": "Says that the export is generated asynchronously in a background job rather than in the web request, and the request returns immediately with a notice."
+    },
+    {
+      "id": "family-export-model",
+      "kind": "llm",
+      "text": "Says that a new FamilyExport record, belonging to a family, tracks each export's status through pending, processing, completed and failed."
+    },
+    {
+      "id": "active-storage",
+      "kind": "llm",
+      "text": "Says that the generated zip is attached to the FamilyExport record as a file (Active Storage) and downloaded via a redirect to that attachment."
+    },
+    {
+      "id": "admin-only",
+      "kind": "llm",
+      "text": "Says that access to exports is restricted to admin users, and exports are scoped to the current family."
+    },
+    {
+      "id": "exporter-service",
+      "kind": "llm",
+      "text": "Says that a data exporter class builds the zip in memory, scoped to the family, containing several CSV files plus an all.ndjson file with fuller data."
+    },
+    {
+      "id": "ui-polling",
+      "kind": "llm",
+      "text": "Says that the settings profile page shows an export button opening a modal, plus a lazy-loaded list of exports that auto-refreshes while exports are pending or processing."
+    },
+    {
+      "id": "not-full-import",
+      "kind": "llm",
+      "text": "Does not claim that every exported file or data type can be re-imported; only accounts, transactions and trades are importable, the rest is for the user's records."
+    },
+    {
+      "id": "not-synchronous",
+      "kind": "llm",
+      "text": "Does not claim that the zip is built and streamed directly in the create request or that any family member can export."
+    },
+    {
+      "id": "mention-job",
+      "kind": "mentions",
+      "text": "names the background job",
+      "any": [
+        "FamilyDataExportJob"
+      ]
+    },
+    {
+      "id": "mention-model",
+      "kind": "mentions",
+      "text": "names the export record model",
+      "any": [
+        "FamilyExport",
+        "family_exports"
+      ]
+    },
+    {
+      "id": "mention-exporter",
+      "kind": "mentions",
+      "text": "names the exporter class",
+      "any": [
+        "Family::DataExporter",
+        "DataExporter"
+      ]
+    }
+  ]
+}

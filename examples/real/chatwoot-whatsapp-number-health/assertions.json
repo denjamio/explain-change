@@ -1,0 +1,86 @@
+{
+  "$comment": "What any good explanation of this PR says, written by a model from the PR's title, description and diff only (scripts/eval-assertions.ts). The eval grades each run against them. Delete one that is wrong; keep them stable so evals compare.",
+  "generated": {
+    "model": "sonnet",
+    "head": "fd045f8ac052788058dba1a09336821bd44f436d"
+  },
+  "assertions": [
+    {
+      "id": "scheduled-sync",
+      "kind": "llm",
+      "text": "Says that WhatsApp Cloud API phone-number health is now synced automatically on a schedule, about every six hours, through low-priority background jobs."
+    },
+    {
+      "id": "account-health-page",
+      "kind": "llm",
+      "text": "Says that the Account Health page is expanded into sections showing phone, health and capacity, business account, webhook and coexistence details."
+    },
+    {
+      "id": "persisted-snapshot",
+      "kind": "llm",
+      "text": "Says that the latest health snapshot, check time and last error are stored on the WhatsApp channel record via new columns."
+    },
+    {
+      "id": "keep-last-success",
+      "kind": "llm",
+      "text": "Says that a failed refresh keeps the last successful health data and only records the error and attempt time."
+    },
+    {
+      "id": "auth-error-guidance",
+      "kind": "llm",
+      "text": "Says that authorization failures are classified and the page directs admins to the Configuration tab, with different wording for Embedded Signup versus manual token."
+    },
+    {
+      "id": "stale-write-guard",
+      "kind": "llm",
+      "text": "Says that writes are guarded by check time so an older, slower health check cannot overwrite a newer result."
+    },
+    {
+      "id": "service-fetches-two-resources",
+      "kind": "llm",
+      "text": "Says that the health service fetches phone number data and WhatsApp business account data from Meta's Graph API, enforcing a minimum API version."
+    },
+    {
+      "id": "risky-log-only",
+      "kind": "llm",
+      "text": "Says that risky quality or status transitions are only logged, while alerts, throttling, inbox disabling and notifications are left to a separate ticket."
+    },
+    {
+      "id": "no-alerts-claim",
+      "kind": "llm",
+      "text": "Does not claim that this change sends notifications or alerts, throttles sending, or automatically disables inboxes when a number becomes unhealthy."
+    },
+    {
+      "id": "no-stale-display-claim",
+      "kind": "llm",
+      "text": "Does not claim that the page shows Meta error codes or stale cached health data to the user when authorization fails."
+    },
+    {
+      "id": "mention-service",
+      "kind": "mentions",
+      "text": "names the health service class",
+      "any": [
+        "Whatsapp::HealthService",
+        "HealthService"
+      ]
+    },
+    {
+      "id": "mention-scheduler-job",
+      "kind": "mentions",
+      "text": "names the scheduler job",
+      "any": [
+        "HealthSyncSchedulerJob",
+        "Channels::Whatsapp::HealthSyncSchedulerJob"
+      ]
+    },
+    {
+      "id": "mention-health-column",
+      "kind": "mentions",
+      "text": "names the persisted snapshot column",
+      "any": [
+        "phone_number_health",
+        "phone_number_health_checked_at"
+      ]
+    }
+  ]
+}

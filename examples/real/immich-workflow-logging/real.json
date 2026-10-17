@@ -7,5 +7,6 @@
   "project": "Immich",
   "title": "Workflow logging (#29878)",
   "stack": "TypeScript",
-  "shows": "A run log through every layer: SvelteKit modal, generated SDK, NestJS endpoint, service, Kysely repository and a new table."
+  "shows": "A run log through every layer: SvelteKit modal, generated SDK, NestJS endpoint, service, Kysely repository and a new table.",
+  "eval": "test"
 }

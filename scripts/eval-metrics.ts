@@ -151,7 +151,7 @@ export function spread(xs: unknown[]): string | null {
 }
 
 /** The measures --baseline compares: higher is better for each. */
-export const COMPARED = ["fidelity", "lift", "grounded", "faithful"] as const;
+export const COMPARED = ["score", "structure", "content", "prose", "grounded", "fidelity", "lift"] as const;
 
 export interface Comparison {
   measure: string;
