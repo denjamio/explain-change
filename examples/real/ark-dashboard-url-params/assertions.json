@@ -21,11 +21,6 @@
       "text": "Says that NamespaceProvider writes the resolved namespace back into the URL using history.replaceState, adding no history entry, so refreshes, bookmarks and shared links resolve to the same namespace."
     },
     {
-      "id": "base-path-relative",
-      "kind": "llm",
-      "text": "Says that the write-back uses a query-only relative URL so the configured base path prefix is preserved, since native history does not apply the base path."
-    },
-    {
       "id": "derive-namespace",
       "kind": "llm",
       "text": "Says that the namespace is now derived during render instead of mirrored into useState('default'), removing the initial wrong-namespace request on first paint."
@@ -34,11 +29,6 @@
       "id": "unreachable-correction",
       "kind": "llm",
       "text": "Says that when the requested namespace is unreachable, the URL is corrected to the fallback namespace and a toast explains the substitution, shown only once."
-    },
-    {
-      "id": "context-seed-stale",
-      "kind": "llm",
-      "text": "Says that useGetContext seeds the resolved-namespace query key with the response in hand and uses a short staleTime, avoiding a refetch that would re-trigger the loading gate."
     },
     {
       "id": "back-to-sessions",

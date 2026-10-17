@@ -79,14 +79,6 @@
       "any": [
         "DeleteManyAsync"
       ]
-    },
-    {
-      "id": "m-request-model",
-      "kind": "mentions",
-      "text": "names the request model",
-      "any": [
-        "FolderBulkDeleteRequestModel"
-      ]
     }
   ]
 }

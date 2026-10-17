@@ -26,24 +26,9 @@
       "text": "Says that IMMEDIATE webhooks pay the payload-building cost in the triggering request or task, slowing it, while deferred keeps latency low."
     },
     {
-      "id": "read-once-at-trigger",
-      "kind": "llm",
-      "text": "Says that the setting is read once when deliveries are created, so changing it later does not affect existing deliveries or queued tasks, which finish as started."
-    },
-    {
       "id": "settable-surfaces",
       "kind": "llm",
       "text": "Says that payloadGeneration can be set through the webhook create and update GraphQL mutations and through the app manifest, and is exposed on the Webhook type."
-    },
-    {
-      "id": "writer-for-immediate",
-      "kind": "llm",
-      "text": "Says that immediate payloads on deferrable events are resolved against the writer database rather than the replica, so dataloader-loaded fields are not stale."
-    },
-    {
-      "id": "ignored-cases",
-      "kind": "llm",
-      "text": "Says that the setting is ignored for legacy webhooks without a subscription query, for synchronous events, and for events that do not defer payloads."
     },
     {
       "id": "no-all-immediate",
@@ -62,14 +47,6 @@
       "any": [
         "payloadGeneration",
         "payload_generation"
-      ]
-    },
-    {
-      "id": "m-model-class",
-      "kind": "mentions",
-      "text": "names the stored-value class",
-      "any": [
-        "WebhookPayloadGeneration"
       ]
     },
     {

@@ -26,11 +26,6 @@
       "text": "Says that the 25-asset budget is divided evenly across birthday years (up to 5 per year), taking the newest assets of each year."
     },
     {
-      "id": "over-limit-sampling",
-      "kind": "llm",
-      "text": "Says that when more than 25 birthday years have assets, 25 years are chosen at random and one asset is taken from each."
-    },
-    {
       "id": "leap-day",
       "kind": "llm",
       "text": "Says that people born on February 29 are celebrated on February 28 in non-leap years."
@@ -39,11 +34,6 @@
       "id": "data-model",
       "kind": "llm",
       "text": "Says that the memory data DTO is generalized from the on-this-day shape to include optional person id and person name, with a Birthday memory type added."
-    },
-    {
-      "id": "validation",
-      "kind": "llm",
-      "text": "Says that creating a birthday-type memory through the API requires personId and personName in data, enforced by validation."
     },
     {
       "id": "no-false-eligibility",
@@ -73,24 +63,6 @@
         "MemoryService",
         "createBirthdayMemories",
         "memory service"
-      ]
-    },
-    {
-      "id": "m-dto",
-      "kind": "mentions",
-      "text": "names the generalized data DTO",
-      "any": [
-        "MemoryDataDto",
-        "MemoryDataSchema",
-        "MemoryData"
-      ]
-    },
-    {
-      "id": "m-person-repo",
-      "kind": "mentions",
-      "text": "names the people-selection query",
-      "any": [
-        "forBirthdayMemories"
       ]
     }
   ]

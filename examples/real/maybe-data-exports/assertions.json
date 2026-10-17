@@ -41,11 +41,6 @@
       "text": "Says that the settings profile page shows an export button opening a modal, plus a lazy-loaded list of exports that auto-refreshes while exports are pending or processing."
     },
     {
-      "id": "not-full-import",
-      "kind": "llm",
-      "text": "Does not claim that every exported file or data type can be re-imported; only accounts, transactions and trades are importable, the rest is for the user's records."
-    },
-    {
       "id": "not-synchronous",
       "kind": "llm",
       "text": "Does not claim that the zip is built and streamed directly in the create request or that any family member can export."

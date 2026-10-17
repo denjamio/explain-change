@@ -31,19 +31,9 @@
       "text": "Says that authorization failures are classified and the page directs admins to the Configuration tab, with different wording for Embedded Signup versus manual token."
     },
     {
-      "id": "stale-write-guard",
-      "kind": "llm",
-      "text": "Says that writes are guarded by check time so an older, slower health check cannot overwrite a newer result."
-    },
-    {
       "id": "service-fetches-two-resources",
       "kind": "llm",
       "text": "Says that the health service fetches phone number data and WhatsApp business account data from Meta's Graph API, enforcing a minimum API version."
-    },
-    {
-      "id": "risky-log-only",
-      "kind": "llm",
-      "text": "Says that risky quality or status transitions are only logged, while alerts, throttling, inbox disabling and notifications are left to a separate ticket."
     },
     {
       "id": "no-alerts-claim",

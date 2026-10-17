@@ -36,16 +36,6 @@
       "text": "Says that the row-action command skips missing, other-organization or non-staged members and reports each individually, while seat expansion failure rejects the whole request."
     },
     {
-      "id": "rollback-on-failure",
-      "kind": "llm",
-      "text": "Says that on failure the PR rolls back: released seats and reverted rows to staged, or restored snapshots of promoted rows in the invite path."
-    },
-    {
-      "id": "sm-standalone",
-      "kind": "llm",
-      "text": "Says that Secrets Manager access carries over as provisioned, but an organization with the Secrets Manager standalone discount grants it to all invited staged members."
-    },
-    {
       "id": "not-new-rows",
       "kind": "llm",
       "text": "Does not claim that inviting a staged user deletes and recreates the organization user, since the row keeps its Id and ExternalId."

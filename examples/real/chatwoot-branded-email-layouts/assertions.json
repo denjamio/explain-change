@@ -36,11 +36,6 @@
       "text": "Says that the layouts are managed only through the API: an admin-only account branded_email_layout endpoint and a branded_email_layout param on inbox update."
     },
     {
-      "id": "validation",
-      "kind": "llm",
-      "text": "Says that a saved layout must parse as valid Liquid and include content_for_layout, otherwise the API returns a 422 error."
-    },
-    {
       "id": "resolver-current-inbox",
       "kind": "llm",
       "text": "Says that the mailer sets Current.inbox and the DB template resolver uses it to pick the inbox layout for email inboxes."

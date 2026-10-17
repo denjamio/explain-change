@@ -73,7 +73,8 @@ export function writerPrompt(facts: Facts): string {
     "its accepted alternatives in `any`.\n" +
     "Each condition checks 1 fact, in at most 25 words: never 'A, B and C', never a list of files, fields or " +
     "statuses. State the gist; an explanation that says it in its own words, without every detail, must pass. No " +
-    "exact wording, no file paths, no line numbers, nothing a 1-page write-up leaves out. Ids are kebab-case.\n" +
+    "exact wording, no file paths, no line numbers, nothing a 1-page write-up leaves out: no edge case, limit, " +
+    "rollback, cache or locking detail, and no name of a DTO, request model or enum class. Ids are kebab-case.\n" +
     'Answer only with JSON: {"assertions": [{"id": "...", "kind": "llm", "text": "Says that ..."}, ' +
     '{"id": "...", "kind": "mentions", "text": "names the new model", "any": ["FamilyExport"]}]}\n\n' +
     `<pr-title>${facts.source.title}</pr-title>\n\n<pr-description>\n${facts.source.description.slice(0, 12_000)}\n</pr-description>\n\n` +

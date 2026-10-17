@@ -26,19 +26,9 @@
       "text": "Says that a new mutation toggles availability for several channels of one variant, identified by ID or SKU, and requires manage-products permission."
     },
     {
-      "id": "no-create-missing-listing",
-      "kind": "llm",
-      "text": "Says that the toggle mutation errors with not found when the variant has no listing in a requested channel, instead of creating price-less listings."
-    },
-    {
       "id": "central-sellable-definition",
       "kind": "llm",
       "text": "Says that sellability is centralized, as a queryset filter and an in-Python property, requiring both a price and the availability flag, replacing scattered price-not-null checks."
-    },
-    {
-      "id": "concurrency-and-side-effects",
-      "kind": "llm",
-      "text": "Says that the toggle locks listing rows with select-for-update, and only for changed flags marks products dirty and emits a variant-updated event."
     },
     {
       "id": "default-true-on-create",
