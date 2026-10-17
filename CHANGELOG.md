@@ -24,12 +24,17 @@ All notable changes to this project are documented here. The format follows
   changes with the order is a tie), with a sign test.
 - `--max-cost USD` stops starting runs past the cost; `--baseline` also lists the graders an iteration fixed or
   broke.
+- The summary lists the issues of each run's first render, most often first: what makes the agent render again.
 
 ### Changed
 - The judge's calls are lean (no tools, MCP servers, skills or settings; a 1-line system prompt): about 600 tokens
   of overhead per call instead of 20k+. Haiku stays the default judge.
 - The agent under test runs with no MCP server and, unless `--discover`, no other skill: each run is isolated from
   the machine's setup. Tokens do not compare with earlier evals.
+- The agent under test gets only the tools it may use (`--tools`): the others' definitions cost ~5.5k tokens on
+  every model call.
+- `sourceReads` also counts read-only shell commands (`git show`, `sed`, `grep`), which run without a permission.
+- The grounded judge reads the whole hunk around a code evidence (at most 80 lines), not the line ±3.
 - `fidelity`, `draft` and `lift` stay as a regression check of the structure, not a measure of quality: they compare
   with the committed explanation, which the same tool wrote.
 
