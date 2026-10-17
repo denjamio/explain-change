@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- The eval scores the draft the CLI wrote against the reference (`draft`) and reports `lift`, what the agent adds to
+  it: the draft already holds the outline's focus, key dependency and flows, so the fidelity alone partly measured
+  whether the agent kept them.
+- The eval reads the agent's transcript (`stream-json`): prompt and output tokens, `render` calls (1 = valid at the
+  first try), source files read beside the digest, and the digest's size.
+- `bun run eval -- --discover` installs the skills in the repository's `.claude/skills` and names none of them: it
+  reports whether the agent loads explain-change from its description, as in a user's session.
+- `bun run eval -- --out results.json` writes every run and the summary as JSON.
+- Tests for the eval's measures (`scripts/eval-metrics.ts`), offline.
+
+### Changed
+- `bun run eval` uses haiku by default, the model of the baselines.
+- A judge answer that cannot be read, or that has no verdict per claim, is counted (`judgeErrors`) instead of
+  silently leaving the run out of `grounded`.
+- The agent command (`--agent`) is split on any run of spaces.
+
 ## [0.8.1] - 2026-10-17
 
 ### Changed
