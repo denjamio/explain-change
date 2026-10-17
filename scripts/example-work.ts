@@ -6,7 +6,7 @@
  *                                                      and the committed explanation as .explain-change/reference.json
  *   bun scripts/example-work.ts save <example> <dir>   validates <dir>'s explanation with `render` and, when it is
  *                                                      valid, writes it back to the example
- *   bun scripts/example-work.ts list                   the examples, scenarios first
+ *   bun scripts/example-work.ts list                   the examples (the real PRs, then the test fixtures)
  *
  * Then `bun run examples -- --real` rebuilds the pages. Run it after any change to the outline, the draft or the
  * rules: the examples show what the current version produces, and `bun run eval` scores agents against them.

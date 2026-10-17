@@ -1,10 +1,11 @@
 /**
- * Builds the example reports in examples/*.html from the scenarios in examples/scenarios/<name>/: a git repository
- * per scenario (base/ committed on main, head/ on a branch), explained by the CLI and, when the scenario has one,
+ * Builds the example reports of real pull requests (examples/real/<name>/ → examples/*.html) and their gallery.
+ * The scenarios in examples/scenarios/<name>/ are test fixtures, never published: a git repository per scenario
+ * (base/ committed on main, head/ on a branch), explained by the CLI and, when the scenario has one,
  * rendered with its explanation.json. Dates and identities are fixed, so the output is byte-identical every time.
  *
- *   bun scripts/build-examples.ts            rebuild the synthetic reports and the gallery
- *   bun scripts/build-examples.ts --real     also rebuild the reports of real PRs (needs the network and `gh`)
+ *   bun scripts/build-examples.ts            rebuild the gallery from the committed reports
+ *   bun scripts/build-examples.ts --real     rebuild the reports of the real PRs too (needs the network and `gh`)
  *
  * A real example lives in examples/real/<name>/: real.json (repository, PR, its head and merge base, gallery card),
  * the team's explain-change.toml and the agent's explanation.json. It is explained the way a user does it: a clone
@@ -17,7 +18,7 @@ import { join } from "node:path";
 import type { Facts } from "../src/contract/facts.ts";
 import { ensureDir, removeTree } from "../src/core/fs.ts";
 import { buildAssets } from "./build.ts";
-import { type Example, galleryHtml, readExample, SOURCE } from "./gallery.ts";
+import { galleryHtml, readExample, SOURCE } from "./gallery.ts";
 
 const ROOT = join(import.meta.dir, "..");
 export const SCENARIOS_DIR = join(ROOT, "examples/scenarios");
@@ -222,22 +223,11 @@ export function exampleTargets(): ExampleTarget[] {
 if (import.meta.main) {
   await buildAssets(); // the CLI runs from source: its embedded report must match report/
   const tmp = mkdtempSync(join(tmpdir(), "explain-change-examples-"));
-  const scenarios: Example[] = [];
   try {
-    for (const name of scenarioNames()) {
-      const meta = JSON.parse(readFileSync(join(SCENARIOS_DIR, name, "scenario.json"), "utf8")) as ScenarioMeta;
-      if (meta.publish === false) continue;
-      buildScenario(name, tmp, join(ROOT, "examples", `${name}.html`));
-      const example = readExample(join(ROOT, "examples"), `${name}.html`, { stack: meta.title, shows: meta.shows }, [
-        ["Scenario source", `${SOURCE}/scenarios/${name}`],
-      ]);
-      scenarios.push(example);
-      console.log(`${name}.html: ${example.explained ? "story" : "data-only"}`);
-    }
     if (process.argv.includes("--real")) {
       for (const { name, meta } of realExamples()) {
         buildReal(name, meta, tmp);
-        console.log(`${meta.report}: rebuilt from ${meta.repository}`);
+        console.log(`${meta.report}: rebuilt from ${prUrl(meta)}`);
       }
     }
   } finally {
@@ -251,5 +241,5 @@ if (import.meta.main) {
         ["Config and explanation", `${SOURCE}/real/${name}`],
       ]),
     );
-  writeFileSync(join(ROOT, "examples/index.html"), galleryHtml(real, scenarios));
+  writeFileSync(join(ROOT, "examples/index.html"), galleryHtml(real));
 }

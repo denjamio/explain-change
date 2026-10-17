@@ -70,9 +70,10 @@ Where PRs live, as ports and adapters:
 - The report script is bundled without minification by a pinned Bun, so a release renders the same bytes everywhere.
 - The validator reads code names at the head of the change (`git grep` and `git cat-file` at its commit), never the
   checkout, which may be another branch than the PR; only `--include-uncommitted` reads the working tree.
-- Tests build every scenario twice from scratch and require byte-identical pages; the real examples rebuild from
-  their GitHub PR with `bun run examples -- --real`, through `explain-change pr <url>` as a user runs it; a build stops
-  when GitHub gives the PR another head or merge base than `real.json` records.
+- Tests build every scenario (offline fixtures, never published) twice from scratch and require byte-identical
+  pages. The published examples are real PRs only: they rebuild from their GitHub PR with
+  `bun run examples -- --real`, through `explain-change pr <url>` as a user runs it, and a build stops when GitHub
+  gives the PR another head or merge base than `real.json` records.
 
 ## Analysis
 

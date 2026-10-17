@@ -290,10 +290,9 @@ bun install
 bun run check                 # typecheck, lint and the tests
 bun run dev -- local          # the CLI from source (any command)
 bun run install:dev           # this checkout as `explain-change` in ~/.local/bin, skills linked to skills/
-bun run examples              # rebuild examples/ after changing the report or the analysis (CI checks it)
-bun run examples -- --real    # also rebuild the 11 real pull requests (`explain-change pr <url>`: needs the network and gh)
+bun run examples -- --real    # rebuild the 11 real pull requests in examples/ (`explain-change pr <url>`: network and gh)
 bun run smoke                 # compile the binary for this machine and run it on a temporary repository
-bun run eval -- --model haiku # a real agent explains each scenario with the skill (costs tokens; --real: the PRs too, by URL)
+bun run eval -- --model haiku # a real agent explains each real PR by its URL, with the skill (costs tokens)
 bun scripts/example-work.ts open <example> <dir>   # rewrite an example's explanation with the current tool, then: save
 ```
 
@@ -307,8 +306,11 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
 - **Examples follow the tool**: after any change to the analysis, the outline, the draft or the rules, rewrite the
   examples' explanations with the current tool (`scripts/example-work.ts open`, fill the draft, `save`) and rebuild
   them with `bun run examples -- --real`. They are what the current version produces, and the eval's references.
-- **Evals**: after changing the skills or the digest's rules, run the eval (`--real` adds the 11 PRs, each asked for by
-  its URL, as a user does). It reports,
+- **Examples are real**: every published example and every eval run is a real pull request of an open-source product,
+  asked for by its URL. The scenarios in `examples/scenarios/` are offline test fixtures (determinism, reference
+  resolution, an inferred config, OpenSpec parsing), never published or evaluated unless named.
+- **Evals**: after changing the skills or the digest's rules, run the eval: the 11 PRs, each asked for by its URL, as a
+  user does. It reports,
   per example, whether the agent reached a valid explanation, with its turns, cost and time, and its fidelity to
   the committed explanation: the F1 (precision and recall) of key dependencies, flow edges, the components the
   story lights and the files the decisions cite. `--runs N` repeats each example and reports mean ± standard

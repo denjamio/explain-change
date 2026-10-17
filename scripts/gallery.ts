@@ -213,8 +213,10 @@ code { font-family: var(--mono); font-size: .9em; }
 @media (max-width: 760px) { .reading { grid-template-columns: 1fr; } h1 { font-size: 28px; } }
 `;
 
-/** The gallery page: real pull requests first, then the spec-driven change, then what each example shows. */
-export function galleryHtml(real: Example[], scenarios: Example[]): string {
+/** The gallery page: real pull requests, then the spec-driven ones (with OpenSpec), then what each example shows. */
+export function galleryHtml(examples: Example[]): string {
+  const sdd = examples.filter((x) => x.features.requirements !== null);
+  const real = examples.filter((x) => x.features.requirements === null);
   const section = (id: string, title: string, lead: string, list: Example[]) =>
     list.length
       ? `<section id="${id}"><h2>${title}</h2><p class="section-lead">${lead}</p><div class="grid">${list.map(card).join("")}</div></section>`
@@ -233,13 +235,13 @@ export function galleryHtml(real: Example[], scenarios: Example[]): string {
 <div class="brand"><span class="mark" aria-hidden="true">${readFileSync(join(import.meta.dir, "../report/bulb.svg"), "utf8").trim()}</span>explain-change</div>
 <h1>See what a code change does</h1>
 <p class="lead">Its architecture, data flows and design decisions, in one page. Each example below is a real pull request of an open-source product, rendered as one offline HTML file. The CLI computes the facts; an agent writes the prose.</p>
-<div class="actions"><a class="btn primary" href="${esc(real[0]?.file ?? scenarios[0]?.file ?? "#")}">Open an example</a>` +
+<div class="actions"><a class="btn primary" href="${esc(examples[0]?.file ?? "#")}">Open an example</a>` +
     `<a class="btn" href="${REPO_URL}#quick-start">Install</a><a class="btn" href="${REPO_URL}">GitHub</a></div>
 </header>
 <ul class="reading">${READING.map(([t, d]) => `<li><b>${t}</b>${d}</li>`).join("")}</ul>
 ${section("real", "Real pull requests", "2 pull requests from each of 5 open-source products, in Rails, Django, TypeScript and .NET. Each product's config was written with the configure skill, each story by an agent.", real)}
-${section("sdd", "Spec-driven development", "A change that carries its OpenSpec proposal, design, tasks and spec deltas, each requirement traced to the code and the tests that implement it.", scenarios)}
-<section id="matrix"><h2>What each example shows</h2><p class="section-lead">Counted from the data each report embeds: story steps, data flows, data model entities, design decisions, dependency rules, glossary terms and OpenSpec requirements.</p>${matrix([...real, ...scenarios])}</section>
+${section("sdd", "Spec-driven development", "A real pull request that carries its OpenSpec change: proposal, design, tasks and spec deltas, each requirement traced to the code and the tests that implement it.", sdd)}
+<section id="matrix"><h2>What each example shows</h2><p class="section-lead">Counted from the data each report embeds: story steps, data flows, data model entities, design decisions, dependency rules, glossary terms and OpenSpec requirements.</p>${matrix([...real, ...sdd])}</section>
 <footer>Built with <a href="${REPO_URL}">explain-change</a> ${VERSION} by <code>scripts/build-examples.ts</code>.</footer>
 </main>
 </html>

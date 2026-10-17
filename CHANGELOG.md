@@ -12,6 +12,9 @@ All notable changes to this project are documented here. The format follows
   decisions come from the change's design (`spec`).
 
 ### Changed
+- Every published example and every eval run is a real pull request. The synthetic OpenSpec scenario leaves the
+  gallery, where Ark #3147 takes its place; the scenarios stay as offline test fixtures. `bun run eval` explains the
+  real PRs by default (no `--real`); a fixture runs only by name.
 - The real examples and the eval go through `explain-change pr <url>`, as a user does: the PR's own diff (its head
   against its merge base, not the squash commit), its title and its description. 3 of the 10 PRs had another merge
   base than the squash commit's parent. The eval asks the agent "Explain <PR URL>"; the scenarios stay "explain my
