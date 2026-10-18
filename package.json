@@ -1,6 +1,6 @@
 {
   "name": "explain-change",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Visual, architecture-first explanation of a code change, as one self-contained HTML page. A deterministic CLI does the analysis; an agent writes only the prose.",
   "license": "MIT",
   "author": "denjamio",
