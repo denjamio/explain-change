@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-18
+
 ### Changed
 - The draft's story lights at least 80% of the code the change rewrites when its budget lets it: the largest
   component left out (50+ lines of code) gets a step, ranked right after the first one. Before, 4 ranked components
