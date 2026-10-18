@@ -28,16 +28,18 @@ finds no PR, run `local`. Add `--spec <change-id>` for an OpenSpec change the co
 ## 2. Follow `next.action`
 
 - **`done`**: the change was explained before and its explanation is still valid. Stop: give the report path.
-- **`write-explanation`**: read `.explain-change/digest.md` (facts, key hunks and, under `## Task`, the rules). Then
-  edit `.explain-change/explanation.json`: replace every `"<…>"` with your words, or with one of the values it
-  lists (`"<added|changed|…>"`); delete optional parts that do not apply. Keep the ids, views, focus, code
-  references and evidence the draft already has. Open a source file only when a hunk is not enough to judge.
-  Then run `explain-change render --json`.
+- **`write-explanation`**: read `.explain-change/digest.md`: the facts, the key hunks, the rules under `## Task` and,
+  under `## Draft`, the draft. Write `.explain-change/explanation.json` with 1 Write: the draft with every `"<…>"`
+  replaced by your words, or by one of the values it lists (`"<added|changed|…>"`), and optional parts that do not
+  apply deleted. Keep the ids, views, focus, code references and evidence the draft already has. (When
+  explanation.json exists, it is work in progress for this change: read it and fill what is left.) Open a source
+  file only when a hunk is not enough to judge; read it at the change's head (`git show <head>:<path>`, the head
+  is in the digest), since the checkout can be another commit. Then run `explain-change render --json`.
 - **`configure`**: none of the changed code is on the map; the config has no component for its folders. Do not
   write an explanation for an empty map: tell the user, and offer to update the config with the
   `explain-change-configure` skill.
 - **`fix-explanation`**: `explanation.issues` lists each problem as `{path, code, message}`. Fix only those fields,
-  then run `explain-change render --json` again.
+  all of them in 1 message (all the Edit calls together), then run `explain-change render --json` again.
 - **`collect-change`**: the explanation belongs to another change. Go back to step 1.
 
 `render` exits 1 until the explanation is valid, and 0 when the report is ready. `explain-change status --json`

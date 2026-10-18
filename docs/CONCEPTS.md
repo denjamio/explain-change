@@ -42,7 +42,7 @@ When two words could name the same thing, this page says which one is used.
 
 | Term | Meaning |
 |---|---|
-| **Explanation** | The agent's prose about one change, validated against the facts. The CLI drafts it; the agent replaces each **placeholder** (`"<…>"`). |
+| **Explanation** | The agent's prose about one change, validated against the facts. The CLI drafts it (at the end of the digest, and in `draft.json`); the agent writes it with each **placeholder** (`"<…>"`) replaced. |
 | **TL;DR**, **goal** | What changes and its effect; the need behind it. |
 | **Story** | The guided tour over the map: 2–8 steps, headline first, overview last. Each step has a **view**, a **focus** and optional **code**. |
 | **View** | What the map shows: `architecture`, `flow:<id>`, `data`, or `requirements` (which lights the components that implement them). A view is a tab of the map. |
@@ -53,9 +53,9 @@ When two words could name the same thing, this page says which one is used.
 | **Decision** | A design choice: what was chosen, why, the main alternative, and its evidence (`file:line`). |
 | **Basis** | Where a decision's why comes from: `pr` (the PR description), `spec` (the OpenSpec proposal or design), `code` (the code at its evidence: a comment, a name, an ADR), or `inferred` (the agent's reading). The validator accepts `pr` and `spec` only when the change has that source, and `code` only with evidence; the report labels each one. |
 | **Requirement status** | How the code meets an OpenSpec requirement: `implemented`, `partial`, `missing`, `not-applicable`. |
-| **Prose rules** | The parts of ASD-STE100 (Simplified Technical English) the validator enforces: sentences of at most 25 words (an abbreviation such as *e.g.* does not end one), refused words (future and modal, judgements, marketing, filler, numbers in words; `prose/en.json`, where `word*` refuses every form), the passive with its agent (*is sent by the job*), and code names that exist at the head of the change. Code names are exempt from the word rules. The rest (simple verbs, one word per thing) is guidance in the digest. |
+| **Prose rules** | The parts of ASD-STE100 (Simplified Technical English) the validator enforces: sentences of at most 25 words (an abbreviation such as *e.g.* does not end one), refused words (future and modal, judgements, marketing, filler; `prose/en.json`, where `word*` refuses every form), counts as digits (the page rewrites *three* as *3*), the passive with its agent (*is sent by the job*), and code names that exist at the head of the change. Code names are exempt from the word rules. The rest (simple verbs, one word per thing) is guidance in the digest. |
 
-**Explanation state**: `missing` (no file), `stale` (written for another key), `draft` (placeholders left),
+**Explanation state**: `missing` (no file yet: the agent writes it from the draft), `stale` (written for another key), `draft` (placeholders left),
 `invalid` (issues to fix), `valid`. The CLI's `--json` output turns it into the agent's **next action**:
 `write-explanation`, `fix-explanation`, `collect-change` or `done`.
 
@@ -73,5 +73,6 @@ the code is stable (`too-long`, `unknown-id`, `placeholder`, `refused-word`…);
 
 ## The work folder (`.explain-change/`, never committed)
 
-`facts.json`, `digest.md` (what the agent reads), `explanation.json` (what it writes), `explanations/<key>.json`
-(each change's explanation, restored when the change comes back) and `out/<branch>.html` (the reports).
+`facts.json`, `digest.md` (what the agent reads, the draft at its end), `draft.json` (the same draft),
+`explanation.json` (what the agent writes), `explanations/<key>.json` (each change's explanation, restored when the
+change comes back) and `out/<branch>.html` (the reports).

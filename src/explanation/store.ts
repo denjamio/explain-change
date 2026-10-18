@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Explanation, NormalizedExplanation } from "../contract/explanation.ts";
 import type { Facts } from "../contract/facts.ts";
@@ -48,8 +48,11 @@ function readCurrent(path: string): Current {
 
 /**
  * Makes explanation.json belong to this change: keeps it when it already does (or when it is mid-write), brings
- * back the one kept for this change, or writes a fresh draft. One for another change is kept under its own key
- * first, so no work is lost.
+ * back the one kept for this change, or leaves it missing for the agent to write from the draft (draft.json, also
+ * at the end of digest.md). One for another change is kept under its own key first, so no work is lost.
+ *
+ * The draft is not written to explanation.json: an agent then writes the file in 1 call, without first reading a
+ * file it already has in the digest (a turn, and the whole context sent again, on every run).
  */
 export function prepareExplanation(work: string, facts: Facts): "kept" | "restored" | "drafted" {
   const path = explanationPath(work);
@@ -63,7 +66,8 @@ export function prepareExplanation(work: string, facts: Facts): "kept" | "restor
     copyFileSync(savedPath(work, facts.key), path);
     return "restored";
   }
-  writeJson(path, draftExplanation(facts));
+  writeJson(join(work, FILES.draft), draftExplanation(facts));
+  rmSync(path, { force: true });
   return "drafted";
 }
 

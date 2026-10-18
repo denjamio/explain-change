@@ -1,15 +1,18 @@
 import { specRequirements } from "../analysis/openspec.ts";
 import { EXPLANATION_FIELDS, type Explanation, type NormalizedExplanation } from "../contract/explanation.ts";
 import type { Facts } from "../contract/facts.ts";
+import { digits } from "./prose.ts";
 
 /**
  * The explanation as the report reads it: optional parts filled in, lists in a stable order whatever order the
  * agent wrote them in, and each flow step checked against the code. A step is verified through a port when 1 side
  * implements an interface the other declares (dependency inversion: Core calls IFolderRepository, Dapper implements
  * it), else when the code has a dependency between both components, in either direction. Sharing a third
- * dependency is no evidence: in the examples it named the wrong reason 3 times in 4.
+ * dependency is no evidence: in the examples it named the wrong reason 3 times in 4. Counts in the prose are written
+ * as digits.
  */
-export function normalizeExplanation(e: Explanation, facts: Facts): NormalizedExplanation {
+export function normalizeExplanation(raw: Explanation, facts: Facts): NormalizedExplanation {
+  const e = proseDigits(raw);
   const layerRank = new Map(facts.config.layers.map((l, i) => [l.id, i]));
   const componentRank = new Map(
     facts.config.components.map((c, i) => [c.id, [layerRank.get(c.layer) ?? 99, i] as const]),
@@ -59,4 +62,25 @@ export function normalizeExplanation(e: Explanation, facts: Facts): NormalizedEx
   return Object.fromEntries(
     EXPLANATION_FIELDS.filter((k) => k in normalized).map((k) => [k, normalized[k as keyof NormalizedExplanation]]),
   ) as unknown as NormalizedExplanation;
+}
+
+/** The prose fields with counts as digits ("three files" → "3 files"); ids, code and evidence stay as written. */
+function proseDigits(e: Explanation): Explanation {
+  const d = <T extends string | undefined>(v: T): T => (typeof v === "string" ? digits(v) : v) as T;
+  return {
+    ...e,
+    tldr: d(e.tldr),
+    goal: d(e.goal),
+    story: e.story.map((s) => ({ ...s, heading: d(s.heading), body: d(s.body) })),
+    components: e.components.map((c) => ({ ...c, summary: d(c.summary) })),
+    ...(e.decisions && {
+      decisions: e.decisions.map((x) => ({ ...x, title: d(x.title), why: d(x.why), alternative: d(x.alternative) })),
+    }),
+    ...(e.flows && { flows: e.flows.map((f) => ({ ...f, title: d(f.title) })) }),
+    ...(e.keyDependencies && { keyDependencies: e.keyDependencies.map((k) => ({ ...k, label: d(k.label) })) }),
+    ...(e.dataModel?.relations && {
+      dataModel: { ...e.dataModel, relations: e.dataModel.relations.map((r) => ({ ...r, label: d(r.label) })) },
+    }),
+    ...(e.requirements && { requirements: e.requirements.map((r) => ({ ...r, note: d(r.note) })) }),
+  };
 }

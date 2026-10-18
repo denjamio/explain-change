@@ -75,6 +75,9 @@ export interface Transcript {
   /** Prompt tokens, cached or not, and output tokens, over the whole run. */
   tokensIn: number | null;
   tokensOut: number | null;
+  /** Of tokensIn: read from the prompt cache (cheap) and written to it. */
+  tokensCacheRead: number | null;
+  tokensCacheWrite: number | null;
   /** `explain-change render` calls: 1 is a first-time valid explanation, each more is a round of fixes. */
   renders: number;
   /** Reads of the sources outside the work folder (Read, or a shell command): the digest is meant to be enough. */
@@ -83,6 +86,8 @@ export interface Transcript {
   skills: string[];
   /** The issues the first render reported, numbers and quotes left out: what made the agent render again. */
   firstIssues: string[];
+  /** Each tool call in order, as `Tool:what (input chars→result chars)`: where the turns and the tokens go. */
+  tools: string[];
 }
 
 interface Usage {
@@ -97,7 +102,7 @@ interface Block {
   tool_use_id?: string;
   content?: string | { type?: string; text?: string }[];
   name?: string;
-  input?: { command?: string; file_path?: string; skill?: string };
+  input?: { command?: string; file_path?: string; skill?: string; [key: string]: unknown };
 }
 
 /** Reads a transcript, one JSON event per line; a line that is not JSON is skipped. */
@@ -107,11 +112,15 @@ export function readTranscript(stdout: string): Transcript {
     costUsd: null,
     tokensIn: null,
     tokensOut: null,
+    tokensCacheRead: null,
+    tokensCacheWrite: null,
     renders: 0,
     sourceReads: 0,
     skills: [],
     firstIssues: [],
+    tools: [],
   };
+  const calls = new Map<string, number>();
   let firstRender: string | undefined;
   let firstSeen = false;
   for (const line of stdout.split("\n")) {
@@ -131,6 +140,11 @@ export function readTranscript(stdout: string): Transcript {
       for (const block of event.message?.content ?? []) {
         if (block.type !== "tool_use") continue;
         const input = block.input ?? {};
+        const what = (input.file_path?.replace(/^.*[\\/]/, "") ?? String(input.command ?? input.skill ?? "")).slice(
+          0,
+          60,
+        );
+        calls.set(block.id ?? "", out.tools.push(`${block.name}:${what} (${JSON.stringify(input).length})`) - 1);
         if (block.name === "Bash" && /\bexplain-change\s+render\b/.test(input.command ?? "")) {
           out.renders++;
           firstRender ??= block.id;
@@ -141,7 +155,14 @@ export function readTranscript(stdout: string): Transcript {
         if (block.name === "Bash" && !/^\s*(cd \S+ && )?explain-change\b/.test(input.command ?? "")) out.sourceReads++;
         if (block.name === "Skill" && input.skill) out.skills.push(input.skill);
       }
-    } else if (event.type === "user" && firstRender && !firstSeen) {
+    } else if (event.type === "user") {
+      for (const b of event.message?.content ?? []) {
+        const i = calls.get(b.tool_use_id ?? "");
+        if (i === undefined) continue;
+        const text = typeof b.content === "string" ? b.content : (b.content ?? []).map((c) => c.text ?? "").join("");
+        out.tools[i] = (out.tools[i] as string).replace(/\)$/, `→${text.length})`);
+      }
+      if (!firstRender || firstSeen) continue;
       const result = (event.message?.content ?? []).find((b) => b.tool_use_id === firstRender);
       if (!result) continue;
       firstSeen = true;
@@ -155,6 +176,8 @@ export function readTranscript(stdout: string): Transcript {
       out.tokensIn =
         (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) || null;
       out.tokensOut = u.output_tokens ?? null;
+      out.tokensCacheRead = u.cache_read_input_tokens ?? null;
+      out.tokensCacheWrite = u.cache_creation_input_tokens ?? null;
     }
   }
   return out;
@@ -168,7 +191,9 @@ export function issueKinds(text: string): string[] {
   return [...text.matchAll(/\{[^{}]*"code":[^{}]*\}/g)].map(([o]) => {
     const code = /"code":\s*"([^"]*)"/.exec(o)?.[1];
     const path = /"path":\s*"([^"]*)"/.exec(o)?.[1] ?? "";
-    return `${code} ${path.replace(/\[\d+\]/g, "[]")}`.trim();
+    // a refused word is what to fix in the rules or the digest: keep it
+    const words = code === "refused-word" ? ` (${/"message":\s*"([^":]*):/.exec(o)?.[1] ?? "?"})` : "";
+    return `${code} ${path.replace(/\[\d+\]/g, "[]")}${words}`.trim();
   });
 }
 

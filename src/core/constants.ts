@@ -22,6 +22,7 @@ export const FILES = {
   facts: "facts.json",
   digest: "digest.md",
   explanation: "explanation.json",
+  draft: "draft.json", // the draft of explanation.json for the current change, also at the end of digest.md
   saved: "explanations", // explanations/<key>.json: the explanation of each change, kept when switching changes
   reports: "out",
 } as const;
