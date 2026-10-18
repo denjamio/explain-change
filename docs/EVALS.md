@@ -30,7 +30,7 @@ apply, or that the judge answers `unknown`, counts neither way.
 | **prose** | the judge, on the explanation alone | a rubric of PASS/FAIL conditions (`RUBRIC` in `scripts/eval-graders.ts`) |
 | **grounded** | the judge, per decision whose basis is not `inferred` | the source (PR description, OpenSpec proposal and design, or the whole hunk around the evidence at the head) states the why |
 
-The judge (`--judge`, haiku) makes 2 short calls per run, each lean: no tools, no settings, a 1-line system prompt
+The judge (`--judge`, haiku by default; the loop uses sonnet, see [The judge](#the-judge)) makes 2 short calls per run, each lean: no tools, no settings, a 1-line system prompt
 (about 600 tokens of overhead). `--judge none` keeps only the free graders.
 
 ### Assertions: an independent reference
@@ -48,11 +48,11 @@ which graders catch which defect. A grader that catches nothing cannot move when
 
 ### The judge
 
-Haiku stays the judge. Its calls are the eval's cheapest part, and the loop compares 2 runs graded the same way.
-Graded by sonnet instead (`--rejudge baseline-4.json --judge sonnet`, 2026-10-18; $0.34 against $0.03), the same
+The loop judges with sonnet (`--judge sonnet`), and compares only runs graded by the same judge. Sonnet is about
+70% of a loop's cost, but it is the stricter reader. Graded by sonnet instead of haiku (`--rejudge baseline-4.json --judge sonnet`, 2026-10-18; $0.34 against $0.03), the same
 11 explanations scored 0.78 against 0.85: prose and grounded within 0.04, content 0.71 against 0.87. Sonnet fails
 an assertion when one of its clauses is missing ("…and the request returns at once with a notice"); haiku passes it
-on the main point. Neither is wrong: the assertions are compound. Use sonnet to check a release, not in the loop.
+on the main point. Neither is wrong: the assertions are compound; sonnet is the one that moves when content improves.
 
 ## Reported, not scored
 
@@ -67,10 +67,12 @@ not a measure of quality.
 immich-workflow, maybe-balance-sheet and saleor-webhook.
 
 1. One change at a time, on a branch.
-2. Train, 1 run, as a filter: `bun scripts/eval.ts --split train --out X --baseline B --compare B`.
-3. When train improves and the blind A/B does not prefer the old explanations: test, `--runs 2`.
-4. Keep the change only when test does not drop and the A/B on test does not prefer the old one.
-5. Read the failures of train only, never those of test.
+2. A free diagnostic first, on the PRs the change touches: `--judge none --runs 3 <names>` (about $0.01 a run; the
+   structure graders and the render count need no judge).
+3. Train, 1 run, as a filter: `bun scripts/eval.ts --split train --judge sonnet --out X --baseline B --compare B`.
+4. When train improves and the blind A/B does not prefer the old explanations: test, `--runs 2`.
+5. Keep the change only when test does not drop and the A/B on test does not prefer the old one.
+6. Read the failures of train only, never those of test.
 
 With 5 test PRs, the score moves by about ±0.08 between runs: an improvement smaller than that needs more runs
 before it counts.
@@ -87,4 +89,5 @@ before it counts.
 | `--rejudge file` | grades the explanations of an `--out` file again, with no agent: a change to the graders measured on the same explanations |
 | `--max-cost USD` | stops starting runs past this spend |
 
-A quick loop eval (`--split train`, 1 run) costs about $0.10; the full set about $0.20.
+With the sonnet judge, train (1 run) costs about $0.27 and test (`--runs 2`) about $0.42; with haiku, about $0.10 and
+$0.15. The agent itself costs about $0.01 a run.
