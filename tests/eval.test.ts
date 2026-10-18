@@ -106,6 +106,7 @@ describe("eval metrics", () => {
       sourceReads: 2,
       skills: ["explain-change"],
       firstIssues: ["sentence-too-long story[].body", "placeholder tldr"],
+      firstMessages: ["story[2].body: …"],
       tools: expect.arrayContaining([
         expect.stringMatching(/^Read:digest\.md \(\d+\)$/),
         expect.stringMatching(/^Bash:explain-change render --json \(\d+→\d+\)$/),

@@ -34,7 +34,7 @@ export function nextStep(state: ExplanationState, reportPath: string | null, fac
     case "missing":
       return {
         action: "write-explanation",
-        message: `Read ${WORK_DIR}/${FILES.digest}, write ${explanation} from the draft at its end with every "<…>" filled, then run \`explain-change render\`.`,
+        message: `Read ${WORK_DIR}/${FILES.digest}. ${explanation} does not exist yet: create it with 1 Write, the draft at the end of the digest with every "<…>" filled, then run \`explain-change render\`.`,
       };
     case "draft":
       return {
@@ -70,7 +70,7 @@ export interface ChangeResult {
     newViolations: number;
     configInferred: boolean;
   };
-  explanation: { state: ExplanationState; issues: Issue[]; action?: "kept" | "restored" | "drafted" };
+  explanation: { state: ExplanationState; issues: Issue[]; fixed?: string[]; action?: "kept" | "restored" | "drafted" };
   paths: { facts: string; digest: string; explanation: string; report: string | null };
   digestTokens?: number;
   opened: boolean;
@@ -105,7 +105,12 @@ export function explanationSummary(status: ExplanationStatus, action?: "kept" | 
       message: `${holes.length} placeholders to write: ${holes.join(", ")}`,
     });
   }
-  return { state: status.state, issues, ...(action ? { action } : {}) };
+  return {
+    state: status.state,
+    issues,
+    ...(status.fixes?.length ? { fixed: status.fixes } : {}),
+    ...(action ? { action } : {}),
+  };
 }
 
 const STATE_LINE: Record<ExplanationState, string> = {
@@ -130,6 +135,7 @@ export function printChange(r: ChangeResult): void {
   for (const issue of r.explanation.issues) {
     lines.push(`    - ${issue.code === "placeholder" ? issue.message.replace(/: .*/, "") : formatIssue(issue)}`);
   }
+  for (const fix of r.explanation.fixed ?? []) lines.push(`    fixed: ${fix}`);
   if (r.paths.report) {
     lines.push(
       `  report:       ${display(r.paths.report)}${r.explanation.state === "valid" ? "" : " (facts only, no story yet)"}`,

@@ -5,7 +5,7 @@ import { DECISION_BASES, ENUMS, EXPLANATION_FIELDS, KEBAB_RE, LIMITS, STORY_MIN 
 import type { Facts, FileFacts } from "../contract/facts.ts";
 import { LOCATION_RE } from "../contract/facts.ts";
 import { CONTRACT_VERSION } from "../core/constants.ts";
-import { cpLength } from "../core/text.ts";
+import { cpLength, cpSlice } from "../core/text.ts";
 import { ProseChecker } from "./prose.ts";
 
 /** Why a field is rejected. Stable: agents and tools may branch on it. */
@@ -67,7 +67,7 @@ const isHole = (v: Json) => typeof v === "string" && PLACEHOLDER_RE.test(v.trim(
 type Obj = Record<string, Json>;
 const isObject = (v: Json): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 
-function hunkRanges(f: FileFacts): [number, number][] {
+export function hunkRanges(f: FileFacts): [number, number][] {
   return f.hunks.map((h) => {
     const [start, len] = f.delta === "removed" ? [h.oldStart, h.oldLines] : [h.newStart, h.newLines];
     return [start, start + Math.max(len, 1) - 1];
@@ -146,8 +146,21 @@ class Validator {
     if (value === undefined || value === null || value === "") {
       if (required) this.add(path, "required", "required");
     } else if (typeof value !== "string" || !value.trim()) this.add(path, "type", "must be a non-empty string");
-    else if (cpLength(value) > limit) this.add(path, "too-long", `${cpLength(value)} chars, max ${limit}`);
-    else for (const i of this.prose.check(value, names)) this.add(path, i.code, i.message);
+    else {
+      // Every problem in 1 pass: a field too long is also checked for prose, so a cut is not followed by a fix.
+      const over = cpLength(value) - limit;
+      if (over > 0) {
+        const words = Math.max(1, Math.ceil(over / 7));
+        // The words past the limit, so the cut needs no counting (agents count characters badly).
+        const past = cpSlice(value, limit);
+        this.add(
+          path,
+          "too-long",
+          `${cpLength(value)} chars, max ${limit}: cut ${over}+ chars (about ${words} words); past the limit: "${past}"`,
+        );
+      }
+      for (const i of this.prose.check(value, names)) this.add(path, i.code, i.message);
+    }
   }
 
   private fields(path: string, value: Json, maxItems: number, limit: number) {

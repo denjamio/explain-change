@@ -106,7 +106,7 @@ export function render(opts: RenderOptions, hosts: Hosts = createHosts()): numbe
   const root = repoRoot();
   const work = join(root, WORK_DIR);
   const facts = readFacts(work);
-  const status = loadExplanation(work, facts, root);
+  const status = loadExplanation(work, facts, root, !opts.dryRun);
   const target = opts.out ?? defaultReportPath(work, facts);
   const report = opts.dryRun ? resolve(target) : writeReport(target, facts, status);
   const opened = !opts.dryRun && status.state === "valid" && shouldOpen(opts.noOpen) && openReport(report);

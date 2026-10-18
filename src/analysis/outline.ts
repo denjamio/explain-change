@@ -269,6 +269,18 @@ interface Call {
  * lines call another component, then the calls onward from each component reached. Each path names its trigger and
  * its steps with the call the code makes. Same change → same paths.
  */
+/** A detected flow's id from its trigger: kebab-case, at most 40 characters, cut before it is trimmed. */
+export function flowId(trigger: string): string {
+  return (
+    trigger
+      .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .slice(0, 40)
+      .replace(/^-+|-+$/g, "") || "flow"
+  );
+}
+
 export function detectFlows(facts: Pick<FactsCore, "files" | "dependencies">): DetectedFlow[] {
   const files = new Map(facts.files.filter((f) => f.hunks.length && f.category === "code").map((f) => [f.path, f]));
   const addedLines = new Map<string, Set<number>>(); // only lines the change adds can start or carry a path
@@ -326,13 +338,7 @@ export function detectFlows(facts: Pick<FactsCore, "files" | "dependencies">): D
       queue.push(...calls.filter((y) => y.from === x.to && y.to !== c.from && !seen.has(pair(y))));
     }
     for (const s of seen) covered.add(s);
-    let id =
-      trigger
-        .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-        .slice(0, 40) || "flow";
+    let id = flowId(trigger);
     if (out.some((fl) => fl.id === id)) id = `${id}-${out.length + 1}`;
     out.push({ id, trigger, steps });
   }

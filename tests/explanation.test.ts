@@ -6,6 +6,7 @@ import type { Facts } from "../src/contract/facts.ts";
 import { CONTRACT_VERSION } from "../src/core/constants.ts";
 import { normalizeExplanation } from "../src/explanation/normalize.ts";
 import { digits } from "../src/explanation/prose.ts";
+import { repairExplanation } from "../src/explanation/repair.ts";
 import { loadExplanation, prepareExplanation } from "../src/explanation/store.ts";
 import { formatIssue, validateExplanation } from "../src/explanation/validate.ts";
 import { tempDir } from "./helpers.ts";
@@ -158,6 +159,14 @@ describe("validation", () => {
     ]) {
       expect(errs).toContain(needle);
     }
+  });
+
+  test("a field too long is checked for prose too, so 1 round of fixes is enough", () => {
+    const tldr = `It will ${"x".repeat(280)}`;
+    expect(messages(valid({ tldr }))).toEqual([
+      `tldr: 288 chars, max 280: cut 8+ chars (about 2 words); past the limit: "${"x".repeat(8)}"`,
+      "tldr: will: future or modal; say what the code does now, in the present",
+    ]);
   });
 
   test("every changed component is described", () => {
@@ -527,6 +536,30 @@ describe("normalization", () => {
       ],
     });
     expect(normalizeExplanation(e, shared).flows[0]?.steps[0]).toMatchObject({ verified: false, via: null });
+  });
+});
+
+describe("repair", () => {
+  test("a location a few lines outside a hunk moves onto it; a far one is left to the validator", () => {
+    const e = valid({
+      story: [
+        { heading: "a now does x", body: "b", focus: ["a"], code: "f.rb:20-24" },
+        { heading: "overview", body: "b", view: "architecture", code: "f.rb:2-5" },
+      ],
+      decisions: [{ title: "t", why: "w", basis: "code", evidence: "f.rb:80" }],
+    });
+    const { value, fixes } = repairExplanation(e, makeFacts());
+    const r = value as ReturnType<typeof valid> & { decisions: { evidence: string }[] };
+    expect(r.story.map((s) => (s as { code?: string }).code)).toEqual(["f.rb:10-14", "f.rb:10-13"]);
+    expect(r.decisions[0]?.evidence).toBe("f.rb:80");
+    expect(fixes).toEqual([
+      "story[0].code: f.rb:20-24 → f.rb:10-14 (the nearest hunk)",
+      "story[1].code: f.rb:2-5 → f.rb:10-13 (the nearest hunk)",
+    ]);
+    expect(repairExplanation(valid(), makeFacts()).fixes).toEqual([]);
+    const added = makeFacts();
+    (added.files[0] as { delta: string }).delta = "added";
+    expect(repairExplanation(e, added).fixes).toContain("decisions[0].evidence: f.rb:80 → f.rb:14 (the nearest hunk)");
   });
 });
 
