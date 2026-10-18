@@ -1,10 +1,10 @@
 {
-  "tldr": "Adds DELETE /folders, which deletes many folders of a user in 1 request and 1 transaction.",
-  "goal": "The web client sends one request per selected folder, so a bulk delete makes N round trips and is not atomic.",
+  "tldr": "Adds DELETE /folders, which deletes many folders for a user in 1 request.",
+  "goal": "Clients send 1 request per folder, so a bulk delete costs N round trips.",
   "story": [
     {
       "heading": "Vault adds a bulk folder delete command",
-      "body": "The command checks the ids, deletes the user's matching folders, then pushes a vault sync.",
+      "body": "The command deletes the requested folders, then sends a full vault sync push.",
       "view": "architecture",
       "focus": [
         "vault"
@@ -13,7 +13,7 @@
     },
     {
       "heading": "Entity Framework deletes folders by id list",
-      "body": "The repository deletes the given folder ids for one user in a single call.",
+      "body": "Deletes folders by id for PostgreSQL, MySQL and SQLite. Single-folder delete now calls the same path.",
       "view": "architecture",
       "focus": [
         "entity-framework"
@@ -21,8 +21,8 @@
       "code": "src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs:45-117"
     },
     {
-      "heading": "Dapper runs a folder delete procedure in a transaction",
-      "body": "The repository passes the ids as a table parameter to Folder_DeleteByIds and commits or rolls back once.",
+      "heading": "Dapper runs bulk delete in one transaction",
+      "body": "Calls Folder_DeleteByIds with a table-valued parameter. Commits once, or rolls back every delete.",
       "view": "architecture",
       "focus": [
         "dapper"
@@ -30,54 +30,49 @@
       "code": "src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:47-76"
     },
     {
-      "heading": "API adds the DELETE /folders endpoint",
-      "body": "The endpoint accepts up to 500 ids outside self-hosted and sits behind the VFO1Foundation feature flag.",
+      "heading": "SQL Server gains a folder delete procedure",
+      "body": "Folder_DeleteByIds deletes folders by id for one user. A migration script adds the procedure.",
       "view": "architecture",
       "focus": [
-        "api"
+        "sql-server-schema"
       ],
-      "code": "src/Api/Vault/Controllers/FoldersController.cs:113-131"
+      "code": "src/Sql/dbo/Vault/Stored Procedures/Folder/Folder_DeleteByIds.sql:1-94"
     },
     {
-      "heading": "Bulk delete reaches the API from the top",
-      "body": "The API calls the vault command, which uses the shared repository interface and the platform push service.",
+      "heading": "Clients delete many folders in 1 request",
+      "body": "DELETE /folders deletes many folders in 1 call. The VFO1Foundation feature flag gates it.",
       "view": "architecture",
-      "focus": [
-        "api",
-        "vault",
-        "dapper"
-      ],
-      "code": "src/Api/Vault/Controllers/FoldersController.cs:113-131"
+      "focus": []
     }
   ],
   "keyDependencies": [
     {
       "from": "api",
       "to": "vault",
-      "label": "calls the delete command"
+      "label": "bulk delete command"
     },
     {
       "from": "vault",
       "to": "platform",
-      "label": "pushes vault sync"
+      "label": "vault sync push"
     }
   ],
   "components": [
     {
       "id": "api",
-      "summary": "Adds DELETE /folders, which takes a list of folder ids and passes it to the vault command."
+      "summary": "Adds DELETE /folders, which takes a list of folder ids and returns 1 result."
     },
     {
       "id": "vault",
-      "summary": "Adds a command that deletes many folders for one user and then pushes a full vault sync."
+      "summary": "Deletes the requested folders for a user, then pushes a full vault sync."
     },
     {
       "id": "dapper",
-      "summary": "Adds DeleteManyAsync, which runs Folder_DeleteByIds in one SQL transaction."
+      "summary": "Deletes folders by id in one SQL Server transaction through a stored procedure."
     },
     {
       "id": "entity-framework",
-      "summary": "Adds DeleteManyAsync, and DeleteAsync now calls it with a single folder id."
+      "summary": "Deletes folders by id for other databases. Single-folder delete reuses this path."
     },
     {
       "id": "sql-server-schema",
@@ -87,60 +82,67 @@
   "decisions": [
     {
       "title": "One request deletes many folders",
-      "why": "The client needs one atomic call per selection, not N calls to DELETE /folders/{id}.",
+      "why": "Clients send 1 request per folder, so a bulk delete costs N round trips and is not atomic.",
       "basis": "pr",
-      "alternative": "Send one DELETE /folders/{id} per selected folder",
-      "evidence": "src/Api/Vault/Controllers/FoldersController.cs:118-127"
+      "alternative": "Client sends 1 DELETE /folders/{id} request per folder.",
+      "evidence": "src/Api/Vault/Controllers/FoldersController.cs:116"
     },
     {
-      "title": "Dapper deletes inside one transaction",
-      "why": "The delete commits all folder rows together or rolls back all of them.",
+      "title": "Delete all requested folders in one transaction",
+      "why": "The Dapper repository commits all deletes together. A failure rolls back every folder.",
       "basis": "code",
-      "alternative": "Delete each folder in its own transaction",
+      "alternative": "Delete each folder in its own call, with no shared transaction.",
       "evidence": "src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:47-76"
     },
     {
-      "title": "Full vault sync replaces per-folder notifications",
-      "why": "Deleting a folder moves its ciphers, so clients need a full vault sync.",
+      "title": "Push a full vault sync after deletion",
+      "why": "Deleting a folder re-assigns its ciphers, so clients need a full vault sync.",
       "basis": "code",
-      "alternative": "Push one folder delete notification per folder",
-      "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:28-29"
+      "alternative": "Push one folder-delete notification for each folder.",
+      "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1-35"
+    },
+    {
+      "title": "Cap a request at 500 folders on cloud",
+      "why": "The endpoint rejects more than 500 ids, except on self-hosted servers.",
+      "basis": "code",
+      "alternative": "Accept any number of folder ids in one request.",
+      "evidence": "src/Api/Vault/Controllers/FoldersController.cs:116"
     }
   ],
   "flows": [
     {
       "id": "delete-many-folders",
-      "title": "Delete many folders for a user",
-      "trigger": "FoldersController#DeleteMany",
+      "title": "Delete many folders",
+      "trigger": "DELETE /folders (FoldersController#DeleteMany)",
       "steps": [
         {
           "from": "api",
           "to": "vault",
-          "call": "DeleteManyFoldersCommand.DeleteManyAsync",
+          "call": "DeleteManyFoldersCommand.DeleteManyAsync()",
           "delta": "added"
         },
         {
           "from": "vault",
           "to": "shared-kernel",
-          "call": "IFolderRepository.GetManyByUserIdAsync",
+          "call": "IFolderRepository.GetManyByUserIdAsync()",
           "delta": "unchanged"
         },
         {
           "from": "vault",
           "to": "shared-kernel",
-          "call": "IFolderRepository.DeleteManyAsync",
+          "call": "IFolderRepository.DeleteManyAsync()",
           "delta": "added"
         },
         {
           "from": "dapper",
           "to": "sql-server-schema",
-          "call": "Folder_DeleteByIds stored procedure",
+          "call": "Folder_DeleteByIds",
           "delta": "added"
         },
         {
           "from": "vault",
           "to": "platform",
-          "call": "PushSyncVaultAsync",
+          "call": "IPushNotificationService.PushSyncVaultAsync()",
           "delta": "added"
         }
       ]

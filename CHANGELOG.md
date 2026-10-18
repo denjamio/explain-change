@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- The draft's story lights at least 80% of the code the change rewrites when its budget lets it: the largest
+  component left out (50+ lines of code) gets a step, ranked right after the first one. Before, 4 ranked components
+  filled the story and a component with no public symbol stayed out however large (bitwarden's stored procedures,
+  189 of 372 lines; maybe's views, 374 of 961). Drafts that pass `story-coverage`: 7/11 → 11/11. Measured (haiku
+  agent, sonnet judge) against 0.12.0: train score 0.76 → 0.82, A/B 3–2; test (2 runs) score 0.74 → 0.76,
+  structure 0.88 → 0.98, renders 1.3 → 1.0, A/B 4–3; grounded 0.80 → 0.67 on test (its noise is ±0.34).
+  ANALYSIS_VERSION 14.
+- The 11 example explanations come from these eval runs (the best valid run of each PR).
+
 ## [0.12.0] - 2026-10-18
 
 ### Changed

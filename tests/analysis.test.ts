@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
-import { flowId, hunkScore, keyDependencyCandidates, storyBudget } from "../src/analysis/outline.ts";
+import {
+  type FactsCore,
+  flowId,
+  hunkScore,
+  keyDependencyCandidates,
+  outline,
+  storyBudget,
+} from "../src/analysis/outline.ts";
 import { portLinks } from "../src/analysis/ports.ts";
 import { type Extracted, extractRefs } from "../src/analysis/refs.ts";
 import { loadTsConfigs, SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
@@ -662,6 +669,38 @@ describe("storyBudget", () => {
   test("the draft's story grows with the lines of code the change rewrites", () => {
     expect([0, 149, 150, 599, 600, 5000].map(storyBudget)).toEqual([4, 4, 6, 6, 8, 8]);
   });
+});
+
+test("a component with most of the code but no public symbol still gets a step", () => {
+  // 4 components with a public symbol each fill the ranked steps; the views, 70% of the code, have none.
+  const config = makeConfig(
+    ["a", "b", "c", "d", "views"].map((id) => ({ id, layer: id === "views" ? "web" : "domain", paths: [`${id}/**`] })),
+    ["web", "domain"],
+  );
+  const files = ["a", "b", "c", "d", "views"].map((id) => {
+    const n = id === "views" ? 240 : 25;
+    const lines: DiffLine[] = Array.from({ length: n }, (_, i) => ["+", `line ${i}`]);
+    return {
+      path: `${id}/x.rb`,
+      component: id,
+      category: "code",
+      delta: "changed",
+      additions: n,
+      deletions: 0,
+      hunks: [{ oldStart: 1, oldLines: 0, newStart: 1, newLines: n, header: "", lines }],
+    };
+  });
+  const facts = {
+    config,
+    files,
+    components: files.map((f) => ({ id: f.component, delta: "changed" })),
+    dependencies: [],
+    symbols: ["a", "b", "c", "d"].map((id) => ({ name: id.toUpperCase(), kind: "class", file: `${id}/x.rb`, line: 1 })),
+    openspec: null,
+  } as unknown as FactsCore;
+  const focus = outline(facts).story.map((s) => s.focus[0]);
+  expect(focus).toContain("views");
+  expect(focus.length).toBeLessThanOrEqual(storyBudget(340));
 });
 
 test("a flow id cut at 40 characters never ends with a hyphen", () => {

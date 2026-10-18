@@ -1,10 +1,10 @@
 {
-  "tldr": "The Account Health page for WhatsApp Cloud API inboxes now shows phone, capacity, business account and webhook details. A scheduled job checks each number every 6 hours.",
-  "goal": "Admins cannot see when a WhatsApp number loses quality or access.",
+  "tldr": "The Account Health page shows phone number, capacity, business account, and webhook details. An hourly job queues a health check for each Cloud API number not checked in 6 hours.",
+  "goal": "Admins need to see the state of a WhatsApp number before messages fail.",
   "story": [
     {
-      "heading": "WhatsApp stores the phone number health",
-      "body": "The service reads phone and business account data from the Graph API. It stores the result on the channel.",
+      "heading": "WhatsApp service stores Meta health data",
+      "body": "The service saves Graph API health data on the channel. Authorization errors raise ApiError with an authorization flag.",
       "view": "architecture",
       "focus": [
         "whatsapp"
@@ -12,8 +12,8 @@
       "code": "app/jobs/channels/whatsapp/health_sync_job.rb:1-9"
     },
     {
-      "heading": "Background jobs enqueue the health scheduler hourly",
-      "body": "The hourly trigger now enqueues the health scheduler, which queues one sync per due WhatsApp channel.",
+      "heading": "Hourly trigger now queues the health scheduler",
+      "body": "The hourly trigger now queues the WhatsApp health scheduler. Before, it did nothing.",
       "view": "architecture",
       "focus": [
         "background-jobs"
@@ -21,8 +21,8 @@
       "code": "app/jobs/internal/trigger_hourly_scheduled_items_job.rb:1-9"
     },
     {
-      "heading": "Account Health page shows four sections",
-      "body": "The page shows phone, capacity, business account and webhook sections. It shows the coexistence badge only for coexistence numbers.",
+      "heading": "Account Health page shows four configuration sections",
+      "body": "The page shows phone, health, business account, and webhook sections. Embedded Signup authorization errors show a Go to Configuration action.",
       "view": "architecture",
       "focus": [
         "dashboard"
@@ -30,8 +30,8 @@
       "code": "app/javascript/dashboard/routes/dashboard/settings/inbox/Settings.vue:409-415"
     },
     {
-      "heading": "Platform adds health columns to the channel",
-      "body": "The channel_whatsapp table gets 3 columns and an index on the check time.",
+      "heading": "Schema adds phone number health columns",
+      "body": "The channel_whatsapp table gets 3 columns and 1 index. The columns store health data, its check time, and the last error.",
       "view": "architecture",
       "focus": [
         "platform"
@@ -39,14 +39,14 @@
       "code": "db/migrate/20260718000000_add_phone_number_health_to_channel_whatsapp.rb:1-8"
     },
     {
-      "heading": "Health sync job calls the health service",
-      "body": "The job runs on the low queue and calls the health service for one channel.",
+      "heading": "Health sync job syncs one channel",
+      "body": "The job syncs one WhatsApp channel. It returns nil on API or argument errors.",
       "view": "flow:channels-whatsapp-health-sync-job",
       "focus": []
     },
     {
-      "heading": "Channel stores the last health check",
-      "body": "Each check writes the health JSON and the check time. The scheduler reads the check time to pick channels.",
+      "heading": "channel_whatsapp stores phone number health",
+      "body": "The table stores the latest health data, its check time, and the last error per number.",
       "view": "data",
       "focus": [
         "channel-whatsapp"
@@ -54,85 +54,78 @@
       "code": "db/migrate/20260718000000_add_phone_number_health_to_channel_whatsapp.rb:1-8"
     },
     {
-      "heading": "WhatsApp health monitoring tracks each number",
-      "body": "Scheduled checks and page requests both read Meta data. The Account Health page shows the latest result.",
+      "heading": "Scheduled sync keeps WhatsApp health data current",
+      "body": "The hourly job selects Cloud API numbers not checked in 6 hours. It queues up to BULK_EXTERNAL_HTTP_CALLS_LIMIT syncs per run.",
       "view": "architecture",
       "focus": []
     }
   ],
   "keyDependencies": [
     {
-      "from": "background-jobs",
-      "to": "whatsapp",
-      "label": "runs the health checks"
+      "from": "whatsapp",
+      "to": "background-jobs",
+      "label": "queues health sync jobs"
     }
   ],
   "components": [
     {
       "id": "dashboard",
-      "summary": "Shows the Account Health page with phone, capacity, business account and webhook sections."
+      "summary": "Shows phone, health, capacity, business account, and webhook sections. Offers Go to Configuration on authorization errors."
     },
     {
       "id": "background-jobs",
-      "summary": "Runs an hourly trigger that enqueues the WhatsApp health scheduler."
+      "summary": "The hourly trigger queues the WhatsApp health scheduler. The scheduler queues one sync per stale number."
     },
     {
       "id": "whatsapp",
-      "summary": "Reads phone and business account health from Meta, stores it, and reports authorization errors."
+      "summary": "Syncs Graph API health data into phone_number_health. Raises ApiError with an authorization flag on Meta errors."
     },
     {
       "id": "platform",
-      "summary": "Adds 3 health columns and an index to channel_whatsapp."
+      "summary": "Adds 3 health columns and 1 index to channel_whatsapp."
     }
   ],
   "decisions": [
     {
-      "title": "Store the last health result on the channel",
-      "why": "The scheduler finds due channels with one query on the check time, without calling Meta.",
-      "basis": "code",
-      "evidence": "app/jobs/channels/whatsapp/health_sync_scheduler_job.rb:8"
+      "title": "Refresh health data with a scheduled job",
+      "why": "The job updates stored health data every 6 hours, without a page visit.",
+      "basis": "inferred",
+      "alternative": "Read Meta on each page load only",
+      "evidence": "app/jobs/channels/whatsapp/health_sync_scheduler_job.rb:4-14"
     },
     {
-      "title": "Limit each scheduler run to a bulk size",
-      "why": "Each run checks the oldest channels first, up to the bulk limit of external HTTP calls.",
-      "basis": "code",
-      "alternative": "Check every due channel in one run",
-      "evidence": "app/jobs/channels/whatsapp/health_sync_scheduler_job.rb:10"
-    },
-    {
-      "title": "Pin health calls to Graph API v24 or later",
-      "why": "The health fields need a newer API version than the global setting, until integrations move to the latest version.",
-      "basis": "code",
-      "alternative": "Use the global WHATSAPP_API_VERSION setting",
-      "evidence": "app/services/whatsapp/health_service.rb:44"
-    },
-    {
-      "title": "Treat error code 190 as an authorization failure",
-      "why": "Admins get a guide to refresh the connection, without Meta error codes.",
+      "title": "Map Meta authorization errors to a typed ApiError",
+      "why": "The page shows guidance for authorization failures, not Meta error codes.",
       "basis": "pr",
-      "alternative": "Show the Meta error code and message",
-      "evidence": "app/services/whatsapp/health_service.rb:12-14"
+      "alternative": "Render the raw Meta error message",
+      "evidence": "app/services/whatsapp/health_service.rb:2-14"
     }
   ],
   "flows": [
     {
       "id": "channels-whatsapp-health-sync-job",
-      "title": "Sync phone number health for one channel",
+      "title": "Sync health data for one number",
       "trigger": "Channels::Whatsapp::HealthSyncJob",
       "steps": [
         {
           "from": "background-jobs",
           "to": "whatsapp",
-          "call": "Whatsapp::HealthService#sync_health_status!",
+          "call": "Whatsapp::HealthService.new(channel).sync_health_status!",
           "delta": "added"
         }
       ]
     },
     {
       "id": "channels-whatsapp-health-sync-scheduler",
-      "title": "Queue health syncs for due channels",
+      "title": "Queue health syncs for stale numbers",
       "trigger": "Channels::Whatsapp::HealthSyncSchedulerJob#perform",
       "steps": [
+        {
+          "from": "background-jobs",
+          "to": "whatsapp",
+          "call": "Channel::Whatsapp.where(provider: 'whatsapp_cloud')",
+          "delta": "added"
+        },
         {
           "from": "whatsapp",
           "to": "accounts",
@@ -144,12 +137,18 @@
           "to": "platform",
           "call": "Limits::BULK_EXTERNAL_HTTP_CALLS_LIMIT",
           "delta": "added"
+        },
+        {
+          "from": "background-jobs",
+          "to": "whatsapp",
+          "call": "Channels::Whatsapp::HealthSyncJob.perform_later",
+          "delta": "added"
         }
       ]
     },
     {
       "id": "internal-trigger-hourly-scheduled-items",
-      "title": "Enqueue the health scheduler every hour",
+      "title": "Queue the WhatsApp health scheduler hourly",
       "trigger": "Internal::TriggerHourlyScheduledItemsJob#perform",
       "steps": [
         {
@@ -165,14 +164,13 @@
     "entities": [
       {
         "id": "channel-whatsapp",
-        "name": "Channel::Whatsapp (channel_whatsapp)",
+        "name": "channel_whatsapp table",
         "delta": "changed",
         "component": "whatsapp",
         "fields": [
           "+phone_number_health: jsonb",
           "+phone_number_health_checked_at: datetime",
-          "+phone_number_health_error: string",
-          "+index: phone_number_health_checked_at"
+          "+phone_number_health_error: string"
         ],
         "evidence": "db/migrate/20260718000000_add_phone_number_health_to_channel_whatsapp.rb:1-8"
       },
@@ -180,15 +178,14 @@
         "id": "account",
         "name": "Account",
         "delta": "unchanged",
-        "component": "accounts",
-        "fields": []
+        "component": "accounts"
       }
     ],
     "relations": [
       {
         "from": "channel-whatsapp",
         "to": "account",
-        "label": "account_id",
+        "label": "belongs to",
         "delta": "unchanged"
       }
     ]

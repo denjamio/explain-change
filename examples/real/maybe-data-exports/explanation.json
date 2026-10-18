@@ -1,51 +1,52 @@
 {
-  "tldr": "Admins can now export all family data as a ZIP file. A background job writes 4 CSV files and an NDJSON file and attaches the ZIP to a FamilyExport record.",
-  "goal": "Let a family take a full copy of its data out of Maybe.",
+  "tldr": "Admins export accounts, transactions, trades and categories as one ZIP of CSV files and NDJSON. The files can be imported with the CSV import feature.",
+  "goal": "Users need a copy of their data that they can load back into Maybe.",
   "story": [
     {
-      "heading": "Family::DataExporter added",
-      "body": "It writes accounts, transactions, trades and categories as CSV, plus all.ndjson, into a ZIP.",
+      "heading": "Family stores each data export as a record",
+      "body": "Each export request creates a FamilyExport record with a status.",
       "view": "architecture",
       "focus": [
-        "family",
+        "family"
+      ],
+      "code": "app/models/family_export.rb:1-22"
+    },
+    {
+      "heading": "Background job builds and attaches the ZIP",
+      "body": "The job sets the export to processing, builds the ZIP, attaches it, then marks it completed or failed.",
+      "view": "architecture",
+      "focus": [
         "background-jobs"
       ],
-      "code": "app/models/family/data_exporter.rb:9-36"
+      "code": "app/jobs/family_data_export_job.rb:1-22"
     },
     {
-      "heading": "Settings starts an export; a job builds the ZIP",
-      "body": "The controller creates a FamilyExport and queues FamilyDataExportJob. The job sets processing, then completed, or failed on an error.",
-      "view": "flow:export-data",
+      "heading": "Settings adds an export modal and export list",
+      "body": "The profile settings page shows a modal to start an export and the 10 latest exports.",
+      "view": "architecture",
       "focus": [
-        "#1",
-        "#2",
-        "#3"
+        "web-ui"
       ],
-      "code": "app/controllers/family_exports_controller.rb:11-21"
+      "code": "app/views/family_exports/_list.html.erb:1-39"
     },
     {
-      "heading": "FamilyExport added",
-      "body": "A new family_exports table stores the status. Family has many exports. The ZIP is an Active Storage file.",
+      "heading": "Creating an export queues a background job",
+      "body": "The controller creates a FamilyExport, queues FamilyDataExportJob, and redirects to the profile settings.",
+      "view": "flow:family-exports-controller-create",
+      "focus": []
+    },
+    {
+      "heading": "Export records add a status and a file",
+      "body": "Each export stores a status and a family, with the ZIP file attached.",
       "view": "data",
       "focus": [
-        "family-export",
-        "family"
+        "family-export"
       ],
       "code": "db/migrate/20250724115507_create_family_exports.rb:1-10"
     },
     {
-      "heading": "Settings lists the last 10 exports to download",
-      "body": "A Turbo frame refreshes the list every 3 seconds while an export runs. download sends the file only when the export is completed.",
-      "view": "architecture",
-      "focus": [
-        "web-ui",
-        "web-endpoints"
-      ],
-      "code": "app/views/family_exports/_list.html.erb:1-5"
-    },
-    {
-      "heading": "The whole change",
-      "body": "Web endpoints start the export, Background jobs call Family::DataExporter, and a FamilyExport record holds the status and the file.",
+      "heading": "Users export their data as a ZIP",
+      "body": "The ZIP holds CSV files for accounts, transactions, trades and categories, plus all.ndjson.",
       "view": "architecture",
       "focus": []
     }
@@ -54,111 +55,83 @@
     {
       "from": "background-jobs",
       "to": "family",
-      "label": "builds the ZIP"
+      "label": "runs Family::DataExporter"
     }
   ],
   "components": [
     {
       "id": "web-ui",
-      "summary": "Settings shows an Export data button and a list of exports that refreshes while one runs."
+      "summary": "Adds an export modal and an export list to profile settings; the list shows 10 exports."
     },
     {
       "id": "web-endpoints",
-      "summary": "New FamilyExportsController: admins start an export, list the last 10 and download a completed one."
+      "summary": "Adds routes and FamilyExportsController to create, list and download exports, for admins only."
     },
     {
       "id": "family",
-      "summary": "New FamilyExport with a status and a file; new Family::DataExporter writes 4 CSV files and all.ndjson into a ZIP."
+      "summary": "Family::DataExporter builds the ZIP in memory; FamilyExport tracks each export's status and file."
     },
     {
       "id": "background-jobs",
-      "summary": "New FamilyDataExportJob builds the ZIP, attaches it and sets the export status."
+      "summary": "FamilyDataExportJob runs the export and sets it to completed or failed."
     },
     {
       "id": "platform",
-      "summary": "New family_exports table."
+      "summary": "Adds the family_exports table with a status column and a family reference."
     }
   ],
   "decisions": [
     {
-      "title": "Build the archive in a background job",
-      "why": "A full export reads every account and transaction. The request returns at once and the UI polls for the result.",
-      "basis": "inferred",
-      "alternative": "Build and stream the ZIP inside the request.",
-      "evidence": "app/controllers/family_exports_controller.rb:13"
+      "title": "Build the ZIP in memory",
+      "why": "The export returns a StringIO, so the job attaches the ZIP without a temporary file.",
+      "basis": "code",
+      "alternative": "Write the ZIP to a temporary file first",
+      "evidence": "app/models/family/data_exporter.rb:166-193"
     },
     {
-      "title": "Exporter in the Family:: namespace",
-      "why": "The app keeps domain logic in model namespaces. Family::DataExporter follows that convention.",
-      "basis": "inferred",
-      "alternative": "A service object in app/services.",
-      "evidence": "app/models/family/data_exporter.rb:4"
+      "title": "Run the export in a background job",
+      "why": "The controller only creates a record and queues FamilyDataExportJob, so the request returns at once.",
+      "basis": "code",
+      "alternative": "Build the ZIP inside the request",
+      "evidence": "app/controllers/family_exports_controller.rb:11-13"
     },
     {
-      "title": "A FamilyExport record holds the state",
-      "why": "The list, the polling and the download read a single status. The file is an Active Storage attachment on the record.",
-      "basis": "inferred",
-      "alternative": "Keep the state only in the job queue.",
+      "title": "Track the export with a status enum",
+      "why": "The enum records the four states, so the download action checks completed and an attached file.",
+      "basis": "code",
+      "alternative": "Store a boolean for done",
       "evidence": "app/models/family_export.rb:6-11"
-    },
-    {
-      "title": "CSV per entity plus an NDJSON dump",
-      "why": "The CSV import of Maybe reads the CSV files back. NDJSON keeps each record with its nested data, such as the accountable of an account.",
-      "basis": "pr",
-      "alternative": "A single JSON document for everything.",
-      "evidence": "app/models/family/data_exporter.rb:27-29"
     }
   ],
   "flows": [
     {
-      "id": "export-data",
-      "title": "Start an export",
+      "id": "family-exports-controller-create",
+      "title": "Start a data export",
+      "trigger": "FamilyExportsController#create",
       "steps": [
         {
           "from": "web-endpoints",
-          "to": "family",
-          "call": "family_exports.create!",
-          "delta": "added",
-          "data": {
-            "type": "FamilyExport",
-            "fields": [
-              "+status: pending"
-            ]
-          }
+          "to": "shared-kernel",
+          "call": "Current.family",
+          "delta": "changed"
         },
         {
           "from": "web-endpoints",
           "to": "background-jobs",
           "call": "FamilyDataExportJob.perform_later",
-          "delta": "added"
+          "delta": "changed"
         },
         {
           "from": "background-jobs",
           "to": "family",
-          "call": "DataExporter#generate_export",
-          "delta": "added",
-          "data": {
-            "type": "ZIP (StringIO)",
-            "fields": [
-              "+accounts.csv",
-              "+transactions.csv",
-              "+trades.csv",
-              "+categories.csv",
-              "+all.ndjson"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "id": "download-export",
-      "title": "Download an export",
-      "steps": [
-        {
-          "from": "web-endpoints",
-          "to": "family",
-          "call": "export.downloadable?",
+          "call": "Family::DataExporter.new",
           "delta": "added"
+        },
+        {
+          "from": "family",
+          "to": "shared-kernel",
+          "call": "FamilyExport",
+          "delta": "changed"
         }
       ]
     }
@@ -168,25 +141,20 @@
       {
         "id": "family-export",
         "name": "FamilyExport",
+        "delta": "added",
         "component": "family",
-        "evidence": "db/migrate/20250724115507_create_family_exports.rb:3-7",
         "fields": [
-          "+id: uuid",
+          "+status: string",
           "+family_id: uuid",
-          "+status: pending|processing|completed|failed",
           "+export_file: attachment"
         ],
-        "delta": "added"
+        "evidence": "db/migrate/20250724115507_create_family_exports.rb:1-10"
       },
       {
         "id": "family",
         "name": "Family",
-        "component": "family",
-        "evidence": "app/models/family.rb:21",
-        "fields": [
-          "+family_exports: has_many"
-        ],
-        "delta": "changed"
+        "delta": "unchanged",
+        "component": "family"
       }
     ],
     "relations": [

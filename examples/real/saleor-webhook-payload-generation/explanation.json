@@ -1,19 +1,19 @@
 {
-  "tldr": "Each webhook gets a payloadGeneration setting. An app sets IMMEDIATE to build a subscription payload in the request, not in a background task.",
-  "goal": "Deferred payloads carry only the object's final state. Some apps apply each update in order, so they need the state at each request.",
+  "tldr": "Each subscription webhook gets a payloadGeneration setting. DEFERRED builds its payload in a background task. IMMEDIATE builds it during the request or task that triggers the event.",
+  "goal": "Some apps need a payload that reflects the object's state at the event, not at the later task run.",
   "story": [
     {
-      "heading": "Webhooks adds a per-webhook payload generation choice",
-      "body": "Subscription webhooks on deferrable events build their payload now or in a background task.",
+      "heading": "Webhooks choose when their payload is built",
+      "body": "Subscription webhooks split into deferred and immediate groups before the payload is built.",
       "view": "architecture",
       "focus": [
         "webhooks"
       ],
-      "code": "saleor/webhook/transport/asynchronous/transport.py:304-325"
+      "code": "saleor/webhook/transport/asynchronous/transport.py:301-327"
     },
     {
-      "heading": "GraphQL API exposes payloadGeneration on webhooks",
-      "body": "Webhook create and update mutations accept DEFERRED or IMMEDIATE. The default is DEFERRED.",
+      "heading": "GraphQL API exposes the payload generation setting",
+      "body": "Webhook create, update and trigger accept a payloadGeneration value, DEFERRED or IMMEDIATE.",
       "view": "architecture",
       "focus": [
         "graphql-api"
@@ -22,7 +22,7 @@
     },
     {
       "heading": "Webhook table stores the payload generation",
-      "body": "Each webhook row stores its payload generation. Existing rows get deferred by default.",
+      "body": "The webhook table adds a payload_generation field. Existing webhooks keep the deferred behavior.",
       "view": "data",
       "focus": [
         "webhook"
@@ -30,52 +30,63 @@
       "code": "saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"
     },
     {
-      "heading": "Apps opt out of deferred payloads per webhook",
-      "body": "An IMMEDIATE webhook builds its payload in the request. Other webhooks stay deferred.",
+      "heading": "Apps set the setting in their manifests",
+      "body": "Manifest webhooks accept payloadGeneration. A missing value means DEFERRED. Other values fail validation.",
       "view": "architecture",
-      "focus": []
+      "focus": [
+        "apps"
+      ],
+      "code": "saleor/app/manifest_validations.py:296-321"
     }
   ],
   "keyDependencies": [
     {
       "from": "apps",
       "to": "webhooks",
-      "label": "Manifest sets payloadGeneration"
+      "label": "manifests set payloadGeneration"
     }
   ],
   "components": [
     {
       "id": "graphql-api",
-      "summary": "Adds WebhookPayloadGenerationEnum and a payloadGeneration field to webhook mutations and types."
+      "summary": "Adds the WebhookPayloadGeneration enum and the payloadGeneration argument on webhook mutations."
     },
     {
       "id": "apps",
-      "summary": "Reads payloadGeneration from app manifests and sets DEFERRED when it is missing."
+      "summary": "Reads payloadGeneration from app manifests and maps the enum name to the stored value."
     },
     {
       "id": "webhooks",
-      "summary": "Splits subscription webhooks into deferred and immediate groups when it creates deliveries."
+      "summary": "Groups subscription webhooks by payload generation and builds immediate payloads during the event."
     }
   ],
   "decisions": [
     {
-      "title": "Let each webhook opt out of deferred payloads",
-      "why": "Some apps apply updates in sequence. Deferred payloads carry only the final state, so those apps need immediate payloads.",
-      "basis": "inferred",
-      "alternative": "Turn deferral off for all webhooks",
-      "evidence": "saleor/webhook/models.py:18-24"
+      "title": "Keep DEFERRED as the default payload generation",
+      "why": "Existing webhooks keep their current behavior, and the payload is built in a background task.",
+      "basis": "code",
+      "alternative": "Build every payload immediately",
+      "evidence": "saleor/app/manifest_validations.py:296-321"
     },
     {
-      "title": "Read the setting once when deliveries are created",
-      "why": "Later changes to the setting do not affect deliveries that already exist.",
+      "title": "Build immediate payloads in the request that triggers the event",
+      "why": "The payload then reflects the object's state at the event, at the cost of slowing that request or task.",
       "basis": "code",
-      "evidence": "saleor/webhook/transport/asynchronous/transport.py:425-432"
+      "alternative": "Build all payloads in the deferred task",
+      "evidence": "saleor/graphql/webhook/enums.py:357-377"
+    },
+    {
+      "title": "Split webhooks by setting before the payload is built",
+      "why": "Each group takes its own build path, so the trigger code stays the same for both.",
+      "basis": "inferred",
+      "alternative": "Check the setting for each webhook inside the trigger loop",
+      "evidence": "saleor/webhook/transport/asynchronous/transport.py:304-327"
     }
   ],
   "flows": [
     {
-      "id": "notify-apps-order-update",
-      "title": "Notify apps about an order update",
+      "id": "notify-apps",
+      "title": "Send an order event to apps",
       "trigger": "manager.order_created",
       "steps": [
         {
