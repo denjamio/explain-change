@@ -85,10 +85,11 @@ score: a change is kept on all 11 PRs, compared pair by pair.
 Some PRs are harder than others, and that spread between PRs is larger than the spread between 2 runs of the same
 PR. Compared as 2 independent means, the spread between PRs counts as noise, and a gain smaller than the 0.1 floor
 cannot show.
-With 5 or more PRs in common, `--baseline` compares each PR with itself: it reports the mean of the per-PR
-differences, its noise (2 standard errors of those differences, at least 0.05, about 1 grader of a run), how many PRs
-went up and down, and a sign test over them. Fewer than 5 PRs in common fall back to the unpaired comparison, with
-the 0.1 floor.
+
+With 5 or more PRs in common, `--baseline` compares each PR with itself. It reports the mean of the per-PR
+differences; its noise, a 95% interval of that mean from Student's t (with 5 PRs, 2 standard errors would be a 90%
+one), at least 0.05 (about 1 grader of a run); how many PRs went up and down; and a sign test over them. Fewer than 5
+PRs in common fall back to the unpaired comparison, with the 0.1 floor.
 
 ## Options
 

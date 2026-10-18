@@ -229,7 +229,7 @@ export interface Comparison {
   before: number;
   now: number;
   delta: number;
-  /** The noise the delta is read against: 2 standard errors, at least the floor. */
+  /** The noise the delta is read against: a 95% interval (paired: Student's t), at least the floor. */
   noise: number;
   /** The examples compared pair by pair (each against itself), or 0 when the runs have no example in common. */
   paired: number;
@@ -251,6 +251,15 @@ const NOISE_FLOOR = 0.1;
  * The floor is 1 grader of a run (about 20 graders): a smaller move is a single verdict.
  */
 const PAIRED_FLOOR = 0.05;
+/**
+ * The 97.5% quantile of Student's t, by degrees of freedom (1-30): with 5 PRs, 2 standard errors is a 90% interval,
+ * not 95%. Above 30, 2.
+ */
+const T_975 = [
+  12.71, 4.3, 3.18, 2.78, 2.57, 2.45, 2.36, 2.31, 2.26, 2.23, 2.2, 2.18, 2.16, 2.14, 2.13, 2.12, 2.11, 2.1, 2.09, 2.09,
+  2.08, 2.07, 2.07, 2.06, 2.06, 2.06, 2.05, 2.05, 2.05, 2.04,
+];
+export const t975 = (df: number) => T_975[df - 1] ?? 2;
 /** Fewer common examples than this are compared unpaired: a standard error of 2-3 differences means nothing. */
 const PAIRED_MIN = 5;
 
@@ -273,7 +282,7 @@ function perExample(rows: Record<string, unknown>[], k: string): Map<string, num
 
 /**
  * Compares 2 evals: the valid share and each measure both have. When they share at least PAIRED_MIN examples, the
- * comparison is paired: the mean of the per-example differences, against 2 standard errors of those differences.
+ * comparison is paired: the mean of the per-example differences, against a 95% interval of it (Student's t).
  * Otherwise run by run, against 2 standard errors of the difference of 2 means.
  */
 export function compareRuns(before: Record<string, unknown>[], now: Record<string, unknown>[]): Comparison[] {
@@ -307,7 +316,7 @@ export function compareRuns(before: Record<string, unknown>[], now: Record<strin
     if (common.length >= PAIRED_MIN) {
       const d = common.map((e) => (pn.get(e) as number) - (pb.get(e) as number));
       const delta = mean(d);
-      const noise = Math.max((2 * sampleSd(d)) / Math.sqrt(d.length), PAIRED_FLOOR);
+      const noise = Math.max((t975(d.length - 1) * sampleSd(d)) / Math.sqrt(d.length), PAIRED_FLOOR);
       out.push({
         measure: k,
         before: round(mean(common.map((e) => pb.get(e) as number))),

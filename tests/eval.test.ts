@@ -168,6 +168,11 @@ describe("eval metrics", () => {
     const mixed = score(rows((i) => (i % 2 ? 0.12 : -0.1)));
     expect(mixed).toMatchObject({ paired: 6, better: 3, worse: 3, improved: false, regressed: false });
     expect(score(rows(() => -0.06))?.regressed).toBe(true);
+    // 5 PRs, 3 up a lot and 2 flat (the prose of a change that does not touch prose): 2 standard errors call it a
+    // gain, the t interval of 4 degrees of freedom does not
+    const few = levels.slice(0, 5).map((v, i) => ({ example: `pr-${i}`, state: "valid", prose: v }));
+    const lucky = few.map((r, i) => ({ ...r, prose: r.prose + [0.25, 0.25, 0.15, 0, 0][i]! }));
+    expect(compareRuns(few, lucky).find((c) => c.measure === "prose")).toMatchObject({ paired: 5, improved: false });
     // fewer than 5 examples in common: run by run, where the spread between PRs is the noise
     const unpaired = compareRuns(before.slice(0, 2), rows(() => 0.06).slice(0, 2)).find((c) => c.measure === "score");
     expect(unpaired).toMatchObject({ paired: 0, improved: false });
