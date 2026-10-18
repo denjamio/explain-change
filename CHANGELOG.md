@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-18
+
 ### Changed
 - `render` moves a location up to 20 lines outside a hunk (any line of an added file) onto the nearest hunk,
   writes it back to `explanation.json` and lists the fix (`explanation.fixed`): no round of fixes for it.
