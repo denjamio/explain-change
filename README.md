@@ -40,7 +40,7 @@ makes sense.
 | 🎬 **A guided story** | 2–8 steps walk through the change: each moves the map to what changed and shows the code. |
 | 📖 **Explains, never reviews** | Short, present-tense sentences in the style of [Simplified Technical English](#plain-prose-you-can-check-asd-ste100), checked before the page renders. No bug hunting or style opinions: that is your reviewer's job. |
 | 📦 **One offline file** | A single HTML page, light and dark mode, carrying only the code it shows. |
-| 🎯 **Deterministic and cheap** | The CLI computes every fact: the same change gives a byte-identical page. The agent reads a digest of about 4–5k tokens for a real PR (less for a small change), never the full diff. |
+| 🎯 **Deterministic and cheap** | The CLI computes every fact: the same change gives a byte-identical page. The agent reads a digest of about 5–7k tokens for a real PR (less for a small change), never the full diff. |
 
 ## Quick start
 
@@ -186,7 +186,7 @@ silently.
 | `project.lang` | Report language: `en`, the default and, for now, the only one. |
 | `project.base` | Default base for `local`. |
 | `project.names` | Product and library names written like code (`FastAPI`, `NestJS`) that the prose may use: the validator does not look for them in the change. |
-| `project.budget` | Digest size in characters (2000–100000, default 12000). The task always fits; the overview gets shorter (fewer symbols, files by component) until the key hunks have 35% of the budget, so a large change goes past it by the task and the shortest overview: about 16–20k characters (4–5k tokens) on real PRs. `--budget` overrides it. |
+| `project.budget` | Digest size in characters (2000–100000, default 12000). The task always fits; the overview gets shorter (fewer symbols, files by component) until the key hunks have 35% of the budget, so a large change goes past it by the task and the shortest overview: about 20–27k characters (5–7k tokens) on real PRs. `--budget` overrides it. |
 | `project.host` | Where the PRs live: `azure-devops` or `github` (default: the host of the remotes, else Azure DevOps). `--host` overrides it; a PR URL names its own. |
 | `[[layers]]` | Map lanes, top to bottom in the listed order (entry points first, core last). The order does not decide what may depend on what: `[rules]` does. |
 | `[rules] allow` | Allowed dependency directions (`"a -> b"`, layer or component ids). When present, any other edge between layers is a violation. |

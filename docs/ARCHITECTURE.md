@@ -9,7 +9,7 @@ git diff / Azure DevOps PR + .explain-change.toml
         │  explain-change local | pr
         ▼
 facts.json         the change, analyzed: files, components, dependencies, rules, symbols, OpenSpec, outline
-digest.md          ≈4–5k tokens for the agent on a real PR: the facts, the best hunks, the rules of the task, and
+digest.md          ≈5–7k tokens for the agent on a real PR: the facts, the best hunks, the rules of the task, and
                    the draft of explanation.json: ids, views, focus, code references already right; "<…>" for the
                    agent's words (also in draft.json)
         │  the agent writes explanation.json: the draft, filled, in 1 call
