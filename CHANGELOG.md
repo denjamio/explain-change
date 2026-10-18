@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-18
+
 ### Changed
 - The draft's tldr, goal, story body and decision why carry a present-tense example and "no would/could" next to
   the field: the modal that still cost a round of fixes in 2 of 6 train runs no longer shows up. Measured (haiku
