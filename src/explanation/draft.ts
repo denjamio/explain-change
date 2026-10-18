@@ -52,11 +52,11 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
     version: CONTRACT_VERSION,
     key: facts.key,
     lang: facts.config.lang,
-    tldr: `<${size(L.tldr)}: what changes and its effect>`,
-    goal: `<${size(L.goal)}: the need or problem behind it, not a repeat of tldr>`,
+    tldr: `<${size(L.tldr)}: what changes and its effect, in the present, no would/could: 'Bulk delete removes many folders in 1 call'>`,
+    goal: `<${size(L.goal)}: the need or problem behind it, not a repeat of tldr, in the present, no would/could: 'Admins cannot see which numbers fail'>`,
     story: outline.story.map((s) => ({
       heading: `<${size(L["story.heading"])}, on ${s.about}: the thing + what happened to it>`,
-      body: `<${size(L["story.body"])}: what behaves differently now>`,
+      body: `<${size(L["story.body"])}: what behaves differently now, in the present, no would/could: 'The job retries a failed send'>`,
       view: s.view,
       focus: s.view === "data" ? ["<entity-id>"] : s.focus,
       ...(s.code ? { code: s.code } : {}),
@@ -73,7 +73,7 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
   out.decisions = [
     {
       title: `<${size(L["decisions.title"])}: the choice>`,
-      why: `<${size(L["decisions.why"])}: why, in the present: 'Seat expansion is all or nothing'>`,
+      why: `<${size(L["decisions.why"])}: why, in the present, no would/could: 'Seat expansion is all or nothing'>`,
       basis: `<${decisionBases(facts).join("|")}>`,
       alternative: `<${size(L["decisions.alternative"])}: the main alternative, as an action in the present: 'Reserve 1 seat per member', optional>`,
       evidence: "<file:line inside a hunk, optional>",
