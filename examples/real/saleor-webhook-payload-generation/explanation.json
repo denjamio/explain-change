@@ -1,10 +1,28 @@
 {
-  "tldr": "Each webhook now has payloadGeneration: DEFERRED, the default, or IMMEDIATE. An IMMEDIATE webhook gets its payload built when the event fires, with the state of that moment.",
-  "goal": "Let an app that applies each event in sequence get the state at trigger time, while other webhooks keep deferred payloads.",
+  "tldr": "Each webhook gets a payloadGeneration setting. An app sets IMMEDIATE to build a subscription payload in the request, not in a background task.",
+  "goal": "Deferred payloads carry only the object's final state. Some apps apply each update in order, so they need the state at each request.",
   "story": [
     {
-      "heading": "Webhook gets a payload_generation field",
-      "body": "The new column is deferred by default. Existing webhooks keep deferred payloads, so they behave as before.",
+      "heading": "Webhooks adds a per-webhook payload generation choice",
+      "body": "Subscription webhooks on deferrable events build their payload now or in a background task.",
+      "view": "architecture",
+      "focus": [
+        "webhooks"
+      ],
+      "code": "saleor/webhook/transport/asynchronous/transport.py:304-325"
+    },
+    {
+      "heading": "GraphQL API exposes payloadGeneration on webhooks",
+      "body": "Webhook create and update mutations accept DEFERRED or IMMEDIATE. The default is DEFERRED.",
+      "view": "architecture",
+      "focus": [
+        "graphql-api"
+      ],
+      "code": "saleor/graphql/webhook/enums.py:357-377"
+    },
+    {
+      "heading": "Webhook table stores the payload generation",
+      "body": "Each webhook row stores its payload generation. Existing rows get deferred by default.",
       "view": "data",
       "focus": [
         "webhook"
@@ -12,126 +30,65 @@
       "code": "saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"
     },
     {
-      "heading": "Async triggers split the webhooks of an event",
-      "body": "DEFERRED webhooks go to the background task. IMMEDIATE ones get their payload at once, and only they slow the request down.",
-      "view": "flow:trigger-async-webhooks",
-      "focus": [
-        "#1",
-        "#2"
-      ],
-      "code": "saleor/webhook/transport/asynchronous/transport.py:422-461"
-    },
-    {
-      "heading": "Apps set it; webhookTrigger respects it",
-      "body": "The manifest, webhookCreate and webhookUpdate take DEFERRED or IMMEDIATE. A manual trigger defers only for a DEFERRED webhook.",
-      "view": "flow:register-webhook",
-      "focus": [
-        "#1",
-        "#2"
-      ],
-      "code": "saleor/app/manifest_validations.py:293-323"
-    },
-    {
-      "heading": "ADR 0011 records the trade-off",
-      "body": "Deferred payloads carry the state when the task runs, not when the event happened. The opt-out is for consumers that need each step.",
+      "heading": "Apps opt out of deferred payloads per webhook",
+      "body": "An IMMEDIATE webhook builds its payload in the request. Other webhooks stay deferred.",
       "view": "architecture",
-      "focus": [],
-      "code": "docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:39-54"
+      "focus": []
     }
   ],
   "keyDependencies": [
     {
-      "from": "graphql-api",
+      "from": "apps",
       "to": "webhooks",
-      "label": "sets payloadGeneration"
+      "label": "Manifest sets payloadGeneration"
     }
   ],
   "components": [
     {
       "id": "graphql-api",
-      "summary": "New WebhookPayloadGenerationEnum; webhookCreate and webhookUpdate set it, and webhookTrigger reads it."
+      "summary": "Adds WebhookPayloadGenerationEnum and a payloadGeneration field to webhook mutations and types."
     },
     {
       "id": "apps",
-      "summary": "The app manifest takes payloadGeneration per webhook and stores deferred when it is missing."
+      "summary": "Reads payloadGeneration from app manifests and sets DEFERRED when it is missing."
     },
     {
       "id": "webhooks",
-      "summary": "Webhook stores payload_generation. Async triggers build IMMEDIATE payloads at once and defer the rest."
+      "summary": "Splits subscription webhooks into deferred and immediate groups when it creates deliveries."
     }
   ],
   "decisions": [
     {
-      "title": "Deferred stays the default; IMMEDIATE is a per-webhook opt-out",
-      "why": "Deferral keeps heavy mutations fast. An integration that applies each ORDER_METADATA_UPDATED in sequence breaks when all deliveries carry the final state.",
-      "basis": "code",
-      "alternative": "Store a snapshot of every payload in the request.",
-      "evidence": "docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md:41-47"
+      "title": "Let each webhook opt out of deferred payloads",
+      "why": "Some apps apply updates in sequence. Deferred payloads carry only the final state, so those apps need immediate payloads.",
+      "basis": "inferred",
+      "alternative": "Turn deferral off for all webhooks",
+      "evidence": "saleor/webhook/models.py:18-24"
     },
     {
-      "title": "The setting is read once, when the delivery is created",
-      "why": "Deliveries and queued tasks finish the way they started. A later change of the setting affects only new deliveries.",
+      "title": "Read the setting once when deliveries are created",
+      "why": "Later changes to the setting do not affect deliveries that already exist.",
       "basis": "code",
-      "alternative": "Read the setting again when the task runs.",
-      "evidence": "saleor/webhook/models.py:55-62"
-    },
-    {
-      "title": "An IMMEDIATE payload reads from the writer",
-      "why": "A task can fire the event right after its own write. The replica can lag, so dataloaders read the writer for this path.",
-      "basis": "code",
-      "alternative": "Read the replica, as the deferred task does.",
-      "evidence": "saleor/webhook/transport/asynchronous/transport.py:445-460"
-    },
-    {
-      "title": "Group the webhooks, not the event",
-      "why": "An event reaches many apps. Each app chooses for its own webhook, and only that webhook pays the cost.",
-      "basis": "code",
-      "alternative": "A setting per event type for all apps.",
-      "evidence": "saleor/webhook/transport/asynchronous/transport.py:305-326"
+      "evidence": "saleor/webhook/transport/asynchronous/transport.py:425-432"
     }
   ],
   "flows": [
     {
-      "id": "trigger-async-webhooks",
-      "title": "Trigger async webhooks for an event",
-      "trigger": "trigger_webhooks_async_for_multiple_objects",
+      "id": "notify-apps-order-update",
+      "title": "Notify apps about an order update",
+      "trigger": "manager.order_created",
       "steps": [
         {
-          "from": "webhooks",
-          "to": "webhooks",
-          "call": "group_subscription_webhooks_by_payload_generation",
-          "delta": "added"
+          "from": "orders",
+          "to": "plugins",
+          "call": "manager.order_created",
+          "delta": "unchanged"
         },
         {
-          "from": "webhooks",
-          "to": "graphql-api",
-          "call": "build the IMMEDIATE payloads now",
-          "delta": "changed",
-          "data": {
-            "type": "Webhook",
-            "fields": [
-              "+payload_generation: immediate"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "id": "register-webhook",
-      "title": "Register a webhook with its payload generation",
-      "trigger": "webhookCreate",
-      "steps": [
-        {
-          "from": "graphql-api",
+          "from": "plugins",
           "to": "webhooks",
-          "call": "Webhook.payload_generation",
-          "delta": "added"
-        },
-        {
-          "from": "apps",
-          "to": "webhooks",
-          "call": "_clean_webhook_payload_generation",
-          "delta": "added"
+          "call": "trigger_webhooks_async",
+          "delta": "changed"
         }
       ]
     }
@@ -141,41 +98,14 @@
       {
         "id": "webhook",
         "name": "Webhook",
-        "component": "webhooks",
         "delta": "changed",
-        "evidence": "saleor/webhook/models.py:51-69",
-        "fields": [
-          "+payload_generation: deferred|immediate = deferred"
-        ]
-      },
-      {
-        "id": "app",
-        "name": "App",
-        "component": "apps",
-        "delta": "unchanged",
-        "fields": []
-      },
-      {
-        "id": "event-delivery",
-        "name": "EventDelivery",
         "component": "webhooks",
-        "delta": "unchanged",
-        "fields": []
+        "fields": [
+          "+payload_generation: string"
+        ],
+        "evidence": "saleor/webhook/migrations/0015_webhook_payload_generation.py:1-22"
       }
     ],
-    "relations": [
-      {
-        "from": "app",
-        "to": "webhook",
-        "label": "1..n",
-        "delta": "unchanged"
-      },
-      {
-        "from": "webhook",
-        "to": "event-delivery",
-        "label": "1..n",
-        "delta": "unchanged"
-      }
-    ]
+    "relations": []
   }
 }
