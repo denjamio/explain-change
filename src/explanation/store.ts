@@ -6,6 +6,7 @@ import { FILES } from "../core/constants.ts";
 import { ensureDir } from "../core/fs.ts";
 import { draftExplanation } from "./draft.ts";
 import { normalizeExplanation } from "./normalize.ts";
+import { repairExplanation } from "./repair.ts";
 import { type Issue, validateExplanation } from "./validate.ts";
 
 /**
@@ -25,6 +26,8 @@ export interface ExplanationStatus {
   state: ExplanationState;
   issues: Issue[];
   explanation: NormalizedExplanation | null;
+  /** The mechanical fixes applied to explanation.json before it was validated (repair.ts). */
+  fixes?: string[];
 }
 
 export const explanationPath = (work: string) => join(work, FILES.explanation);
@@ -71,8 +74,11 @@ export function prepareExplanation(work: string, facts: Facts): "kept" | "restor
   return "drafted";
 }
 
-/** The state of explanation.json for this change. A valid one is also kept under the change's key. */
-export function loadExplanation(work: string, facts: Facts, root: string | null): ExplanationStatus {
+/**
+ * The state of explanation.json for this change. A valid one is also kept under the change's key. Mechanical
+ * fixes (repair.ts) are written back to explanation.json unless `write` is false (`status` writes nothing).
+ */
+export function loadExplanation(work: string, facts: Facts, root: string | null, write = true): ExplanationStatus {
   const path = explanationPath(work);
   if (!existsSync(path)) return { state: "missing", issues: [], explanation: null };
   let value: unknown;
@@ -93,10 +99,14 @@ export function loadExplanation(work: string, facts: Facts, root: string | null)
       explanation: null,
     };
   }
+  const repaired = repairExplanation(value, facts);
+  const fixes = repaired.fixes.length ? { fixes: repaired.fixes } : {};
+  value = repaired.value;
+  if (write && repaired.fixes.length) writeJson(path, value);
   const issues = validateExplanation(value, facts, root);
-  if (issues.some((i) => i.code === "placeholder")) return { state: "draft", issues, explanation: null };
-  if (issues.length) return { state: "invalid", issues, explanation: null };
+  if (issues.some((i) => i.code === "placeholder")) return { state: "draft", issues, explanation: null, ...fixes };
+  if (issues.length) return { state: "invalid", issues, explanation: null, ...fixes };
   ensureDir(join(work, FILES.saved));
   writeJson(savedPath(work, facts.key), value);
-  return { state: "valid", issues: [], explanation: normalizeExplanation(value as Explanation, facts) };
+  return { state: "valid", issues: [], explanation: normalizeExplanation(value as Explanation, facts), ...fixes };
 }

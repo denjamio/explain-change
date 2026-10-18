@@ -86,6 +86,8 @@ export interface Transcript {
   skills: string[];
   /** The issues the first render reported, numbers and quotes left out: what made the agent render again. */
   firstIssues: string[];
+  /** The messages of the first render's issues, as the agent read them: what a fix to the CLI must handle. */
+  firstMessages: string[];
   /** Each tool call in order, as `Tool:what (input chars→result chars)`: where the turns and the tokens go. */
   tools: string[];
 }
@@ -118,6 +120,7 @@ export function readTranscript(stdout: string): Transcript {
     sourceReads: 0,
     skills: [],
     firstIssues: [],
+    firstMessages: [],
     tools: [],
   };
   const calls = new Map<string, number>();
@@ -169,6 +172,7 @@ export function readTranscript(stdout: string): Transcript {
       const text =
         typeof result.content === "string" ? result.content : (result.content ?? []).map((c) => c.text).join("\n");
       out.firstIssues = issueKinds(text);
+      out.firstMessages = issueMessages(text);
     } else if (event.type === "result") {
       const u = event.usage ?? {};
       out.turns = event.num_turns ?? null;
@@ -194,6 +198,16 @@ export function issueKinds(text: string): string[] {
     // a refused word is what to fix in the rules or the digest: keep it
     const words = code === "refused-word" ? ` (${/"message":\s*"([^":]*):/.exec(o)?.[1] ?? "?"})` : "";
     return `${code} ${path.replace(/\[\d+\]/g, "[]")}${words}`.trim();
+  });
+}
+
+/** Each issue of a render's output as `path: message`, placeholders left out. */
+export function issueMessages(text: string): string[] {
+  return [...text.matchAll(/\{[^{}]*"code":[^{}]*\}/g)].flatMap(([o]) => {
+    if (/"code":\s*"placeholder"/.test(o)) return [];
+    const path = /"path":\s*"([^"]*)"/.exec(o)?.[1] ?? "";
+    const message = /"message":\s*"((?:[^"\\]|\\.)*)"/.exec(o)?.[1] ?? "";
+    return [`${path}: ${message}`];
   });
 }
 

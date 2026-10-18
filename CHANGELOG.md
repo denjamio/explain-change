@@ -6,6 +6,24 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- `render` moves a location up to 20 lines outside a hunk (any line of an added file) onto the nearest hunk,
+  writes it back to `explanation.json` and lists the fix (`explanation.fixed`): no round of fixes for it.
+- A field too long is checked for prose in the same pass, and its issue says how much to cut and shows the words
+  past the limit: 1 round of fixes is enough.
+- The eval keeps the messages of the first render's issues (`firstMessages`).
+- The draft gives limits in words first (`≤20 words (140 chars)`) and a present-tense example for a decision's why
+  and alternative; the prose rules in the digest show how to rewrite a modal ("it would fail" → "it fails").
+
+### Fixed
+- A detected flow's id cut at 40 characters could end with a hyphen, so the draft failed its own validator
+  (`ANALYSIS_VERSION` 13).
+
+Measured with a haiku agent and a sonnet judge against 0.10.0 graded again by sonnet: train score 0.79 → 0.83,
+renders 1.5 → 1.17, tokens in −16%; test (2 runs) score 0.77 → 0.76, renders 1.6 → 1.4. With the prose context:
+test renders 1.4 → 1.1, tokens in 153k → 147k, score 0.76 → 0.74 (inside the noise); on the 4 train PRs that
+rendered most, 12 runs each, renders 1.58 → 1.0 and turns 7.6 → 6.
+
 ## [0.10.0] - 2026-10-18
 
 ### Added

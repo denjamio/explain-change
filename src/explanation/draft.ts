@@ -43,7 +43,8 @@ export function changeReaches(facts: Pick<Facts, "files">, flow: Facts["config"]
  * A placeholder's limit, in characters and in words: an agent writes to a word count more closely than to a character
  * count (in the evals, a story body over its limit cost a round of fixes in most runs). About 7 characters a word.
  */
-const size = (chars: number) => `≤${chars} chars, ~${Math.floor(chars / 7)} words`;
+// Words first: agents count words, not characters (too-long was the first cause of a second render).
+const size = (chars: number) => `≤${Math.floor(chars / 7)} words (${chars} chars)`;
 
 export function draftExplanation(facts: Facts): Record<string, unknown> {
   const { outline } = facts;
@@ -72,9 +73,9 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
   out.decisions = [
     {
       title: `<${size(L["decisions.title"])}: the choice>`,
-      why: `<${size(L["decisions.why"])}: why>`,
+      why: `<${size(L["decisions.why"])}: why, in the present: 'Seat expansion is all or nothing'>`,
       basis: `<${decisionBases(facts).join("|")}>`,
-      alternative: `<${size(L["decisions.alternative"])}: the main alternative, optional>`,
+      alternative: `<${size(L["decisions.alternative"])}: the main alternative, as an action in the present: 'Reserve 1 seat per member', optional>`,
       evidence: "<file:line inside a hunk, optional>",
     },
   ];

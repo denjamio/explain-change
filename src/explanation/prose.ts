@@ -123,6 +123,8 @@ export function proseRules(names: readonly string[] = []): string {
     "replaces); one word per thing; counts as digits (3 files, the page writes them so), and 'a' for a single thing (a ZIP file, not 1 ZIP " +
     "file); no idioms. No passive with its agent: 'the job sends it', not 'it is sent by the job'. Code names " +
     "(snake_case, CamelCase, Module::Name, obj.method()) exactly as in the code; the word rules skip them. " +
+    "Rewrite modals as facts: 'it would fail' → 'it fails'; 'it could send' → 'it sends' or 'it can send' (can is " +
+    "allowed). " +
     (names.length ? `Product names that are not code: ${names.join(", ")}. ` : "") +
     `Refused (w* = w and its forms): ${refused}.`
   );

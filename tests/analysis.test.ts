@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
-import { hunkScore, keyDependencyCandidates, storyBudget } from "../src/analysis/outline.ts";
+import { flowId, hunkScore, keyDependencyCandidates, storyBudget } from "../src/analysis/outline.ts";
 import { portLinks } from "../src/analysis/ports.ts";
 import { type Extracted, extractRefs } from "../src/analysis/refs.ts";
 import { loadTsConfigs, SideIndex, type TsConfig } from "../src/analysis/resolve.ts";
@@ -662,4 +662,9 @@ describe("storyBudget", () => {
   test("the draft's story grows with the lines of code the change rewrites", () => {
     expect([0, 149, 150, 599, 600, 5000].map(storyBudget)).toEqual([4, 4, 6, 6, 8, 8]);
   });
+});
+
+test("a flow id cut at 40 characters never ends with a hyphen", () => {
+  expect(flowId("Channels::Whatsapp::HealthSyncSchedulerJob#perform")).toBe("channels-whatsapp-health-sync-scheduler");
+  expect(flowId("::")).toBe("flow");
 });
