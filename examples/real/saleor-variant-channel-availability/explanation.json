@@ -1,49 +1,46 @@
 {
-  "tldr": "Staff can now hide a variant in a channel and keep its listing and prices. A listing with is_available_for_purchase false acts as if it does not exist for customers.",
-  "goal": "Stop selling a variant in a channel for a time, without deleting its prices there.",
+  "tldr": "Staff hide a variant in one channel. The channel listing keeps its prices, and customers cannot see or buy the variant there.",
+  "goal": "Staff need to hide a variant in one channel without deleting its listing and prices.",
   "story": [
     {
-      "heading": "Variant channel listing gets is_available_for_purchase",
-      "body": "The new column is true by default, so every existing listing stays sellable.",
-      "view": "data",
-      "focus": [
-        "variant-channel-listing"
-      ],
-      "code": "saleor/product/migrations/0215_productvariantchannellisting_is_available_for_purchase.py:1-15"
-    },
-    {
-      "heading": "Sellable now means a price and the flag",
-      "body": "sellable_listing_q and its twin is_sellable define a sellable listing once. Querysets use .sellable() in place of a price check.",
+      "heading": "Catalog stores a per-channel availability flag",
+      "body": "The listing stores is_available_for_purchase per channel. An unavailable listing counts as absent for customers.",
       "view": "architecture",
       "focus": [
         "catalog"
       ],
-      "code": "saleor/product/managers.py:268-283"
+      "code": "saleor/product/lock_objects.py:1-21"
     },
     {
-      "heading": "Mutations set the flag, in bulk or per variant",
-      "body": "productVariantChannelListingAvailabilityUpdate sets it for up to 100 channels. Create, update and bulk mutations take it too.",
-      "view": "flow:hide-variant-in-channel",
+      "heading": "Catalog API adds a channel availability mutation",
+      "body": "Staff set a variant's availability per channel by ID or SKU. The listing update accepts the flag too.",
+      "view": "architecture",
       "focus": [
-        "#1",
-        "#2",
-        "#4"
+        "catalog-api"
       ],
-      "code": "saleor/graphql/product/mutations/channels.py:648-792"
+      "code": "saleor/graphql/product/mutations/channels.py:388-408"
     },
     {
-      "heading": "Checkout and promotions now skip hidden variants",
-      "body": "Checkout lines and gift rewards read is_sellable, so a hidden variant is not available and gets no promotion.",
-      "view": "flow:check-checkout-line",
+      "heading": "GraphQL API adds an availability error type",
+      "body": "The new mutation returns ProductVariantChannelListingAvailabilityUpdateError with the failing channel IDs.",
+      "view": "architecture",
       "focus": [
-        "#1",
-        "#2"
+        "graphql-api"
       ],
-      "code": "saleor/checkout/fetch.py:314-316"
+      "code": "saleor/graphql/core/types/common.py:542-563"
     },
     {
-      "heading": "The whole change",
-      "body": "The Catalog API sets the flag. Catalog defines sellable, and Checkout and Discounts read it. No dependency breaks a rule.",
+      "heading": "Listing table gets an availability column",
+      "body": "The new column is_available_for_purchase is a boolean. Its default value is available.",
+      "view": "data",
+      "focus": [
+        "product-variant-channel-listing"
+      ],
+      "code": "saleor/product/migrations/0215_productvariantchannellisting_is_available_for_purchase.py:1-15"
+    },
+    {
+      "heading": "A hidden variant stays in its channel listing",
+      "body": "Staff hide a variant in one channel. Its prices and listing stay stored, and customers cannot buy it there.",
       "view": "architecture",
       "focus": []
     }
@@ -52,122 +49,95 @@
     {
       "from": "catalog-api",
       "to": "catalog",
-      "label": "sets is_available_for_purchase"
+      "label": "writes the listing flag"
     }
   ],
   "components": [
     {
       "id": "catalog-api",
-      "summary": "New productVariantChannelListingAvailabilityUpdate mutation; variant listing inputs take is_available_for_purchase."
+      "summary": "Adds a mutation that sets a variant's availability per channel by ID or SKU."
     },
     {
       "id": "graphql-api",
-      "summary": "New ProductVariantChannelListingAvailabilityUpdateError type for the new mutation."
+      "summary": "Adds the availability error type that the new mutation returns."
     },
     {
       "id": "catalog",
-      "summary": "A listing is sellable only with a price and the flag on; querysets and price ranges use .sellable()."
+      "summary": "Stores the per-channel flag and treats unavailable listings as absent for customers."
     },
     {
       "id": "checkout",
-      "summary": "Checkout lines, prices and problems use is_sellable, so a hidden variant is not available."
+      "summary": "Reads the channel flag when it fetches, prices and checks checkout lines."
     },
     {
       "id": "discounts",
-      "summary": "Gift rewards of promotions use only sellable variant listings."
+      "summary": "Skips promotions for listings that are unavailable in the channel."
     }
   ],
   "decisions": [
     {
-      "title": "A flag on the listing, not a deleted listing",
-      "why": "Staff hide a variant in a channel and keep its price, cost and prior price for when they show it again.",
+      "title": "Keep the flag on the channel listing",
+      "why": "A hidden variant keeps its prices and its listing in that channel.",
       "basis": "pr",
-      "alternative": "Delete the variant channel listing.",
-      "evidence": "saleor/product/models.py:552-555"
+      "alternative": "Delete the variant's channel listing to hide it",
+      "evidence": "saleor/product/migrations/0215_productvariantchannellisting_is_available_for_purchase.py:1-15"
     },
     {
-      "title": "A single definition of a sellable listing, in 2 forms",
-      "why": "Queries use sellable_listing_q and loaded objects use is_sellable. Checkout, promotions and price ranges read the same rule.",
+      "title": "Default a new listing to available",
+      "why": "A listing created without the flag stays purchasable, so existing clients keep working.",
       "basis": "code",
-      "alternative": "Add the flag check to each query that reads price_amount.",
-      "evidence": "saleor/product/models.py:563-572"
+      "alternative": "Require the flag on every listing create",
+      "evidence": "saleor/graphql/product/mutations/channels.py:391-406"
     },
     {
-      "title": "An omitted flag keeps the stored value",
-      "why": "New listings default to available, so clients before the flag keep creating sellable listings. Updates change the flag only when it is in the input.",
-      "basis": "code",
-      "alternative": "Treat an omitted flag as false.",
-      "evidence": "saleor/graphql/product/mutations/channels.py:391-405"
-    },
-    {
-      "title": "Lock the listings, at most 100 per call",
-      "why": "select_for_update orders concurrent changes of the same listings. The limit of 100 follows the API rule for input lists.",
+      "title": "Add a separate availability mutation",
+      "why": "Staff change availability without resending prices, and the mutation accepts a variant ID or SKU.",
       "basis": "inferred",
-      "alternative": "Update without locks and without a limit.",
-      "evidence": "saleor/product/lock_objects.py:10-19"
-    },
-    {
-      "title": "Mark the products dirty in the changed channels",
-      "why": "The discounted prices of a product depend on its sellable variants. A background task recalculates them.",
-      "basis": "inferred",
-      "alternative": "Recalculate the prices inside the mutation.",
-      "evidence": "saleor/graphql/product/mutations/channels.py:760-772"
+      "alternative": "Add the flag only to the listing update mutation",
+      "evidence": "saleor/graphql/product/mutations/channels.py:633-648"
     }
   ],
   "flows": [
     {
-      "id": "hide-variant-in-channel",
-      "title": "Hide a variant in a channel",
-      "trigger": "productVariantChannelListingAvailabilityUpdate",
+      "id": "update-variant-channel-availability",
+      "title": "Update a variant's availability in a channel",
+      "trigger": "ProductVariantChannelListingAvailabilityUpdate",
       "steps": [
         {
           "from": "catalog-api",
           "to": "catalog",
-          "call": "lock the listings (select_for_update)",
-          "delta": "added"
-        },
-        {
-          "from": "catalog-api",
-          "to": "catalog",
-          "call": "ProductVariantChannelListing.objects.bulk_update",
-          "delta": "added",
-          "data": {
-            "type": "ProductVariantChannelListing",
-            "fields": [
-              "~is_available_for_purchase"
-            ]
-          }
-        },
-        {
-          "from": "catalog-api",
-          "to": "catalog",
-          "call": "mark_products_in_channels_as_dirty",
-          "delta": "added"
-        },
-        {
-          "from": "catalog-api",
-          "to": "plugins",
-          "call": "manager.product_variant_updated",
+          "call": "lock and update channel listings",
           "delta": "added"
         }
       ]
     },
     {
-      "id": "check-checkout-line",
-      "title": "Check a checkout line",
-      "trigger": "line_is_not_available",
+      "id": "complete-checkout",
+      "title": "Complete a checkout",
       "steps": [
         {
+          "from": "checkout-api",
+          "to": "checkout",
+          "call": "complete_checkout",
+          "delta": "unchanged"
+        },
+        {
           "from": "checkout",
-          "to": "catalog",
-          "call": "channel_listing.is_sellable",
+          "to": "discounts",
+          "call": "apply voucher and promotions",
           "delta": "changed"
         },
         {
-          "from": "discounts",
-          "to": "catalog",
-          "call": "ProductVariantChannelListing.objects.sellable",
-          "delta": "changed"
+          "from": "checkout",
+          "to": "orders",
+          "call": "create order from checkout",
+          "delta": "unchanged"
+        },
+        {
+          "from": "checkout",
+          "to": "plugins",
+          "call": "manager.checkout_fully_paid",
+          "delta": "unchanged"
         }
       ]
     }
@@ -175,43 +145,16 @@
   "dataModel": {
     "entities": [
       {
-        "id": "variant-channel-listing",
+        "id": "product-variant-channel-listing",
         "name": "ProductVariantChannelListing",
-        "component": "catalog",
         "delta": "changed",
-        "evidence": "saleor/product/models.py:552-555",
-        "fields": [
-          "+is_available_for_purchase: bool = true"
-        ]
-      },
-      {
-        "id": "variant",
-        "name": "ProductVariant",
         "component": "catalog",
-        "delta": "unchanged",
-        "fields": []
-      },
-      {
-        "id": "channel",
-        "name": "Channel",
-        "component": "channels",
-        "delta": "unchanged",
-        "fields": []
+        "fields": [
+          "+is_available_for_purchase: boolean"
+        ],
+        "evidence": "saleor/product/migrations/0215_productvariantchannellisting_is_available_for_purchase.py:1-15"
       }
     ],
-    "relations": [
-      {
-        "from": "variant",
-        "to": "variant-channel-listing",
-        "label": "1..n",
-        "delta": "unchanged"
-      },
-      {
-        "from": "channel",
-        "to": "variant-channel-listing",
-        "label": "1..n",
-        "delta": "unchanged"
-      }
-    ]
+    "relations": []
   }
 }

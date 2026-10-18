@@ -175,6 +175,8 @@ function storyWeight(facts: FactsCore, id: string): [number, number] {
 /** A component that rewrites at least this many lines, and this share of the change's code, earns a story step. */
 const REWRITE_MIN_LINES = 50;
 const REWRITE_SHARE = 0.3;
+/** The share of the code the change rewrites that the draft's story lights, when the budget lets it. */
+const COVERAGE_MIN = 0.8;
 
 /**
  * How many steps the draft's story has, the overview included, from the lines of code the change rewrites: a small
@@ -407,6 +409,25 @@ export function outline(facts: FactsCore): Outline {
   }
   const flows = facts.components.length >= 2 ? detectFlows(facts) : [];
   const firstFlow = flows[0];
+  // The story walks what the change is made of: while the steps so far light less than COVERAGE_MIN of the code it
+  // rewrites, the largest component left in the dark (at least REWRITE_MIN_LINES of code) gets a step, ranked right after the first one, so a short
+  // budget drops a small component before it.
+  const lit = new Set([...picked.map((x) => x.c.id), ...(firstFlow?.steps.flatMap((s) => [s.from, s.to]) ?? [])]);
+  const litCode = () => ranked.filter((x) => lit.has(x.c.id)).reduce((n, x) => n + x.code, 0);
+  for (const [i, { c }] of ranked
+    .filter((x) => !lit.has(x.c.id) && x.code >= REWRITE_MIN_LINES)
+    .sort(byKeys((x) => [-x.code, x.c.id]))
+    .entries()) {
+    if (litCode() >= churn * COVERAGE_MIN) break;
+    lit.add(c.id);
+    story.push({
+      priority: 1 + (i + 1) / 10,
+      about: `${name(c.id)} ${c.delta}`,
+      view: "architecture",
+      focus: [c.id],
+      code: bestHunk(filesOf.get(c.id) ?? [], ctx),
+    });
+  }
   if (firstFlow) {
     story.push({
       priority: 3,

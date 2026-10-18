@@ -1,10 +1,10 @@
 {
-  "tldr": "Admins invite staged users from the members grid. The invite moves each staged member to invited and sends the email, keeping its role, collections and groups.",
-  "goal": "Admins cannot invite a staged member without reconfiguring it. This change adds an invite that keeps the provisioned access.",
+  "tldr": "A new send-invite endpoint lets admins invite staged users. The invite moves them to Invited, keeps their provisioned role and access, and sends an email.",
+  "goal": "Admins need to invite staged users with the same configuration as net-new users.",
   "story": [
     {
-      "heading": "Admin Console adds the staged invite command",
-      "body": "The command moves each staged member to invited and sends the invite email.",
+      "heading": "Admin Console adds the staged user invite command",
+      "body": "The command moves staged users to Invited and sends their invitation emails.",
       "view": "architecture",
       "focus": [
         "admin-console"
@@ -12,8 +12,8 @@
       "code": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/IInviteStagedOrganizationUsersCommand.cs:1-28"
     },
     {
-      "heading": "Entity Framework adds the email read",
-      "body": "The repository reads members of one organization by a list of emails.",
+      "heading": "Entity Framework adds the member lookup by email",
+      "body": "The repository reads members by organization ID and a list of emails.",
       "view": "architecture",
       "focus": [
         "entity-framework"
@@ -21,8 +21,8 @@
       "code": "src/Infrastructure.EntityFramework/AdminConsole/Repositories/OrganizationUserRepository.cs:240-261"
     },
     {
-      "heading": "Dapper adds the same email read to SQL Server",
-      "body": "The SQL Server repository calls the new stored procedure with a table of emails.",
+      "heading": "Dapper calls the new member lookup procedure",
+      "body": "The repository calls OrganizationUser_ReadManyByOrganizationIdEmails to find staged users by email.",
       "view": "architecture",
       "focus": [
         "dapper"
@@ -30,8 +30,8 @@
       "code": "src/Infrastructure.Dapper/AdminConsole/Repositories/OrganizationUserRepository.cs:469-489"
     },
     {
-      "heading": "API adds the send-invite endpoint",
-      "body": "The send-invite endpoint returns one result per requested member.",
+      "heading": "API adds a send-invite endpoint for staged users",
+      "body": "POST send-invite passes the selected staged users to the invite command.",
       "view": "architecture",
       "focus": [
         "api"
@@ -39,17 +39,17 @@
       "code": "src/Api/AdminConsole/Controllers/OrganizationUsersController.cs:346-380"
     },
     {
-      "heading": "Stored procedure reads members by email",
-      "body": "The procedure returns organization user rows whose email is in the list.",
-      "view": "data",
+      "heading": "SQL Server adds the member lookup procedure",
+      "body": "A new stored procedure reads organization users by organization ID and emails.",
+      "view": "architecture",
       "focus": [
-        "organization-user-view"
+        "sql-server-schema"
       ],
-      "code": "util/Migrator/DbScripts/2026-09-10_00_AddOrganizationUserReadManyByOrganizationIdEmails.sql:1-20"
+      "code": "src/Sql/dbo/Stored Procedures/OrganizationUser_ReadManyByOrganizationIdEmails.sql:1-19"
     },
     {
-      "heading": "Admins invite staged members without changing their access",
-      "body": "Staged members become invited and receive an email, keeping role, collections and groups.",
+      "heading": "Admins invite staged users with their provisioned access",
+      "body": "Admins invite staged users, and each keeps the role, collections and groups it was given.",
       "view": "architecture",
       "focus": []
     }
@@ -58,121 +58,64 @@
     {
       "from": "api",
       "to": "admin-console",
-      "label": "calls the invite command"
+      "label": "Calls invite command"
     }
   ],
   "components": [
     {
       "id": "api",
-      "summary": "Adds POST send-invite, which invites the selected staged members."
+      "summary": "Adds POST send-invite, which passes selected staged users to the invite command."
     },
     {
       "id": "admin-console",
-      "summary": "Moves staged members to invited, sends invites, and reverts them on send failure."
+      "summary": "Adds the command that invites staged users and extends OrganizationService."
     },
     {
       "id": "dapper",
-      "summary": "Reads organization members by a list of emails through a stored procedure."
+      "summary": "Adds a repository method that reads organization users by organization ID and emails."
     },
     {
       "id": "entity-framework",
-      "summary": "Reads organization members by a list of emails."
+      "summary": "Adds a repository method that reads organization users by organization ID and emails."
     },
     {
       "id": "sql-server-schema",
-      "summary": "Adds a stored procedure that reads members by organization and email."
+      "summary": "Adds the OrganizationUser_ReadManyByOrganizationIdEmails stored procedure and migration script."
     }
   ],
   "decisions": [
     {
-      "title": "Skip ineligible members instead of failing the request",
-      "why": "Each skipped member gets its own result, and the other members in the request still run.",
+      "title": "Skip failed members and report each one",
+      "why": "Missing or non-staged members do not fail the batch. Each requested member gets its own result.",
       "basis": "code",
-      "alternative": "Reject the whole request on any ineligible member.",
+      "alternative": "Fail the whole request on the first bad member",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/IInviteStagedOrganizationUsersCommand.cs:16-17"
     },
     {
-      "title": "Keep seat expansion all-or-nothing",
-      "why": "Seats are reserved once for the whole eligible set, so a seat shortfall fails the whole invite.",
+      "title": "Reserve seats once for the whole set",
+      "why": "Seat expansion succeeds for every eligible member or fails for all of them.",
       "basis": "code",
-      "alternative": "Reserve seats for each member separately.",
-      "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/IInviteStagedOrganizationUsersCommand.cs:17-18"
+      "alternative": "Reserve seats for each member separately",
+      "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/IInviteStagedOrganizationUsersCommand.cs:18"
     },
     {
-      "title": "Add a separate endpoint for staged invites",
-      "why": "The email-keyed Invite cannot tell a staged member apart from a new one by email alone.",
-      "basis": "code",
-      "alternative": "Extend the email-keyed Invite endpoint.",
-      "evidence": "src/Api/AdminConsole/Controllers/OrganizationUsersController.cs:353-355"
+      "title": "Add a dedicated send-invite endpoint",
+      "why": "The staged user row action needs its own API entrypoint.",
+      "basis": "pr",
+      "alternative": "Reuse the existing invite endpoint",
+      "evidence": "src/Api/AdminConsole/Controllers/OrganizationUsersController.cs:357"
     },
     {
-      "title": "Revert staged members when the invite email fails",
-      "why": "A failed email send returns the members to staged with their previous revision dates.",
+      "title": "Grant Secrets Manager access by standalone discount",
+      "why": "An organization with the Secrets Manager standalone discount grants access to everyone.",
       "basis": "code",
-      "alternative": "Keep the members invited after a failed send.",
-      "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/InviteStagedOrganizationUsersCommand.cs:170-184"
+      "alternative": "Carry over each provisioned Secrets Manager access",
+      "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/IInviteStagedOrganizationUsersCommand.cs:19-20"
     }
   ],
-  "flows": [
-    {
-      "id": "invite-staged-members",
-      "title": "Invite staged members to an organization",
-      "trigger": "`OrganizationUsersController#SendInviteToStagedUsers`",
-      "steps": [
-        {
-          "from": "api",
-          "to": "admin-console",
-          "call": "InviteStagedOrganizationUsersCommand.RunAsync",
-          "delta": "added"
-        },
-        {
-          "from": "admin-console",
-          "to": "shared-kernel",
-          "call": "organizationRepository.GetByIdAsync",
-          "delta": "unchanged"
-        },
-        {
-          "from": "admin-console",
-          "to": "billing",
-          "call": "stripePaymentService.HasSecretsManagerStandalone",
-          "delta": "added"
-        },
-        {
-          "from": "admin-console",
-          "to": "shared-kernel",
-          "call": "organizationUserRepository.ReplaceManyAsync",
-          "delta": "unchanged",
-          "data": {
-            "type": "OrganizationUser",
-            "fields": [
-              "~Status: OrganizationUserStatusType",
-              "~RevisionDate: DateTime"
-            ]
-          }
-        },
-        {
-          "from": "admin-console",
-          "to": "platform",
-          "call": "sendOrganizationInvitesCommand.SendInvitesAsync",
-          "delta": "unchanged"
-        }
-      ]
-    }
-  ],
+  "flows": [],
   "dataModel": {
-    "entities": [
-      {
-        "id": "organization-user-view",
-        "name": "OrganizationUserView",
-        "delta": "unchanged",
-        "component": "sql-server-schema",
-        "fields": [
-          "OrganizationId: Guid",
-          "Email: string"
-        ],
-        "evidence": "util/Migrator/DbScripts/2026-09-10_00_AddOrganizationUserReadManyByOrganizationIdEmails.sql:1-20"
-      }
-    ],
+    "entities": [],
     "relations": []
   }
 }
