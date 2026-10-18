@@ -11,6 +11,9 @@ All notable changes to this project are documented here. The format follows
   the field: the modal that still cost a round of fixes in 2 of 6 train runs no longer shows up. Measured (haiku
   agent, sonnet judge) against 0.11.0: train score 0.77 → 0.76, renders 1.33 → 1.0; test (2 runs) score 0.74 → 0.74;
   no `would` in 34 runs; on the 4 train PRs, 12 runs each without a judge, score 0.89 → 0.93, tokens in −5%.
+- 5 example explanations (bitwarden bulk folder delete and staged invites, chatwoot branded layouts and WhatsApp
+  number health, saleor webhook payloads) come from a current agent run: their flows no longer have a step from a
+  component to itself.
 
 ## [0.11.0] - 2026-10-18
 
