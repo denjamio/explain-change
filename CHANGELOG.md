@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-18
+
 ### Added
 - The eval grades each run with pass/fail graders, after `claude plugin eval` and skill-creator, and `score` is the
   share that pass: **structure** (deterministic, against the facts: the story lights at least 80% of the changed
