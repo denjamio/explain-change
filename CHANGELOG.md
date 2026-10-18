@@ -6,6 +6,29 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- A detected flow no longer takes a class that inherits for a call: `class FamilyExport < ApplicationRecord` gave
+  maybe's data export a step `family → shared-kernel: FamilyExport`, the class the line declares, on a dependency
+  that is only its parent class. A line that declares a class, module, interface, record or struct is no step of a
+  path. ANALYSIS_VERSION 15.
+
+### Added
+- `render` rejects an entity whose class the change declares in another component (`wrong-component`): the
+  entity belongs to the component of its model, not of its migration. The draft fills it from the models the change
+  edits, when they all live in 1 component, instead of the migration's folder.
+- `bun run eval -- --calibrate --judge none`: the meta-eval for free, on the structure and `mentions` graders.
+- `--baseline` compares PR by PR when 5 or more PRs are in common: the mean of the per-PR differences against a 95%
+  interval of it from Student's t (at least 0.05), with the PRs that went up and down and a sign test. A rise above the
+  noise is `IMPROVED`; the score of each split is listed, and a drop on one fails the eval. Unpaired runs keep the 0.1
+  floor. The gate of the improvement loop runs on all 11 PRs (docs/EVALS.md).
+
+Measured (haiku agent, sonnet judge, all 11 PRs, 2 runs each) against 0.13.0, paired: score 0.76 → 0.76 (+0.01
+±0.05, 7 PRs up, 4 down), no measure regressed or improved; on test, score 0.75 → 0.78 (+0.03 ±0.07). With 2
+standard errors instead of t, test's prose (+0.13 on 3 of 5 PRs, a field this change does not touch) passed as
+improved; the t interval (±0.16) reads it as noise. The paired noise of the
+score is ±0.05, against ±0.1 unpaired on the same runs. The step `family → shared-kernel: FamilyExport` reached 1
+of 2 maybe runs before, 0 now. Free calibration (`--judge none`, 11 PRs): 51 of 53 measurable mutants caught.
+
 ## [0.13.0] - 2026-10-18
 
 ### Changed

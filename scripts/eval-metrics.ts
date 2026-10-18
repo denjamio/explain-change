@@ -229,16 +229,62 @@ export interface Comparison {
   before: number;
   now: number;
   delta: number;
-  /** The mean dropped by more than the noise: 2 standard errors of the difference, at least NOISE_FLOOR. */
+  /** The noise the delta is read against: a 95% interval (paired: Student's t), at least the floor. */
+  noise: number;
+  /** The examples compared pair by pair (each against itself), or 0 when the runs have no example in common. */
+  paired: number;
+  /** Paired only: the examples that scored higher now, and lower. */
+  better: number;
+  worse: number;
+  /** The mean dropped by more than the noise. */
   regressed: boolean;
+  /** The mean rose by more than the noise: an improvement, not a sample. */
+  improved: boolean;
 }
 /**
  * 2 evals of the same code (haiku, 2 PRs, 3 runs each, 2026-10-17) differed by 0.06 in lift and 0.02 in fidelity:
- * below this, a drop is noise at the sizes the eval runs.
+ * below this, a drop between unpaired runs is noise at the sizes the eval runs.
  */
 const NOISE_FLOOR = 0.1;
+/**
+ * Paired, each example is compared with itself: how hard a PR is cancels out, and the noise left is the agent's.
+ * The floor is 1 grader of a run (about 20 graders): a smaller move is a single verdict.
+ */
+const PAIRED_FLOOR = 0.05;
+/**
+ * The 97.5% quantile of Student's t, by degrees of freedom (1-30): with 5 PRs, 2 standard errors is a 90% interval,
+ * not 95%. Above 30, 2.
+ */
+const T_975 = [
+  12.71, 4.3, 3.18, 2.78, 2.57, 2.45, 2.36, 2.31, 2.26, 2.23, 2.2, 2.18, 2.16, 2.14, 2.13, 2.12, 2.11, 2.1, 2.09, 2.09,
+  2.08, 2.07, 2.07, 2.06, 2.06, 2.06, 2.05, 2.05, 2.05, 2.04,
+];
+export const t975 = (df: number) => T_975[df - 1] ?? 2;
+/** Fewer common examples than this are compared unpaired: a standard error of 2-3 differences means nothing. */
+const PAIRED_MIN = 5;
 
-/** Compares 2 evals run by run: the valid share and each measure both have. */
+const sampleSd = (xs: number[]) => {
+  if (xs.length < 2) return 0;
+  const m = mean(xs);
+  return Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1));
+};
+
+/** The mean of measure `k` per example, over its runs; examples without a number for it left out. */
+function perExample(rows: Record<string, unknown>[], k: string): Map<string, number> {
+  const by = new Map<string, number[]>();
+  for (const r of rows) {
+    const v = r[k];
+    if (typeof r.example !== "string" || typeof v !== "number") continue;
+    by.set(r.example, [...(by.get(r.example) ?? []), v]);
+  }
+  return new Map([...by].map(([e, xs]) => [e, mean(xs)]));
+}
+
+/**
+ * Compares 2 evals: the valid share and each measure both have. When they share at least PAIRED_MIN examples, the
+ * comparison is paired: the mean of the per-example differences, against a 95% interval of it (Student's t).
+ * Otherwise run by run, against 2 standard errors of the difference of 2 means.
+ */
 export function compareRuns(before: Record<string, unknown>[], now: Record<string, unknown>[]): Comparison[] {
   const nums = (rows: Record<string, unknown>[], k: string) =>
     rows.map((r) => r[k]).filter((v): v is number => typeof v === "number");
@@ -251,8 +297,40 @@ export function compareRuns(before: Record<string, unknown>[], now: Record<strin
   const out: Comparison[] = [];
   const b = validShare(before);
   const n = validShare(now);
-  out.push({ measure: "valid", before: round(b), now: round(n), delta: round(n - b), regressed: n < b });
+  out.push({
+    measure: "valid",
+    before: round(b),
+    now: round(n),
+    delta: round(n - b),
+    noise: 0,
+    paired: 0,
+    better: 0,
+    worse: 0,
+    regressed: n < b,
+    improved: n > b,
+  });
   for (const k of COMPARED) {
+    const pb = perExample(before, k);
+    const pn = perExample(now, k);
+    const common = [...pn.keys()].filter((e) => pb.has(e)).sort();
+    if (common.length >= PAIRED_MIN) {
+      const d = common.map((e) => (pn.get(e) as number) - (pb.get(e) as number));
+      const delta = mean(d);
+      const noise = Math.max((t975(d.length - 1) * sampleSd(d)) / Math.sqrt(d.length), PAIRED_FLOOR);
+      out.push({
+        measure: k,
+        before: round(mean(common.map((e) => pb.get(e) as number))),
+        now: round(mean(common.map((e) => pn.get(e) as number))),
+        delta: round(delta),
+        noise: round(noise),
+        paired: common.length,
+        better: d.filter((x) => x > 0).length,
+        worse: d.filter((x) => x < 0).length,
+        regressed: -delta > noise,
+        improved: delta > noise,
+      });
+      continue;
+    }
     const xb = nums(before, k);
     const xn = nums(now, k);
     if (!xb.length || !xn.length) continue;
@@ -263,7 +341,12 @@ export function compareRuns(before: Record<string, unknown>[], now: Record<strin
       before: round(mean(xb)),
       now: round(mean(xn)),
       delta: round(delta),
+      noise: round(noise),
+      paired: 0,
+      better: 0,
+      worse: 0,
       regressed: -delta > noise,
+      improved: delta > noise,
     });
   }
   return out;

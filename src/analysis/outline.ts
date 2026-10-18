@@ -299,14 +299,20 @@ export function detectFlows(facts: Pick<FactsCore, "files" | "dependencies">): D
       }
     }
   }
+  const scope = (c: Pick<Call, "path" | "line">) => enclosing(files.get(c.path) as FileFacts, c.line);
+  // A class that inherits or implements (`class FamilyExport < ApplicationRecord`) depends on its parent, but
+  // calls nothing at run time: it is no step of a path, and its first name is the class it declares.
+  const declares = (c: Pick<Call, "path" | "line">) =>
+    SCOPE_KINDS.has(declarationOf(langOf(c.path), scope(c)[2])?.[0] ?? "");
   const calls: Call[] = [];
   for (const e of facts.dependencies) {
     if (e.delta === "removed") continue;
     for (const ref of e.examples) {
       const m = LOCATION_RE.exec(ref);
-      if (m && !m[3] && addedLines.get(m[1] as string)?.has(Number(m[2]))) {
-        calls.push({ from: e.from, to: e.to, added: e.delta === "added", path: m[1] as string, line: Number(m[2]) });
-      }
+      if (!m || m[3]) continue;
+      const at = { path: m[1] as string, line: Number(m[2]) };
+      if (addedLines.get(at.path)?.has(at.line) && !declares(at))
+        calls.push({ from: e.from, to: e.to, added: e.delta === "added", ...at });
     }
   }
   calls.sort(byKeys((c) => [c.path, c.line, c.to]));
@@ -315,7 +321,6 @@ export function detectFlows(facts: Pick<FactsCore, "files" | "dependencies">): D
     const k = entryKind(path);
     return k === null || k < 0 ? 9 : k;
   };
-  const scope = (c: Call) => enclosing(files.get(c.path) as FileFacts, c.line);
   const pair = (c: Call) => `${c.from}\0${c.to}`;
   const out: DetectedFlow[] = [];
   const covered = new Set<string>();

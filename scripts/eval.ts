@@ -6,7 +6,7 @@
  *                       [--out results.json] [--baseline results.json] [--compare results.json] [--max-cost USD]
  *                       [example…]
  *   bun scripts/eval.ts --rejudge results.json [--judge …] [--out …] [--baseline …] [--compare …]
- *   bun scripts/eval.ts --calibrate [--split …] [--judge …] [--out …]
+ *   bun scripts/eval.ts --calibrate [--split …] [--judge …|none] [--out …]
  *
  * The examples are the real PRs (examples/real/<name>), each asked for by its GitHub URL, as a user does (needs the
  * network and `gh`). real.json's `eval` puts a PR in the `train` split (the default) or the `test` split: an
@@ -31,7 +31,8 @@
  * which of the 2 explanations (the file's and this eval's, run by run) serves a reviewer better, blind and in both
  * orders. --rejudge grades the explanations an --out file kept, with no agent: a change to the graders is measured
  * on the same explanations. --calibrate is the meta-eval: it grades each example's committed explanation and its
- * mutants (scripts/eval-mutants.ts) and reports which graders catch which known defect.
+ * mutants (scripts/eval-mutants.ts) and reports which graders catch which known defect; with --judge none, free, on
+ * the structure and mention graders only.
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -94,7 +95,7 @@ const [agentCmd, ...agentArgs] = argv(agentCommand) as [string, ...string[]];
 const judgeModel = values.judge === "none" ? null : (values.judge as string);
 const maxCost = values["max-cost"] ? Number(values["max-cost"]) : Number.POSITIVE_INFINITY;
 if (!["train", "test", "all"].includes(values.split as string)) throw new Error("--split is train, test or all");
-if ((values.calibrate || values.compare) && !judgeModel) throw new Error("--calibrate and --compare need a judge");
+if (values.compare && !judgeModel) throw new Error("--compare needs a judge");
 
 await buildAssets();
 const tmp = mkdtempSync(join(tmpdir(), "explain-change-eval-"));
@@ -272,15 +273,17 @@ function calibrate(): void {
     const assertions = assertionsOf(target);
     const { repo, facts } = collected(target, join(tmp, "calibrate"));
     const free = (ex: Explanation) => [...structureGraders(facts, ex, true), ...mentionGraders(ex, assertions)];
-    const reviewed = review(agentCommand, judgeModel as string, facts, good, assertions);
-    const groundedGood = grounded(agentCommand, judgeModel as string, repo, facts, good);
+    // With no judge, only the free graders run: a mutant only the judge can catch is not measurable.
+    const judged = (call: (model: string) => Verdict[]) => (judgeModel ? call(judgeModel) : []);
+    const reviewed = judged((j) => review(agentCommand, j, facts, good, assertions));
+    const groundedGood = judged((j) => grounded(agentCommand, j, repo, facts, good));
     const goodVerdicts = [...free(good), ...reviewed, ...groundedGood];
     clean.push({ example: target.name, graders: goodVerdicts });
     for (const m of mutants(facts, good)) {
       const bad = [
         ...free(m.explanation),
-        ...(m.review ? review(agentCommand, judgeModel as string, facts, m.explanation, assertions) : reviewed),
-        ...(m.grounded ? grounded(agentCommand, judgeModel as string, repo, facts, m.explanation) : groundedGood),
+        ...(m.review ? judged((j) => review(agentCommand, j, facts, m.explanation, assertions)) : reviewed),
+        ...(m.grounded ? judged((j) => grounded(agentCommand, j, repo, facts, m.explanation)) : groundedGood),
       ];
       const hit = caught(m.targets, goodVerdicts, bad);
       found.push({ example: target.name, kind: m.kind, caught: hit });
@@ -389,10 +392,24 @@ function report(): void {
     console.log(`\nagainst ${values.baseline} (the same ${examples.size} examples):`);
     for (const c of compareRuns(before, rows)) {
       regressed ||= c.regressed;
-      console.log(
-        `  ${c.measure}: ${c.before} → ${c.now} (${c.delta >= 0 ? "+" : ""}${c.delta})${c.regressed ? "  REGRESSED" : ""}`,
-      );
+      const pairs = c.paired
+        ? `, paired over ${c.paired}: ${c.better} better, ${c.worse} worse, sign test p = ${signTest(c.better, c.worse)}`
+        : "";
+      const noise = c.measure === "valid" ? "" : ` ±${c.noise}${pairs}`;
+      const verdict = c.regressed ? "  REGRESSED" : c.improved ? "  IMPROVED" : "";
+      console.log(`  ${c.measure}: ${c.before} → ${c.now} (${c.delta >= 0 ? "+" : ""}${c.delta}${noise})${verdict}`);
     }
+    if (splits.length > 1)
+      for (const split of splits) {
+        const of = (rs: Row[]) => rs.filter((r) => r.split === split);
+        const c = compareRuns(of(before), of(rows)).find((x) => x.measure === "score");
+        regressed ||= Boolean(c?.regressed); // a gain on train must not hide a drop on test
+        if (c)
+          console.log(
+            `  score on ${split}: ${c.before} → ${c.now} (${c.delta >= 0 ? "+" : ""}${c.delta} ±${c.noise})` +
+              `${c.paired ? `, ${c.better} better, ${c.worse} worse` : ""}${c.regressed ? "  REGRESSED" : ""}`,
+          );
+      }
     const { fixed, broke } = graderChanges(graderStats(before), graderStats(rows));
     for (const [label, list] of [
       ["fixed", fixed],

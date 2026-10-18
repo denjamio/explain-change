@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { buildGraph, ruleViolation, splitEdgeKey } from "../src/analysis/graph.ts";
 import { diffRequirements, OS_CHANGE, parseProposal, parseRequirements, parseTasks } from "../src/analysis/openspec.ts";
 import {
+  detectFlows,
   type FactsCore,
   flowId,
   hunkScore,
@@ -662,6 +663,59 @@ describe("hunk scores", () => {
     };
     expect(hunkScore(services, queue, onImport)).toBe(5);
     expect(hunkScore(services, store, onImport)).toBe(4);
+  });
+});
+
+describe("detected flows", () => {
+  const added = (path: string, component: string, lines: string[]): FileFacts =>
+    ({
+      path,
+      category: "code",
+      component,
+      delta: "added",
+      hunks: [
+        {
+          oldStart: 0,
+          oldLines: 0,
+          newStart: 1,
+          newLines: lines.length,
+          header: "",
+          lines: lines.map((l) => ["+", l]),
+        },
+      ],
+    }) as unknown as FileFacts;
+  const dep = (from: string, to: string, examples: string[]) =>
+    ({ from, to, delta: "added", baseCount: 0, headCount: 1, examples, violation: null }) as never;
+
+  test("a class that inherits is no call: its step would name the class it declares", () => {
+    const files = [
+      added("app/controllers/exports_controller.rb", "web", [
+        "class ExportsController < ApplicationController",
+        "  def create",
+        "    ExportJob.perform_later",
+        "  end",
+        "end",
+      ]),
+      added("app/jobs/export_job.rb", "jobs", [
+        "class ExportJob < ApplicationJob",
+        "  def perform",
+        "    FamilyExport.create!",
+        "  end",
+        "end",
+      ]),
+      added("app/models/family_export.rb", "family", ["class FamilyExport < ApplicationRecord", "end"]),
+    ];
+    const flows = detectFlows({
+      files,
+      dependencies: [
+        dep("web", "jobs", ["app/controllers/exports_controller.rb:3"]),
+        dep("jobs", "family", ["app/jobs/export_job.rb:3"]),
+        dep("family", "kernel", ["app/models/family_export.rb:1"]),
+      ],
+    });
+    expect(flows.map((f) => [f.trigger, f.steps.map((s) => `${s.from}->${s.to}: ${s.call}`)])).toEqual([
+      ["ExportsController#create", ["web->jobs: ExportJob.perform_later", "jobs->family: FamilyExport.create!"]],
+    ]);
   });
 });
 

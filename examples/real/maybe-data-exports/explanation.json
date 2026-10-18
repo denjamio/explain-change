@@ -126,12 +126,6 @@
           "to": "family",
           "call": "Family::DataExporter.new",
           "delta": "added"
-        },
-        {
-          "from": "family",
-          "to": "shared-kernel",
-          "call": "FamilyExport",
-          "delta": "changed"
         }
       ]
     }
