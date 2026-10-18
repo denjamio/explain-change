@@ -290,6 +290,33 @@ describe("validation", () => {
     expect(errs).toContain("dataModel.relations[0].from: 'x' is not an entity");
   });
 
+  test("an entity the change declares belongs to the component of its class", () => {
+    const facts = makeFacts({
+      files: [
+        ...makeFacts().files,
+        { ...(makeFacts().files[0] as Facts["files"][number]), path: "app/models/order.rb", component: "b" },
+      ],
+      symbols: [
+        { file: "app/models/order.rb", line: 1, kind: "class", name: "Order", delta: "added" },
+        { file: "f.rb", line: 11, kind: "def", name: "Shop", delta: "added" },
+      ],
+    });
+    const entity = (name: string, component: string) =>
+      valid({
+        dataModel: {
+          entities: [{ id: "order", name, delta: "added", component, evidence: "f.rb:11" }],
+          relations: [],
+        },
+      });
+    expect(joined(entity("Order", "a"), facts)).toContain(
+      "dataModel.entities[0].component: Order is declared in app/models/order.rb, which belongs to 'b': use 'b'",
+    );
+    expect(joined(entity("Shop::Order", "a"), facts)).toContain("use 'b'");
+    expect(joined(entity("Order", "b"), facts)).not.toContain("component");
+    expect(joined(entity("Shop", "a"), facts)).not.toContain("component"); // a method, not a class
+    expect(joined(entity("Invoice", "a"), facts)).not.toContain("component"); // not declared by the change
+  });
+
   test("prose: sentence length and refused words, with every form of a starred word", () => {
     let errs = joined(valid({ tldr: `${Array(30).fill("word").join(" ")}.`, goal: "We leverage the queue." }));
     expect(errs).toContain("tldr: a sentence has 30 words, max 25");

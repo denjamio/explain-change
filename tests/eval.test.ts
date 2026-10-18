@@ -155,6 +155,24 @@ describe("eval metrics", () => {
     expect(by([run(0.5), run(0.52)])).toEqual({ valid: false, fidelity: true, lift: true });
     expect(by([run(0.75), run(0.75, "invalid")]).valid).toBe(true);
   });
+
+  test("examples in common are compared pair by pair: a small shared gain counts, a mixed one does not", () => {
+    // 6 PRs of very different difficulty: unpaired, their spread hides any change smaller than it.
+    const levels = [0.4, 0.55, 0.7, 0.8, 0.9, 0.95];
+    const rows = (shift: (i: number) => number) =>
+      levels.map((v, i) => ({ example: `pr-${i}`, state: "valid", score: v + shift(i) }));
+    const before = rows(() => 0);
+    const score = (now: Record<string, unknown>[]) => compareRuns(before, now).find((c) => c.measure === "score");
+    const gain = score(rows(() => 0.06));
+    expect(gain).toMatchObject({ paired: 6, better: 6, worse: 0, improved: true, regressed: false, noise: 0.05 });
+    const mixed = score(rows((i) => (i % 2 ? 0.12 : -0.1)));
+    expect(mixed).toMatchObject({ paired: 6, better: 3, worse: 3, improved: false, regressed: false });
+    expect(score(rows(() => -0.06))?.regressed).toBe(true);
+    // fewer than 5 examples in common: run by run, where the spread between PRs is the noise
+    const unpaired = compareRuns(before.slice(0, 2), rows(() => 0.06).slice(0, 2)).find((c) => c.measure === "score");
+    expect(unpaired).toMatchObject({ paired: 0, improved: false });
+    expect(unpaired?.noise).toBeGreaterThan(0.1);
+  });
 });
 
 describe("eval graders", () => {

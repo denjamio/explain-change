@@ -44,7 +44,9 @@ that a 1-page explanation need not meet; regenerate (`--force`) only an assertio
 
 `--calibrate` grades each committed explanation and its mutants (`scripts/eval-mutants.ts`: known defects, such as a
 story that skips a component, evidence outside the change or a basis that its source does not state) and reports
-which graders catch which defect. A grader that catches nothing cannot move when the agent improves.
+which graders catch which defect. A grader that catches nothing cannot move when the agent improves. With
+`--judge none` it is free: only the structure and `mentions` graders run, and a mutant that only the judge can catch
+is reported as not measurable.
 
 ### The judge
 
@@ -64,18 +66,29 @@ not a measure of quality.
 ## Splits and the improvement loop
 
 `real.json` `eval` puts each PR in `train` (the default) or `test`. Test is bitwarden-invite, chatwoot-branded,
-immich-workflow, maybe-balance-sheet and saleor-webhook.
+immich-workflow, maybe-balance-sheet and saleor-webhook. The split decides which failures you may read, not which PRs
+score: a change is kept on all 11 PRs, compared pair by pair.
 
 1. One change at a time, on a branch.
 2. A free diagnostic first, on the PRs the change touches: `--judge none --runs 3 <names>` (about $0.01 a run; the
    structure graders and the render count need no judge).
 3. Train, 1 run, as a filter: `bun scripts/eval.ts --split train --judge sonnet --out X --baseline B --compare B`.
-4. When train improves and the blind A/B does not prefer the old explanations: test, `--runs 2`.
-5. Keep the change only when test does not drop and the A/B on test does not prefer the old one.
-6. Read the failures of train only, never those of test.
+   Read the failures of train only, never those of test.
+4. The gate, on all 11 PRs: `bun scripts/eval.ts --split all --runs 2 --judge sonnet --out X --baseline B --compare B`,
+   with `B` an `--out` of the same command on `main`.
+5. Keep the change when no measure is `REGRESSED`, the score is `IMPROVED` (or the change is not meant to move it)
+   and the blind A/B does not prefer the old explanations, and the score of the test split alone (printed under it)
+   does not drop.
 
-With 5 test PRs, the score moves by about ±0.08 between runs: an improvement smaller than that needs more runs
-before it counts.
+### Why paired
+
+Some PRs are harder than others, and that spread between PRs is larger than the spread between 2 runs of the same
+PR. Compared as 2 independent means, the spread between PRs counts as noise, and a gain smaller than the 0.1 floor
+cannot show.
+With 5 or more PRs in common, `--baseline` compares each PR with itself: it reports the mean of the per-PR
+differences, its noise (2 standard errors of those differences, at least 0.05, about 1 grader of a run), how many PRs
+went up and down, and a sign test over them. Fewer than 5 PRs in common fall back to the unpaired comparison, with
+the 0.1 floor.
 
 ## Options
 
@@ -84,7 +97,7 @@ before it counts.
 | `--split train\|test\|all` | which PRs run |
 | `--runs N` | repeats each PR: 1 run of an agent is a sample |
 | `--out file` | keeps every run (its explanation and verdicts) and the summary |
-| `--baseline file` | compares with an earlier `--out`, the same PRs only: a mean that drops by more than the noise (2 standard errors, at least 0.1) fails, and the graders fixed or broken are listed |
+| `--baseline file` | compares with an earlier `--out`, the same PRs only, paired by PR when 5 or more are in common (see [Why paired](#why-paired)): a mean that drops by more than the noise fails, a rise above it is `IMPROVED`; the score of each split and the graders fixed or broken are listed |
 | `--compare file` | the judge picks, blind and in both orders, which of the 2 explanations serves a reviewer better |
 | `--rejudge file` | grades the explanations of an `--out` file again, with no agent: a change to the graders measured on the same explanations |
 | `--max-cost USD` | stops starting runs past this spend |

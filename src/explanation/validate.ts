@@ -21,6 +21,7 @@ export type IssueCode =
   | "too-few"
   | "not-allowed"
   | "unknown-id"
+  | "wrong-component"
   | "duplicate"
   | "missing"
   | "location"
@@ -54,6 +55,12 @@ export function decisionBases(facts: Pick<Facts, "source" | "openspec">): string
       (b !== "spec" || Boolean(facts.openspec?.changes.some((c) => c.why || c.decisions.length || c.artifacts.length))),
   );
 }
+
+/** `Family::DataExporter`, `models.Order` → its own name. */
+const lastName = (name: string) => name.trim().split(/::|\./).pop() as string;
+
+/** The symbol kinds an entity of the data model is declared as. */
+const ENTITY_KINDS = new Set(["class", "record", "struct", "interface", "type"]);
 
 export const changedComponents = (facts: Pick<Facts, "components">) =>
   facts.components.filter((c) => c.delta !== "unchanged").map((c) => c.id);
@@ -109,6 +116,8 @@ class Validator {
   private readonly files: Map<string, FileFacts>;
   private readonly requirementIds: string[];
   private readonly prose: ProseChecker;
+  /** Each class the change declares, by name: the files and components it is declared in. */
+  private readonly classes = new Map<string, { file: string; component: string | null }[]>();
 
   constructor(
     private readonly facts: Facts,
@@ -118,6 +127,12 @@ class Validator {
     this.files = new Map(facts.files.map((f) => [f.path, f]));
     this.requirementIds = specRequirements(facts).map((r) => r.id);
     this.prose = new ProseChecker(facts, root);
+    for (const sym of facts.symbols) {
+      if (!ENTITY_KINDS.has(sym.kind)) continue;
+      const at = { file: sym.file, component: this.files.get(sym.file)?.component ?? null };
+      const name = lastName(sym.name);
+      this.classes.set(name, [...(this.classes.get(name) ?? []), at]);
+    }
   }
 
   run(e: Obj): Issue[] {
@@ -431,7 +446,7 @@ class Validator {
         !this.componentIds.has(en.component as string)
       ) {
         this.add(`${path}.component`, "unknown-id", `'${String(en.component)}' is not a component`);
-      }
+      } else this.entityComponent(path, en);
       this.location(`${path}.evidence`, en.evidence, en.delta !== "unchanged");
     }
     for (const [i, rl] of this.objects("dataModel.relations", dm?.relations, LIMITS["dataModel.relations"])) {
@@ -448,6 +463,24 @@ class Validator {
       this.enumValue(`dataModel.relations[${i}].delta`, rl.delta, "dataModel.relations.delta");
     }
     return ids;
+  }
+
+  /**
+   * An entity whose class the change declares belongs to the component of that class's file, not to the one of
+   * its migration: the map and the inspector draw it there. A name declared in 2 components decides nothing.
+   */
+  private entityComponent(path: string, en: Obj) {
+    if (typeof en.component !== "string" || typeof en.name !== "string" || isHole(en.component)) return;
+    const name = lastName(en.name);
+    const owners = [...new Set((this.classes.get(name) ?? []).map((d) => d.component))];
+    const [owner] = owners;
+    if (owners.length !== 1 || !owner || owner === en.component) return;
+    const file = this.classes.get(name)?.[0]?.file;
+    this.add(
+      `${path}.component`,
+      "wrong-component",
+      `${name} is declared in ${file}, which belongs to '${owner}': use '${owner}'`,
+    );
   }
 
   /** Every ADDED or MODIFIED requirement must be mapped to the code (or declared missing). */

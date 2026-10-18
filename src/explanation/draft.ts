@@ -122,6 +122,15 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
   }
   const dataPath = outline.dataFiles[0];
   const dataFile = facts.files.find((f) => f.path === dataPath);
+  // A migration's folder is not its entity's component: that is the one of the models the change edits, when they
+  // all live in 1 (the validator checks it against the class).
+  const modelOwners = new Set(
+    facts.files.filter((f) => outline.dataFiles.includes(f.path) && f.category !== "migration").map((f) => f.component),
+  );
+  const [modelOwner] = modelOwners;
+  const entityComponent =
+    (dataFile?.category === "migration" ? (modelOwners.size === 1 ? modelOwner : null) : dataFile?.component) ??
+    "<component-id>";
   if (dataFile?.hunks[0]) {
     out.dataModel = {
       entities: [
@@ -129,7 +138,7 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
           id: "<kebab-id>",
           name: `<${size(L["dataModel.entities.name"])}: the model or table>`,
           delta: DELTA_CHOICE,
-          component: dataFile.component ?? "<component-id>",
+          component: entityComponent,
           fields: ["<+email: string>"],
           evidence: hunkRef(dataFile, dataFile.hunks[0]),
         },
