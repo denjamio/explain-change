@@ -1,6 +1,6 @@
 {
   "name": "explain-change",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "description": "Visual, architecture-first explanation of a code change, as one self-contained HTML page. A deterministic CLI does the analysis; an agent writes only the prose.",
   "license": "MIT",
   "author": "denjamio",
@@ -36,6 +36,7 @@
   },
   "scripts": {
     "build": "bun scripts/build.ts",
+    "prepublishOnly": "bun run build",
     "dev": "bun scripts/build.ts --assets && bun src/cli/bin.ts",
     "test": "bun test --timeout 30000",
     "typecheck": "bun scripts/build.ts --assets && bun --bun tsc --noEmit",
