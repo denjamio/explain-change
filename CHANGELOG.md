@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-19
+
 ### Changed
 - npm is the way to install: `npm install -g explain-change`, then `explain-change install` for the skills.
 - `explain-change update` runs `npm install -g explain-change@latest` (or the `--version` tag), then refreshes the
