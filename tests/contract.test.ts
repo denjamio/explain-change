@@ -56,6 +56,14 @@ describe("the release", () => {
     expect(readFileSync(join(ROOT, "CHANGELOG.md"), "utf8")).toContain(`## [${pkg.version}]`);
   });
 
+  test("the README links by absolute URL, so the npm page shows the same images and pages as GitHub", () => {
+    const readme = readFileSync(join(ROOT, "README.md"), "utf8");
+    const relative = [...readme.matchAll(/\]\(([^)\s]+)\)|src="([^"]+)"/g)]
+      .map((m) => m[1] ?? m[2])
+      .filter((url) => !/^(https?:|#|mailto:)/.test(url as string));
+    expect(relative).toEqual([]);
+  });
+
   test("the example config loads without errors", () => {
     const raw = parseToml(readFileSync(join(ROOT, "examples/explain-change.toml"), "utf8"));
     expect(normalizeConfig(raw, false).errors).toEqual([]);

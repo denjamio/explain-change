@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-10-19
+
+### Fixed
+- The npm package of 0.15.0 carried a stale build: `explain-change --version` printed 0.14.0, and the skills were
+  marked 0.14.0. `npm publish` now rebuilds the bundle first (`prepublishOnly`), so the package always carries the
+  version it is published as.
+- The README links its images and pages by absolute URL on `main`, so the npm page shows them as GitHub does,
+  and an npm badge shows the latest published version. A test keeps the links absolute.
+
 ## [0.15.0] - 2026-10-19
 
 ### Changed
