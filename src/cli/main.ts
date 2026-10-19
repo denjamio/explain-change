@@ -4,9 +4,9 @@ import { ANALYSIS_VERSION, CONTRACT_VERSION, VERSION } from "../core/constants.t
 import { UserError } from "../core/errors.ts";
 import { explain, render } from "./commands/change.ts";
 import { check, init } from "./commands/config.ts";
-import { install } from "./commands/install.ts";
+import { install, uninstall } from "./commands/install.ts";
 import { share } from "./commands/share.ts";
-import { update } from "./commands/update.ts";
+import { removeCliHint, update } from "./commands/update.ts";
 import { printJson } from "./output.ts";
 
 type OptionSpec = { type: "string" | "boolean"; multiple?: boolean; short?: string };
@@ -149,10 +149,17 @@ const COMMANDS: Record<string, Command> = {
     positionals: [0, 0],
     run: (o) => install({ force: Boolean(o.force), link: Boolean(o.link), json: Boolean(o.json) }),
   },
+  uninstall: {
+    usage: "uninstall",
+    summary: "remove the agent skills that install wrote, and say how to remove the CLI",
+    options: { json },
+    positionals: [0, 0],
+    run: (o) => uninstall({ json: Boolean(o.json), cli: removeCliHint() }),
+  },
   update: {
     usage: "update [--version TAG]",
-    summary: "replace this binary with the latest release (or TAG) and refresh the skills",
-    options: { version: { type: "string", help: "a release tag such as v0.3.0 (default: the latest)" }, json },
+    summary: "npm install -g the latest release (or TAG), then refresh the skills",
+    options: { version: { type: "string", help: "a release such as v0.3.0 (default: the latest)" }, json },
     positionals: [0, 0],
     run: (o) => update({ version: str(o.version), json: Boolean(o.json) }),
   },

@@ -1,7 +1,7 @@
 {
   "name": "explain-change",
   "version": "0.14.0",
-  "description": "Architecture-first, visual explanation of a code change as one HTML page: the map, the story, data flows, OpenSpec traceability and the design decisions. Needs the explain-change CLI: curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/install.sh | sh",
+  "description": "Architecture-first, visual explanation of a code change as one HTML page: the map, the story, data flows, OpenSpec traceability and the design decisions. Needs the explain-change CLI: npm install -g explain-change",
   "author": { "name": "denjamio" },
   "homepage": "https://github.com/denjamio/explain-change",
   "repository": "https://github.com/denjamio/explain-change",

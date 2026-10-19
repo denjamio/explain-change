@@ -34,7 +34,7 @@ export function skillRoots(home = homedir()): string[] {
   return [join(home, ".agents", "skills"), join(home, ".claude", "skills")];
 }
 
-type Outcome = "installed" | "linked" | "up-to-date" | "skipped";
+type Outcome = "installed" | "linked" | "up-to-date" | "skipped" | "removed" | "absent";
 
 /** The skills folder of a source checkout, when running from one (for --link). */
 function sourceSkills(): string | null {
@@ -113,4 +113,27 @@ export function install(opts: { force: boolean; link: boolean; json: boolean; ho
       console.log("note: skipped folders that are not an explain-change install; use --force to replace them");
   }
   return skipped.length ? 1 : 0;
+}
+
+/** Removes one skill folder, only when this tool wrote it (it carries the marker). */
+export function uninstallSkill(dest: string): Outcome {
+  if (!existsSync(dest) && !isLink(dest)) return "absent";
+  if (isLink(dest) || !existsSync(join(dest, MARKER))) return "skipped";
+  rmSync(dest, { recursive: true, force: true }); // removes links, never what they point to
+  return "removed";
+}
+
+/** `uninstall`: removes the agent skills `install` wrote, then says how to remove the CLI itself. */
+export function uninstall(opts: { json: boolean; cli: string; home?: string }): number {
+  const results = skillRoots(opts.home).flatMap((root) =>
+    Object.keys(SKILLS).map((name) => ({ path: join(root, name), outcome: uninstallSkill(join(root, name)) })),
+  );
+  if (opts.json) printJson({ command: "uninstall", version: VERSION, skills: results, cli: opts.cli });
+  else {
+    for (const r of results) console.log(`${r.outcome.padEnd(10)} ${r.path}`);
+    if (results.some((r) => r.outcome === "skipped"))
+      console.log("note: kept folders that are not an explain-change install");
+    console.log(`next: ${opts.cli}`);
+  }
+  return 0;
 }

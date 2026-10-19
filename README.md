@@ -44,14 +44,11 @@ makes sense.
 
 ## Quick start
 
-**1. Install** the CLI and the agent skills:
+**1. Install** the CLI (Node ≥ 20), then the agent skills:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/install.sh | sh      # macOS, Linux, WSL
-```
-
-```powershell
-irm https://raw.githubusercontent.com/denjamio/explain-change/main/install.ps1 | iex            # Windows
+npm install -g explain-change
+explain-change install        # the skills, in ~/.agents/skills and ~/.claude/skills
 ```
 
 **2. Configure** your repository once. Ask your agent:
@@ -243,16 +240,16 @@ concept); other layouts get one component per top-level folder.
 
 ## Install
 
-The [install script](#quick-start) puts the standalone binary in `~/.local/bin` and the skills where agents look for
-them (`~/.agents/skills` and `~/.claude/skills`). Binaries for Linux and macOS (x64, arm64) and Windows (x64) are on
-the [releases page](https://github.com/denjamio/explain-change/releases), with a `SHA256SUMS`: the install scripts and
-`explain-change update` check each binary against it before they run it. It needs git.
+The npm package is one bundled file for Node ≥ 20, with no dependencies. It carries the agent skills:
+`explain-change install` writes them where agents look for them (`~/.agents/skills` and `~/.claude/skills`), and
+replaces only folders it wrote itself. It needs git.
 
+- **Update**: `explain-change update` (it runs `npm install -g explain-change@latest`, then refreshes the skills).
+- **Uninstall**: `explain-change uninstall` removes the skills, then `npm uninstall -g explain-change`.
 - **Claude Code plugin**: `/plugin marketplace add denjamio/explain-change`, then
-  `/plugin install explain-change@explain-change`.
+  `/plugin install explain-change@explain-change`. The plugin brings the skills, so skip `explain-change install`;
+  it still needs the CLI.
 - **Other agents**: reference `~/.agents/skills/explain-change/PROMPT.md` from your `AGENTS.md`.
-- **Update**: `explain-change update`.
-- **npm**: a package for Node ≥ 20 is built, but not published yet.
 
 ## Command reference
 
@@ -264,7 +261,7 @@ explain-change status                                       # the explanation's 
 explain-change share [--force]                              # attach the finished report to its Azure DevOps PR
 explain-change init | check                                 # draft and verify .explain-change.toml
 explain-change schema config|facts|explanation              # the JSON Schemas
-explain-change install | update | --version
+explain-change install | update | uninstall | --version     # the skills and the CLI itself
 ```
 
 <details>
@@ -292,7 +289,7 @@ bun run check                 # typecheck, lint and the tests
 bun run dev -- local          # the CLI from source (any command)
 bun run install:dev           # this checkout as `explain-change` in ~/.local/bin, skills linked to skills/
 bun run examples -- --real    # rebuild the 11 real pull requests in examples/ (`explain-change pr <url>`: network and gh)
-bun run smoke                 # compile the binary for this machine and run it on a temporary repository
+bun run smoke                 # build the npm bundle and run it on Node, on a temporary repository
 bun run eval                  # a real agent (haiku) explains the train PRs by their URL; graders score it (costs tokens)
 bun scripts/example-work.ts open <example> <dir>   # rewrite an example's explanation with the current tool, then: save
 ```
@@ -302,8 +299,7 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first; the vocabulary is in [d
 <details>
 <summary>Versions, evals and releases</summary>
 
-- **Toolchain**: Bun runs the build and the tests; the published CLI is a standalone binary (or the npm bundle on
-  Node ≥ 20).
+- **Toolchain**: Bun runs the build and the tests; the published CLI is the npm bundle, on Node ≥ 20.
 - **Examples follow the tool**: after any change to the analysis, the outline, the draft or the rules, rewrite the
   examples' explanations with the current tool (`scripts/example-work.ts open`, fill the draft, `save`) and rebuild
   them with `bun run examples -- --real`. They are what the current version produces, and the eval's references.

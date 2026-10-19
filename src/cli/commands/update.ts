@@ -1,81 +1,77 @@
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { expectedSum, SUMS_FILE, sha256 } from "../../core/checksum.ts";
-import { REPOSITORY, VERSION } from "../../core/constants.ts";
+import { realpathSync } from "node:fs";
+import { isAbsolute, relative } from "node:path";
+import { VERSION } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
 import { printJson } from "../output.ts";
 
-/** How this copy was installed: a standalone binary can replace itself; npm and source checkouts update their own way. */
-export function installKind(): "binary" | "npm" | "source" {
-  const bun = (globalThis as { Bun?: { main: string } }).Bun;
-  if (bun && /\$bunfs|~BUN/.test(bun.main)) return "binary";
-  if (bun) return "source";
-  return "npm";
+/** How this copy runs: the npm bundle on Node, or a source checkout on Bun (`bun run install:dev`). */
+export function installKind(): "npm" | "source" {
+  return (globalThis as { Bun?: unknown }).Bun ? "source" : "npm";
 }
 
-/** The release asset for this machine: explain-change-<os>-<arch>[.exe]. */
-export function assetName(platform = process.platform, arch = process.arch): string {
-  const os = platform === "win32" ? "windows" : platform;
-  if (!["linux", "darwin", "windows"].includes(os) || !["x64", "arm64"].includes(arch)) {
-    throw new UserError(`No release binary for ${platform}-${arch}. Install with npm: npm install -g explain-change`);
+/** How to remove the CLI itself, once `uninstall` removed the skills. */
+export function removeCliHint(kind = installKind()): string {
+  if (kind === "source") return "remove the shim in ~/.local/bin (`bun run install:dev` wrote it)";
+  return "remove the CLI with `npm uninstall -g explain-change`";
+}
+
+/** The npm package spec for a release tag (v0.3.0 → explain-change@0.3.0); no tag: the latest. */
+export function npmSpec(version: string | null): string {
+  return `explain-change@${version ? version.replace(/^v/, "") : "latest"}`;
+}
+
+/** True when `path` lies inside `folder` (another drive on Windows gives an absolute `relative`). */
+export function inFolder(path: string, folder: string): boolean {
+  const rel = relative(folder, path);
+  return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
+}
+
+function real(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
   }
-  return `explain-change-${os}-${arch}${os === "windows" ? ".exe" : ""}`;
 }
 
-/** Throws unless the release's SHA256SUMS lists this asset with this exact content. */
-export function verifyAsset(asset: string, data: Uint8Array, sums: string): void {
-  const expected = expectedSum(sums, asset);
-  if (!expected) throw new UserError(`The release's ${SUMS_FILE} does not list ${asset}: not installing it.`);
-  const actual = sha256(data);
-  if (actual !== expected) {
-    throw new UserError(
-      `The downloaded ${asset} does not match the release's ${SUMS_FILE} (expected ${expected}, got ${actual}): not installing it.`,
-    );
-  }
-}
-
-async function download(url: string): Promise<Uint8Array> {
-  const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": `explain-change/${VERSION}` } });
-  if (!res.ok)
-    throw new UserError(`Download failed (${res.status}) from ${url}. Check the version and your connection.`);
-  return new Uint8Array(await res.arrayBuffer());
+/** npm on PATH: npm.cmd on Windows needs a shell. */
+function npm(args: string[], inherit: boolean) {
+  return spawnSync("npm", args, {
+    encoding: "utf8",
+    shell: process.platform === "win32",
+    stdio: inherit ? ["ignore", "inherit", "inherit"] : "pipe",
+  });
 }
 
 /**
- * `update`: replaces the standalone binary with the latest release (or --version) once its hash matches the release's
- * SHA256SUMS, then refreshes the skills.
+ * `update`: `npm install -g explain-change@latest` (or --version), then the new copy refreshes the skills. Only a
+ * global npm install updates itself; npx, a project dependency or another package manager say how to update instead.
  */
-export async function update(opts: { version: string | null; json: boolean }): Promise<number> {
-  const kind = installKind();
-  if (kind === "npm")
-    throw new UserError("This copy came from npm: update it with `npm install -g explain-change@latest`.");
-  if (kind === "source")
+export function update(opts: { version: string | null; json: boolean }): number {
+  if (installKind() === "source")
     throw new UserError("This is a source checkout: update it with `git pull`, then `bun run install:dev`.");
-  const base = process.env.EXPLAIN_CHANGE_RELEASES ?? `https://github.com/${REPOSITORY}/releases`;
-  const dir = opts.version
-    ? `${base}/download/${opts.version.startsWith("v") ? opts.version : `v${opts.version}`}`
-    : `${base}/latest/download`;
-  const asset = assetName();
-  const [data, sums] = await Promise.all([download(`${dir}/${asset}`), download(`${dir}/${SUMS_FILE}`)]);
-  verifyAsset(asset, data, new TextDecoder().decode(sums));
-  const self = process.execPath;
-  const next = `${self}.new`;
-  writeFileSync(next, data);
-  chmodSync(next, 0o755);
-  const check = spawnSync(next, ["--version"], { encoding: "utf8" });
-  if (check.status !== 0) {
-    rmSync(next, { force: true });
-    throw new UserError(`The downloaded binary does not run: ${check.stderr.trim() || check.error?.message}`);
+  const script = process.argv[1] ?? "";
+  const root = npm(["root", "-g"], false);
+  const global = root.status === 0 ? root.stdout.trim() : "";
+  const path = real(script);
+  if (!global || !inFolder(path, real(global))) {
+    throw new UserError(
+      `This copy is not a global npm install (${script}): update it with the tool that installed it, then run \`explain-change install\`.`,
+    );
   }
-  // A running binary cannot be overwritten on Windows, but it can be renamed away.
-  const old = `${self}.old`;
-  rmSync(old, { force: true });
-  renameSync(self, old);
-  renameSync(next, self);
-  if (process.platform !== "win32" && existsSync(old)) rmSync(old, { force: true });
-  const skills = spawnSync(self, ["install", ...(opts.json ? ["--json"] : [])], { encoding: "utf8" });
+  const spec = npmSpec(opts.version);
+  if (!opts.json) console.log(`npm install -g ${spec}`);
+  const p = npm(["install", "-g", spec], !opts.json);
+  if (p.status !== 0)
+    throw new UserError(`\`npm install -g ${spec}\` failed${p.stderr ? `: ${p.stderr.trim()}` : ""}.`);
+  // The package's files are new now: run the new copy, so it writes its own skills.
+  const check = spawnSync(process.execPath, [path, "--version"], { encoding: "utf8" });
   const version = /explain-change (\S+)/.exec(check.stdout)?.[1] ?? check.stdout.trim();
-  if (opts.json) printJson({ command: "update", from: VERSION, to: version, path: self, skills: skills.status === 0 });
-  else console.log(`updated ${self}: ${VERSION} → ${version}${skills.status === 0 ? "; skills refreshed" : ""}`);
+  const skills = spawnSync(process.execPath, [path, "install", ...(opts.json ? ["--json"] : [])], {
+    encoding: "utf8",
+  });
+  if (opts.json) printJson({ command: "update", from: VERSION, to: version, path, skills: skills.status === 0 });
+  else console.log(`updated ${path}: ${VERSION} → ${version}${skills.status === 0 ? "; skills refreshed" : ""}`);
   return 0;
 }

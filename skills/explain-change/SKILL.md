@@ -11,7 +11,7 @@ CLI drafts for you. Never read the full diff: the digest already selects what ma
 
 Run every command from the repository root, with `--json`, and do what its `next.action` says. If `explain-change`
 is not on PATH, ask the user to install it:
-`curl -fsSL https://raw.githubusercontent.com/denjamio/explain-change/main/install.sh | sh` (Windows: `install.ps1`).
+`npm install -g explain-change` (Node ≥ 20).
 
 ## 1. Collect the change
 

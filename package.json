@@ -25,7 +25,6 @@
   },
   "files": [
     "dist/explain-change.js",
-    "skills",
     "schemas",
     "docs",
     "README.md",
@@ -46,8 +45,7 @@
     "check": "bun run typecheck && bun run lint && bun run test",
     "install:dev": "bun scripts/install-dev.ts",
     "schemas": "bun scripts/build.ts --schemas",
-    "compile": "bun scripts/build.ts --compile",
-    "smoke": "bun scripts/smoke-binary.ts",
+    "smoke": "bun scripts/smoke.ts",
     "eval": "bun scripts/eval.ts"
   },
   "devDependencies": {

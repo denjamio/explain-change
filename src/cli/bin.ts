@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The command line entry point: the npm bundle, the standalone binaries and `bun src/cli/bin.ts` all start here.
+// The command line entry point: the npm bundle and `bun src/cli/bin.ts` both start here.
 // It sets the exit code instead of calling process.exit(): on Windows, writes to a pipe are asynchronous, and exiting
 // at once would cut the JSON or the error message short.
 import { REPOSITORY } from "../core/constants.ts";
