@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- npm is the way to install: `npm install -g explain-change`, then `explain-change install` for the skills.
+- `explain-change update` runs `npm install -g explain-change@latest` (or the `--version` tag), then refreshes the
+  skills. A copy that is not a global npm install says how to update it.
+- The npm package no longer ships `skills/`: the CLI carries the skills and `explain-change install` writes them.
+
+### Removed
+- The standalone binaries and the install scripts (`install.sh`, `install.ps1`): releases no longer carry binaries.
+  A binary from an earlier release cannot update itself any more: delete it, then `npm install -g explain-change`.
+
+### Added
+- `explain-change uninstall` removes the skill folders that `install` wrote (it keeps any other folder), then says
+  how to remove the CLI itself.
+
 ## [0.14.0] - 2026-10-18
 
 ### Fixed

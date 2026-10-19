@@ -1,6 +1,6 @@
 name: Release
 
-# Push a tag vX.Y.Z (matching package.json) to publish the binaries, the npm package and the plugin version.
+# Push a tag vX.Y.Z (matching package.json) to publish the npm package, the GitHub release notes and the plugin version.
 on:
   push:
     tags: ["v*"]
@@ -28,13 +28,12 @@ jobs:
         run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
       - run: bun run check
       - run: bun run build
-      - run: bun run compile
-      - name: GitHub release with the binaries
+      - name: GitHub release with the notes
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           notes=$(awk "/^## \[${GITHUB_REF_NAME#v}\]/{f=1;next} /^## \[/{f=0} f" CHANGELOG.md)
-          gh release create "$GITHUB_REF_NAME" dist/bin/* --title "$GITHUB_REF_NAME" --notes "$notes"
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "$notes"
       - name: npm
         if: env.NPM_TOKEN != ''
         run: npm publish --provenance --access public

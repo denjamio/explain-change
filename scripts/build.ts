@@ -1,29 +1,19 @@
 /**
- * Build: the report's assets, the npm bundle and the standalone binaries.
+ * Build: the report's assets and the npm bundle.
  *
  *   bun scripts/build.ts --assets          report/ → src/report/assets.gen.ts (what the CLI embeds)
  *   bun scripts/build.ts                   assets + dist/explain-change.js (Node ≥ 20, no dependencies)
- *   bun scripts/build.ts --compile [t…]    assets + standalone binaries and their SHA256SUMS in dist/bin (all targets
- *                                          by default)
  *   bun scripts/build.ts --schemas         schemas/*.schema.json from the contract (committed; a test checks them)
  *
  * The report script is bundled without minification: the same source always gives the same page, and a reader can
  * open it.
  */
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { formatSums, SUMS_FILE } from "../src/core/checksum.ts";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { ensureDir } from "../src/core/fs.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const GENERATED = join(ROOT, "src/report/assets.gen.ts");
-export const TARGETS = [
-  "bun-linux-x64",
-  "bun-linux-arm64",
-  "bun-darwin-x64",
-  "bun-darwin-arm64",
-  "bun-windows-x64",
-] as const;
 
 /** report/bulb.svg, the mark of generated pages, as a data: URI for favicons. */
 export function bulbDataUri(): string {
@@ -55,7 +45,7 @@ export async function buildAssets(): Promise<boolean> {
   return true;
 }
 
-async function buildNode() {
+export async function buildNode() {
   const out = await Bun.build({
     entrypoints: [join(ROOT, "src/cli/bin.ts")],
     target: "node",
@@ -67,39 +57,6 @@ async function buildNode() {
   const file = join(ROOT, "dist/explain-change.js");
   writeFileSync(file, await (out.outputs[0] as Blob).text(), { mode: 0o755 });
   console.log(`built ${file}`);
-}
-
-function compile(targets: string[]): void {
-  const dir = join(ROOT, "dist/bin");
-  for (const target of targets) {
-    const name = `explain-change-${target.replace(/^bun-/, "")}${target.includes("windows") ? ".exe" : ""}`;
-    compileBinary(join(dir, name), target);
-  }
-  // install.sh, install.ps1 and `update` refuse a binary whose hash is not in this file.
-  const binaries = readdirSync(dir).filter((f) => f.startsWith("explain-change-"));
-  writeFileSync(
-    join(dir, SUMS_FILE),
-    formatSums(Object.fromEntries(binaries.map((f) => [f, readFileSync(join(dir, f))]))),
-  );
-  console.log(`wrote ${join(dir, SUMS_FILE)}`);
-}
-
-/** One standalone binary of the CLI, for a Bun target ("bun-linux-x64", …) or, without one, for this machine. */
-export function compileBinary(outfile: string, target?: string): void {
-  ensureDir(dirname(outfile));
-  const p = Bun.spawnSync(
-    [
-      "bun",
-      "build",
-      "--compile",
-      ...(target ? [`--target=${target}`] : []),
-      join(ROOT, "src/cli/bin.ts"),
-      "--outfile",
-      outfile,
-    ],
-    { stdout: "inherit", stderr: "inherit" },
-  );
-  if (p.exitCode !== 0) throw new Error(`compile ${target ?? "for this machine"} failed`);
 }
 
 /** The JSON Schemas of the contract, as committed in schemas/. */
@@ -121,7 +78,6 @@ if (import.meta.main) {
     console.log("built schemas/");
   } else {
     if (await buildAssets()) console.log("built src/report/assets.gen.ts");
-    if (args[0] === "--compile") compile(args.length > 1 ? args.slice(1) : [...TARGETS]);
-    else if (args[0] !== "--assets") await buildNode();
+    if (args[0] !== "--assets") await buildNode();
   }
 }

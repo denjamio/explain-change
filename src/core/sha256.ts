@@ -1,7 +1,6 @@
 /*
  * SHA-256 in plain TypeScript: synchronous and without Node, so the report script can bundle it (WebCrypto is async).
- * It hashes short strings, such as the paths in GitHub's diff anchors. Binaries are hashed by ./checksum.ts with
- * node:crypto, which is faster on megabytes.
+ * It hashes short strings, such as the paths in GitHub's diff anchors.
  */
 
 const K = new Uint32Array([

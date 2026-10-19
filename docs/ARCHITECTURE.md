@@ -103,13 +103,12 @@ explanation is saved under its key, so explaining a change again costs nothing.
 
 ## Distribution
 
-One code base, three ways to run it:
+One code base, two ways to run it:
 
-- **Standalone binaries** (`bun build --compile`), attached to each GitHub release; `install.sh` / `install.ps1`
-  download one, and `explain-change update` replaces it.
-- **npm** (`npx explain-change`): one bundled file for Node ≥ 20, with no runtime dependencies. Built and tested in
-  CI; published by the release workflow once the repository has an `NPM_TOKEN` secret.
+- **npm** (`npm install -g explain-change`): one bundled file for Node ≥ 20, with no runtime dependencies. CI runs it
+  on Linux, macOS and Windows (`bun run smoke`); the release workflow publishes it once the repository has an
+  `NPM_TOKEN` secret. `explain-change update` runs `npm install -g` for a global install.
 - **Source** (`bun src/cli/bin.ts`), for development.
 
 The skills are embedded in the CLI (`explain-change install` writes them to `~/.agents/skills` and
-`~/.claude/skills`) and shipped as a Claude Code plugin (`.claude-plugin/`).
+`~/.claude/skills`, `explain-change uninstall` removes them) and shipped as a Claude Code plugin (`.claude-plugin/`).

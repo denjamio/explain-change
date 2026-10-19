@@ -1,9 +1,9 @@
 /**
- * Compiles the standalone binary for this machine and runs it the way agents do: through pipes, from a temporary
- * repository, writing the report to folders that do not exist yet. CI runs it on Linux, macOS and Windows, so each
- * release binary has run on its own system before it ships.
+ * Builds the npm bundle and runs it on Node the way agents do: through pipes, from a temporary repository, writing
+ * the report to folders that do not exist yet. CI runs it on Linux, macOS and Windows with Node 20, so the published
+ * package has run on each system before it ships.
  *
- *   bun scripts/smoke-binary.ts
+ *   bun scripts/smoke.ts
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
@@ -11,18 +11,25 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { VERSION } from "../src/core/constants.ts";
 import { ensureDir, removeTree } from "../src/core/fs.ts";
-import { buildAssets, compileBinary } from "./build.ts";
+import { buildNode } from "./build.ts";
 import { GIT_ENV } from "./build-examples.ts";
 
 const tmp = mkdtempSync(join(tmpdir(), "explain-change-smoke-"));
-const bin = join(tmp, process.platform === "win32" ? "explain-change.exe" : "explain-change");
+const bundle = join(import.meta.dir, "..", "dist", "explain-change.js");
 const repo = join(tmp, "repo");
 const env = { ...process.env, ...GIT_ENV };
+
+/** Node, never Bun: the bundle must run where npm installs it. */
+const node = process.env.NODE ?? "node";
 
 function run(cmd: string, args: string[]) {
   const p = spawnSync(cmd, args, { cwd: repo, env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   if (p.error) throw p.error;
   return { status: p.status, stdout: p.stdout ?? "", stderr: p.stderr ?? "" };
+}
+
+function cli(args: string[]) {
+  return run(node, [bundle, ...args]);
 }
 
 function git(...args: string[]): void {
@@ -37,7 +44,7 @@ function expect(ok: boolean, what: string, detail: unknown): void {
 
 /** Its stdout as JSON: a cut-short write fails here. */
 function json(args: string[]) {
-  const r = run(bin, args);
+  const r = cli(args);
   try {
     return { ...r, value: JSON.parse(r.stdout) };
   } catch {
@@ -48,11 +55,10 @@ function json(args: string[]) {
 }
 
 try {
-  await buildAssets();
-  compileBinary(bin);
+  await buildNode();
   ensureDir(join(repo, "app", "models"));
 
-  const version = run(bin, ["--version"]);
+  const version = cli(["--version"]);
   expect(version.stdout.startsWith(`explain-change ${VERSION} `), `--version prints ${VERSION}`, version);
 
   git("init", "-q", "-b", "main");
@@ -77,7 +83,7 @@ try {
     schema.status,
   );
 
-  const bad = run(bin, ["schema", "nope"]);
+  const bad = cli(["schema", "nope"]);
   expect(bad.status === 2 && bad.stderr.endsWith("\n"), "a usage error exits 2 with its whole message", bad);
 } finally {
   removeTree(tmp);
