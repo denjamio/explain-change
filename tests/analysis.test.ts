@@ -21,8 +21,14 @@ import { makeConfig } from "./helpers.ts";
 
 type Comp = Parameters<typeof makeConfig>[0][number];
 
-function edgesFor(files: Record<string, string>, components: Comp[], tsconfigs: TsConfig[] = []) {
+function edgesFor(
+  files: Record<string, string>,
+  components: Comp[],
+  tsconfigs: TsConfig[] = [],
+  ignore: string[] = [],
+) {
   const config = makeConfig(components);
+  config.ignore.paths.push(...ignore);
   const mapper = new Mapper(config);
   const extracted = new Map<string, Extracted>(Object.entries(files).map(([p, t]) => [p, extractRefs(p, t)]));
   const graph = buildGraph(extracted, new SideIndex(new Set(Object.keys(files)), mapper, tsconfigs, extracted), mapper);
@@ -100,6 +106,54 @@ describe("Rails", () => {
       ],
     );
     expect(edges).toEqual({ "web->billing": 1, "web->models": 1, "billing->models": 1, "tasks->models": 1 });
+  });
+
+  test("ActiveAdmin's app/admin defines no constants: `register Like` points at the model", () => {
+    const files = {
+      "app/admin/like.rb": "ActiveAdmin.register Like do\n  permit_params :employee_id\nend\n",
+      "app/models/like.rb": "class Like < ApplicationRecord\nend\n",
+      "app/services/recognitions/give.rb":
+        "module Recognitions\n  class Give\n    def call = Like.create!\n  end\nend\n",
+    };
+    const comps: Comp[] = [
+      { id: "admin", layer: "entry", paths: ["app/admin/**"] },
+      { id: "models", layer: "domain", paths: ["app/models/**"] },
+      { id: "recognitions", layer: "app", paths: ["app/services/**"] },
+    ];
+    const activeAdmin = { ...files, "config/initializers/active_admin.rb": "ActiveAdmin.setup { |config| }\n" };
+    expect(edgesFor(activeAdmin, comps).edges).toEqual({ "admin->models": 1, "recognitions->models": 1 });
+    // Without ActiveAdmin, app/admin is autoloaded like any app/ folder, as Rails does it.
+    expect(edgesFor(files, comps).edges).toEqual({ "recognitions->admin": 1 });
+  });
+
+  test("app/assets, app/javascript and app/views define no constants", () => {
+    const { edges } = edgesFor(
+      {
+        "app/javascript/order.rb": "",
+        "app/models/order.rb": "class Order < ApplicationRecord\nend\n",
+        "app/services/checkout.rb": "class Checkout\n  def call = Order.create!\nend\n",
+      },
+      [
+        { id: "frontend", layer: "entry", paths: ["app/javascript/**"] },
+        { id: "models", layer: "domain", paths: ["app/models/**"] },
+        { id: "svc", layer: "app", paths: ["app/services/**"] },
+      ],
+    );
+    expect(edges).toEqual({ "svc->models": 1 });
+  });
+
+  test("an ignored file never takes a constant from the code that defines it", () => {
+    const files = {
+      "app/generated/order.rb": "class Order; end\n",
+      "app/models/order.rb": "class Order < ApplicationRecord\nend\n",
+      "app/services/checkout.rb": "class Checkout\n  def call = Order.create!\nend\n",
+    };
+    const comps: Comp[] = [
+      { id: "generated", layer: "infra", paths: ["app/generated/**"] },
+      { id: "models", layer: "domain", paths: ["app/models/**"] },
+      { id: "svc", layer: "app", paths: ["app/services/**"] },
+    ];
+    expect(edgesFor(files, comps, [], ["app/generated/**"]).edges).toEqual({ "svc->models": 1 });
   });
 
   test("lines starting with 'required' are still read", () => {
