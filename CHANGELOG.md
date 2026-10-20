@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-10-20
+
 ### Fixed
 - `explain-change update` could reinstall the version it had: npm keeps a package's versions cached for minutes, so
   right after a release `explain-change@latest` was still the one before, and `update` said `0.15.1 → 0.15.1`. It now
