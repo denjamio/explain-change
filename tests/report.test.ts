@@ -168,6 +168,17 @@ describe("labels", async () => {
     expect(wrap("Whatsapp::Health", "12px", 70)).toEqual(["Whatsapp::", "Health"]);
   });
 
+  test("whole: a call breaks only after a separator, never inside a name", () => {
+    expect(wrap("DeleteManyFoldersCommand.DeleteMany()", "12px", 140, { lines: 99, whole: true })).toEqual([
+      "DeleteManyFoldersCommand.",
+      "DeleteMany()",
+    ]);
+    expect(wrap("DeleteManyFoldersCommand.DeleteMany()", "12px", 140, { lines: 99 })).toEqual([
+      "DeleteManyFoldersCom",
+      "mand.DeleteMany()",
+    ]);
+  });
+
   test("only past its lines does a label end in …, keeping the original text", () => {
     expect(wrap("Event and billing hosts", "12px", 100, { lines: 1 })).toEqual(["Event and bil…"]);
     expect(wrap("a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u", "12px", 70)).toEqual(["a.b.c.d.e.", "f.g.h.i.j…"]);

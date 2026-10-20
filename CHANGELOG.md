@@ -16,8 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 - The map no longer cuts its labels with "…". Component and lane names wrap to 2 or 3 lines and their boxes grow;
-  flow lifelines move apart until each call and its data fit between them; entity boxes take the width of their
-  longest name or field. Only a label longer than its room even then ends in "…", with the whole text as its tooltip.
+  a flow call too long for its lifelines takes 2 lines, broken after a code separator (`Folders.` /
+  `DeleteMany()`), never inside a name, and the lifelines move apart only when 2 lines do not fit either; a step's
+  data fits between its lifelines too; entity boxes take the width of their longest name or field. Only a label
+  longer than its room even then ends in "…", with the whole text as its tooltip.
 
 ## [0.15.1] - 2026-10-19
 

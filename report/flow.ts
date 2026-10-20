@@ -28,38 +28,49 @@ export function buildFlow(fl: NFlow): View {
   parts.sort(byCompRank);
   const hasData = fl.steps.some((x) => x.data);
   const COL = 220;
-  const ROW = hasData ? 66 : 50;
   const TOP = 20;
   // A participant's name takes up to 2 lines in its head; every head grows by the lines the longest name needs.
   const names: Record<string, string[]> = {};
   for (const p of parts) names[p] = wrap(compById[p]?.name ?? p, "650 13px", COL - 24 - 16);
   const extra = (Math.max(1, ...Object.values(names).map((l) => l.length)) - 1) * 16;
   const HEAD = 58 + extra;
-  // A call is never cut: the lifelines it spans move apart until its label (and its data) fits between them.
-  const label = (stp: NStep) => stp.call + (stp.verified ? "" : "  ?");
-  const labelW = (stp: NStep) =>
-    Math.max(
-      textWidth(label(stp), `${stp.delta === "unchanged" ? 400 : 650} 12.5px`),
-      stp.data ? chipWidth(stp.data) : 0,
-    );
+  // A call is never cut. It takes 2 lines when 1 does not fit between its lifelines, broken after a code
+  // separator (`Folders.` / `DeleteMany()`); only when 2 lines do not fit either do the lifelines move apart.
   const at = (p: string) => parts.indexOf(p);
+  const calls = fl.steps.map((stp) => {
+    const a = Math.min(at(stp.from), at(stp.to));
+    const b = Math.max(at(stp.from), at(stp.to));
+    const font = `${stp.delta === "unchanged" ? 400 : 650} 12.5px`;
+    const text = stp.call + (stp.verified ? "" : "  ?");
+    // A call to itself is written right of its lifeline, toward the next one.
+    let room = a === b ? COL - SELF_X - 16 : (b - a) * COL - 48;
+    const breaks = (maxW: number) => wrap(text, font, maxW, { lines: 99, whole: true });
+    let lines = breaks(room);
+    if (lines.length > 2) room = Math.max(room, textWidth(text, font) / 2);
+    while (lines.length > 2) {
+      lines = breaks(room);
+      room += 8;
+    }
+    const w = Math.max(...lines.map((l) => textWidth(l, font)), stp.data ? chipWidth(stp.data) : 0);
+    return { a, b, lines, w };
+  });
   const gaps = parts.slice(1).map(() => COL);
   let rightPad = 0;
-  const spans = fl.steps
-    .map((stp) => ({ stp, a: Math.min(at(stp.from), at(stp.to)), b: Math.max(at(stp.from), at(stp.to)) }))
-    .sort((p, q) => p.b - p.a - (q.b - q.a));
-  for (const { stp, a, b } of spans) {
+  for (const { a, b, w } of [...calls].sort((p, q) => p.b - p.a - (q.b - q.a))) {
     if (a === b) {
-      // A call to itself is written right of its lifeline, toward the next one.
-      const need = SELF_X + labelW(stp) + 16;
+      const need = SELF_X + w + 16;
       if (a < gaps.length) gaps[a] = Math.max(gaps[a] as number, need);
       else rightPad = Math.max(rightPad, need - COL / 2);
       continue;
     }
-    const need = labelW(stp) + 48;
+    const need = w + 48;
     const have = gaps.slice(a, b).reduce((v, g) => v + g, 0);
     if (have < need) for (let i = a; i < b; i++) gaps[i] = (gaps[i] as number) + (need - have) / (b - a);
   }
+  // A second line of a call needs its own room above the arrow, in every row so the steps keep one rhythm.
+  const LINE = 15;
+  const twoLines = calls.some((c) => c.lines.length > 1);
+  const ROW = (hasData ? 66 : 50) + (twoLines ? LINE : 0);
   const span = gaps.reduce((v, g) => v + g, 0) + COL + rightPad;
   const W = Math.max(720, span + 40);
   const H = TOP + HEAD + 26 + fl.steps.length * ROW + 16;
@@ -110,7 +121,7 @@ export function buildFlow(fl: NFlow): View {
   const per = 0.9;
   const total = n * per + 1.2;
   fl.steps.forEach((stp, i) => {
-    const y = TOP + HEAD + 30 + i * ROW;
+    const y = TOP + HEAD + 30 + (twoLines ? LINE : 0) + i * ROW;
     const x1 = x[stp.from] as number;
     const x2 = x[stp.to] as number;
     const key = `#${i + 1}`;
@@ -125,22 +136,27 @@ export function buildFlow(fl: NFlow): View {
     else if (stp.port) g.appendChild(s("title", { text: T.viaSomePort }));
     const marker = `url(#sq-${fl.id}-${stp.delta})`;
     const pid = `fm-${fl.id}-${i}`;
+    const { lines, w } = calls[i] as (typeof calls)[number];
+    const more = (lines.length - 1) * LINE;
+    const self = stp.from === stp.to;
+    // A label grows up from the arrow; a call to itself writes it down beside its loop.
+    const top = self ? y - 24 : y - 24 - more;
     g.appendChild(
       s("rect", {
         x: Math.min(x1, x2) - 14,
-        y: y - 24,
+        y: top,
         width: Math.max(Math.abs(x2 - x1), 60) + 28,
-        height: 36,
+        height: 36 + more,
         rx: 8,
         class: "msg-bg",
       }),
     );
-    if (stp.from === stp.to) {
+    if (self) {
       g.appendChild(s("path", { id: pid, d: `M${x1},${y - 6} h38 v16 h-34`, class: "msg-line", "marker-end": marker }));
-      g.appendChild(
-        s("text", { x: x1 + SELF_X, y: y + 4, class: "msg-label", text: label(stp) }, s("title", { text: stp.call })),
-      );
-      V.geo[key] = { x: x1 - 10, y: y - 24, w: SELF_X + labelW(stp) + 20, h: 36 };
+      const text = textLines({ x: x1 + SELF_X, y: y + 4, class: "msg-label" }, lines, LINE);
+      text.appendChild(s("title", { text: stp.call }));
+      g.appendChild(text);
+      V.geo[key] = { x: x1 - 10, y: top, w: SELF_X + w + 20, h: 36 + more };
     } else {
       const dir = x2 > x1 ? 1 : -1;
       g.appendChild(
@@ -151,21 +167,15 @@ export function buildFlow(fl: NFlow): View {
           "marker-end": marker,
         }),
       );
-      g.appendChild(
-        s(
-          "text",
-          {
-            x: (x1 + x2) / 2,
-            y: y - 8,
-            "text-anchor": "middle",
-            class: "msg-label",
-            text: label(stp),
-          },
-          s("title", { text: stp.call }),
-        ),
+      const text = textLines(
+        { x: (x1 + x2) / 2, y: y - 8 - more, "text-anchor": "middle", class: "msg-label" },
+        lines,
+        LINE,
       );
+      text.appendChild(s("title", { text: stp.call }));
+      g.appendChild(text);
       if (stp.data) g.appendChild(dataChip(stp.data, (x1 + x2) / 2, y + 17));
-      V.geo[key] = { x: Math.min(x1, x2), y: y - 24, w: Math.abs(x2 - x1), h: 36 };
+      V.geo[key] = { x: Math.min(x1, x2), y: top, w: Math.abs(x2 - x1), h: 36 + more };
     }
     const bx = x1 - (x2 >= x1 ? 1 : -1) * 16;
     g.appendChild(

@@ -60,14 +60,15 @@ export const measure = document.createElement("canvas").getContext("2d");
  * Breaks a label into the lines it needs to fit maxW pixels: at spaces, else after a code separator
  * (`Orders::Refund.call`, `snake_case`, `a/b`), else mid-word. Only past maxLines does the last line end in "…".
  * `spacing` adds the CSS letter-spacing per character; `upper` measures it as text-transform: uppercase shows it.
+ * `whole` never breaks inside a word or identifier: one wider than maxW takes a line of its own, wider than maxW.
  */
 export function wrap(
   text: string,
   font: string,
   maxW: number,
-  opts: { lines?: number; family?: string; spacing?: number; upper?: boolean } = {},
+  opts: { lines?: number; family?: string; spacing?: number; upper?: boolean; whole?: boolean } = {},
 ): string[] {
-  const { lines: maxLines = 2, family, spacing = 0, upper = false } = opts;
+  const { lines: maxLines = 2, family, spacing = 0, upper = false, whole = false } = opts;
   const width = (v: string) => {
     const t = v.trimEnd();
     return textWidth(upper ? t.toUpperCase() : t, font, family) + t.length * spacing;
@@ -93,7 +94,7 @@ export function wrap(
     if (line) push(line, lineStart);
     lineStart = at;
     // A piece wider than a whole line breaks between characters.
-    while (width(p) > maxW && p.length > 1) {
+    while (!whole && width(p) > maxW && p.length > 1) {
       let n = p.length - 1;
       while (n > 1 && width(p.slice(0, n)) > maxW) n--;
       push(p.slice(0, n), lineStart);
