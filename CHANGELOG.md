@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- The header named every PR an "Azure DevOps PR": a GitHub PR is a "GitHub PR".
+
 ## [0.16.1] - 2026-10-20
 
 ### Fixed

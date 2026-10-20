@@ -5,7 +5,7 @@
 import { append, type Child, fmt, h } from "./dom.ts";
 import { cfg, DATA, ex, facts, OS, REQS, src, st } from "./model.ts";
 import { chip } from "./ui.ts";
-import { T } from "./words.ts";
+import { T, t } from "./words.ts";
 
 // ═════════════════════════════ header ═════════════════════════════
 export function renderHeader(): HTMLElement {
@@ -38,7 +38,7 @@ export function renderHeader(): HTMLElement {
       );
   const counts = { added: 0, changed: 0, removed: 0 };
   for (const c of facts.components) if (c.delta !== "unchanged") counts[c.delta]++;
-  const srcLabel = src.kind === "pr" ? `${T.pr} #${src.prId}` : T.local;
+  const srcLabel = src.kind === "pr" ? `${src.host ? t(`pr-${src.host}`) : T.pr} #${src.prId}` : T.local;
   const coverage = st.codeLines ? Math.round((100 * (st.mappedLines || 0)) / st.codeLines) : 100;
   // One chip per question: how big (files, lines), what moved (components), is the spec met, what to check.
   const part = (v: string | number, label: string, cls?: string): Child[] => [
