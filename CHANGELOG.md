@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-20
+
 ### Removed
 - `explain-change share`: neither Azure DevOps nor GitHub PRs take an HTML attachment a reviewer can open, so the
   command, the Azure DevOps upload and the `share` field of the `--json` output are gone. A report is one
