@@ -2,6 +2,7 @@ import type { NormalizedExplanation } from "../contract/explanation.ts";
 import type { Facts } from "../contract/facts.ts";
 import type { ExplanationState } from "../explanation/store.ts";
 import type { Issue } from "../explanation/validate.ts";
+import type { HunkSpan } from "../hosts/links.ts";
 
 /** What the page embeds as JSON and the report script draws. */
 export interface ReportData {
@@ -10,6 +11,11 @@ export interface ReportData {
   explanation: NormalizedExplanation | null;
   state: ExplanationState;
   issues: Issue[];
+  /**
+   * The hunks of each changed file before the page cut them to its excerpts: a link to a line opens the PR at it
+   * only inside a hunk. Absent from pages rendered before 0.17.0.
+   */
+  hunkSpans?: Record<string, HunkSpan[]>;
 }
 
 /** The data a rendered page embeds: what renderHtml wrote, for scripts and tests that read reports back. */

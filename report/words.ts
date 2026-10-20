@@ -21,6 +21,8 @@ export const T = {
   invalidExplanation: "Story rejected",
   invalidText: "explanation.json has errors:",
   goal: "Goal",
+  lineOutsidePr:
+    "Opens these lines in the file at their commit, outside the PR: Azure DevOps has no link to a line of a PR's diff.",
   file: "file",
   kFiles: "files",
   kLines: "lines",

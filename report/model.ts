@@ -2,7 +2,7 @@
 
 import type { NormalizedExplanation } from "../src/contract/explanation.ts";
 import type { ComponentFacts, Delta, DependencyFacts, FileFacts, Requirement } from "../src/contract/facts.ts";
-import { prFileUrl as fileUrlOnPr } from "../src/hosts/links.ts";
+import { prFileUrl as fileUrlOnPr, type LineRange, lineRange } from "../src/hosts/links.ts";
 import type { ReportData } from "../src/report/data.ts";
 import { cap } from "./dom.ts";
 import { T, t } from "./words.ts";
@@ -97,9 +97,15 @@ export const RS_ICON: Record<ReqStatus, string> = {
 };
 export const rsLabel = (v: ReqStatus) => (v === "pending" ? T.notMapped : v === "none" ? "—" : t(v));
 
-// A file reference links to the file in the PR when the source has one; otherwise it is plain text.
-export function prFileUrl(path: string): string | null {
-  return src.kind === "pr" && src.url && src.host ? fileUrlOnPr(src.host, src.url, path) : null;
+// A file reference links to the file in the PR when the source has one; otherwise it is plain text. With lines, it
+// opens the PR at them when a hunk holds them, on the base side for a removed file or a removed symbol.
+export function prFileUrl(path: string, lines?: { start: number; end?: number; old?: boolean }): string | null {
+  if (src.kind !== "pr" || !src.url || !src.host) return null;
+  const removed = facts.files[fileIndex[path] ?? -1]?.delta === "removed";
+  const side: LineRange["side"] = removed || lines?.old ? "old" : "new";
+  const spans = DATA.hunkSpans?.[path];
+  const range = lines && spans ? lineRange(spans, side, lines.start, lines.end) : undefined;
+  return fileUrlOnPr(src.host, src.url, path, range, side === "new" ? src.headSha : src.mergeBase);
 }
 
 export const DM = ex?.dataModel.entities.length ? ex.dataModel : null;

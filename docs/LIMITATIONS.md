@@ -64,5 +64,7 @@ the same change renders the same page again without the agent.
 
 ## Hosts
 
-PRs are read from Azure DevOps (`az`) and GitHub (`gh`). A GitLab or Bitbucket PR works through its branch
+PRs are read from Azure DevOps (`az`) and GitHub (`gh`). On GitHub, a code reference opens the PR at its lines when
+a hunk holds them. Azure DevOps has no link to a line of a PR's diff: a code reference opens the file at the head
+(or the merge base) with its lines selected, outside the PR. A GitLab or Bitbucket PR works through its branch
 (`explain-change local`).

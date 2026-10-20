@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { gitHubPrId, gitHubSlug, gitHubWebUrl } from "../src/hosts/github/pr.ts";
 import { branchHost, prHost } from "../src/hosts/index.ts";
-import { prFileUrl } from "../src/hosts/links.ts";
+import { lineRange, prFileUrl } from "../src/hosts/links.ts";
 import { prSource } from "../src/hosts/source.ts";
 import { FakeGh, fakeHosts, ok, Repo, throwsUser } from "./helpers.ts";
 
@@ -187,5 +187,40 @@ describe("GitHub", () => {
     const path = "app/models/order.rb";
     const anchor = createHash("sha256").update(path).digest("hex");
     expect(prFileUrl("github", pr.url, path)).toBe(`${pr.url}/files#diff-${anchor}`);
+  });
+
+  test("a line link opens GitHub's diff at the line, on the head (R) or the base (L)", () => {
+    const path = "app/models/order.rb";
+    const file = `${pr.url}/files#diff-${createHash("sha256").update(path).digest("hex")}`;
+    expect(prFileUrl("github", pr.url, path, { side: "new", start: 12, end: 20 })).toBe(`${file}R12-R20`);
+    expect(prFileUrl("github", pr.url, path, { side: "new", start: 12, end: 12 })).toBe(`${file}R12`);
+    expect(prFileUrl("github", pr.url, path, { side: "old", start: 7, end: 9 })).toBe(`${file}L7-L9`);
+  });
+
+  test("Azure DevOps opens a line in the file at its commit, the PR's files view without one", () => {
+    const path = "src/Api/Order.cs";
+    const ado = "https://dev.azure.com/org/proj/_git/repo/pullrequest/7";
+    expect(prFileUrl("azure-devops", ado, path)).toBe(`${ado}?_a=files&path=%2Fsrc%2FApi%2FOrder.cs`);
+    expect(prFileUrl("azure-devops", ado, path, { side: "new", start: 12, end: 20 }, "abc123")).toBe(
+      "https://dev.azure.com/org/proj/_git/repo?path=%2Fsrc%2FApi%2FOrder.cs&version=GCabc123" +
+        "&line=12&lineEnd=21&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents",
+    );
+    // without the commit of its side, a line opens the PR's files view
+    expect(prFileUrl("azure-devops", ado, path, { side: "old", start: 3, end: 3 })).toBe(
+      prFileUrl("azure-devops", ado, path),
+    );
+  });
+
+  test("a line range is cut to the hunk that holds its first line; a line outside every hunk has none", () => {
+    const spans: [number, number, number, number][] = [
+      [10, 4, 10, 6], // head 10-15
+      [40, 3, 42, 0], // only removals: no head line
+    ];
+    expect(lineRange(spans, "new", 12, 14)).toEqual({ side: "new", start: 12, end: 14 });
+    expect(lineRange(spans, "new", 12, 30)).toEqual({ side: "new", start: 12, end: 15 });
+    expect(lineRange(spans, "new", 12, 3)).toEqual({ side: "new", start: 12, end: 12 });
+    expect(lineRange(spans, "new", 20)).toBeUndefined();
+    expect(lineRange(spans, "new", 42)).toBeUndefined();
+    expect(lineRange(spans, "old", 41)).toEqual({ side: "old", start: 41, end: 41 });
   });
 });

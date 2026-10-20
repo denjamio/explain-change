@@ -8,6 +8,7 @@ import { FILES, VERSION } from "../core/constants.ts";
 import { ensureDir } from "../core/fs.ts";
 import { slugify } from "../core/text.ts";
 import type { ExplanationStatus } from "../explanation/store.ts";
+import type { HunkSpan } from "../hosts/links.ts";
 import { REPORT_CSS, REPORT_HTML, REPORT_JS } from "./assets.gen.ts";
 import type { ReportData } from "./data.ts";
 
@@ -80,6 +81,9 @@ export function renderHtml(facts: Facts, status: ExplanationStatus): string {
     explanation: status.explanation,
     state: status.state,
     issues: status.issues.slice(0, 20),
+    hunkSpans: Object.fromEntries(
+      facts.files.map((f) => [f.path, f.hunks.map((h): HunkSpan => [h.oldStart, h.oldLines, h.newStart, h.newLines])]),
+    ),
   };
   // Every "<" as \u003c: valid JSON that can never close the script tag or open an HTML comment inside it.
   const payload = JSON.stringify(data).replace(/</g, "\\u003c");

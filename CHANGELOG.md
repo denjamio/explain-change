@@ -9,6 +9,18 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 - The header named every PR an "Azure DevOps PR": a GitHub PR is a "GitHub PR".
 
+### Added
+- A code reference in a GitHub PR's report opens the PR at its lines, not at the top of the file: a story step, a
+  decision's evidence, an entity and a symbol in the inspector link to `#diff-<sha>R12-R20` (`L` on the base side,
+  for a removed file or symbol). A line outside every hunk of the PR has no anchor on GitHub's page, so its link
+  opens the file as before; a range is cut to the hunk that holds its first line. The page carries the hunks of each
+  changed file (`hunkSpans`) for this, as it ships only the lines of its excerpts. In the 11 real examples, the 379
+  line links all fall inside the hunks GitHub serves for their PR.
+- On Azure DevOps, whose PR files view takes no line, a code reference opens the file at the commit of its side
+  (the head, or the merge base for a removed line) with its lines selected: `?path=…&version=GC<sha>&line=12&lineEnd=21`,
+  the file link Zed, GitLens and pr-brief build. It leaves the PR; a reference without a line still opens the PR's
+  files view.
+
 ## [0.16.1] - 2026-10-20
 
 ### Fixed

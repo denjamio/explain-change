@@ -4,6 +4,7 @@ import type { Delta } from "../src/contract/facts.ts";
 import { type Child, h } from "./dom.ts";
 import { icon } from "./icons.ts";
 import { prFileUrl } from "./model.ts";
+import { T } from "./words.ts";
 export function onOpen<E extends Element>(el: E, path: string): E {
   const url = prFileUrl(path);
   if (url) {
@@ -12,11 +13,21 @@ export function onOpen<E extends Element>(el: E, path: string): E {
   }
   return el;
 }
-export function fileLink(ref: string, label?: string): HTMLElement {
-  const path = /^(.+?):\d+/.exec(ref || "")?.[1] ?? ref;
-  const url = prFileUrl(path);
+/** A "file" or "file:line[-last]" reference; `old` when its line is on the base side (a removed symbol). */
+export function fileLink(ref: string, label?: string, old?: boolean): HTMLElement {
+  const m = /^(.+?):(\d+)(?:-(\d+))?$/.exec(ref || "");
+  const path = m?.[1] ?? ref;
+  const url = prFileUrl(path, m ? { start: Number(m[2]), end: Number(m[3] ?? m[2]), old } : undefined);
   return url
-    ? h("a", { href: url, target: "_blank", rel: "noopener", class: "ref", text: label || ref })
+    ? h("a", {
+        href: url,
+        target: "_blank",
+        rel: "noopener",
+        class: "ref",
+        text: label || ref,
+        // Azure DevOps opens a line outside the PR: say so before the click.
+        title: url.includes("_a=contents") ? T.lineOutsidePr : null,
+      })
     : h("code", { class: "ref", text: label || ref });
 }
 /** A section: its title, one line with its figures, then the body. */
