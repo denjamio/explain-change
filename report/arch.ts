@@ -3,7 +3,7 @@
  */
 
 import type { ComponentFacts, DependencyFacts } from "../src/contract/facts.ts";
-import { listAt, r1, s, textLines, textWidth, wrap } from "./dom.ts";
+import { cap, listAt, r1, s, textLines, textWidth, wrap } from "./dom.ts";
 import { iconAt } from "./icons.ts";
 import {
   byCompRank,
@@ -16,12 +16,13 @@ import {
   reqStatus,
   reqsOfComp,
   rsLabel,
+  SINCE,
   summaryOf,
 } from "./model.ts";
 import { isContext, keyPairs } from "./story.ts";
 import { markers, newView } from "./svg-view.ts";
 import { type Box, mapApi, type View } from "./ui.ts";
-import { T, tf } from "./words.ts";
+import { T, t, tf } from "./words.ts";
 
 /**
  * How a component meets the requirements mapped to it: the spec icon and implemented / mapped ("2/3"), colored by
@@ -355,17 +356,26 @@ export function buildArchitecture(
     const c = compById[n.id] as (typeof cfg.components)[number];
     V.geo[n.id] = r;
     const neighbor = n.delta === "unchanged";
+    const since = SINCE?.components[n.id];
     const info = neighbor ? T.lNeighbor : `${n.files} ${n.files === 1 ? T.file : T.kFiles}`;
     const g = s(
       "g",
       {
-        class: `node st-${n.delta}`,
+        class: `node st-${n.delta}${since ? ` since-${since}` : ""}`,
         "data-k": n.id,
         tabindex: "0",
         role: "button",
         "aria-label": `${c.name}, ${deltaLabel(n.delta, true)}`,
       },
-      s("title", { text: c.name + (summaryOf[n.id] ? `\n${summaryOf[n.id]}` : c.desc ? `\n${c.desc}` : "") }),
+      s("title", {
+        text:
+          c.name +
+          (summaryOf[n.id] ? `\n${summaryOf[n.id]}` : c.desc ? `\n${c.desc}` : "") +
+          (since ? `\n${t(`since${cap(since)}`)}` : ""),
+      }),
+      since === "new" || since === "again"
+        ? s("rect", { x: r.x - 5, y: r.y - 5, width: r.w + 10, height: r.h + 10, rx: 16, class: "since-ring" })
+        : null,
       s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12, class: "box" }),
       s("text", { x: r.x + 14, y: r.y + 19, class: "tag", text: neighbor ? "" : deltaLabel(n.delta).toUpperCase() }),
       neighbor

@@ -3,6 +3,7 @@ import type { Facts } from "../contract/facts.ts";
 import type { ExplanationState } from "../explanation/store.ts";
 import type { Issue } from "../explanation/validate.ts";
 import type { HunkSpan } from "../hosts/links.ts";
+import type { Since } from "../review/since.ts";
 
 /** What the page embeds as JSON and the report script draws. */
 export interface ReportData {
@@ -16,6 +17,8 @@ export interface ReportData {
    * only inside a hunk. Absent from pages rendered before 0.17.0.
    */
   hunkSpans?: Record<string, HunkSpan[]>;
+  /** What changed in the PR since your last review of another head; absent without one. */
+  since?: Since;
 }
 
 /** The data a rendered page embeds: what renderHtml wrote, for scripts and tests that read reports back. */

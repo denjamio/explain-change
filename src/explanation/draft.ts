@@ -4,6 +4,7 @@ import { LIMITS, REQUIREMENT_STATUSES } from "../contract/explanation.ts";
 import type { Facts } from "../contract/facts.ts";
 import { DELTAS } from "../contract/facts.ts";
 import { CONTRACT_VERSION } from "../core/constants.ts";
+import type { Since } from "../review/since.ts";
 import { changedComponents, decisionBases } from "./validate.ts";
 
 const L = LIMITS;
@@ -46,7 +47,7 @@ export function changeReaches(facts: Pick<Facts, "files">, flow: Facts["config"]
 // Words first: agents count words, not characters (too-long was the first cause of a second render).
 const size = (chars: number) => `≤${Math.floor(chars / 7)} words (${chars} chars)`;
 
-export function draftExplanation(facts: Facts): Record<string, unknown> {
+export function draftExplanation(facts: Facts, since: Since | null = null): Record<string, unknown> {
   const { outline } = facts;
   const out: Record<string, unknown> = {
     version: CONTRACT_VERSION,
@@ -153,5 +154,23 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
     note: `<${size(L["requirements.note"])}: required for partial and missing, else optional>`,
   }));
   if (requirements.length) out.requirements = requirements;
+  // A PR you reviewed at another head: what changed since, when something did.
+  const moved = since
+    ? Object.entries(since.components)
+        .filter(([, v]) => v !== "same")
+        .map(([id]) => id)
+    : [];
+  if (since && (moved.length || since.gone.length)) {
+    out.since = {
+      review: since.head,
+      summary: `<${size(L["since.summary"])}: what the PR does differently since your review, in the present: 'The retry now stops after 3 attempts'>`,
+      ...(moved.length && {
+        components: moved.slice(0, L["since.components"]).map((id) => ({
+          id,
+          summary: `<${size(L["since.components.summary"])}: what it does differently since your review>`,
+        })),
+      }),
+    };
+  }
   return out;
 }

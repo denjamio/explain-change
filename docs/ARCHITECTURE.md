@@ -40,6 +40,7 @@ Each folder depends only on the ones above it:
 | `src/config` | Load and validate `.explain-change.toml`, infer one from the folder layout, map paths to components. |
 | `src/hosts` | Where PRs live, as ports and adapters: Azure DevOps and GitHub. See [Hosts](#hosts). |
 | `src/analysis` | The facts: diff parsing, references per language, resolution, the dependency graph, rules, symbols, OpenSpec, the outline. |
+| `src/review` | Since your review: a snapshot of each PR head a valid report showed (`reviews/`), and the PR now against the latest other one: each file's own patch compared, so a rebase adds nothing, with its interdiff. |
 | `src/explanation` | Prose rules (`prose.ts`, the refused words in `prose/en.json`), the draft, the validator, normalization, the per-change store. |
 | `src/digest` | `digest.md` from the facts and the contract. |
 | `src/report` | The page: excerpts, the embedded data, the assets built from `report/`. |
@@ -99,6 +100,11 @@ one saved for this key in `explanations/`, or leave it missing for the agent to 
 previous change's work under its own key first). The draft is never written to `explanation.json`: an agent that
 has it in the digest writes the file in 1 call, without a turn to read it first. `render` validates it; a valid
 explanation is saved under its key, so explaining a change again costs nothing.
+
+A valid report of a PR also records its head as a **review** (`reviews/<pr>.json`). The next head of the same PR is
+compared with the latest other review: the digest gets `## Since your review` (what moved, and how each patch
+changed), the draft gets `since`, the validator checks it against that review, and the page shows the delta. Without
+a review, none of these change: the same change gives the same digest, draft and page.
 
 ## Distribution
 

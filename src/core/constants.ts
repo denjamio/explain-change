@@ -25,6 +25,7 @@ export const FILES = {
   draft: "draft.json", // the draft of explanation.json for the current change, also at the end of digest.md
   saved: "explanations", // explanations/<key>.json: the explanation of each change, kept when switching changes
   reports: "out",
+  reviews: "reviews", // reviews/<pr>.json: each head of a PR a valid report showed, for what changed since
 } as const;
 
 export const MAX_SCAN_FILES = 20_000;

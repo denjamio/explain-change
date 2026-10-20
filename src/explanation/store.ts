@@ -4,6 +4,7 @@ import type { Explanation, NormalizedExplanation } from "../contract/explanation
 import type { Facts } from "../contract/facts.ts";
 import { FILES } from "../core/constants.ts";
 import { ensureDir } from "../core/fs.ts";
+import type { Since } from "../review/since.ts";
 import { draftExplanation } from "./draft.ts";
 import { normalizeExplanation } from "./normalize.ts";
 import { repairExplanation } from "./repair.ts";
@@ -57,7 +58,11 @@ function readCurrent(path: string): Current {
  * The draft is not written to explanation.json: an agent then writes the file in 1 call, without first reading a
  * file it already has in the digest (a turn, and the whole context sent again, on every run).
  */
-export function prepareExplanation(work: string, facts: Facts): "kept" | "restored" | "drafted" {
+export function prepareExplanation(
+  work: string,
+  facts: Facts,
+  since: Since | null = null,
+): "kept" | "restored" | "drafted" {
   const path = explanationPath(work);
   const current = readCurrent(path);
   if (current.kind === "unreadable" || (current.kind === "json" && current.key === facts.key)) return "kept";
@@ -69,7 +74,7 @@ export function prepareExplanation(work: string, facts: Facts): "kept" | "restor
     copyFileSync(savedPath(work, facts.key), path);
     return "restored";
   }
-  writeJson(join(work, FILES.draft), draftExplanation(facts));
+  writeJson(join(work, FILES.draft), draftExplanation(facts, since));
   rmSync(path, { force: true });
   return "drafted";
 }
@@ -78,7 +83,13 @@ export function prepareExplanation(work: string, facts: Facts): "kept" | "restor
  * The state of explanation.json for this change. A valid one is also kept under the change's key. Mechanical
  * fixes (repair.ts) are written back to explanation.json unless `write` is false (`status` writes nothing).
  */
-export function loadExplanation(work: string, facts: Facts, root: string | null, write = true): ExplanationStatus {
+export function loadExplanation(
+  work: string,
+  facts: Facts,
+  root: string | null,
+  write = true,
+  since: Since | null = null,
+): ExplanationStatus {
   const path = explanationPath(work);
   if (!existsSync(path)) return { state: "missing", issues: [], explanation: null };
   let value: unknown;
@@ -103,7 +114,7 @@ export function loadExplanation(work: string, facts: Facts, root: string | null,
   const fixes = repaired.fixes.length ? { fixes: repaired.fixes } : {};
   value = repaired.value;
   if (write && repaired.fixes.length) writeJson(path, value);
-  const issues = validateExplanation(value, facts, root);
+  const issues = validateExplanation(value, facts, root, since);
   if (issues.some((i) => i.code === "placeholder")) return { state: "draft", issues, explanation: null, ...fixes };
   if (issues.length) return { state: "invalid", issues, explanation: null, ...fixes };
   ensureDir(join(work, FILES.saved));

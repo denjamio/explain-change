@@ -2,6 +2,7 @@ import type { Facts } from "../contract/facts.ts";
 import { CONFIG_NAME, FILES, WORK_DIR } from "../core/constants.ts";
 import type { ExplanationState, ExplanationStatus } from "../explanation/store.ts";
 import { formatIssue, type Issue } from "../explanation/validate.ts";
+import type { Since } from "../review/since.ts";
 import { display } from "./workspace.ts";
 
 /**
@@ -73,6 +74,8 @@ export interface ChangeResult {
   explanation: { state: ExplanationState; issues: Issue[]; fixed?: string[]; action?: "kept" | "restored" | "drafted" };
   paths: { facts: string; digest: string; explanation: string; report: string | null };
   digestTokens?: number;
+  /** What changed in the PR since your last review of another head: its head and the components by status. */
+  since?: { head: string; rebased: boolean; new: number; again: number; same: number; gone: number } | null;
   opened: boolean;
   next: Next;
   notes: string[];
@@ -139,10 +142,24 @@ export function printChange(r: ChangeResult): void {
       `  report:       ${display(r.paths.report)}${r.explanation.state === "valid" ? "" : " (facts only, no story yet)"}`,
     );
   }
+  if (r.since) {
+    const s = r.since;
+    lines.push(
+      `  since:        your review of ${s.head.slice(0, 7)}: components ${s.again} changed again · ${s.new} new · ` +
+        `${s.same} the same · ${s.gone} file(s) left the PR${s.rebased ? " (rebased since)" : ""}`,
+    );
+  }
   if (r.opened) lines.push("  opened in the browser");
   for (const n of r.notes) lines.push(`  note:         ${n}`);
   lines.push(`  next:         ${r.next.message}`);
   console.log(lines.join("\n"));
+}
+
+export function sinceSummary(s: Since | null): ChangeResult["since"] {
+  if (!s) return null;
+  const n = { new: 0, again: 0, same: 0 };
+  for (const v of Object.values(s.components)) n[v]++;
+  return { head: s.head, rebased: s.rebased, ...n, gone: s.gone.length };
 }
 
 export function printJson(value: unknown): void {

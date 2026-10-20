@@ -172,6 +172,23 @@ export const T = {
   leadDecisions: "{n} decisions: why it is built this way",
   leadDecision1: "1 decision: why it is built this way",
   leadSpec: "{n} requirements · {i} implemented",
+  sinceTitle: "Since your review",
+  sinceToggle: "Highlight what changed since",
+  sinceToggleHint: "Rings what changed since your review and dims the rest, on the map and in the changes.",
+  sinceRebased: "Rebased since: its own changes are compared, not the commits.",
+  sinceNothing: "The PR's own changes are the same as at your review.",
+  sinceAgainN: "{n} changed again",
+  sinceNewN: "{n} new",
+  sinceSameN: "{n} the same",
+  sinceGone1: "1 file left the PR",
+  sinceGoneN: "{n} files left the PR",
+  sinceComps: "components",
+  sinceNew: "new since your review",
+  sinceAgain: "changed since your review",
+  sinceSame: "the same as at your review",
+  lSince: "Changed since your review",
+  lgSince: "Your review",
+  sinceLeft: "Left the PR since your review",
 } as const;
 export type TKey = keyof typeof T;
 export const t = (key: string): string => (T as Record<string, string>)[key] ?? key;

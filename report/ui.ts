@@ -47,6 +47,7 @@ export function sectionShell(id: string, title: string, body: Child, lead?: stri
 export function legendItem(kind: string, color: string, label: string): HTMLElement {
   if (kind === "swatch") return h("span", null, h("i", { class: "swatch", style: `background:${color}` }), label);
   if (kind === "spec") return h("span", null, icon("spec"), label);
+  if (kind === "ring") return h("span", { class: "since-only" }, h("i", { class: "legend-ring" }), label);
   return h(
     "span",
     null,

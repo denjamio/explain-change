@@ -41,6 +41,9 @@ export const LIMITS = {
   "requirements.components": 6,
   "requirements.tests": 4,
   "requirements.note": 160,
+  "since.summary": 240,
+  "since.components": 8,
+  "since.components.summary": 140,
 } as const;
 export const STORY_MIN = 2;
 
@@ -215,6 +218,23 @@ export const ExplanationSchema = z
       )
       .max(LIMITS.requirements)
       .describe("OpenSpec traceability: one entry per ADDED or MODIFIED requirement.")
+      .optional(),
+    since: z
+      .strictObject({
+        review: z.string().describe("The head of your last review, from the draft."),
+        summary: text(LIMITS["since.summary"], "What the PR does differently since your review."),
+        components: z
+          .array(
+            z.strictObject({
+              id: z.string(),
+              summary: text(LIMITS["since.components.summary"], "What it does differently since your review."),
+            }),
+          )
+          .max(LIMITS["since.components"])
+          .describe("One line per component that is new or changed again since your review.")
+          .optional(),
+      })
+      .describe("For a PR you reviewed before at another head: what changed since. The draft has it when it applies.")
       .optional(),
   })
   .describe("explanation.json: what the agent writes about one change.");

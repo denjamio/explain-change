@@ -20,6 +20,12 @@ export const cfg = facts.config;
 export const src = facts.source;
 export const st = facts.stats;
 export const OS = facts.openspec;
+/** What changed since your last review of this PR; null without one. */
+export const SINCE = DATA.since ?? null;
+/** The agent's words on what changed since, when written for this review (another review's are left out). */
+export const SINCE_TEXT = SINCE && ex?.since?.review === SINCE.head ? ex.since : null;
+export const sinceSummaryOf: Record<string, string> = {};
+for (const c of SINCE_TEXT?.components ?? []) sinceSummaryOf[c.id] = c.summary;
 export const REDUCED = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
 
 /** git's one-letter status of a changed file. */

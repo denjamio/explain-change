@@ -247,6 +247,7 @@ export function renderMap(): HTMLElement {
         ["line", "var(--violation)", T.lViolation, ".edge.e-violation"],
         ["line", "var(--accent)", T.lKey, ".edge-g.key"],
         ["spec", "", T.lReqBadge, ".req-badge", T.lgRequirements],
+        ["ring", "var(--since)", T.lSince, ".since-ring", T.lgSince],
       ],
       flow: [
         ["line", "var(--added)", T.lAdded, ".msg.st-added", T.lgSteps],
@@ -268,7 +269,11 @@ export function renderMap(): HTMLElement {
       if (k[4]) label = k[4];
       if (!current?.svg.querySelector(k[3])) continue;
       if (!group || group.getAttribute("data-group") !== label) {
-        group = h("span", { class: "legend-group", "data-group": label }, h("b", { text: label }));
+        group = h(
+          "span",
+          { class: `legend-group${label === T.lgSince ? " since-only" : ""}`, "data-group": label },
+          h("b", { text: label }),
+        );
         legend.appendChild(group);
       }
       group.appendChild(legendItem(k[0], k[1], k[2]));

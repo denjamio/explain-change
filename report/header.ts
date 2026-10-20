@@ -2,10 +2,66 @@
  * The page header: the change's title, its numbers, the TL;DR and goal, and the PR links.
  */
 
-import { append, type Child, fmt, h } from "./dom.ts";
-import { cfg, DATA, ex, facts, OS, REQS, src, st } from "./model.ts";
+import { append, type Child, fmt, h, store } from "./dom.ts";
+import { cfg, DATA, ex, facts, OS, REQS, SINCE, SINCE_TEXT, src, st } from "./model.ts";
 import { chip } from "./ui.ts";
-import { T, t } from "./words.ts";
+import { T, t, tf } from "./words.ts";
+
+/** Whether the page highlights what changed since your review: a class on the root that the styles read. */
+function setSince(on: boolean, btn: HTMLElement) {
+  document.documentElement.classList.toggle("since-on", on);
+  btn.setAttribute("aria-pressed", String(on));
+  btn.classList.toggle("on", on);
+  store("ec:since", on);
+}
+
+/** Since your review: when, against which head, what moved; and the switch that highlights it. */
+function sinceBanner(): HTMLElement | null {
+  if (!SINCE) return null;
+  const n = { new: 0, again: 0, same: 0 };
+  for (const v of Object.values(SINCE.components)) n[v]++;
+  const moved = n.new + n.again + SINCE.gone.length > 0 || Object.values(SINCE.files).some((v) => v !== "same");
+  const parts = [
+    n.again ? tf("sinceAgainN", { n: n.again }) : null,
+    n.new ? tf("sinceNewN", { n: n.new }) : null,
+    n.same ? tf("sinceSameN", { n: n.same }) : null,
+  ].filter(Boolean);
+  const btn = h("button", { class: "chip since-toggle", title: T.sinceToggleHint, text: T.sinceToggle });
+  btn.addEventListener("click", () => setSince(btn.getAttribute("aria-pressed") !== "true", btn));
+  setSince(moved && store<boolean>("ec:since") !== false, btn);
+  return h(
+    "div",
+    { class: "since", role: "note" },
+    h(
+      "div",
+      { class: "since-line" },
+      h("b", { text: T.sinceTitle }),
+      h("span", { class: "faint", text: SINCE.date.slice(0, 10) }),
+      h("span", null, h("code", { text: SINCE.head.slice(0, 7) }), " → ", h("code", { text: src.headSha.slice(0, 7) })),
+      moved ? btn : null,
+    ),
+    SINCE_TEXT ? h("p", { class: "since-summary", text: SINCE_TEXT.summary }) : null,
+    h(
+      "div",
+      { class: "since-line" },
+      h("span", {
+        text: moved
+          ? [
+              parts.length ? `${T.sinceComps}: ${parts.join(" · ")}` : null,
+              SINCE.gone.length === 1
+                ? T.sinceGone1
+                : SINCE.gone.length
+                  ? tf("sinceGoneN", { n: SINCE.gone.length })
+                  : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : T.sinceNothing,
+      }),
+      SINCE.rebased ? h("span", { class: "faint", text: T.sinceRebased }) : null,
+    ),
+  );
+}
 
 // ═════════════════════════════ header ═════════════════════════════
 export function renderHeader(): HTMLElement {
@@ -129,6 +185,7 @@ export function renderHeader(): HTMLElement {
     ex ? h("p", { class: "tldr", text: ex.tldr }) : null,
     notice,
     h("div", { class: "chips" }, chips),
+    sinceBanner(),
     facts.notes.map((n) => h("p", { class: "note faint", text: n })),
   );
 }

@@ -48,7 +48,8 @@ reports the same state without writing anything.
 ## 3. Reply
 
 The report opens in the browser by itself. Reply with its path (`paths.report`) and a 2–3 line summary of what the
-change does. Do not paste the explanation.
+change does. When the result has `since`, the user reviewed this PR before: start with what changed since. Do not
+paste the explanation.
 
 If `change.configInferred` is true, the layers and components were guessed from folder names. Say so, and offer to
 configure the repository (the `explain-change-configure` skill).

@@ -410,6 +410,51 @@
         "additionalProperties": false
       },
       "description": "OpenSpec traceability: one entry per ADDED or MODIFIED requirement."
+    },
+    "since": {
+      "type": "object",
+      "properties": {
+        "review": {
+          "type": "string",
+          "description": "The head of your last review, from the draft."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "description": "What the PR does differently since your review."
+        },
+        "components": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 140,
+                "description": "What it does differently since your review."
+              }
+            },
+            "required": [
+              "id",
+              "summary"
+            ],
+            "additionalProperties": false
+          },
+          "description": "One line per component that is new or changed again since your review."
+        }
+      },
+      "required": [
+        "review",
+        "summary"
+      ],
+      "additionalProperties": false,
+      "description": "For a PR you reviewed before at another head: what changed since. The draft has it when it applies."
     }
   },
   "required": [
