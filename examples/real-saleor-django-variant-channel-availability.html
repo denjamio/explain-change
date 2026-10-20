@@ -1831,7 +1831,7 @@ ${c.desc}` : "") }), s("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 12
   // report/data-view.ts
   function buildData(onNode) {
     const dm = DM;
-    const GX = 90;
+    const GX = Math.max(90, ...dm.relations.map((r) => r.label ? textWidth(r.label, "11px", MONO) + 16 + 24 : 0));
     const GY = 70;
     const PER = 3;
     const order = { added: 0, changed: 1, removed: 2, unchanged: 3 };

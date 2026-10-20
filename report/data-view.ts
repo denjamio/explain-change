@@ -14,7 +14,8 @@ import { T } from "./words.ts";
 
 export function buildData(onNode?: (g: SVGElement, key: string) => void): View {
   const dm = DM as NormalizedExplanation["dataModel"];
-  const GX = 90;
+  // The gap between boxes holds the widest relation label, so a label never covers a box.
+  const GX = Math.max(90, ...dm.relations.map((r) => (r.label ? textWidth(r.label, "11px", MONO) + 16 + 24 : 0)));
   const GY = 70;
   const PER = 3;
   const order: Record<Delta, number> = { added: 0, changed: 1, removed: 2, unchanged: 3 };
