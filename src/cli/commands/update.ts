@@ -44,8 +44,14 @@ function npm(args: string[], inherit: boolean) {
   });
 }
 
+/** The version `npm view` prints: the last one, for a spec that names several. */
+export function viewedVersion(stdout: string): string | null {
+  const versions = stdout.match(/\d+\.\d+\.\d+(?:-[\w.]+)?/g);
+  return versions?.[versions.length - 1] ?? null;
+}
+
 /**
- * `update`: `npm install -g explain-change@latest` (or --version), then the new copy refreshes the skills. Only a
+ * `update`: `npm install -g explain-change@<the latest>` (or --version), then the new copy refreshes the skills. Only a
  * global npm install updates itself; npx, a project dependency or another package manager say how to update instead.
  */
 export function update(opts: { version: string | null; json: boolean }): number {
@@ -60,18 +66,33 @@ export function update(opts: { version: string | null; json: boolean }): number 
       `This copy is not a global npm install (${script}): update it with the tool that installed it, then run \`explain-change install\`.`,
     );
   }
-  const spec = npmSpec(opts.version);
-  if (!opts.json) console.log(`npm install -g ${spec}`);
-  const p = npm(["install", "-g", spec], !opts.json);
-  if (p.status !== 0)
-    throw new UserError(`\`npm install -g ${spec}\` failed${p.stderr ? `: ${p.stderr.trim()}` : ""}.`);
+  // npm keeps a package's versions cached for minutes: right after a release, `latest` would install the one before.
+  // The registry itself names the version, and the install asks for exactly that one.
+  const asked = npmSpec(opts.version);
+  const view = npm(["view", asked, "version", "--prefer-online"], false);
+  const target = view.status === 0 ? viewedVersion(view.stdout) : null;
+  if (!target) throw new UserError(`npm cannot find ${asked}${view.stderr ? `: ${view.stderr.trim()}` : ""}.`);
+  const spec = npmSpec(target);
+  if (target !== VERSION) {
+    if (!opts.json) console.log(`npm install -g ${spec}`);
+    const p = npm(["install", "-g", spec, "--prefer-online"], !opts.json);
+    if (p.status !== 0)
+      throw new UserError(`\`npm install -g ${spec}\` failed${p.stderr ? `: ${p.stderr.trim()}` : ""}.`);
+  }
   // The package's files are new now: run the new copy, so it writes its own skills.
   const check = spawnSync(process.execPath, [path, "--version"], { encoding: "utf8" });
   const version = /explain-change (\S+)/.exec(check.stdout)?.[1] ?? check.stdout.trim();
+  if (version !== target) {
+    throw new UserError(
+      `npm installed ${spec}, but ${path} is still ${version}: another npm prefix may hold it. Run \`npm install -g ${spec}\`, then \`explain-change install\`.`,
+    );
+  }
   const skills = spawnSync(process.execPath, [path, "install", ...(opts.json ? ["--json"] : [])], {
     encoding: "utf8",
   });
+  const refreshed = skills.status === 0 ? "; skills refreshed" : "";
   if (opts.json) printJson({ command: "update", from: VERSION, to: version, path, skills: skills.status === 0 });
-  else console.log(`updated ${path}: ${VERSION} → ${version}${skills.status === 0 ? "; skills refreshed" : ""}`);
+  else if (version === VERSION) console.log(`explain-change ${version} is already up to date${refreshed}`);
+  else console.log(`updated ${path}: ${VERSION} → ${version}${refreshed}`);
   return 0;
 }

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { installSkill, SKILLS, skillRoots, uninstallSkill } from "../src/cli/commands/install.ts";
-import { inFolder, npmSpec } from "../src/cli/commands/update.ts";
+import { inFolder, npmSpec, viewedVersion } from "../src/cli/commands/update.ts";
 import { ROOT, tempDir } from "./helpers.ts";
 
 const files = SKILLS["explain-change"] as Record<string, string>;
@@ -87,5 +87,12 @@ describe("update", () => {
     expect(inFolder(join(g, "explain-change", "dist", "explain-change.js"), g)).toBe(true);
     expect(inFolder(join("home", "me", ".npm", "_npx", "a", "explain-change.js"), g)).toBe(false);
     expect(inFolder(g, g)).toBe(false);
+  });
+
+  test("the version to install is the one the registry names, not a cached latest", () => {
+    expect(viewedVersion("0.16.0\n")).toBe("0.16.0");
+    expect(viewedVersion("explain-change@0.15.0 '0.15.0'\nexplain-change@0.15.1 '0.15.1'\n")).toBe("0.15.1");
+    expect(viewedVersion("1.0.0-beta.2\n")).toBe("1.0.0-beta.2");
+    expect(viewedVersion("")).toBeNull();
   });
 });
