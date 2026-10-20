@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- `explain-change update` could reinstall the version it had: npm keeps a package's versions cached for minutes, so
+  right after a release `explain-change@latest` was still the one before, and `update` said `0.15.1 → 0.15.1`. It now
+  asks the registry itself which version to install (`npm view --prefer-online`) and installs exactly that one. It
+  says when the copy is already up to date, and fails, naming the path, when the copy it runs is not the one npm
+  installed.
+
 ## [0.16.0] - 2026-10-20
 
 ### Removed
