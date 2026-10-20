@@ -31,7 +31,7 @@
             "azure-devops",
             "github"
           ],
-          "description": "Where the PRs live, for `pr <id>` and `share`. Default: the host of the git remotes, else azure-devops. A PR URL always names its own host."
+          "description": "Where the PRs live, for `pr <id>`. Default: the host of the git remotes, else azure-devops. A PR URL always names its own host."
         },
         "names": {
           "type": "array",

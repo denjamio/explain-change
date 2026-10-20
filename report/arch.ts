@@ -3,7 +3,7 @@
  */
 
 import type { ComponentFacts, DependencyFacts } from "../src/contract/facts.ts";
-import { fit, listAt, r1, s, textWidth, trunc } from "./dom.ts";
+import { listAt, r1, s, textLines, textWidth, wrap } from "./dom.ts";
 import { iconAt } from "./icons.ts";
 import {
   byCompRank,
@@ -65,13 +65,24 @@ export interface ArchLayout {
   pos: Record<string, Box>;
   compact: boolean;
   GX: number;
+  /** Each component's name, in the lines its box shows. */
+  names: Record<string, string[]>;
 }
+
+const NAME_LINE = 17;
+/** The lane's label column, left of its components. */
+const LABEL_W = 156;
+/** The font of a component's name on the map (as .node .name sets it). */
+const nameFont = (compact: boolean) => (compact ? "650 13px" : "650 14px");
 
 export function layoutArch(nodes: ComponentFacts[], edges: DependencyFacts[], compact: boolean): ArchLayout {
   const W = compact ? 380 : 1160;
-  const LABEL = compact ? 0 : 156;
+  const LABEL = compact ? 0 : LABEL_W;
   const NW = compact ? 168 : 200;
-  const NH = 66;
+  // A name is never cut while 2 lines hold it: every box grows by the lines the longest name needs.
+  const names: Record<string, string[]> = {};
+  for (const n of nodes) names[n.id] = wrap(compById[n.id]?.name ?? n.id, nameFont(compact), NW - 28);
+  const NH = 66 + (Math.max(1, ...Object.values(names).map((l) => l.length)) - 1) * NAME_LINE;
   const GX = compact ? 12 : 34;
   const GY = 22;
   const PADY = 24;
@@ -131,7 +142,7 @@ export function layoutArch(nodes: ComponentFacts[], edges: DependencyFacts[], co
     });
     y += bh + 12;
   }
-  return { W, H: Math.max(y - 12, 60), bands, pos, compact, GX };
+  return { W, H: Math.max(y - 12, 60), bands, pos, compact, GX, names };
 }
 
 export function edgePaths(edges: DependencyFacts[], pos: Record<string, Box>, L: ArchLayout) {
@@ -249,14 +260,22 @@ export function buildArchitecture(
   markers(svg, "ar-", ["unchanged", "added", "changed", "removed", "violation", "key"]);
   for (const b of L.bands) {
     svg.appendChild(s("rect", { x: 0, y: b.y, width: L.W, height: b.h, rx: 14, class: "band" }));
-    if (L.compact)
-      svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: trunc(b.layer.name, 40) }));
-    else {
-      svg.appendChild(s("text", { x: 18, y: b.y + b.h / 2 - 2, class: "band-label", text: trunc(b.layer.name, 18) }));
+    // .band-label: 650 12px, uppercase, letter-spacing .05em.
+    const band = { spacing: 0.6, upper: true };
+    if (L.compact) {
+      const [label] = wrap(b.layer.name, "650 12px", L.W - 28, { ...band, lines: 1 });
+      svg.appendChild(s("text", { x: 14, y: b.y + 20, class: "band-label", text: label }));
+    } else {
+      // The label column is narrow: a layer name takes up to 3 lines there, centered on the lane with its count.
+      const lines = wrap(b.layer.name, "650 12px", LABEL_W - 30, { ...band, lines: 3 });
+      const top = b.y + b.h / 2 - 2 - ((lines.length - 1) * 15) / 2;
+      const label = textLines({ x: 18, y: top, class: "band-label" }, lines, 15);
+      label.appendChild(s("title", { text: b.layer.name }));
+      svg.appendChild(label);
       svg.appendChild(
         s("text", {
           x: 18,
-          y: b.y + b.h / 2 + 14,
+          y: top + (lines.length - 1) * 15 + 16,
           class: "band-sub",
           text: `${b.n} ${b.n === 1 ? T.component : T.kComponents}`,
         }),
@@ -315,9 +334,8 @@ export function buildArchitecture(
       );
     }
     edgeLayer.appendChild(g);
-    const keyLabel = keyPairs[`${e.from}>${e.to}`];
-    if (isKey && keyLabel) {
-      const label = trunc(keyLabel, 40);
+    const label = keyPairs[`${e.from}>${e.to}`];
+    if (isKey && label) {
       const lw = Math.ceil(textWidth(label, "600 11.5px")) + 20;
       const [cx, cy] = freeSpot(p.mx, p.my, lw, 22);
       labels.push({ x: cx - lw / 2, y: cy - 11, w: lw, h: 22 });
@@ -358,14 +376,9 @@ export function buildArchitecture(
             s("tspan", { class: "add", text: `+${n.additions}` }),
             s("tspan", { class: "del", text: ` −${n.deletions}` }),
           ),
-      s("text", {
-        x: r.x + 14,
-        y: r.y + 39,
-        class: "name",
-        text: fit(c.name, compact ? "650 13px" : "650 14px", r.w - 28),
-      }),
-      s("text", { x: r.x + 14, y: r.y + 56, class: "info", text: info }),
-      neighbor ? null : reqBadge(n.id, r.x + r.w - 12, r.y + 56),
+      textLines({ x: r.x + 14, y: r.y + 39, class: "name" }, L.names[n.id] ?? [c.name], NAME_LINE),
+      s("text", { x: r.x + 14, y: r.y + r.h - 10, class: "info", text: info }),
+      neighbor ? null : reqBadge(n.id, r.x + r.w - 12, r.y + r.h - 10),
     );
     onNode?.(g, n.id);
     svg.appendChild(g);

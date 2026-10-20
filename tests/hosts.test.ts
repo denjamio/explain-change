@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { share } from "../src/cli/commands/share.ts";
 import { gitHubPrId, gitHubSlug, gitHubWebUrl } from "../src/hosts/github/pr.ts";
-import { branchHost, prHost, shareable } from "../src/hosts/index.ts";
+import { branchHost, prHost } from "../src/hosts/index.ts";
 import { prFileUrl } from "../src/hosts/links.ts";
 import { prSource } from "../src/hosts/source.ts";
 import { FakeGh, fakeHosts, ok, Repo, throwsUser } from "./helpers.ts";
@@ -188,16 +187,5 @@ describe("GitHub", () => {
     const path = "app/models/order.rb";
     const anchor = createHash("sha256").update(path).digest("hex");
     expect(prFileUrl("github", pr.url, path)).toBe(`${pr.url}/files#diff-${anchor}`);
-  });
-
-  test("share says GitHub cannot take the report", async () => {
-    const r = repo();
-    r.git("remote", "add", "origin", GITHUB);
-    const facts = r.collect();
-    expect(shareable(facts, fakeHosts())).toBe(false);
-    r.run(["local", "--base", "main", "--no-open"]);
-    await expect(share({ force: false, json: false }, fakeHosts(), r.path)).rejects.toThrow(
-      "GitHub cannot take the report",
-    );
   });
 });

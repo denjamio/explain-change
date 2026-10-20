@@ -104,14 +104,12 @@
       "title": "Store logs in their own table",
       "why": "Each run adds one row, so the logs do not change the workflow definition.",
       "basis": "inferred",
-      "alternative": "Store the logs as a JSON column on the workflow row",
       "evidence": "server/src/schema/tables/workflow-log.table.ts:1-36"
     },
     {
       "title": "Log only when the workflow enables logging",
       "why": "The execution code checks workflow.logging before each write, so logging is opt-in per workflow.",
       "basis": "code",
-      "alternative": "Log every run of every workflow",
       "evidence": "server/src/services/workflow-execution.service.ts:461"
     },
     {

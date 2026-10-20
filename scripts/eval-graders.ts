@@ -257,7 +257,7 @@ export function allProse(ex: Explanation): string {
     ex.goal,
     ...(ex.story ?? []).flatMap((s) => [s.heading, s.body]),
     ...(ex.components ?? []).map((c) => c.summary),
-    ...(ex.decisions ?? []).flatMap((d) => [d.title, d.why, d.alternative ?? ""]),
+    ...(ex.decisions ?? []).flatMap((d) => [d.title, d.why]),
     ...(ex.flows ?? []).flatMap((f) => [f.title, ...(f.steps ?? []).map((s) => s.call)]),
     ...(ex.dataModel?.entities ?? []).flatMap((e) => [e.name, ...(e.fields ?? [])]),
     ...(ex.requirements ?? []).map((r) => r.note ?? ""),
@@ -308,8 +308,8 @@ export const RUBRIC: { id: string; text: string }[] = [
   {
     id: "decisions-choices",
     text:
-      "PASS if each decision names a choice between real options and its alternative is a real option a team could " +
-      "take. FAIL if a decision only restates what the change does, or its alternative is only 'not doing it'. " +
+      "PASS if each decision names a design choice (one of several ways the team could build it) and why it was " +
+      "taken. FAIL if a decision only restates what the change does. " +
       "PASS when there are no decisions.",
   },
 ];
@@ -331,9 +331,7 @@ export function judgeView(ex: Explanation): string {
   for (const e of ex.dataModel?.entities ?? [])
     lines.push(`entity ${e.name} (${e.delta}): ${(e.fields ?? []).join(", ")}`);
   (ex.decisions ?? []).forEach((d, i) => {
-    lines.push(
-      `decisions[${i}] ${d.title}. Why (${d.basis}): ${d.why}${d.alternative ? ` Alternative: ${d.alternative}` : ""}`,
-    );
+    lines.push(`decisions[${i}] ${d.title}. Why (${d.basis}): ${d.why}`);
   });
   for (const r of ex.requirements ?? []) lines.push(`requirement ${r.id}: ${r.status}${r.note ? ` (${r.note})` : ""}`);
   return lines.join("\n");

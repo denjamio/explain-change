@@ -144,7 +144,7 @@ const READING = [
     "Your layers as lanes and components as boxes. Green is added, blue changed, gray removed; a red arrow breaks one of your rules.",
   ],
   ["The story", "A few steps walk through the change. Each one moves the map to what changed and shows the code."],
-  ["The why", "Design decisions with the alternative not taken, then each changed component and its files."],
+  ["The why", "Design decisions and where their why comes from, then each changed component and its files."],
 ];
 
 const CSS = `

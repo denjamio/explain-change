@@ -81,14 +81,12 @@
       "title": "Store all layout scopes in one table",
       "why": "Account, inbox and installation layouts share one table, so the resolver uses one lookup per scope.",
       "basis": "code",
-      "alternative": "Store inbox layouts in a separate table",
       "evidence": "db/migrate/20260706000000_add_inbox_scope_to_email_templates.rb:4-21"
     },
     {
       "title": "Gate the layout behind an account feature flag",
       "why": "The flag keeps the feature off until an admin enables it for an account.",
       "basis": "pr",
-      "alternative": "Enable the branded layout for every account by default",
       "evidence": "app/mailers/conversation_reply_mailer.rb:211-216"
     }
   ],

@@ -88,28 +88,24 @@
       "title": "Skip failed members and report each one",
       "why": "Missing or non-staged members do not fail the batch. Each requested member gets its own result.",
       "basis": "code",
-      "alternative": "Fail the whole request on the first bad member",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/IInviteStagedOrganizationUsersCommand.cs:16-17"
     },
     {
       "title": "Reserve seats once for the whole set",
       "why": "Seat expansion succeeds for every eligible member or fails for all of them.",
       "basis": "code",
-      "alternative": "Reserve seats for each member separately",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/IInviteStagedOrganizationUsersCommand.cs:18"
     },
     {
       "title": "Add a dedicated send-invite endpoint",
       "why": "The staged user row action needs its own API entrypoint.",
       "basis": "pr",
-      "alternative": "Reuse the existing invite endpoint",
       "evidence": "src/Api/AdminConsole/Controllers/OrganizationUsersController.cs:357"
     },
     {
       "title": "Grant Secrets Manager access by standalone discount",
       "why": "An organization with the Secrets Manager standalone discount grants access to everyone.",
       "basis": "code",
-      "alternative": "Carry over each provisioned Secrets Manager access",
       "evidence": "src/Core/AdminConsole/OrganizationFeatures/OrganizationUsers/StagedUsers/IInviteStagedOrganizationUsersCommand.cs:19-20"
     }
   ],

@@ -55,15 +55,71 @@ export function trunc(text: unknown, n: number): string {
   const v = String(text ?? "");
   return v.length > n ? `${v.slice(0, n - 1)}…` : v;
 }
-// Shortens a label to the pixels it has (character counts misjudge wide letters and bold faces).
 export const measure = document.createElement("canvas").getContext("2d");
-export function fit(text: string, font: string, maxW: number): string {
-  let v = String(text || "");
-  if (!measure) return v;
-  measure.font = `${font} ${getComputedStyle(document.body).fontFamily}`;
-  if (measure.measureText(v).width <= maxW) return v;
-  while (v.length > 1 && measure.measureText(`${v}…`).width > maxW) v = v.slice(0, -1);
-  return `${v.trimEnd()}…`;
+/**
+ * Breaks a label into the lines it needs to fit maxW pixels: at spaces, else after a code separator
+ * (`Orders::Refund.call`, `snake_case`, `a/b`), else mid-word. Only past maxLines does the last line end in "…".
+ * `spacing` adds the CSS letter-spacing per character; `upper` measures it as text-transform: uppercase shows it.
+ * `whole` never breaks inside a word or identifier: one wider than maxW takes a line of its own, wider than maxW.
+ */
+export function wrap(
+  text: string,
+  font: string,
+  maxW: number,
+  opts: { lines?: number; family?: string; spacing?: number; upper?: boolean; whole?: boolean } = {},
+): string[] {
+  const { lines: maxLines = 2, family, spacing = 0, upper = false, whole = false } = opts;
+  const width = (v: string) => {
+    const t = v.trimEnd();
+    return textWidth(upper ? t.toUpperCase() : t, font, family) + t.length * spacing;
+  };
+  const src = String(text ?? "");
+  const pieces = src.match(/[^\s.:_/\-(,]*(?:::|[.:_/\-(,])?\s*/g) ?? [];
+  const out: string[] = [];
+  const starts: number[] = [];
+  let line = "";
+  let at = 0;
+  const push = (v: string, start: number) => {
+    out.push(v.trimEnd());
+    starts.push(start);
+  };
+  let lineStart = 0;
+  for (let p of pieces) {
+    if (!p) continue;
+    if (width(line + p) <= maxW) {
+      line += p;
+      at += p.length;
+      continue;
+    }
+    if (line) push(line, lineStart);
+    lineStart = at;
+    // A piece wider than a whole line breaks between characters.
+    while (!whole && width(p) > maxW && p.length > 1) {
+      let n = p.length - 1;
+      while (n > 1 && width(p.slice(0, n)) > maxW) n--;
+      push(p.slice(0, n), lineStart);
+      p = p.slice(n);
+      at += n;
+      lineStart = at;
+    }
+    line = p;
+    at += p.length;
+  }
+  if (line.trim()) push(line, lineStart);
+  if (out.length <= maxLines) return out.length ? out : [""];
+  const kept = out.slice(0, maxLines);
+  let last = src.slice(starts[maxLines - 1]).trimEnd();
+  while (last.length > 1 && width(`${last}…`) > maxW) last = last.slice(0, -1);
+  kept[maxLines - 1] = `${last.trimEnd()}…`;
+  return kept;
+}
+/** An SVG text of several lines, one tspan each, the first on attrs.y and each next one lineH lower. */
+export function textLines(
+  attrs: Record<string, unknown> & { x: number; y: number },
+  lines: string[],
+  lineH: number,
+): SVGElement {
+  return s("text", attrs, ...lines.map((l, i) => s("tspan", { x: attrs.x, ...(i ? { dy: lineH } : {}), text: l })));
 }
 /** The list stored under `key`, created on first use. */
 export function listAt<T>(o: Record<string, T[]>, key: string): T[] {

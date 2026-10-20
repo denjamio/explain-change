@@ -149,3 +149,38 @@ describe("excerpts", () => {
     expect(Object.fromEntries(excerptRanges(facts, explanation))).toEqual({ "a.rb": [[2, 9]], "b.py": [[6, 12]] });
   });
 });
+
+describe("labels", async () => {
+  // Without a canvas, dom.ts measures 7 px a character: a line of 70 px holds 10 characters, 100 px 14.
+  (globalThis as { document?: unknown }).document ??= {
+    createElement: () => ({ getContext: () => null }),
+    body: {},
+  };
+  const { wrap } = await import("../report/dom.ts");
+
+  test("a label that fits stays whole, on 1 line", () => {
+    expect(wrap("Orders", "14px", 70)).toEqual(["Orders"]);
+  });
+
+  test("a long label wraps at spaces, then after code separators, instead of ending in …", () => {
+    expect(wrap("Event and billing hosts", "12px", 100)).toEqual(["Event and", "billing hosts"]);
+    expect(wrap("Folders.DeleteMany", "12px", 70)).toEqual(["Folders.", "DeleteMany"]);
+    expect(wrap("Whatsapp::Health", "12px", 70)).toEqual(["Whatsapp::", "Health"]);
+  });
+
+  test("whole: a call breaks only after a separator, never inside a name", () => {
+    expect(wrap("DeleteManyFoldersCommand.DeleteMany()", "12px", 140, { lines: 99, whole: true })).toEqual([
+      "DeleteManyFoldersCommand.",
+      "DeleteMany()",
+    ]);
+    expect(wrap("DeleteManyFoldersCommand.DeleteMany()", "12px", 140, { lines: 99 })).toEqual([
+      "DeleteManyFoldersCom",
+      "mand.DeleteMany()",
+    ]);
+  });
+
+  test("only past its lines does a label end in …, keeping the original text", () => {
+    expect(wrap("Event and billing hosts", "12px", 100, { lines: 1 })).toEqual(["Event and bil…"]);
+    expect(wrap("a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u", "12px", 70)).toEqual(["a.b.c.d.e.", "f.g.h.i.j…"]);
+  });
+});

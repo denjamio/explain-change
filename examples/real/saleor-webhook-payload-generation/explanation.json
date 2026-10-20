@@ -65,21 +65,18 @@
       "title": "Keep DEFERRED as the default payload generation",
       "why": "Existing webhooks keep their current behavior, and the payload is built in a background task.",
       "basis": "code",
-      "alternative": "Build every payload immediately",
       "evidence": "saleor/app/manifest_validations.py:296-321"
     },
     {
       "title": "Build immediate payloads in the request that triggers the event",
       "why": "The payload then reflects the object's state at the event, at the cost of slowing that request or task.",
       "basis": "code",
-      "alternative": "Build all payloads in the deferred task",
       "evidence": "saleor/graphql/webhook/enums.py:357-377"
     },
     {
       "title": "Split webhooks by setting before the payload is built",
       "why": "Each group takes its own build path, so the trigger code stays the same for both.",
       "basis": "inferred",
-      "alternative": "Check the setting for each webhook inside the trigger loop",
       "evidence": "saleor/webhook/transport/asynchronous/transport.py:304-327"
     }
   ],

@@ -1,24 +1,21 @@
 import { HOST_IDS, type HostId } from "../contract/config.ts";
-import type { Facts } from "../contract/facts.ts";
 import { UserError } from "../core/errors.ts";
 import { Az } from "./azure-devops/az.ts";
 import { azureDevOps } from "./azure-devops/host.ts";
 import { Gh } from "./github/gh.ts";
 import { gitHub } from "./github/host.ts";
-import type { HttpFetch, PrHost } from "./host.ts";
+import type { PrHost } from "./host.ts";
 import { hostnameOf, remotes, remoteUrl } from "./source.ts";
 
-/** What the adapters run: each host's CLI and HTTP. Tests replace them. */
+/** What the adapters run: each host's CLI. Tests replace them. */
 export interface HostDeps {
   az: Az;
   gh: Gh;
-  fetch: HttpFetch;
 }
 
 export const defaultHostDeps = (): HostDeps => ({
   az: new Az(),
   gh: new Gh(),
-  fetch: (url, init) => fetch(url, init),
 });
 
 export type Hosts = Record<HostId, PrHost>;
@@ -77,9 +74,3 @@ export function branchHost(root: string, hosts: Hosts, choice: HostChoice): PrHo
 /** The host of a change: the PR's (`pr` is an id, a URL, or "" for the branch's active PR), or the branch's. */
 export const changeHost = (root: string, pr: string | null, hosts: Hosts, choice: HostChoice): PrHost | null =>
   pr === null ? branchHost(root, hosts, choice) : prHost(root, pr, hosts, choice);
-
-/** Whether `share` can work for these facts: a host that takes reports, and no work the PR does not have. */
-export function shareable(facts: Facts, hosts: Hosts): boolean {
-  const host = facts.source.host ? hosts[facts.source.host] : null;
-  return Boolean(host?.api.share) && !facts.source.includeUncommitted;
-}

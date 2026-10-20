@@ -345,7 +345,6 @@ a.stat-chip:hover { text-decoration: none; border-color: var(--accent); }
 .decisions .card + .card { margin-top: 0; }
 .decision h3 { margin-bottom: var(--s2); }
 .decision p { margin: 0 0 var(--s2); }
-.decision .alt { color: var(--muted); font-size: 14px; }
 .decision .basis { margin-bottom: var(--s2); }
 .badge.basis-pr, .badge.basis-spec, .badge.basis-code { background: var(--accent-bg); color: var(--accent); }
 .badge.basis-inferred { background: transparent; border: 1px dashed var(--border); }

@@ -85,21 +85,18 @@
       "title": "Build the ZIP in memory",
       "why": "The export returns a StringIO, so the job attaches the ZIP without a temporary file.",
       "basis": "code",
-      "alternative": "Write the ZIP to a temporary file first",
       "evidence": "app/models/family/data_exporter.rb:166-193"
     },
     {
       "title": "Run the export in a background job",
       "why": "The controller only creates a record and queues FamilyDataExportJob, so the request returns at once.",
       "basis": "code",
-      "alternative": "Build the ZIP inside the request",
       "evidence": "app/controllers/family_exports_controller.rb:11-13"
     },
     {
       "title": "Track the export with a status enum",
       "why": "The enum records the four states, so the download action checks completed and an attached file.",
       "basis": "code",
-      "alternative": "Store a boolean for done",
       "evidence": "app/models/family_export.rb:6-11"
     }
   ],

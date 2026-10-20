@@ -152,11 +152,6 @@
             ],
             "description": "Where the why comes from: pr (the PR description says it), spec (the OpenSpec proposal or design), code (the code at the evidence shows it), inferred (your reading of the change)."
           },
-          "alternative": {
-            "type": "string",
-            "maxLength": 140,
-            "description": "The main alternative not built."
-          },
           "evidence": {
             "type": "string",
             "pattern": "^(.+?):(\\d+)(?:-(\\d+))?$",

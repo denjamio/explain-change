@@ -1,4 +1,4 @@
-import type { HttpFetch, PrHost } from "../host.ts";
+import type { PrHost } from "../host.ts";
 import { AZ_SETUP, type Az } from "./az.ts";
 import {
   adoMetadata,
@@ -11,10 +11,9 @@ import {
   isAdoRepoUrl,
   toPrMeta,
 } from "./pr.ts";
-import { shareReport } from "./share.ts";
 
-/** Azure DevOps, through the az CLI and its token. Reports go up as PR attachments. */
-export function azureDevOps(deps: { az: Az; fetch: HttpFetch }): PrHost {
+/** Azure DevOps, through the az CLI and its token. */
+export function azureDevOps(deps: { az: Az }): PrHost {
   return {
     id: "azure-devops",
     name: "Azure DevOps",
@@ -28,7 +27,6 @@ export function azureDevOps(deps: { az: Az; fetch: HttpFetch }): PrHost {
       },
       activePr: (root, branch) => branchPr(root, branch, deps.az),
       metadata: (root, pr, notes) => toPrMeta(adoMetadata(root, pr.id, notes, deps.az), pr.id),
-      share: (root, facts, html, force) => shareReport(root, facts, html, deps, force),
     },
     git: {
       remote: adoRemote,

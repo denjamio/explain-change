@@ -10,7 +10,7 @@ import { AZ_SETUP, type Az, azHint } from "./az.ts";
  */
 
 /** What `az repos pr show` returns that the tool reads. */
-export interface PrMetadata {
+interface PrMetadata {
   title?: string;
   description?: string;
   sourceRefName?: string;

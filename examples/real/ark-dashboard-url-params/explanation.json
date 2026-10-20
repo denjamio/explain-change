@@ -63,21 +63,18 @@
       "title": "Allowlist the app-scoped params, not a denylist",
       "why": "Only namespace follows the user to other screens. New params stay on their screen unless the list names them.",
       "basis": "spec",
-      "alternative": "Drop params that match a denylist",
       "evidence": "services/ark-dashboard/ark-dashboard/lib/utils/param-scope.ts:1"
     },
     {
       "title": "Scope by pathname, not by per-screen declaration",
       "why": "A link to the same path keeps every param. A link to another path keeps only namespace, so no screen declares its params.",
       "basis": "spec",
-      "alternative": "Each screen declares the params it keeps",
       "evidence": "services/ark-dashboard/ark-dashboard/lib/utils/param-scope.ts:9"
     },
     {
       "title": "Write the namespace with replaceState, not router.replace",
       "why": "replaceState changes the URL without a navigation. The screen does not reload or add a history entry.",
       "basis": "spec",
-      "alternative": "Call router.replace with the namespace",
       "evidence": "services/ark-dashboard/ark-dashboard/providers/NamespaceProvider.tsx:159"
     }
   ],

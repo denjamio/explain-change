@@ -277,8 +277,8 @@ export function task(f: Facts): string {
       "body: what behaves differently now (numbers when they matter), not the code. " +
       `view = ${views}; focus = 1-3 ids on that view (${focusIds}), none for the overview.`,
     "- components: one line per changed component: what it now does differently (behavior, not file names).",
-    `- decisions (0-${LIMITS.decisions}): the design choices that explain why it is built this way: what was chosen, why, ` +
-      "and the main alternative. evidence: file:line inside a hunk. basis: where the why comes from, " +
+    `- decisions (0-${LIMITS.decisions}): the design choices that explain why it is built this way: what was chosen and ` +
+      "why. evidence: file:line inside a hunk. basis: where the why comes from, " +
       `${decisionBases(f).join(" | ")} (pr = the PR description says it; spec = the OpenSpec proposal or design; ` +
       "code = the code at the evidence shows it, a comment or a name; inferred = your reading). Write inferred " +
       "when no source states the why: the report labels it, and a guess never passes as a fact.",

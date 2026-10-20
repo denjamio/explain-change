@@ -80,7 +80,6 @@
       "title": "Idempotency through the Idempotency-Key header",
       "why": "The client controls retries, and the same key reaches the gateway.",
       "basis": "inferred",
-      "alternative": "Deduplicate by (order, amount) within a time window.",
       "evidence": "app/controllers/refunds_controller.rb:6"
     },
     {

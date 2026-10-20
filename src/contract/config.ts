@@ -11,7 +11,7 @@ import { BUDGET_RANGE, DEFAULT_BUDGET } from "../core/constants.ts";
 export const LANGS = ["en"] as const;
 export type ReportLang = (typeof LANGS)[number];
 
-/** Where pull requests live: the hosts `pr` and `share` work with. */
+/** Where pull requests live: the hosts `pr` works with. */
 export const HOST_IDS = ["azure-devops", "github"] as const;
 export type HostId = (typeof HOST_IDS)[number];
 
@@ -40,7 +40,7 @@ export const RawConfigSchema = z
         host: z
           .enum(HOST_IDS, { error: `must be ${HOST_IDS.map((h) => `'${h}'`).join(" or ")}` })
           .describe(
-            "Where the PRs live, for `pr <id>` and `share`. Default: the host of the git remotes, else azure-devops. " +
+            "Where the PRs live, for `pr <id>`. Default: the host of the git remotes, else azure-devops. " +
               "A PR URL always names its own host.",
           )
           .optional(),

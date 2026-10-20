@@ -120,12 +120,11 @@ export class FakeAz extends Az {
   }
 }
 
-/** The hosts with their CLIs and HTTP replaced: nothing runs outside the test. */
+/** The hosts with their CLIs replaced: nothing runs outside the test. */
 export function fakeHosts(deps: Partial<HostDeps> = {}): Hosts {
   return createHosts({
     az: deps.az ?? new FakeAz([]),
     gh: deps.gh ?? new FakeGh([]),
-    fetch: deps.fetch ?? (async () => new Response("{}", { status: 500 })),
   });
 }
 

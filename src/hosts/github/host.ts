@@ -12,10 +12,7 @@ import {
   isGitHubHttps,
 } from "./pr.ts";
 
-/**
- * GitHub (github.com), through the gh CLI and its token. No `share`: GitHub's API cannot attach a file to a PR
- * comment, and gh uploads only images and videos.
- */
+/** GitHub (github.com), through the gh CLI and its token. */
 export function gitHub(deps: { gh: Gh }): PrHost {
   return {
     id: "github",
@@ -30,7 +27,6 @@ export function gitHub(deps: { gh: Gh }): PrHost {
       },
       activePr: (root, branch) => activeGitHubPr(root, branch, deps.gh),
       metadata: (root, pr, notes) => gitHubMetadata(root, pr, notes, deps.gh),
-      share: null,
     },
     git: {
       remote: gitHubRemote,
