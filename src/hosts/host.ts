@@ -1,5 +1,4 @@
 import type { HostId } from "../contract/config.ts";
-import type { Facts } from "../contract/facts.ts";
 
 /*
  * Where pull requests live. The analysis never talks to a host: `local` needs none, and `pr` asks the host's API for
@@ -23,20 +22,6 @@ export interface PrMeta {
   repo?: { name?: string; urls: string[] };
 }
 
-export interface ShareResult {
-  state: "shared" | "already-shared";
-  prId: string;
-  /** The PR page, the comment thread when the URL is known. */
-  pr: string | null;
-  attachment: string;
-}
-
-/** Attaches a finished report to the PR of its change and comments with the link. */
-export type ShareFn = (root: string, facts: Facts, html: string, force: boolean) => Promise<ShareResult>;
-
-/** HTTP as `fetch` does it; adapters take it injected, so tests replace it. */
-export type HttpFetch = (url: string, init: RequestInit) => Promise<Response>;
-
 /** A PR as the user named it, parsed once: its id and, from a pasted URL, its page. */
 export interface PrRef {
   id: string;
@@ -44,7 +29,7 @@ export interface PrRef {
   webUrl: string | null;
 }
 
-/** The host's API side, through its CLI: what it knows about PRs and what it takes. */
+/** The host's API side, through its CLI: what it knows about PRs. */
 export interface PrApi {
   /** The PR from an id or a PR URL of this host; a UserError for anything else. */
   parse(input: string): PrRef;
@@ -52,8 +37,6 @@ export interface PrApi {
   activePr(root: string, branch: string): string;
   /** What the host says about a PR, or less, with a note in `notes` that says what is missing. */
   metadata(root: string, pr: PrRef, notes: string[]): PrMeta;
-  /** null when the host cannot take a report as a PR attachment. */
-  readonly share: ShareFn | null;
 }
 
 /** The git side: where a PR's commits live and how git reaches them. */

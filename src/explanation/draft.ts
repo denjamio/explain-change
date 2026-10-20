@@ -75,7 +75,6 @@ export function draftExplanation(facts: Facts): Record<string, unknown> {
       title: `<${size(L["decisions.title"])}: the choice>`,
       why: `<${size(L["decisions.why"])}: why, in the present, no would/could: 'Seat expansion is all or nothing'>`,
       basis: `<${decisionBases(facts).join("|")}>`,
-      alternative: `<${size(L["decisions.alternative"])}: the main alternative, as an action in the present: 'Reserve 1 seat per member', optional>`,
       evidence: "<file:line inside a hunk, optional>",
     },
   ];

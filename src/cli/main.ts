@@ -5,7 +5,6 @@ import { UserError } from "../core/errors.ts";
 import { explain, render } from "./commands/change.ts";
 import { check, init } from "./commands/config.ts";
 import { install, uninstall } from "./commands/install.ts";
-import { share } from "./commands/share.ts";
 import { removeCliHint, update } from "./commands/update.ts";
 import { printJson } from "./output.ts";
 
@@ -100,13 +99,6 @@ const COMMANDS: Record<string, Command> = {
     options: { json },
     positionals: [0, 0],
     run: (o) => render({ out: null, noOpen: true, json: Boolean(o.json), dryRun: true }),
-  },
-  share: {
-    usage: "share [--force]",
-    summary: "share the finished report on its Azure DevOps PR: attached, with a comment linking to it",
-    options: { force: { type: "boolean", help: "share it again when the PR already has this report" }, json },
-    positionals: [0, 0],
-    run: (o) => share({ force: Boolean(o.force), json: Boolean(o.json) }),
   },
   init: {
     usage: "init [--force]",

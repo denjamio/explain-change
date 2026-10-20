@@ -349,6 +349,13 @@ describe("validation", () => {
     expect(e.components[0]?.summary).toBe("Stores 4 rows.");
   });
 
+  test("an alternative written before 0.16 is accepted and left out of the page", () => {
+    const decisions = [{ title: "t", why: "w", basis: "inferred", alternative: "a SidekiqJob with retries" }];
+    expect(messages(valid({ decisions }))).toEqual([]);
+    const e = normalizeExplanation(valid({ decisions }) as Explanation, makeFacts());
+    expect(e.decisions[0]).not.toHaveProperty("alternative");
+  });
+
   test("prose: code names are exempt from the word rules; an abbreviation does not end a sentence", () => {
     const facts = makeFacts({
       symbols: [
@@ -439,7 +446,6 @@ describe("validation", () => {
     const errs = messages(
       valid({
         tldr: "refund_order calls ghost_method and RefundService.",
-        decisions: [{ title: "t", why: "w", basis: "inferred", alternative: "a SidekiqJob with retries" }],
         flows: [
           {
             id: "f",
@@ -450,7 +456,7 @@ describe("validation", () => {
       }),
       facts,
     );
-    // the alternative and data.type may name code that is not in the change
+    // data.type may name code that is not in the change
     expect(errs).toEqual([
       "tldr: ghost_method, RefundService not found in the change; write code names exactly as in the code, or in plain words",
     ]);

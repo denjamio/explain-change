@@ -50,9 +50,6 @@ reports the same state without writing anything.
 The report opens in the browser by itself. Reply with its path (`paths.report`) and a 2–3 line summary of what the
 change does. Do not paste the explanation.
 
-When `share` is set, end with one line: the report can be shared on the PR with `explain-change share` (attached,
-for whoever can open the PR). Run it only when the user asks.
-
 If `change.configInferred` is true, the layers and components were guessed from folder names. Say so, and offer to
 configure the repository (the `explain-change-configure` skill).
 

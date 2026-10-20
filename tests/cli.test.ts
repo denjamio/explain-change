@@ -663,7 +663,6 @@ describe("config, digest and the agent's workflow", () => {
     expect(rendered.out.explanation.issues).toEqual([]);
     expect(rendered.status).toBe(0);
     expect(rendered.out.next.action).toBe("done");
-    expect(rendered.out.share).toBeNull(); // no Azure DevOps remote: no PR to share it on
     expect(readFileSync(rendered.out.paths.report, "utf8")).toContain("Order gains line items");
     // Another change gets its own draft; coming back restores this explanation, so it costs nothing.
     r.git("checkout", "-q", "-b", "other", "main");

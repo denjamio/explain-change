@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Removed
+- `explain-change share`: neither Azure DevOps nor GitHub PRs take an HTML attachment a reviewer can open, so the
+  command, the Azure DevOps upload and the `share` field of the `--json` output are gone. A report is one
+  self-contained HTML file: send it the way your team shares files.
+- A design decision no longer has an `alternative`. An alternative was mostly the agent's guess at an option nobody
+  weighed, and naming the options not taken is a reviewer's work. A decision says what was chosen, why, and where the
+  why comes from. An `explanation.json` that still has one renders as before, without it.
+
+### Fixed
+- The map no longer cuts its labels with "…". Component and lane names wrap to 2 or 3 lines and their boxes grow;
+  flow lifelines move apart until each call and its data fit between them; entity boxes take the width of their
+  longest name or field. Only a label longer than its room even then ends in "…", with the whole text as its tooltip.
+
 ## [0.15.1] - 2026-10-19
 
 ### Fixed

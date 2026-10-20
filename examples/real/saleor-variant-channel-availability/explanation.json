@@ -79,21 +79,18 @@
       "title": "Keep the flag on the channel listing",
       "why": "A hidden variant keeps its prices and its listing in that channel.",
       "basis": "pr",
-      "alternative": "Delete the variant's channel listing to hide it",
       "evidence": "saleor/product/migrations/0215_productvariantchannellisting_is_available_for_purchase.py:1-15"
     },
     {
       "title": "Default a new listing to available",
       "why": "A listing created without the flag stays purchasable, so existing clients keep working.",
       "basis": "code",
-      "alternative": "Require the flag on every listing create",
       "evidence": "saleor/graphql/product/mutations/channels.py:391-406"
     },
     {
       "title": "Add a separate availability mutation",
       "why": "Staff change availability without resending prices, and the mutation accepts a variant ID or SKU.",
       "basis": "inferred",
-      "alternative": "Add the flag only to the listing update mutation",
       "evidence": "saleor/graphql/product/mutations/channels.py:633-648"
     }
   ],

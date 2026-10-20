@@ -74,7 +74,14 @@ function proseDigits(e: Explanation): Explanation {
     story: e.story.map((s) => ({ ...s, heading: d(s.heading), body: d(s.body) })),
     components: e.components.map((c) => ({ ...c, summary: d(c.summary) })),
     ...(e.decisions && {
-      decisions: e.decisions.map((x) => ({ ...x, title: d(x.title), why: d(x.why), alternative: d(x.alternative) })),
+      // An alternative (contract 5 before 0.16) is dropped: the explanation says what was built and why, not what was not.
+      decisions: e.decisions.map(
+        ({ alternative: _, ...x }: (typeof e.decisions)[number] & { alternative?: unknown }) => ({
+          ...x,
+          title: d(x.title),
+          why: d(x.why),
+        }),
+      ),
     }),
     ...(e.flows && { flows: e.flows.map((f) => ({ ...f, title: d(f.title) })) }),
     ...(e.keyDependencies && { keyDependencies: e.keyDependencies.map((k) => ({ ...k, label: d(k.label) })) }),

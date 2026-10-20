@@ -4,13 +4,12 @@ import { collect, repoRoot } from "../../analysis/collect.ts";
 import { inferConfig } from "../../config/infer.ts";
 import { loadConfig } from "../../config/load.ts";
 import { HOST_IDS, type HostId } from "../../contract/config.ts";
-import type { Facts } from "../../contract/facts.ts";
 import { BUDGET_RANGE, CONFIG_NAME, WORK_DIR } from "../../core/constants.ts";
 import { UserError } from "../../core/errors.ts";
 import { git } from "../../core/git.ts";
 import { buildDigest } from "../../digest/digest.ts";
-import { type ExplanationState, loadExplanation, prepareExplanation } from "../../explanation/store.ts";
-import { changeHost, createHosts, type Hosts, shareable } from "../../hosts/index.ts";
+import { loadExplanation, prepareExplanation } from "../../explanation/store.ts";
+import { changeHost, createHosts, type Hosts } from "../../hosts/index.ts";
 import { defaultReportPath, writeReport } from "../../report/render.ts";
 import { openReport, shouldOpen } from "../open.ts";
 import { type ChangeResult, changeSummary, explanationSummary, nextStep, printChange, printJson } from "../output.ts";
@@ -81,7 +80,6 @@ export function explain(opts: ExplainOptions, hosts: Hosts = createHosts()): num
     paths: { ...paths, report },
     digestTokens: Math.round(digest.length / 4),
     opened,
-    share: shareCommand(status.state, facts, hosts),
     next: nextStep(status.state, report, facts),
     notes: facts.notes,
   };
@@ -102,7 +100,7 @@ export interface RenderOptions {
  * `render` validates explanation.json against the collected change and writes the page (facts only while the
  * explanation is not valid). `status` reports the same without writing. Both exit 1 until the explanation is valid.
  */
-export function render(opts: RenderOptions, hosts: Hosts = createHosts()): number {
+export function render(opts: RenderOptions): number {
   const root = repoRoot();
   const work = join(root, WORK_DIR);
   const facts = readFacts(work);
@@ -116,7 +114,6 @@ export function render(opts: RenderOptions, hosts: Hosts = createHosts()): numbe
     explanation: explanationSummary(status),
     paths: { ...workPaths(work), report: opts.dryRun ? null : report },
     opened,
-    share: shareCommand(status.state, facts, hosts),
     next: nextStep(status.state, opts.dryRun ? null : report, facts),
     notes: facts.notes,
   };
@@ -124,6 +121,3 @@ export function render(opts: RenderOptions, hosts: Hosts = createHosts()): numbe
   else printChange(result);
   return status.state === "valid" ? 0 : 1;
 }
-
-const shareCommand = (state: ExplanationState, facts: Facts, hosts: Hosts) =>
-  state === "valid" && shareable(facts, hosts) ? "explain-change share" : null;

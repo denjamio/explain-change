@@ -84,28 +84,24 @@
       "title": "One request deletes many folders",
       "why": "Clients send 1 request per folder, so a bulk delete costs N round trips and is not atomic.",
       "basis": "pr",
-      "alternative": "Client sends 1 DELETE /folders/{id} request per folder.",
       "evidence": "src/Api/Vault/Controllers/FoldersController.cs:116"
     },
     {
       "title": "Delete all requested folders in one transaction",
       "why": "The Dapper repository commits all deletes together. A failure rolls back every folder.",
       "basis": "code",
-      "alternative": "Delete each folder in its own call, with no shared transaction.",
       "evidence": "src/Infrastructure.Dapper/Vault/Repositories/FolderRepository.cs:47-76"
     },
     {
       "title": "Push a full vault sync after deletion",
       "why": "Deleting a folder re-assigns its ciphers, so clients need a full vault sync.",
       "basis": "code",
-      "alternative": "Push one folder-delete notification for each folder.",
       "evidence": "src/Core/Vault/Commands/DeleteManyFoldersCommand.cs:1-35"
     },
     {
       "title": "Cap a request at 500 folders on cloud",
       "why": "The endpoint rejects more than 500 ids, except on self-hosted servers.",
       "basis": "code",
-      "alternative": "Accept any number of folder ids in one request.",
       "evidence": "src/Api/Vault/Controllers/FoldersController.cs:116"
     }
   ],

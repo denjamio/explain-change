@@ -82,7 +82,7 @@ The page reads from *what* to *where* to *why*:
 |---|---|
 | **What and why** | The title, the goal of the change and a TL;DR. |
 | **Map and story** | A map you can pan and zoom: the **architecture** as lanes, the **data flows** in call order and the **data model**. Click a component for what it now does, its files and its dependencies. |
-| **Design decisions** | What was chosen, why, and the main alternative, each labelled with where its why comes from: the PR description, the spec, the code, or *inferred* from the change. |
+| **Design decisions** | What was chosen and why, each labelled with where its why comes from: the PR description, the spec, the code, or *inferred* from the change. |
 | **SDD · OpenSpec** | For spec-driven changes: the pipeline from proposal to archive, and each requirement traced to the code and tests that implement it. |
 | **Changes by component** | Each changed component with what it now does and its files. |
 
@@ -100,7 +100,6 @@ flowchart LR
   B --> C["explain-change render"]
   C -->|issues to fix| B
   C -->|valid| D["Report<br/>(one HTML file)"]
-  D -.->|optional| E["explain-change share<br/>attached to the PR"]
 ```
 
 1. **Collect**: the CLI reads the diff, maps files to components, resolves dependencies, checks your rules and
@@ -132,29 +131,6 @@ misread. Its restricted dictionary is left out on purpose: in a code change, the
 Each rejection names the field, the words and what to write instead, so the agent fixes only that field. The refused
 words live in one list, [`src/explanation/prose/en.json`](https://github.com/denjamio/explain-change/blob/main/src/explanation/prose/en.json): a trailing `*` refuses every
 form of a word, and the digest prints the list exactly as the validator applies it. Reports are written in English.
-
-## Share with your team
-
-Reports stay on your machine until you share one. On an Azure DevOps PR:
-
-```bash
-explain-change share
-```
-
-attaches the finished report to the PR and comments with its link, so only people who can open the PR can download
-it. When a report can be shared, `local`, `pr` and `render` end with a line pointing to this command; your agent
-mentions it but never runs it on its own.
-
-<details>
-<summary>Rules</summary>
-
-- A local branch is shared on its active PR, and only when the PR is at the commit the report explains: push first.
-- A report with uncommitted work is never shared.
-- GitHub cannot take a report: its API and `gh` attach only images and videos to a PR comment. `share` says so; send
-  the HTML file yourself.
-- Sharing the same change twice is a no-op, unless `--force`.
-
-</details>
 
 ## Configure
 
@@ -259,7 +235,6 @@ explain-change local [--base REF] [--include-uncommitted]   # the current branch
 explain-change pr [ID|URL] [--host HOST]                    # an Azure DevOps or GitHub PR (no id: the branch's)
 explain-change render                                       # validate explanation.json and write the page
 explain-change status                                       # the explanation's state and the next step
-explain-change share [--force]                              # attach the finished report to its Azure DevOps PR
 explain-change init | check                                 # draft and verify .explain-change.toml
 explain-change schema config|facts|explanation              # the JSON Schemas
 explain-change install | update | uninstall | --version     # the skills and the CLI itself

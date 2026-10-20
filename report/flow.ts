@@ -2,7 +2,7 @@
  * The flow view: a sequence over real components whose steps travel in order, the data on each step, and the notes below it.
  */
 
-import { h, MONO, r1, s, textWidth, trunc } from "./dom.ts";
+import { h, MONO, r1, s, textLines, textWidth, wrap } from "./dom.ts";
 import {
   byCompRank,
   cfg,
@@ -20,23 +20,56 @@ import { FIELD_MARK, fieldDelta, fieldText, type View } from "./ui.ts";
 import { T, tf } from "./words.ts";
 
 // ── Data flow: a sequence over real components, steps travel in order ──
+/** How far right of its lifeline a call to itself writes its label. */
+const SELF_X = 46;
 export function buildFlow(fl: NFlow): View {
   const parts: string[] = [];
   for (const x of fl.steps) for (const p of [x.from, x.to]) if (!parts.includes(p)) parts.push(p);
   parts.sort(byCompRank);
   const hasData = fl.steps.some((x) => x.data);
   const COL = 220;
-  const HEAD = 58;
   const ROW = hasData ? 66 : 50;
   const TOP = 20;
-  const W = Math.max(720, parts.length * COL + 40);
+  // A participant's name takes up to 2 lines in its head; every head grows by the lines the longest name needs.
+  const names: Record<string, string[]> = {};
+  for (const p of parts) names[p] = wrap(compById[p]?.name ?? p, "650 13px", COL - 24 - 16);
+  const extra = (Math.max(1, ...Object.values(names).map((l) => l.length)) - 1) * 16;
+  const HEAD = 58 + extra;
+  // A call is never cut: the lifelines it spans move apart until its label (and its data) fits between them.
+  const label = (stp: NStep) => stp.call + (stp.verified ? "" : "  ?");
+  const labelW = (stp: NStep) =>
+    Math.max(
+      textWidth(label(stp), `${stp.delta === "unchanged" ? 400 : 650} 12.5px`),
+      stp.data ? chipWidth(stp.data) : 0,
+    );
+  const at = (p: string) => parts.indexOf(p);
+  const gaps = parts.slice(1).map(() => COL);
+  let rightPad = 0;
+  const spans = fl.steps
+    .map((stp) => ({ stp, a: Math.min(at(stp.from), at(stp.to)), b: Math.max(at(stp.from), at(stp.to)) }))
+    .sort((p, q) => p.b - p.a - (q.b - q.a));
+  for (const { stp, a, b } of spans) {
+    if (a === b) {
+      // A call to itself is written right of its lifeline, toward the next one.
+      const need = SELF_X + labelW(stp) + 16;
+      if (a < gaps.length) gaps[a] = Math.max(gaps[a] as number, need);
+      else rightPad = Math.max(rightPad, need - COL / 2);
+      continue;
+    }
+    const need = labelW(stp) + 48;
+    const have = gaps.slice(a, b).reduce((v, g) => v + g, 0);
+    if (have < need) for (let i = a; i < b; i++) gaps[i] = (gaps[i] as number) + (need - have) / (b - a);
+  }
+  const span = gaps.reduce((v, g) => v + g, 0) + COL + rightPad;
+  const W = Math.max(720, span + 40);
   const H = TOP + HEAD + 26 + fl.steps.length * ROW + 16;
   const V = newView(`flow:${fl.id}`, W, H);
   const svg = V.svg;
   const x: Record<string, number> = {};
-  const offset = (W - parts.length * COL) / 2;
+  let cx = (W - span) / 2 + COL / 2;
   parts.forEach((p, i) => {
-    x[p] = offset + i * COL + COL / 2;
+    x[p] = cx;
+    cx += gaps[i] ?? 0;
   });
   markers(svg, `sq-${fl.id}-`, ["unchanged", "added", "changed", "removed"]);
   for (const p of parts) {
@@ -61,8 +94,15 @@ export function buildFlow(fl: NFlow): View {
         "g",
         { class: `head st-${delta}`, "data-k": `p:${p}` },
         s("rect", { x: box.x, y: box.y, width: box.w, height: box.h, rx: 11 }),
-        s("text", { x: px, y: TOP + 21, "text-anchor": "middle", class: "name", text: trunc(c ? c.name : p, 21) }),
-        s("text", { x: px, y: TOP + 37, "text-anchor": "middle", class: "layer", text: trunc(layerName(p), 24) }),
+        textLines({ x: px, y: TOP + 21, "text-anchor": "middle", class: "name" }, names[p] ?? [c ? c.name : p], 16),
+        s("text", {
+          x: px,
+          y: TOP + 37 + extra,
+          "text-anchor": "middle",
+          class: "layer",
+          // .layer: 10px, uppercase, letter-spacing .06em.
+          text: wrap(layerName(p), "10px", box.w - 16, { lines: 1, spacing: 0.6, upper: true })[0],
+        }),
       ),
     );
   }
@@ -98,13 +138,9 @@ export function buildFlow(fl: NFlow): View {
     if (stp.from === stp.to) {
       g.appendChild(s("path", { id: pid, d: `M${x1},${y - 6} h38 v16 h-34`, class: "msg-line", "marker-end": marker }));
       g.appendChild(
-        s(
-          "text",
-          { x: x1 + 46, y: y + 4, class: "msg-label", text: trunc(stp.call, 40) },
-          s("title", { text: stp.call }),
-        ),
+        s("text", { x: x1 + SELF_X, y: y + 4, class: "msg-label", text: label(stp) }, s("title", { text: stp.call })),
       );
-      V.geo[key] = { x: x1 - 10, y: y - 24, w: 220, h: 36 };
+      V.geo[key] = { x: x1 - 10, y: y - 24, w: SELF_X + labelW(stp) + 20, h: 36 };
     } else {
       const dir = x2 > x1 ? 1 : -1;
       g.appendChild(
@@ -115,8 +151,6 @@ export function buildFlow(fl: NFlow): View {
           "marker-end": marker,
         }),
       );
-      // The label fits between the 2 lifelines (about 6.5 px a character); the full call is its tooltip.
-      const fits = Math.max(12, Math.floor(Math.abs(x2 - x1) / 6.5));
       g.appendChild(
         s(
           "text",
@@ -125,7 +159,7 @@ export function buildFlow(fl: NFlow): View {
             y: y - 8,
             "text-anchor": "middle",
             class: "msg-label",
-            text: trunc(stp.call, fits) + (stp.verified ? "" : "  ?"),
+            text: label(stp),
           },
           s("title", { text: stp.call }),
         ),
@@ -195,21 +229,36 @@ export function buildFlow(fl: NFlow): View {
 /** The kind of change a field line describes: "+email" added, "-fax" removed, "~total" changed, "id" unchanged. */
 
 // What travels on a step: "Order { +email ~total −fax }", colored per field change.
-export function dataChip(data: NonNullable<NStep["data"]>, cx: number, y: number): SVGElement {
+function chipParts(data: NonNullable<NStep["data"]>): { t: string; k: string }[] {
   const fields = data.fields ?? [];
   let shown = fields.filter((f) => fieldDelta(f) !== "unchanged");
   if (!shown.length) shown = fields.slice(0, 3);
-  const parts: { t: string; k: string }[] = [
+  return [
     { t: data.type, k: "type" },
     ...(shown.length ? [{ t: " {", k: "p" }] : []),
     ...shown.slice(0, 4).map((f, i) => {
       const k = fieldDelta(f);
       return { t: (i ? "  " : " ") + FIELD_MARK[k] + (fieldText(f).split(":")[0] as string).trim(), k };
     }),
-    ...(shown.length > 4 ? [{ t: " …", k: "p" }] : []),
+    ...(shown.length > 4 ? [{ t: `  +${shown.length - 4}`, k: "p" }] : []),
     ...(shown.length ? [{ t: " }", k: "p" }] : []),
   ];
-  const w = Math.ceil(textWidth(parts.map((p) => p.t).join(""), "11px", MONO)) + 20;
+}
+const chipWidth = (data: NonNullable<NStep["data"]>) =>
+  Math.ceil(
+    textWidth(
+      chipParts(data)
+        .map((p) => p.t)
+        .join(""),
+      "11px",
+      MONO,
+    ),
+  ) + 20;
+
+export function dataChip(data: NonNullable<NStep["data"]>, cx: number, y: number): SVGElement {
+  const fields = data.fields ?? [];
+  const parts = chipParts(data);
+  const w = chipWidth(data);
   const g = s(
     "g",
     { class: "data-chip" },

@@ -65,4 +65,4 @@ the same change renders the same page again without the agent.
 ## Hosts
 
 PRs are read from Azure DevOps (`az`) and GitHub (`gh`). A GitLab or Bitbucket PR works through its branch
-(`explain-change local`). `share` attaches a report to Azure DevOps PRs only: GitHub attaches images and videos only.
+(`explain-change local`).

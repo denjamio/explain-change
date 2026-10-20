@@ -22,7 +22,7 @@ import { T, tf } from "./words.ts";
 
 // Order of reading: why it is built this way (decisions) → what the spec asks (SDD) → where it changed (files).
 
-/** Why the change is built this way: the agent's design decisions, each with its main alternative. */
+/** Why the change is built this way: the agent's design decisions, each with where its why comes from. */
 export function renderDecisions(): HTMLElement | null {
   if (!ex?.decisions.length) return null;
   return sectionShell(
@@ -39,7 +39,6 @@ export function renderDecisions(): HTMLElement | null {
             h("h3", { text: d.title }),
             h("span", { class: `badge basis basis-${d.basis}`, title: T.basisHint, text: T[`basis_${d.basis}`] }),
             h("p", { text: d.why }),
-            d.alternative ? h("p", { class: "alt" }, h("b", { text: `${T.alternative}: ` }), d.alternative) : null,
             d.evidence ? fileLink(d.evidence) : null,
           ),
         ),

@@ -90,14 +90,12 @@
       "title": "Refresh health data with a scheduled job",
       "why": "The job updates stored health data every 6 hours, without a page visit.",
       "basis": "inferred",
-      "alternative": "Read Meta on each page load only",
       "evidence": "app/jobs/channels/whatsapp/health_sync_scheduler_job.rb:4-14"
     },
     {
       "title": "Map Meta authorization errors to a typed ApiError",
       "why": "The page shows guidance for authorization failures, not Meta error codes.",
       "basis": "pr",
-      "alternative": "Render the raw Meta error message",
       "evidence": "app/services/whatsapp/health_service.rb:2-14"
     }
   ],

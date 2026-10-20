@@ -23,7 +23,6 @@ export const LIMITS = {
   decisions: 5,
   "decisions.title": 80,
   "decisions.why": 200,
-  "decisions.alternative": 140,
   flows: 3,
   "flows.title": 60,
   "flows.trigger": 60,
@@ -120,11 +119,6 @@ export const ExplanationSchema = z
               "Where the why comes from: pr (the PR description says it), spec (the OpenSpec proposal or design), " +
                 "code (the code at the evidence shows it), inferred (your reading of the change).",
             ),
-          alternative: z
-            .string()
-            .max(LIMITS["decisions.alternative"])
-            .describe("The main alternative not built.")
-            .optional(),
           evidence: Location.describe("Where the code shows it: file:line inside a hunk.").optional(),
         }),
       )

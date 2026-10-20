@@ -110,7 +110,6 @@ export function mutants(facts: Facts, good: Explanation): Mutant[] {
       const step = good.story[i % good.story.length] as (typeof good.story)[number];
       d.title = step.heading;
       d.why = step.body;
-      d.alternative = "Not making this change.";
     });
     add("decisions-restate-change", ["decisions-choices"], ex, true);
   }

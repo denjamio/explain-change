@@ -93,7 +93,6 @@
       "title": "Limit each birthday memory to 25 assets",
       "why": "A birthday memory holds at most 25 assets, with at most 5 assets for each birthday year.",
       "basis": "code",
-      "alternative": "Return every asset from every birthday year",
       "evidence": "server/src/services/memory.service.ts:23-24"
     },
     {

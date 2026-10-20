@@ -4,7 +4,7 @@
 
 import type { NormalizedExplanation } from "../src/contract/explanation.ts";
 import type { Delta } from "../src/contract/facts.ts";
-import { MONO, r1, s, textWidth, trunc } from "./dom.ts";
+import { MONO, r1, s, textWidth, trunc, wrap } from "./dom.ts";
 import { byCompRank, compName, DM, deltaLabel, facts, gitLetter } from "./model.ts";
 import { newView } from "./svg-view.ts";
 import { type Box, FIELD_MARK, fieldDelta, fieldText, onOpen, type View } from "./ui.ts";
@@ -14,7 +14,6 @@ import { T } from "./words.ts";
 
 export function buildData(onNode?: (g: SVGElement, key: string) => void): View {
   const dm = DM as NormalizedExplanation["dataModel"];
-  const EW = 250;
   const GX = 90;
   const GY = 70;
   const PER = 3;
@@ -22,6 +21,23 @@ export function buildData(onNode?: (g: SVGElement, key: string) => void): View {
   const ents = [...dm.entities].sort(
     (a, b) =>
       order[a.delta] - order[b.delta] || byCompRank(a.component ?? "", b.component ?? "") || (a.name < b.name ? -1 : 1),
+  );
+  // Every box takes the width its longest name or field needs (250 to 480 px); past that a field ends in "…".
+  const tagW = (e: (typeof ents)[number]) => {
+    if (e.delta === "unchanged") return 0;
+    // .entity .tag: 700 10px, letter-spacing .07em.
+    const tag = deltaLabel(e.delta).toUpperCase();
+    return textWidth(tag, "700 10px") + tag.length * 0.7 + 16;
+  };
+  const EW = Math.ceil(
+    Math.min(
+      480,
+      Math.max(
+        250,
+        ...ents.map((e) => textWidth(e.name, "700 14px") + tagW(e) + 40),
+        ...ents.flatMap((e) => (e.fields ?? []).map((f) => textWidth(`  ${fieldText(f)}`, "12px", MONO) + 32)),
+      ),
+    ),
   );
   const migrations = facts.files.filter((f) => f.category === "migration");
   const top = migrations.length ? 34 + Math.min(migrations.length, 4) * 20 + 30 : 10;
@@ -121,10 +137,16 @@ export function buildData(onNode?: (g: SVGElement, key: string) => void): View {
     const g = s(
       "g",
       { class: `entity st-${e.delta}`, "data-k": key, tabindex: "0", role: "button" },
+      s("title", { text: e.name }),
       s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 12, class: "box" }),
       s("rect", { x: b.x, y: b.y, width: b.w, height: 40, rx: 12, class: "head" }),
       s("rect", { x: b.x, y: b.y + 28, width: b.w, height: 12, class: "head" }),
-      s("text", { x: b.x + 14, y: b.y + 25, class: "name", text: trunc(e.name, 24) }),
+      s("text", {
+        x: b.x + 14,
+        y: b.y + 25,
+        class: "name",
+        text: wrap(e.name, "700 14px", b.w - 28 - tagW(e), { lines: 1 })[0],
+      }),
       s("text", {
         x: b.x + b.w - 12,
         y: b.y + 25,
@@ -140,12 +162,14 @@ export function buildData(onNode?: (g: SVGElement, key: string) => void): View {
     }
     fields.forEach((f, i) => {
       const k = fieldDelta(f);
+      const [shown] = wrap(fieldText(f), "12px", b.w - 46, { lines: 1, family: MONO });
       g.appendChild(
         s(
           "text",
           { x: b.x + 14, y: b.y + 62 + i * 19, class: `field f-${k}` },
+          shown === fieldText(f) ? null : s("title", { text: fieldText(f) }),
           s("tspan", { class: "fmark", text: `${FIELD_MARK[k] || " "} ` }),
-          s("tspan", { text: trunc(fieldText(f), 28) }),
+          s("tspan", { text: shown }),
         ),
       );
     });

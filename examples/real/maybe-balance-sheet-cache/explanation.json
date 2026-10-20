@@ -119,21 +119,18 @@
       "title": "Cache account totals until a sync changes them",
       "why": "The sidebar reruns costly balance sheet queries on each load. The cache keeps totals until a sync changes them.",
       "basis": "pr",
-      "alternative": "Recalculate the totals on each page load",
       "evidence": "app/models/sync.rb:170-172"
     },
     {
       "title": "Split BalanceSheet into value objects",
       "why": "Each group owns its total and DOM id. Views and the broadcaster ask the object instead of building strings.",
       "basis": "code",
-      "alternative": "Keep one BalanceSheet class that builds DOM ids in views",
       "evidence": "app/models/balance_sheet/account_group.rb:54-61"
     },
     {
       "title": "Cache sync status until a sync event changes it",
       "why": "Sync indicators must not block the page. A cache keeps the monitor's answer until a sync event changes it.",
       "basis": "pr",
-      "alternative": "Query visible syncs for each account on each page load",
       "evidence": "app/models/balance_sheet/classification_group.rb:59-61"
     }
   ],

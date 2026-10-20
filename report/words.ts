@@ -74,7 +74,6 @@ export const T = {
   themeAuto: "auto",
   themeLight: "light",
   themeDark: "dark",
-  alternative: "Alternative",
   basis_pr: "From the PR description",
   basis_spec: "From the spec",
   basis_code: "Shown in the code",

@@ -286,11 +286,6 @@ class Validator {
       this.text(`decisions[${i}].title`, d.title, LIMITS["decisions.title"]);
       this.text(`decisions[${i}].why`, d.why, LIMITS["decisions.why"]);
       this.basis(`decisions[${i}]`, d);
-      // The alternative is what was not built: it may name code that is not in the change.
-      this.text(`decisions[${i}].alternative`, d.alternative, LIMITS["decisions.alternative"], {
-        required: false,
-        names: false,
-      });
       this.location(`decisions[${i}].evidence`, d.evidence, false);
     }
   }

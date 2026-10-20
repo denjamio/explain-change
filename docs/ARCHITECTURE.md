@@ -52,15 +52,14 @@ Each folder depends only on the ones above it:
 Where PRs live, as ports and adapters:
 
 - `host.ts` is the port: a host's identity (which URLs and remotes are its own) and its two sides. `api` parses a
-  PR once into a `PrRef`, finds the open PR of a branch, reads its metadata and, optionally, shares a report. `git`
-  names the remote, the merge ref and the PR's own ref, and the token for HTTPS.
+  PR once into a `PrRef`, finds the open PR of a branch, and reads its metadata. `git` names the remote, the merge
+  ref and the PR's own ref, and the token for HTTPS.
 - `source.ts` turns a PR into a change source the same way for every host: the merge ref, else its own commits,
   with git fetches that never prompt.
 - `index.ts` registers the adapters and picks the host: the PR URL, `--host`, `project.host`, the remotes, then
   Azure DevOps. `links.ts` builds links into a PR page (the report bundles it).
 - Each adapter folder wraps its CLI (injectable, so tests replace it) and translates its JSON into `PrMeta` at the
-  edge. `azure-devops/` (`az`) shares reports as PR attachments through the REST API with the `az` token (HTTP
-  injectable). `github/` (`gh`) has no `share`: GitHub attaches only images and videos.
+  edge: `azure-devops/` (`az`) and `github/` (`gh`).
 - A new host is one adapter folder, registered in `index.ts` and `links.ts`.
 
 ## Determinism
