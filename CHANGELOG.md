@@ -12,6 +12,17 @@ All notable changes to this project are documented here. The format follows
   asks the registry itself which version to install (`npm view --prefer-online`) and installs exactly that one. It
   says when the copy is already up to date, and fails, naming the path, when the copy it runs is not the one npm
   installed.
+- A Rails constant no longer goes to a file that does not define it. With ActiveAdmin, `app/admin/like.rb`
+  (`ActiveAdmin.register Like`) took `Like` from `app/models/like.rb`, because the first path in alphabetical order
+  won: every reference to `Like` drew an arrow to the admin panel, and only a `constants` list in the config hid it.
+  The Zeitwerk index now leaves out what Rails does not autoload: `app/assets`, `app/javascript`, `app/views`, and
+  `app/admin` when `config/initializers/active_admin.rb` exists. A file under `[ignore]` takes a constant only when
+  no other file defines it. A `constants` list written as that workaround can go. ANALYSIS_VERSION 16.
+
+### Changed
+- The configure skill says that a layout in `AGENTS.md` or the README describes the lanes, never the components, and
+  that "a typical PR lights 3–8 boxes" is how to judge the model, not a condition to meet before splitting
+  Models/Services/Queries by context.
 
 ## [0.16.0] - 2026-10-20
 

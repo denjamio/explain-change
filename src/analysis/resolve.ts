@@ -101,9 +101,13 @@ export class SideIndex {
       for (const a of ex.rubyAcronyms ?? []) acronyms[a.toLowerCase()] = a;
       for (const [k, v] of ex.rubyInflections ?? []) inflections[k] = v;
     }
-    for (const f of sorted) {
-      if (!f.endsWith(".rb")) continue;
-      for (const rel of zeitwerkPaths(f.slice(0, -3).split("/"))) {
+    // A constant goes to the first file that defines it, files the user ignores last: a generated or vendored copy
+    // never takes a constant from the code that defines it.
+    const skipped = notAutoloaded(sorted);
+    const rubyFiles = sorted.filter((f) => f.endsWith(".rb"));
+    const ignored = (f: string) => mapper.category(f) === "ignored";
+    for (const f of [...rubyFiles.filter((f) => !ignored(f)), ...rubyFiles.filter(ignored)]) {
+      for (const rel of zeitwerkPaths(f.slice(0, -3).split("/"), skipped)) {
         const constant = rel.map((s) => camelize(s, acronyms, inflections)).join("::");
         if (!this.rbIndex.has(constant)) this.rbIndex.set(constant, f);
       }
@@ -326,10 +330,30 @@ export class SideIndex {
   }
 }
 
-/** The constant paths Zeitwerk derives from a file: app/<kind>/a/b.rb → [a, b] (and app/<kind>/concerns/…), lib/a/b.rb → [a, b]. */
-function zeitwerkPaths(parts: string[]): string[][] {
+/** The app/ folders Rails never autoloads: their Ruby files define no constants. */
+const RAILS_NOT_AUTOLOADED = ["assets", "javascript", "views"];
+
+/**
+ * The app/ folders whose files define no constants: Rails' own, and app/admin where ActiveAdmin runs (it takes the
+ * folder out of autoloading, and `ActiveAdmin.register Like` there registers Like, it does not define it).
+ */
+function notAutoloaded(files: readonly string[]): Set<string> {
+  const out = new Set(RAILS_NOT_AUTOLOADED);
+  if (
+    files.some((f) => f === "config/initializers/active_admin.rb" || f.endsWith("/config/initializers/active_admin.rb"))
+  )
+    out.add("admin");
+  return out;
+}
+
+/**
+ * The constant paths Zeitwerk derives from a file: app/<kind>/a/b.rb → [a, b] (and app/<kind>/concerns/…), lib/a/b.rb
+ * → [a, b]; none in an app/<kind> folder that is not autoloaded.
+ */
+function zeitwerkPaths(parts: string[], notAutoloadedKinds: ReadonlySet<string>): string[][] {
   for (let i = 0; i < parts.length; i++) {
     if (parts[i] === "app" && i + 2 < parts.length) {
+      if (notAutoloadedKinds.has(parts[i + 1] as string)) return [];
       const rels = [parts.slice(i + 2)];
       if (parts[i + 2] === "concerns" && i + 3 < parts.length) rels.push(parts.slice(i + 3));
       return rels;

@@ -34,7 +34,9 @@ Then read, only what exists, and stop when the picture is clear:
 - The domain's words: model and table names, route namespaces, Django apps, Rails packs and engines, module names,
   and the nouns in recent PR titles. List them; they are the glossary's first draft.
 
-The draft from `init` comes from folders. Folders are not architecture: expect to rename, merge and split.
+The draft from `init` comes from folders. Folders are not architecture: expect to rename, merge and split. The same
+holds for the team's docs: a layout in `AGENTS.md` or the README ("models, services, queries") describes the lanes
+of step 2, never the components of step 3.
 
 ## 2. Layers: the architecture style, not the folder kinds
 
@@ -53,7 +55,8 @@ Identify the style the code follows, and draw its lanes with its own words, entr
 
 A component is a unit of ownership a reviewer names in one word of the domain. Aim for 8–20. Domain first: each
 bounded context or business capability is a box (Orders, Billing, Refunds), never a framework artifact
-("Controllers", "Models", "Services") and never a dumping ground ("common", "utils"). Name a context's parts with a
+("Controllers", "Models", "Services"), even when the code and its docs are organized that way, and never a dumping
+ground ("common", "utils"). Name a context's parts with a
 fixed suffix set (`Orders`, `Orders API`, `Orders jobs`, `Payment gateway`).
 
 Before you write the `[[components]]`, read [references/components.md](references/components.md): the naming
@@ -88,6 +91,8 @@ explain-change local --base <merge base of a recent merged PR> --json   # or: ex
 ```
 
 A good model shows a typical PR as 3–8 boxes the author would name the same way, with arrows that mean something.
+That is how you judge the model, not a condition for building it: a PR that lights Models, Services and Queries
+means those boxes still have to split by context, now.
 
 ## 7. Hand it over
 
