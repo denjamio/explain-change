@@ -45,7 +45,7 @@ Each folder depends only on the ones above it:
 | `src/digest` | `digest.md` from the facts and the contract. |
 | `src/report` | The page: excerpts, the embedded data, the assets built from `report/`. |
 | `src/cli` | Commands, `--json` output, the work folder, the browser, skill install and self-update. |
-| `report/` | The report script, typed against the contract: `app.ts` (the page shell), `header.ts`, `map.ts` (the map, its tabs, camera and story cards), `story.ts` (the views and the story they walk), `arch.ts`, `flow.ts` and `data-view.ts` (the 3 views, drawn on `svg-view.ts`), `sections.ts` (decisions and changes), `camera.ts` (pan, zoom and flights), `inspector.ts` (what a component or an entity shows), `code.ts` (code excerpts), `sdd.ts` (the OpenSpec section), `model.ts` (the embedded data and its lookups), `ui.ts`, `dom.ts` and `words.ts` (shared pieces and the page's words); its styles and its HTML shell. |
+| `report/` | The report script, typed against the contract: `app.ts` (the page shell), `header.ts`, `map.ts` (the map, its tabs, camera and story cards), `story.ts` (the views and the story they walk), `arch.ts`, `flow.ts` and `data-view.ts` (the 3 views, drawn on `svg-view.ts`), `sections.ts` (decisions and changes), `camera.ts` (pan, zoom and flights), `inspector.ts` (what a component or an entity shows), `code.ts` (code excerpts), `viewed.ts` (the story steps you read), `sdd.ts` (the OpenSpec section), `model.ts` (the embedded data and its lookups), `ui.ts`, `dom.ts` and `words.ts` (shared pieces and the page's words); its styles and its HTML shell. |
 | `skills/` | The agent skills the CLI installs and the Claude Code plugin ships. A skill keeps its detail in `references/`, read at the step that needs it. |
 
 ## Hosts

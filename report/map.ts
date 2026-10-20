@@ -14,7 +14,8 @@ import { changeComp, type NFlow, REDUCED, reqById, type StoryStep, specComponent
 import { sddApi } from "./sdd.ts";
 import { CONTEXT_COUNT, flowById, isContext, STORY, storyIsAuto, VIEWS, viewTitle } from "./story.ts";
 import { type Box, legendItem, mapApi, type View } from "./ui.ts";
-import { T, t } from "./words.ts";
+import { stepSince, viewedSteps } from "./viewed.ts";
+import { T, t, tf } from "./words.ts";
 
 export function renderMap(): HTMLElement {
   const compactQ = window.matchMedia ? window.matchMedia("(max-width: 720px)") : { matches: false };
@@ -291,6 +292,16 @@ export function renderMap(): HTMLElement {
   // ── story panel ──
   const storyList = h("ol", { class: "story-steps" });
   const counter = h("span", { class: "story-count" });
+  // Steps you read stay read (✓) when you come back, and at the next head of a PR where nothing they show changed.
+  const viewed = viewedSteps(STORY);
+  const readCount = h("button", {
+    class: "story-read",
+    title: T.readReset,
+    onclick: () => {
+      viewed.clear();
+      paintRead();
+    },
+  });
   const storyPane = h(
     "div",
     { class: "story-pane" },
@@ -299,6 +310,7 @@ export function renderMap(): HTMLElement {
       { class: "story-head" },
       h("b", { text: T.story }),
       counter,
+      readCount,
       h(
         "div",
         { class: "story-nav" },
@@ -319,7 +331,14 @@ export function renderMap(): HTMLElement {
         "button",
         { class: "step-head", onclick: () => step(i) },
         h("span", { class: "step-n", text: String(i + 1) }),
-        h("span", { class: "step-h", text: stp.heading }),
+        h(
+          "span",
+          { class: "step-h" },
+          stp.heading,
+          stepSince(stp)
+            ? h("span", { class: "since-pill since-only", text: t(`since${cap(stepSince(stp) as string)}`) })
+            : null,
+        ),
       ),
       h(
         "div",
@@ -354,7 +373,10 @@ export function renderMap(): HTMLElement {
   });
   /** A step the reader asked for: the workspace comes into view when it is not whole on screen. */
   function step(i: number) {
+    viewed.mark(stepIdx); // the step you leave, read
     go(i);
+    viewed.mark(stepIdx);
+    paintRead();
     const r = root.getBoundingClientRect();
     if (r.top < 0 || r.bottom > window.innerHeight)
       root.scrollIntoView({ block: "start", behavior: REDUCED ? "auto" : "smooth" });
@@ -366,8 +388,8 @@ export function renderMap(): HTMLElement {
     const stp = STORY[stepIdx] as StoryStep;
     items.forEach((li, j) => {
       li.classList.toggle("active", j === stepIdx);
-      li.classList.toggle("seen", j < stepIdx);
     });
+    paintRead();
     counter.textContent = `${stepIdx + 1} / ${STORY.length}`;
     showCode(stp.code);
     show(stp.view ?? "architecture", stp.focus ?? [], true);
@@ -375,6 +397,19 @@ export function renderMap(): HTMLElement {
     if (li && storyList.scrollHeight > storyList.clientHeight) {
       storyList.scrollTo({ top: li.offsetTop - storyList.offsetTop - 8, behavior: REDUCED ? "auto" : "smooth" });
     }
+  }
+
+  /** ✓ on the steps you read, and how many: the count clears them. */
+  function paintRead() {
+    items.forEach((li, j) => {
+      const read = viewed.read(j);
+      li.classList.toggle("seen", read);
+      const n = li.querySelector(".step-n");
+      if (n) n.textContent = read && j !== stepIdx ? "✓" : String(j + 1);
+    });
+    const n = viewed.count();
+    readCount.hidden = !n;
+    readCount.textContent = tf("readN", { n, m: STORY.length });
   }
 
   // ── code of the active step, under the map in the same column: map, story and code fit one screen ──

@@ -205,8 +205,15 @@ export interface SmokeResult {
   clicks: number;
 }
 
-/** Runs the report's script against its embedded data in the fake DOM. `onReady` sees the first paint. */
-export function smoke(html: string, onReady?: (app: FakeNode) => void): SmokeResult {
+/**
+ * Runs the report's script against its embedded data in the fake DOM. `onReady` sees the first paint; `store` is
+ * its localStorage, to share between 2 runs (a reader coming back).
+ */
+export function smoke(
+  html: string,
+  onReady?: (app: FakeNode) => void,
+  store: Record<string, string> = {},
+): SmokeResult {
   const data = /<script type="application\/json" id="ec-data">([\s\S]*?)<\/script>/.exec(html)?.[1] as string;
   const scripts = html.match(/<script>([\s\S]*?)<\/script>/g) as string[];
   const js = (scripts[scripts.length - 1] as string).replace(/^<script>/, "").replace(/<\/script>$/, "");
@@ -222,7 +229,6 @@ export function smoke(html: string, onReady?: (app: FakeNode) => void): SmokeRes
   body.appendChild(dataEl);
   const docListeners = new FakeNode("#document");
   const timers: ((t: number) => void)[] = [];
-  const store: Record<string, string> = {};
   const document = {
     documentElement: html_,
     body,

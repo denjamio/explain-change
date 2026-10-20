@@ -27,6 +27,10 @@ All notable changes to this project are documented here. The format follows
   component, only for that review. A haiku agent on chatwoot's PR, reviewed 4 merges of develop and 2 fixes
   earlier, wrote it in 1 render from the interdiff ("The sync now writes only when its attempt is newer than the
   stored check…"). Without a review, the digest, the draft and the page are as before.
+- **Steps you read**: the story marks a step read (✓) when you go through it, and keeps it on the page across
+  visits (localStorage, per PR and head). At the next head of a PR, a step stays read only when nothing it shows
+  changed since your review; the others say "changed since your review". The count in the story's header clears
+  them. Read replaces the old green mark on the steps before the current one, which only said where you were.
 - A code reference in a GitHub PR's report opens the PR at its lines, not at the top of the file: a story step, a
   decision's evidence, an entity and a symbol in the inspector link to `#diff-<sha>R12-R20` (`L` on the base side,
   for a removed file or symbol). A line outside every hunk of the PR has no anchor on GitHub's page, so its link

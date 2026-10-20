@@ -124,6 +124,41 @@ describe("since your review", () => {
     expect(none).toBe(0);
   });
 
+  test("story steps you read stay read; at the next head, only where nothing they show changed", () => {
+    const storage: Record<string, string> = {};
+    smoke(renderHtml(base, status), undefined, storage); // reads every step: arrows and clicks
+    let before = 0;
+    smoke(
+      renderHtml(base, status),
+      (app) => {
+        before = app.querySelectorAll(".story-step.seen").length;
+      },
+      storage,
+    );
+    expect(before).toBe(data.explanation?.story.length as number);
+    // the next head changes the code of 1 step
+    const stp = data.explanation?.story.find((s) => s.code) as { code: string };
+    const file = (/^(.+?):\d/.exec(stp.code) as RegExpExecArray)[1] as string;
+    const now = editedAt(file);
+    const s = since(snapshot(base), now);
+    let seen = 0;
+    let marked = 0;
+    let unreadMarked = 0;
+    smoke(
+      renderHtml(now, status, s),
+      (app) => {
+        const steps = app.querySelectorAll(".story-step");
+        seen = app.querySelectorAll(".story-step.seen").length;
+        marked = app.querySelectorAll(".story-step .since-pill").length;
+        unreadMarked = steps.filter((li) => li.querySelector(".since-pill") && !li.classList.contains("seen")).length;
+      },
+      storage,
+    );
+    expect(marked).toBeGreaterThan(0);
+    expect(unreadMarked).toBe(marked); // what changed since is unread again
+    expect(seen).toBe((data.explanation?.story.length as number) - marked);
+  });
+
   describe("what the agent writes about it", () => {
     const now = editedAt(code.path);
     const review = snapshot(base);

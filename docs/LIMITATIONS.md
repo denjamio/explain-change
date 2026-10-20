@@ -71,6 +71,7 @@ that a valid report showed in this clone, so it depends on that history. Its lim
   left out (generated, too large), compares by its counts only. A renamed file counts as new, its old path as gone.
 - The delta is deterministic. The agent writes what it means (`since`) from the interdiff of each file, up to 300
   patch lines a file at your review and 3,000 characters in the digest; the story still explains the whole PR.
+- Steps you read live in the browser's storage of that page: another browser or a cleared storage starts over.
 
 ## Hosts
 

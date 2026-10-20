@@ -172,6 +172,8 @@ export const T = {
   leadDecisions: "{n} decisions: why it is built this way",
   leadDecision1: "1 decision: why it is built this way",
   leadSpec: "{n} requirements · {i} implemented",
+  readN: "✓ {n}/{m} read",
+  readReset: "Steps you read stay marked on this page. Click to clear them.",
   sinceTitle: "Since your review",
   sinceToggle: "Highlight what changed since",
   sinceToggleHint: "Rings what changed since your review and dims the rest, on the map and in the changes.",
