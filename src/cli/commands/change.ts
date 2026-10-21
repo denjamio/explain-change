@@ -11,8 +11,17 @@ import { buildDigest } from "../../digest/digest.ts";
 import { loadExplanation, prepareExplanation } from "../../explanation/store.ts";
 import { changeHost, createHosts, type Hosts } from "../../hosts/index.ts";
 import { defaultReportPath, writeReport } from "../../report/render.ts";
+import { since as compareWithReview, lastReview, recordReview } from "../../review/since.ts";
 import { openReport, shouldOpen } from "../open.ts";
-import { type ChangeResult, changeSummary, explanationSummary, nextStep, printChange, printJson } from "../output.ts";
+import {
+  type ChangeResult,
+  changeSummary,
+  explanationSummary,
+  nextStep,
+  printChange,
+  printJson,
+  sinceSummary,
+} from "../output.ts";
 import { ensureWorkdir, readFacts, workPaths, writeFacts } from "../workspace.ts";
 
 export interface ExplainOptions {
@@ -66,12 +75,16 @@ export function explain(opts: ExplainOptions, hosts: Hosts = createHosts()): num
     specs: opts.specs,
   });
   writeFacts(work, facts);
-  const digest = buildDigest(facts, opts.budget ?? config.budget);
+  // A PR you reviewed at another head: the digest, the draft and the page say what changed since.
+  const review = lastReview(work, facts);
+  const since = review ? compareWithReview(review, facts) : null;
+  const digest = buildDigest(facts, opts.budget ?? config.budget, review);
   const paths = workPaths(work);
   writeFileSync(paths.digest, digest, "utf8");
-  const action = prepareExplanation(work, facts);
-  const status = loadExplanation(work, facts, root);
-  const report = writeReport(opts.out ?? defaultReportPath(work, facts), facts, status);
+  const action = prepareExplanation(work, facts, since);
+  const status = loadExplanation(work, facts, root, true, since);
+  if (status.state === "valid") recordReview(work, facts);
+  const report = writeReport(opts.out ?? defaultReportPath(work, facts), facts, status, since);
   const opened = status.state === "valid" && shouldOpen(opts.noOpen) && openReport(report);
   const result: ChangeResult = {
     command: opts.pr === null ? "local" : "pr",
@@ -79,6 +92,7 @@ export function explain(opts: ExplainOptions, hosts: Hosts = createHosts()): num
     explanation: explanationSummary(status, action),
     paths: { ...paths, report },
     digestTokens: Math.round(digest.length / 4),
+    since: sinceSummary(since),
     opened,
     next: nextStep(status.state, report, facts),
     notes: facts.notes,
@@ -104,15 +118,19 @@ export function render(opts: RenderOptions): number {
   const root = repoRoot();
   const work = join(root, WORK_DIR);
   const facts = readFacts(work);
-  const status = loadExplanation(work, facts, root, !opts.dryRun);
+  const review = lastReview(work, facts);
+  const since = review ? compareWithReview(review, facts) : null;
+  const status = loadExplanation(work, facts, root, !opts.dryRun, since);
   const target = opts.out ?? defaultReportPath(work, facts);
-  const report = opts.dryRun ? resolve(target) : writeReport(target, facts, status);
+  if (!opts.dryRun && status.state === "valid") recordReview(work, facts);
+  const report = opts.dryRun ? resolve(target) : writeReport(target, facts, status, since);
   const opened = !opts.dryRun && status.state === "valid" && shouldOpen(opts.noOpen) && openReport(report);
   const result: ChangeResult = {
     command: opts.dryRun ? "status" : "render",
     change: changeSummary(facts),
     explanation: explanationSummary(status),
     paths: { ...workPaths(work), report: opts.dryRun ? null : report },
+    since: sinceSummary(since),
     opened,
     next: nextStep(status.state, opts.dryRun ? null : report, facts),
     notes: facts.notes,

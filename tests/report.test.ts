@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { NormalizedExplanation } from "../src/contract/explanation.ts";
@@ -7,6 +8,8 @@ import { readReportData } from "../src/report/data.ts";
 import { excerptRanges, pruneHunks, renderHtml } from "../src/report/render.ts";
 import { smoke } from "./dom.ts";
 import { ROOT } from "./helpers.ts";
+
+const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
 const REPORTS = readdirSync(join(ROOT, "examples"))
   .filter((f) => f.endsWith(".html") && f !== "index.html")
@@ -31,6 +34,37 @@ describe("example reports", () => {
       for (const d of ex?.decisions ?? []) expect(out.text).toContain(`${d.title}${labels[d.basis]}`);
     });
   }
+});
+
+describe("links into the PR", () => {
+  test("a code reference opens the PR at its lines when a hunk holds them, the file otherwise", () => {
+    const html = readFileSync(join(ROOT, "examples/real-maybe-rails-data-exports.html"), "utf8");
+    const data = readReportData(html);
+    // Rendered by this script, not the one the committed example embeds.
+    const page = renderHtml(data.facts, { state: data.state, issues: data.issues, explanation: data.explanation });
+    const spans = readReportData(page).hunkSpans ?? {};
+    let hrefs: string[] = [];
+    smoke(page, (app) => {
+      hrefs = app.querySelectorAll("a.ref").map((a) => a.getAttribute("href") ?? "");
+    });
+    const anchored = hrefs.filter((u) => /#diff-[0-9a-f]{64}[RL]\d+/.test(u));
+    expect(anchored.length).toBeGreaterThan(0);
+    const byHash = new Map(data.facts.files.map((f) => [sha256(f.path), f.path]));
+    for (const u of anchored) {
+      const m = /#diff-([0-9a-f]{64})([RL])(\d+)(?:-[RL](\d+))?$/.exec(u) as RegExpExecArray;
+      const path = byHash.get(m[1] as string) as string;
+      expect(path).toBeDefined();
+      const side = m[2] === "R" ? "new" : "old";
+      const a = Number(m[3]);
+      const b = Number(m[4] ?? m[3]);
+      // both ends inside one hunk of the file, on its side
+      const hunk = spans[path]?.find(([os, ol, ns, nl]) => {
+        const [first, n] = side === "new" ? [ns, nl] : [os, ol];
+        return a >= first && b <= first + n - 1;
+      });
+      expect(hunk).toBeDefined();
+    }
+  });
 });
 
 describe("what the map draws by default", () => {

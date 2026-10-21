@@ -8,6 +8,8 @@ import { FILES, VERSION } from "../core/constants.ts";
 import { ensureDir } from "../core/fs.ts";
 import { slugify } from "../core/text.ts";
 import type { ExplanationStatus } from "../explanation/store.ts";
+import type { HunkSpan } from "../hosts/links.ts";
+import type { Since } from "../review/since.ts";
 import { REPORT_CSS, REPORT_HTML, REPORT_JS } from "./assets.gen.ts";
 import type { ReportData } from "./data.ts";
 
@@ -67,7 +69,7 @@ export function pruneHunks(f: Pick<FileFacts, "delta" | "hunks">, ranges: [numbe
 }
 
 /** The self-contained page: template, styles, script and data in one file that works offline. */
-export function renderHtml(facts: Facts, status: ExplanationStatus): string {
+export function renderHtml(facts: Facts, status: ExplanationStatus, since: Since | null = null): string {
   // The page shows excerpts, not the full diff (the PR has it): it ships only the lines it can show.
   const ranges = excerptRanges(facts, status.explanation);
   const shipped: Facts = {
@@ -80,6 +82,10 @@ export function renderHtml(facts: Facts, status: ExplanationStatus): string {
     explanation: status.explanation,
     state: status.state,
     issues: status.issues.slice(0, 20),
+    ...(since ? { since } : {}),
+    hunkSpans: Object.fromEntries(
+      facts.files.map((f) => [f.path, f.hunks.map((h): HunkSpan => [h.oldStart, h.oldLines, h.newStart, h.newLines])]),
+    ),
   };
   // Every "<" as \u003c: valid JSON that can never close the script tag or open an HTML comment inside it.
   const payload = JSON.stringify(data).replace(/</g, "\\u003c");
@@ -100,9 +106,14 @@ export const defaultReportPath = (work: string, facts: Facts) =>
   join(work, FILES.reports, `${slugify(facts.source.branch || "change")}.html`);
 
 /** Writes the page; returns its absolute path. */
-export function writeReport(target: string, facts: Facts, status: ExplanationStatus): string {
+export function writeReport(
+  target: string,
+  facts: Facts,
+  status: ExplanationStatus,
+  since: Since | null = null,
+): string {
   const path = resolve(target);
   ensureDir(dirname(path));
-  writeFileSync(path, renderHtml(facts, status), "utf8");
+  writeFileSync(path, renderHtml(facts, status, since), "utf8");
   return path;
 }

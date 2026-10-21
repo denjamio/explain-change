@@ -89,5 +89,14 @@ function proseDigits(e: Explanation): Explanation {
       dataModel: { ...e.dataModel, relations: e.dataModel.relations.map((r) => ({ ...r, label: d(r.label) })) },
     }),
     ...(e.requirements && { requirements: e.requirements.map((r) => ({ ...r, note: d(r.note) })) }),
+    ...(e.since && {
+      since: {
+        ...e.since,
+        summary: d(e.since.summary),
+        ...(e.since.components && {
+          components: e.since.components.map((c) => ({ ...c, summary: d(c.summary) })),
+        }),
+      },
+    }),
   };
 }

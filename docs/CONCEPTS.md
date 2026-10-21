@@ -11,6 +11,7 @@ When two words could name the same thing, this page says which one is used.
 | **Source** | Where the change comes from: `local` (the current branch, optionally with uncommitted work) or `pr` (an Azure DevOps or GitHub pull request). `host` names where the PR lives (or would, for a branch). |
 | **Base**, **merge base** | The ref the change is compared with (`--base`, `project.base`, else `origin/HEAD`, `main`…), and the commit where head and base diverge. The diff starts at the merge base. |
 | **Key** | A hash of the diff, the config, the contract version and the analysis version. Same key = same change; an explanation is valid only for the key it was written for. |
+| **Review** | A head of a PR that a valid report showed. **Since your review**, each file and component of the PR is `new`, `changed again` or `the same`, comparing its own patch (a rebase adds nothing); files it no longer changes **left the PR**. |
 | **File category** | `code`, `test`, `config`, `migration`, `docs`, or `ignored` (generated or vendored). |
 
 ## The architecture (the config, `.explain-change.toml`)
@@ -52,6 +53,7 @@ When two words could name the same thing, this page says which one is used.
 | **Data model** | The entities and relations the change touches, with changed fields (`+` added, `-` removed, `~` changed). |
 | **Decision** | A design choice: what was chosen, why, where the why comes from, and its evidence (`file:line`). |
 | **Basis** | Where a decision's why comes from: `pr` (the PR description), `spec` (the OpenSpec proposal or design), `code` (the code at its evidence: a comment, a name, an ADR), or `inferred` (the agent's reading). The validator accepts `pr` and `spec` only when the change has that source, and `code` only with evidence; the report labels each one. |
+| **Since** | For a PR you reviewed at another head: what the PR does differently since, in a summary and 1 line per component that is new or changed again. Written only for the review the draft names. |
 | **Requirement status** | How the code meets an OpenSpec requirement: `implemented`, `partial`, `missing`, `not-applicable`. |
 | **Prose rules** | The parts of ASD-STE100 (Simplified Technical English) the validator enforces: sentences of at most 25 words (an abbreviation such as *e.g.* does not end one), refused words (future and modal, judgements, marketing, filler; `prose/en.json`, where `word*` refuses every form), counts as digits (the page rewrites *three* as *3*), the passive with its agent (*is sent by the job*), and code names that exist at the head of the change. Code names are exempt from the word rules. The rest (simple verbs, one word per thing) is guidance in the digest. |
 
@@ -75,4 +77,5 @@ the code is stable (`too-long`, `unknown-id`, `placeholder`, `refused-word`…);
 
 `facts.json`, `digest.md` (what the agent reads, the draft at its end), `draft.json` (the same draft),
 `explanation.json` (what the agent writes), `explanations/<key>.json` (each change's explanation, restored when the
-change comes back) and `out/<branch>.html` (the reports).
+change comes back), `reviews/<pr>.json` (the heads of a PR its valid reports showed) and `out/<branch>.html` (the
+reports).

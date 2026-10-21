@@ -90,7 +90,7 @@ export function componentDetails(id: string, nav: InspectorNav): Child[] {
                 class: `badge ${sy.delta}`,
                 text: sy.delta === "added" ? "+" : sy.delta === "removed" ? "−" : "~",
               }),
-              fileLink(`${sy.file}:${sy.line}`, sy.name),
+              fileLink(`${sy.file}:${sy.line}`, sy.name, sy.delta === "removed"),
             ),
           ),
         )

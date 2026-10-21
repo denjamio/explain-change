@@ -8,6 +8,7 @@ import { byKeys, cpLength, cpSlice, plural, truncate } from "../core/text.ts";
 import { draftExplanation } from "../explanation/draft.ts";
 import { proseRules } from "../explanation/prose.ts";
 import { decisionBases, explainableComponents } from "../explanation/validate.ts";
+import { interdiff, patchLines, type ReviewSnapshot, type Since, since } from "../review/since.ts";
 
 /*
  * digest.md: the budgeted summary the agent reads instead of the diff. The task always fits; the overview gets
@@ -241,7 +242,7 @@ function keyHunks(f: Facts, room: number): string {
  * when the change has what it is about (flows, data model, key dependencies, requirements), so a small change gets
  * a short task.
  */
-export function task(f: Facts): string {
+export function task(f: Facts, delta: Since | null = null): string {
   const { config } = f;
   const hasRequirements = specRequirements(f).length > 0;
   const hasFlows = f.components.length >= 2;
@@ -277,6 +278,13 @@ export function task(f: Facts): string {
       "body: what behaves differently now (numbers when they matter), not the code. " +
       `view = ${views}; focus = 1-3 ids on that view (${focusIds}), none for the overview.`,
     "- components: one line per changed component: what it now does differently (behavior, not file names).",
+    ...(delta && Object.values(delta.components).some((v) => v !== "same")
+      ? [
+          "- since: what the PR does differently since your last review (## Since your review), from how each patch " +
+            "changed, not from the commit messages. summary: the whole of it; components: 1 line per component " +
+            "listed there. Keep review as the draft writes it. The rest of the explanation is about the whole PR.",
+        ]
+      : []),
     `- decisions (0-${LIMITS.decisions}): the design choices that explain why it is built this way: what was chosen and ` +
       "why. evidence: file:line inside a hunk. basis: where the why comes from, " +
       `${decisionBases(f).join(" | ")} (pr = the PR description says it; spec = the OpenSpec proposal or design; ` +
@@ -341,14 +349,60 @@ export function task(f: Facts): string {
   return lines.join("\n");
 }
 
+/** At most this many characters of interdiff, over every file; a file shows at most SINCE_FILE_LINES lines. */
+const SINCE_CHARS = 3000;
+const SINCE_FILE_LINES = 40;
+
+/**
+ * `## Since your review`: for a PR reviewed at another head, what moved since, and how each patch changed since (its
+ * interdiff), within SINCE_CHARS. The PR is compared with itself, so a rebase adds nothing.
+ */
+function sinceSection(f: Facts, review: ReviewSnapshot, s: Since): string {
+  const moved = Object.entries(s.components).filter(([, v]) => v !== "same");
+  const files = Object.entries(s.files).filter(([, v]) => v !== "same");
+  const out = [
+    `\n## Since your review (${review.head.slice(0, 8)} → ${f.source.headSha.slice(0, 8)})` +
+      (s.rebased ? ": rebased since; its own changes are compared, not the commits" : ""),
+  ];
+  if (!moved.length && !files.length && !s.gone.length) {
+    out.push("The PR's own changes are the same as at your review.");
+    return out.join("\n");
+  }
+  if (moved.length)
+    out.push(`Components: ${moved.map(([id, v]) => `${id} (${v === "new" ? "new" : "changed again"})`).join(", ")}`);
+  if (files.length)
+    out.push(`Files: ${files.map(([p, v]) => `${p} (${v === "new" ? "new" : "changed again"})`).join(", ")}`);
+  if (s.gone.length) out.push(`Left the PR: ${s.gone.join(", ")}`);
+  out.push("How each patch changed since: > a patch line it has now and had not, < one it had and has not now.");
+  let room = SINCE_CHARS;
+  for (const [path, v] of files) {
+    if (v !== "again") continue;
+    const file = f.files.find((x) => x.path === path);
+    const lines = file ? interdiff(review.files[path]?.lines, patchLines(file)) : null;
+    const body = lines
+      ? lines.slice(0, SINCE_FILE_LINES).join("\n") +
+        (lines.length > SINCE_FILE_LINES ? `\n… ${lines.length - SINCE_FILE_LINES} more` : "")
+      : "(its patch was too large to keep at your review)";
+    const block = `### ${path}\n${body}`;
+    if (block.length > room) {
+      out.push(`### ${path}: left out (budget)`);
+      continue;
+    }
+    room -= block.length;
+    out.push(block);
+  }
+  return out.join("\n");
+}
+
 /**
  * digest.md within `budget` characters: the task always, the fullest overview that leaves the key hunks 35% of the
  * budget, then as many key hunks as fit. Only an overview at its shortest, with a long task, goes past the budget.
  * The draft of explanation.json follows, outside the budget: the agent writes it back filled, so the digest is the
  * only file it reads.
  */
-export function buildDigest(f: Facts, budget: number): string {
-  const tail = task(f);
+export function buildDigest(f: Facts, budget: number, review: ReviewSnapshot | null = null): string {
+  const delta = review ? since(review, f) : null;
+  const tail = (delta && review ? sinceSection(f, review, delta) : "") + task(f, delta);
   const minRoom = Math.floor(budget * 0.35); // hunks always get a real share
   let head = overview(f, 0);
   for (const tight of [1, 2] as const) {
@@ -356,6 +410,6 @@ export function buildDigest(f: Facts, budget: number): string {
     head = overview(f, tight);
   }
   const room = Math.max(budget - head.length - tail.length - 2, minRoom);
-  const draft = `\n## Draft\n\`\`\`json\n${JSON.stringify(draftExplanation(f), null, 2)}\n\`\`\`\n`;
+  const draft = `\n## Draft\n\`\`\`json\n${JSON.stringify(draftExplanation(f, delta), null, 2)}\n\`\`\`\n`;
   return `${head}\n${keyHunks(f, room)}\n${tail}\n${draft}`;
 }

@@ -6,6 +6,7 @@ import type { Facts, FileFacts } from "../contract/facts.ts";
 import { LOCATION_RE } from "../contract/facts.ts";
 import { CONTRACT_VERSION } from "../core/constants.ts";
 import { cpLength, cpSlice } from "../core/text.ts";
+import type { Since } from "../review/since.ts";
 import { ProseChecker } from "./prose.ts";
 
 /** Why a field is rejected. Stable: agents and tools may branch on it. */
@@ -85,9 +86,14 @@ export function hunkRanges(f: FileFacts): [number, number][] {
  * Every problem with an explanation, each with its JSON path, a stable code and what to write instead. Empty when
  * valid. Tolerant: one pass reports every problem, so one round of fixes is enough.
  */
-export function validateExplanation(value: Json, facts: Facts, root: string | null): Issue[] {
+export function validateExplanation(
+  value: Json,
+  facts: Facts,
+  root: string | null,
+  since: Since | null = null,
+): Issue[] {
   if (!isObject(value)) return [{ path: "explanation", code: "type", message: "must be a JSON object" }];
-  const issues = new Validator(facts, root).run(value);
+  const issues = new Validator(facts, root, since).run(value);
   // A placeholder hides what will be written there: report the placeholder, not what it breaks.
   const holes = placeholders(value, "");
   if (!holes.length) return issues;
@@ -122,6 +128,8 @@ class Validator {
   constructor(
     private readonly facts: Facts,
     private readonly root: string | null,
+    /** What changed since your last review of the PR: `since` is checked against it. */
+    private readonly sinceReview: Since | null = null,
   ) {
     this.componentIds = new Set(explainableComponents(facts));
     this.files = new Map(facts.files.map((f) => [f.path, f]));
@@ -146,6 +154,7 @@ class Validator {
     this.requirements(e.requirements);
     this.keyDependencies(e.keyDependencies);
     this.story(e.story, flowSteps, entityIds);
+    this.since(e.since);
     return this.issues;
   }
 
@@ -540,6 +549,38 @@ class Validator {
         "missing",
         `map every ADDED or MODIFIED requirement to its implementation; missing ${unmapped.join(", ")}`,
       );
+    }
+  }
+
+  /**
+   * What changed since your review, against the review the draft names. Without a review to compare with (the
+   * reviews of this clone are gone, or the explanation was restored), it is not checked: the page leaves it out.
+   */
+  private since(value: Json) {
+    if (value === undefined || value === null) return;
+    if (!isObject(value)) return this.add("since", "type", "must be an object");
+    const s = this.sinceReview;
+    if (!s) return;
+    if (!isHole(value.review) && value.review !== s.head) {
+      return this.add(
+        "since.review",
+        "stale",
+        `'${String(value.review)}' is not your last review '${s.head}': copy it from the draft`,
+      );
+    }
+    this.text("since.summary", value.summary, LIMITS["since.summary"]);
+    const moved = Object.entries(s.components)
+      .filter(([, v]) => v !== "same")
+      .map(([id]) => id);
+    for (const [i, c] of this.objects("since.components", value.components, LIMITS["since.components"])) {
+      if (!isHole(c.id) && !moved.includes(c.id as string)) {
+        this.add(
+          `since.components[${i}].id`,
+          "not-allowed",
+          `'${String(c.id)}' is the same as at your review; one of ${moved.join(" | ") || "none"}`,
+        );
+      }
+      this.text(`since.components[${i}].summary`, c.summary, LIMITS["since.components.summary"]);
     }
   }
 

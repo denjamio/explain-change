@@ -3,7 +3,7 @@
  */
 
 import type { ComponentFacts, FileFacts } from "../src/contract/facts.ts";
-import { fmt, h, listAt } from "./dom.ts";
+import { cap, fmt, h, listAt } from "./dom.ts";
 import { icon } from "./icons.ts";
 import {
   byCompRank,
@@ -15,10 +15,12 @@ import {
   facts,
   gitLetter,
   layerName,
+  SINCE,
+  sinceSummaryOf,
   summaryOf,
 } from "./model.ts";
 import { fileLink, mapApi, sectionShell } from "./ui.ts";
-import { T, tf } from "./words.ts";
+import { T, t, tf } from "./words.ts";
 
 // Order of reading: why it is built this way (decisions) → what the spec asks (SDD) → where it changed (files).
 
@@ -75,6 +77,9 @@ export function renderChanges(): HTMLElement | null {
       h("span", { class: "del", text: `−${fmt(del)}` }),
     );
   const sum = (fs: FileFacts[], k: "additions" | "deletions") => fs.reduce((a, f) => a + f[k], 0);
+  // Since your review: a pill on what is new or changed again, shown while the page highlights it.
+  const sincePill = (v: string | undefined) =>
+    v === "new" || v === "again" ? h("span", { class: `since-pill since-only`, text: t(`since${cap(v)}`) }) : null;
   const fileRows = (fs: FileFacts[]) =>
     h(
       "div",
@@ -82,9 +87,10 @@ export function renderChanges(): HTMLElement | null {
       fs.map((f) =>
         h(
           "div",
-          { class: "insp-row" },
+          { class: `insp-row${SINCE?.files[f.path] ? ` since-${SINCE.files[f.path]}` : ""}` },
           h("span", { class: `gs gs-${gitLetter(f)}`, text: gitLetter(f) }),
           fileLink(f.path),
+          sincePill(SINCE?.files[f.path]),
           nums(f.additions, f.deletions),
         ),
       ),
@@ -96,10 +102,12 @@ export function renderChanges(): HTMLElement | null {
     summary: string | null,
     fs: FileFacts[],
     onMap?: () => void,
+    since?: string,
+    sinceText?: string,
   ) {
     return h(
       "details",
-      { class: "chg", open },
+      { class: `chg${since ? ` since-${since}` : ""}`, open },
       h(
         "summary",
         { class: "chg-head" },
@@ -108,11 +116,13 @@ export function renderChanges(): HTMLElement | null {
           { class: "chg-line" },
           badge,
           h("b", { class: "chg-name", text: name }),
+          sincePill(since),
           meta ? h("span", { class: "faint", text: meta }) : null,
           h("span", { class: "chg-count faint", text: `${fs.length} ${fs.length === 1 ? T.file : T.kFiles}` }),
           nums(sum(fs, "additions"), sum(fs, "deletions")),
         ),
         summary ? h("span", { class: "chg-summary", text: summary }) : null,
+        sinceText ? h("span", { class: "chg-summary since-note since-only", text: sinceText }) : null,
       ),
       fileRows(fs),
       onMap ? h("button", { class: "chip", onclick: onMap }, icon("locate"), T.showOnMap) : null,
@@ -134,10 +144,37 @@ export function renderChanges(): HTMLElement | null {
             summaryOf[id] ?? (c?.desc || null),
             byComp[id] as FileFacts[],
             () => mapApi.inspect?.(id),
+            SINCE?.components[id],
+            sinceSummaryOf[id],
           );
         }),
       tests.length ? group(null, T.testFiles, null, null, tests) : null,
       outside.length ? group(null, T.outsideMap, null, null, outside) : null,
+      // Not in the PR any more: no link, the PR has no diff of them now.
+      SINCE?.gone.length
+        ? h(
+            "details",
+            { class: "chg since-gone since-only", open },
+            h(
+              "summary",
+              { class: "chg-head" },
+              h(
+                "span",
+                { class: "chg-line" },
+                h("b", { class: "chg-name", text: T.sinceLeft }),
+                h("span", {
+                  class: "chg-count faint",
+                  text: `${SINCE.gone.length} ${SINCE.gone.length === 1 ? T.file : T.kFiles}`,
+                }),
+              ),
+            ),
+            h(
+              "div",
+              { class: "chg-files" },
+              SINCE.gone.map((p) => h("div", { class: "insp-row" }, h("code", { class: "ref", text: p }))),
+            ),
+          )
+        : null,
     ]),
     tf("leadChanges", { c: comps.length, f: nFiles }),
   );

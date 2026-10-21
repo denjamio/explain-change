@@ -62,7 +62,20 @@ The CLI is deterministic: the same change, config and version give byte-identica
 The prose is the agent's, so 2 runs write 2 explanations. A valid explanation is saved under the change's key, so
 the same change renders the same page again without the agent.
 
+The one exception is **since your review**: a PR's page also carries what changed since the latest other head of it
+that a valid report showed in this clone, so it depends on that history. Its limits:
+
+- A review is a valid report written, not a review on the host: the votes and comments of Azure DevOps and GitHub
+  are not read.
+- A file compares by its own added and removed lines, not their numbers. A binary file, or one whose hunks the diff
+  left out (generated, too large), compares by its counts only. A renamed file counts as new, its old path as gone.
+- The delta is deterministic. The agent writes what it means (`since`) from the interdiff of each file, up to 300
+  patch lines a file at your review and 3,000 characters in the digest; the story still explains the whole PR.
+- Steps you read live in the browser's storage of that page: another browser or a cleared storage starts over.
+
 ## Hosts
 
-PRs are read from Azure DevOps (`az`) and GitHub (`gh`). A GitLab or Bitbucket PR works through its branch
+PRs are read from Azure DevOps (`az`) and GitHub (`gh`). On GitHub, a code reference opens the PR at its lines when
+a hunk holds them. Azure DevOps has no link to a line of a PR's diff: a code reference opens the file at the head
+(or the merge base) with its lines selected, outside the PR. A GitLab or Bitbucket PR works through its branch
 (`explain-change local`).

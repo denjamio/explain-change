@@ -85,6 +85,7 @@ The page reads from *what* to *where* to *why*:
 | **Design decisions** | What was chosen and why, each labelled with where its why comes from: the PR description, the spec, the code, or *inferred* from the change. |
 | **SDD · OpenSpec** | For spec-driven changes: the pipeline from proposal to archive, and each requirement traced to the code and tests that implement it. |
 | **Changes by component** | Each changed component with what it now does and its files. |
+| **Since your review** | For a PR you explained before at another head: what changed since, in a few words, ringed on the map and marked in the changes and the story. A rebase or a merge of the target adds no noise. The story keeps the steps you read (✓). |
 
 **Reading the map:** 🟩 added · 🟦 changed · ⬜ removed · 🟥 a dependency that breaks one of your `[rules]`.
 Components the change does not touch stay hidden unless it alters their link to it; the rest is one click away

@@ -2,7 +2,7 @@
 
 import type { NormalizedExplanation } from "../src/contract/explanation.ts";
 import type { ComponentFacts, Delta, DependencyFacts, FileFacts, Requirement } from "../src/contract/facts.ts";
-import { prFileUrl as fileUrlOnPr } from "../src/hosts/links.ts";
+import { prFileUrl as fileUrlOnPr, type LineRange, lineRange } from "../src/hosts/links.ts";
 import type { ReportData } from "../src/report/data.ts";
 import { cap } from "./dom.ts";
 import { T, t } from "./words.ts";
@@ -20,6 +20,12 @@ export const cfg = facts.config;
 export const src = facts.source;
 export const st = facts.stats;
 export const OS = facts.openspec;
+/** What changed since your last review of this PR; null without one. */
+export const SINCE = DATA.since ?? null;
+/** The agent's words on what changed since, when written for this review (another review's are left out). */
+export const SINCE_TEXT = SINCE && ex?.since?.review === SINCE.head ? ex.since : null;
+export const sinceSummaryOf: Record<string, string> = {};
+for (const c of SINCE_TEXT?.components ?? []) sinceSummaryOf[c.id] = c.summary;
 export const REDUCED = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
 
 /** git's one-letter status of a changed file. */
@@ -97,9 +103,15 @@ export const RS_ICON: Record<ReqStatus, string> = {
 };
 export const rsLabel = (v: ReqStatus) => (v === "pending" ? T.notMapped : v === "none" ? "—" : t(v));
 
-// A file reference links to the file in the PR when the source has one; otherwise it is plain text.
-export function prFileUrl(path: string): string | null {
-  return src.kind === "pr" && src.url && src.host ? fileUrlOnPr(src.host, src.url, path) : null;
+// A file reference links to the file in the PR when the source has one; otherwise it is plain text. With lines, it
+// opens the PR at them when a hunk holds them, on the base side for a removed file or a removed symbol.
+export function prFileUrl(path: string, lines?: { start: number; end?: number; old?: boolean }): string | null {
+  if (src.kind !== "pr" || !src.url || !src.host) return null;
+  const removed = facts.files[fileIndex[path] ?? -1]?.delta === "removed";
+  const side: LineRange["side"] = removed || lines?.old ? "old" : "new";
+  const spans = DATA.hunkSpans?.[path];
+  const range = lines && spans ? lineRange(spans, side, lines.start, lines.end) : undefined;
+  return fileUrlOnPr(src.host, src.url, path, range, side === "new" ? src.headSha : src.mergeBase);
 }
 
 export const DM = ex?.dataModel.entities.length ? ex.dataModel : null;

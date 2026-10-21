@@ -6,6 +6,42 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- The header named every PR an "Azure DevOps PR": a GitHub PR is a "GitHub PR".
+
+### Added
+- **Since your review**: the report of a PR you explained before at another head says what changed since. A valid
+  report records its head in `.explain-change/reviews/`; the next head's page compares the PR with itself (an
+  interdiff): each file and component is new, changed again or the same, and the files the PR left are listed. A
+  file whose own added and removed lines are the same counts as the same, so a rebase or a merge of the target adds
+  no noise (the page says when the merge base moved). A switch in the header, on by default, rings what changed on
+  the map and marks it in the changes, dimming the rest there; the map's boxes are never dimmed, as the story lights
+  them. `local`, `pr` and `render` print the counts (`since` in `--json`). Checked on 3 example PRs against their own
+  commits after an earlier one: maybe (linear) flags its 4 files changed again and 1 new, and 1 file a commit
+  changed and the next restored stays the same; bitwarden (a rename, then a merge of main) flags only the renamed
+  migration, new, with its old path gone; chatwoot (4 merges of develop) flags only the 2 files its fixes changed.
+- **What changed since, in words**: when a PR you reviewed at another head changed since, the digest gets
+  `## Since your review`, with how each file's patch changed (its interdiff: `>` a line it has now, `<` one it
+  had), and the draft gets `since`: a summary and 1 line per component that is new or changed again. The validator
+  checks it against the review the draft names (`stale` for another); the page shows it in the header and under each
+  component, only for that review. A haiku agent on chatwoot's PR, reviewed 4 merges of develop and 2 fixes
+  earlier, wrote it in 1 render from the interdiff ("The sync now writes only when its attempt is newer than the
+  stored check…"). Without a review, the digest, the draft and the page are as before.
+- **Steps you read**: the story marks a step read (✓) when you go through it, and keeps it on the page across
+  visits (localStorage, per PR and head). At the next head of a PR, a step stays read only when nothing it shows
+  changed since your review; the others say "changed since your review". The count in the story's header clears
+  them. Read replaces the old green mark on the steps before the current one, which only said where you were.
+- A code reference in a GitHub PR's report opens the PR at its lines, not at the top of the file: a story step, a
+  decision's evidence, an entity and a symbol in the inspector link to `#diff-<sha>R12-R20` (`L` on the base side,
+  for a removed file or symbol). A line outside every hunk of the PR has no anchor on GitHub's page, so its link
+  opens the file as before; a range is cut to the hunk that holds its first line. The page carries the hunks of each
+  changed file (`hunkSpans`) for this, as it ships only the lines of its excerpts. In the 11 real examples, the 379
+  line links all fall inside the hunks GitHub serves for their PR.
+- On Azure DevOps, whose PR files view takes no line, a code reference opens the file at the commit of its side
+  (the head, or the merge base for a removed line) with its lines selected: `?path=…&version=GC<sha>&line=12&lineEnd=21`,
+  the file link Zed, GitLens and pr-brief build. It leaves the PR; a reference without a line still opens the PR's
+  files view.
+
 ## [0.16.1] - 2026-10-20
 
 ### Fixed
