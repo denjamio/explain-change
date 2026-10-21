@@ -1,6 +1,6 @@
 {
   "name": "explain-change",
-  "version": "0.16.1",
+  "version": "0.17.0",
   "description": "Architecture-first, visual explanation of a code change as one HTML page: the map, the story, data flows, OpenSpec traceability and the design decisions. Needs the explain-change CLI: npm install -g explain-change",
   "author": { "name": "denjamio" },
   "homepage": "https://github.com/denjamio/explain-change",
